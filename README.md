@@ -89,7 +89,7 @@ RecordingStudio::Services::AccessCheck.allowed?(actor: user, recording: root_rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and mounts both RecordingStudio and Recording Studio Accessible.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of the RecordingStudio dependency.
 
 Run it with:
 
