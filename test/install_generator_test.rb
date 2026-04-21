@@ -8,7 +8,6 @@ require "generators/recording_studio_accessible/install/install_generator"
 class InstallGeneratorTest < Minitest::Test
   def with_temp_app
     Dir.mktmpdir do |dir|
-      FileUtils.mkdir_p(File.join(dir, "app/assets/tailwind"))
       yield dir
     end
   end
@@ -17,7 +16,7 @@ class InstallGeneratorTest < Minitest::Test
     RecordingStudioAccessible::Generators::InstallGenerator.new([], options, destination_root: destination_root)
   end
 
-  def test_mount_engine_uses_default_mount_path
+  def test_mount_engine_is_opt_in
     generator = build_generator("/tmp")
     routes = []
 
@@ -25,11 +24,11 @@ class InstallGeneratorTest < Minitest::Test
       generator.mount_engine
     end
 
-    assert_equal ['mount RecordingStudioAccessible::Engine, at: "/recording_studio_accessible"'], routes
+    assert_empty routes
   end
 
-  def test_mount_engine_uses_configured_mount_path
-    generator = build_generator("/tmp", mount_path: "/addons/access")
+  def test_mount_engine_uses_configured_mount_path_when_enabled
+    generator = build_generator("/tmp", mount: true, mount_path: "/addons/access")
     routes = []
 
     generator.stub(:route, ->(value) { routes << value }) do
@@ -39,30 +38,15 @@ class InstallGeneratorTest < Minitest::Test
     assert_equal ['mount RecordingStudioAccessible::Engine, at: "/addons/access"'], routes
   end
 
-  def test_add_tailwind_source_injects_engine_and_flatpack_sources
+  def test_add_yaml_config_copies_template_when_accepted
     with_temp_app do |dir|
-      css_path = File.join(dir, "app/assets/tailwind/application.css")
-      File.write(css_path, "@import \"tailwindcss\";\n")
-
       generator = build_generator(dir)
 
-      Rails.stub(:root, Pathname.new(dir)) do
-        generator.stub(:say, nil) { generator.add_tailwind_source }
+      generator.stub(:yes?, true) do
+        generator.add_yaml_config
       end
 
-      css = File.read(css_path)
-      tailwind_source_lines.each { |line| assert_includes css, line }
+      assert File.exist?(File.join(dir, "config/recording_studio_accessible.yml"))
     end
-  end
-
-  private
-
-  def tailwind_source_lines
-    [
-      '@source "../../vendor/bundle/**/recording_studio_accessible/app/views/**/*.erb";',
-      '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/recording_studio_accessible-*/app/views/**/*.erb";',
-      '@source "../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}";',
-      '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";'
-    ]
   end
 end

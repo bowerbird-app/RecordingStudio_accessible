@@ -4,7 +4,7 @@ source "https://rubygems.org"
 gem "recording_studio_accessible", path: "../.."
 
 # RecordingStudio engine
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v0.1.0-alpha"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", ref: "795ff3d00b690e132418658c00ea06856b716675", ref: "795ff3d00b690e132418658c00ea06856b716675"
 
 # Devise authentication
 gem "devise"

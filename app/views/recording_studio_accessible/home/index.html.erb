@@ -1,104 +1,27 @@
-<div class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-12">
-  <%= render FlatPack::PageTitle::Component.new(
-    title: "Recording Studio Accessible",
-    subtitle: "Optional access-control addon for RecordingStudio hosts.",
-    variant: :h1
-  ) %>
+<section>
+  <h1>Recording Studio Accessible</h1>
+  <p>Optional access-control addon for RecordingStudio hosts.</p>
 
-  <div class="flex flex-wrap gap-2">
-    <%= render FlatPack::Badge::Component.new(text: "Addon installed separately", style: :info, size: :sm) %>
-    <%= render FlatPack::Badge::Component.new(text: "Integration mode: #{@integration_mode}", style: (@integration_mode == :addon ? :success : :warning), size: :sm) %>
-    <%= render FlatPack::Badge::Component.new(text: "Access API available", style: :success, size: :sm) %>
-  </div>
+  <p>Integration mode: <strong><%= @integration_mode %></strong></p>
 
-  <div class="grid gap-6 lg:grid-cols-2">
-    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
-      <% card.header do %>
-        <%= render FlatPack::PageTitle::Component.new(
-          title: "What this addon provides",
-          subtitle: "The access behavior extracted from RecordingStudio core.",
-          variant: :h3,
-          class: "mb-0 pb-0"
-        ) %>
-      <% end %>
+  <h2>What this addon provides</h2>
+  <ul>
+    <li><code>RecordingStudio::Access</code> and <code>RecordingStudio::AccessBoundary</code> recordables</li>
+    <li><code>RecordingStudio::Services::AccessCheck</code> role lookup and authorization helpers</li>
+    <li>Install and migration generators for host applications</li>
+  </ul>
 
-      <% card.body do %>
-        <ul class="space-y-3 text-sm leading-6">
-          <li><code>RecordingStudio::Access</code> and <code>RecordingStudio::AccessBoundary</code> recordables.</li>
-          <li><code>RecordingStudio::Services::AccessCheck</code> for role lookup and authorization.</li>
-          <li>Install and migration generators for host applications.</li>
-          <li>A dummy app flow proving the feature appears when this gem is included.</li>
-        </ul>
-      <% end %>
+  <h2>Dummy app access flow</h2>
+  <dl>
+    <dt>Workspace</dt>
+    <dd><%= @workspace&.name || "Not seeded" %></dd>
+    <dt>Root recording</dt>
+    <dd><%= @root_recording&.id || "Missing" %></dd>
+    <% @access_rows.each do |row| %>
+      <dt><%= row[:label] %></dt>
+      <dd>role=<%= row[:role] || "none" %>, allowed=<%= row[:allowed] %></dd>
     <% end %>
+  </dl>
 
-    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
-      <% card.header do %>
-        <%= render FlatPack::PageTitle::Component.new(
-          title: "Compatibility notes",
-          subtitle: "How the addon behaves against current RecordingStudio releases.",
-          variant: :h3,
-          class: "mb-0 pb-0"
-        ) %>
-      <% end %>
-
-      <% card.body do %>
-        <p class="text-sm leading-6 text-[var(--surface-content-color)]">
-          When RecordingStudio still ships built-in access support, this addon runs in compatibility mode and avoids redefining the core constants.
-          When core access is removed, the addon-owned models, service, and migrations become the source of truth.
-        </p>
-      <% end %>
-    <% end %>
-
-    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
-      <% card.header do %>
-        <%= render FlatPack::PageTitle::Component.new(
-          title: "Dummy app access flow",
-          subtitle: "Seeded root-recording access checks from the demo host app.",
-          variant: :h3,
-          class: "mb-0 pb-0"
-        ) %>
-      <% end %>
-
-      <% card.body do %>
-        <dl class="space-y-3 text-sm">
-          <div>
-            <dt class="text-[var(--surface-muted-content-color)]">Workspace</dt>
-            <dd class="font-medium"><%= @workspace&.name || "Not seeded" %></dd>
-          </div>
-          <div>
-            <dt class="text-[var(--surface-muted-content-color)]">Root recording</dt>
-            <dd class="font-mono text-xs"><%= @root_recording&.id || "Missing" %></dd>
-          </div>
-          <% @access_rows.each do |row| %>
-            <div>
-              <dt class="text-[var(--surface-muted-content-color)]"><%= row[:label] %></dt>
-              <dd class="font-medium">
-                role=<%= row[:role] || "none" %>, allowed=<%= row[:allowed] %>
-              </dd>
-            </div>
-          <% end %>
-        </dl>
-      <% end %>
-    <% end %>
-
-    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
-      <% card.header do %>
-        <%= render FlatPack::PageTitle::Component.new(
-          title: "Try it locally",
-          subtitle: "The addon is mounted separately from RecordingStudio in the dummy app.",
-          variant: :h3,
-          class: "mb-0 pb-0"
-        ) %>
-      <% end %>
-
-      <% card.body do %>
-        <ol class="space-y-3 list-decimal pl-5 text-sm leading-6">
-          <li>Open the dummy app home page to see seeded access summaries.</li>
-          <li>Visit <code>/recording_studio_accessible</code> to inspect this addon page.</li>
-          <li>Remove the gem from the host app Gemfile to verify the feature is no longer installed.</li>
-        </ol>
-      <% end %>
-    <% end %>
-  </div>
-</div>
+  <p>This route is optional and is not mounted by the installer unless the host app explicitly asks for it.</p>
+</section>

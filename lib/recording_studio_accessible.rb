@@ -7,11 +7,8 @@ require "recording_studio_accessible/configuration"
 require "recording_studio_accessible/compatibility"
 require "recording_studio_accessible/services/base_service"
 
-unless RecordingStudioAccessible::Compatibility.core_access_present?
-  require "recording_studio_accessible/extracted/recording_studio/access"
-  require "recording_studio_accessible/extracted/recording_studio/access_boundary"
-  require "recording_studio_accessible/extracted/recording_studio/services/access_check_class_methods"
-  require "recording_studio_accessible/extracted/recording_studio/services/access_check"
+RecordingStudioAccessible::Compatibility.missing_constant_paths.each do |path|
+  require path
 end
 
 require "recording_studio_accessible/engine"

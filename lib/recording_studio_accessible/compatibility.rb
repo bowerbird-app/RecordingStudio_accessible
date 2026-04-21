@@ -2,20 +2,26 @@
 
 module RecordingStudioAccessible
   module Compatibility
-    ACCESS_CONSTANTS = [
-      "RecordingStudio::Access",
-      "RecordingStudio::AccessBoundary",
-      "RecordingStudio::Services::AccessCheck"
-    ].freeze
+    EXTRACTED_FILES = {
+      "RecordingStudio::Access" => "recording_studio_accessible/extracted/recording_studio/access",
+      "RecordingStudio::AccessBoundary" => "recording_studio_accessible/extracted/recording_studio/access_boundary",
+      "RecordingStudio::Services::AccessCheck" => "recording_studio_accessible/extracted/recording_studio/services/access_check",
+      "RecordingStudio::Services::AccessCheckClassMethods" => "recording_studio_accessible/extracted/recording_studio/services/access_check_class_methods"
+    }.freeze
     RECORDABLE_TYPES = ["RecordingStudio::Access", "RecordingStudio::AccessBoundary"].freeze
 
     class << self
+      def missing_constant_paths
+        missing = EXTRACTED_FILES.keys.reject { |name| constant_defined_path?(name) }
+        missing.sort_by { |name| load_priority.fetch(name, 99) }.map { |name| EXTRACTED_FILES.fetch(name) }
+      end
+
       def core_access_present?
-        ACCESS_CONSTANTS.all? { |path| constant_defined_path?(path) }
+        RECORDABLE_TYPES.all? { |path| constant_defined_path?(path) } && constant_defined_path?("RecordingStudio::Services::AccessCheck")
       end
 
       def addon_provides_access?
-        !core_access_present?
+        missing_constant_paths.any?
       end
 
       def integration_mode
@@ -26,7 +32,7 @@ module RecordingStudioAccessible
         return unless defined?(::RecordingStudio)
 
         RECORDABLE_TYPES.each do |type_name|
-          RecordingStudio.register_recordable_type(type_name)
+          RecordingStudio.register_recordable_type(type_name) if constant_defined_path?(type_name)
         end
       end
 
@@ -36,8 +42,7 @@ module RecordingStudioAccessible
         return if defined?(Rails) && Rails.env.test?
         return if @warned_core_access
 
-        message = "[RecordingStudioAccessible] RecordingStudio already provides access models/services. " \
-                  "Running in compatibility mode and skipping addon-owned access constants and migrations."
+        message = "[RecordingStudioAccessible] RecordingStudio already provides access models/services. Running in compatibility mode and skipping addon-owned constants and migrations."
 
         if defined?(Rails) && Rails.respond_to?(:logger) && Rails.logger
           Rails.logger.info(message)
@@ -49,6 +54,15 @@ module RecordingStudioAccessible
       end
 
       private
+
+      def load_priority
+        {
+          "RecordingStudio::Access" => 1,
+          "RecordingStudio::AccessBoundary" => 2,
+          "RecordingStudio::Services::AccessCheckClassMethods" => 3,
+          "RecordingStudio::Services::AccessCheck" => 4
+        }
+      end
 
       def constant_defined_path?(path)
         path.split("::").reject(&:empty?).inject(Object) do |scope, const_name|

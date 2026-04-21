@@ -4,7 +4,7 @@ require "set"
 
 module RecordingStudio
   module Services
-    class AccessCheck < RecordingStudioAccessible::Services::BaseService
+    class AccessCheck < RecordingStudio::Services::BaseService
       extend AccessCheckClassMethods
 
       ROLE_ORDER = { "view" => 0, "edit" => 1, "admin" => 2 }.freeze

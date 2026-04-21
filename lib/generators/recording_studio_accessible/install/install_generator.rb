@@ -9,14 +9,14 @@ module RecordingStudioAccessible
 
       desc "Installs RecordingStudioAccessible into your application"
 
-      class_option(
-        :mount_path,
-        type: :string,
-        default: "/recording_studio_accessible",
-        desc: "Route prefix used when mounting the engine"
-      )
+      class_option :mount, type: :boolean, default: false,
+                           desc: "Mount the optional addon status/demo engine"
+      class_option :mount_path, type: :string, default: "/recording_studio_accessible",
+                                desc: "Route prefix used when mounting the optional engine"
 
       def mount_engine
+        return unless options[:mount]
+
         route %(mount RecordingStudioAccessible::Engine, at: "#{options[:mount_path]}")
       end
 
@@ -30,53 +30,8 @@ module RecordingStudioAccessible
         template "recording_studio_accessible.yml", "config/recording_studio_accessible.yml"
       end
 
-      def add_tailwind_source
-        tailwind_css_path = Rails.root.join("app/assets/tailwind/application.css")
-        return show_missing_tailwind_notice unless File.exist?(tailwind_css_path)
-
-        tailwind_content = File.read(tailwind_css_path)
-        missing_lines = tailwind_source_lines.reject { |line| tailwind_content.include?(line) }
-
-        if missing_lines.empty?
-          say "Tailwind already configured to include RecordingStudioAccessible and FlatPack sources.", :green
-          return
-        end
-
-        if tailwind_content.include?('@import "tailwindcss"')
-          inject_into_file tailwind_css_path, after: "@import \"tailwindcss\";\n" do
-            [
-              "\n/* Include RecordingStudioAccessible engine views for Tailwind CSS */",
-              missing_lines.first(2),
-              "\n/* Include FlatPack component sources for Tailwind CSS */",
-              missing_lines.drop(2)
-            ].flatten.reject(&:empty?).join("\n") + "\n"
-          end
-          say "Added RecordingStudioAccessible and FlatPack sources to Tailwind CSS configuration.", :green
-          return
-        end
-
-        say "Could not find @import \"tailwindcss\" in your Tailwind config.", :yellow
-        missing_lines.each { |line| say "  #{line}", :yellow }
-      end
-
       def show_readme
         readme "INSTALL.md" if behavior == :invoke
-      end
-
-      private
-
-      def show_missing_tailwind_notice
-        say "Tailwind CSS not detected. Skipping Tailwind configuration.", :yellow
-        tailwind_source_lines.each { |line| say "  #{line}", :yellow }
-      end
-
-      def tailwind_source_lines
-        [
-          '@source "../../vendor/bundle/**/recording_studio_accessible/app/views/**/*.erb";',
-          '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/recording_studio_accessible-*/app/views/**/*.erb";',
-          '@source "../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}";',
-          '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";'
-        ]
       end
     end
   end
