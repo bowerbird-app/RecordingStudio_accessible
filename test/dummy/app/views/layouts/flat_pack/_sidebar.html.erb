@@ -1,0 +1,44 @@
+<%= render FlatPack::Sidebar::Component.new(side: sidebar_side) do |sidebar| %>
+  <% sidebar.header do %>
+    <%= render FlatPack::Sidebar::Header::Component.new(
+      brand_abbr: "RS",
+      title: "Addon Template",
+      subtitle: "Recording Studio"
+    ) %>
+  <% end %>
+
+  <% sidebar.items do %>
+    <nav class="py-4 space-y-1" aria-label="Main navigation">
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Home",
+        href: "/",
+        icon: :home
+      ) %>
+
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Recording Studio",
+        href: "/recording_studio",
+        icon: :folder
+      ) %>
+
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Health",
+        href: "/up",
+        icon: :activity
+      ) %>
+
+    </nav>
+  <% end %>
+
+  <% sidebar.footer do %>
+    <%= render FlatPack::Sidebar::Footer::Component.new(class: "text-sm text-[var(--surface-muted-content-color)]") do %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Sign out",
+        href: destroy_user_session_path,
+        icon: :lock,
+        class: "mx-0",
+        data: { turbo_method: :delete }
+      ) %>
+    <% end %>
+  <% end %>
+<% end %>

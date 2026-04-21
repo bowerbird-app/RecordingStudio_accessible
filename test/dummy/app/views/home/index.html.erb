@@ -1,0 +1,86 @@
+<div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: @workspace&.name || "Recording Studio addon template",
+    subtitle: "Use this dummy app to validate authentication, root recording setup, and addon UI wiring before you rename the engine.",
+    variant: :h1
+  ) %>
+
+  <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+      <% card.header do %>
+        <%= render FlatPack::PageTitle::Component.new(
+          title: "Template workflow",
+          subtitle: "The first things to change when you turn this into a real addon.",
+          variant: :h3,
+          class: "mb-0 pb-0"
+        ) %>
+      <% end %>
+
+      <% card.body do %>
+        <ol class="space-y-4 text-sm leading-6 text-[var(--surface-content-color)]">
+          <li>
+            Rename the gem with <code>bin/rename_gem your_addon_name</code> once the engine structure looks right.
+          </li>
+          <li>
+            Replace the sample migration with your addon's real tables and then run <code>rails generate gem_template:migrations</code> in the host app.
+          </li>
+          <li>
+            Register your recordable types in <code>test/dummy/config/initializers/recording_studio.rb</code> and add capabilities only where they are needed.
+          </li>
+          <li>
+            Use this dummy app to check layout, authentication, Tailwind sources, and root recording behavior before shipping the engine.
+          </li>
+        </ol>
+      <% end %>
+    <% end %>
+
+    <div class="flex flex-col gap-6">
+      <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+        <% card.header do %>
+          <%= render FlatPack::PageTitle::Component.new(
+            title: "Workspace state",
+            subtitle: "The seeded Recording Studio baseline for local development.",
+            variant: :h3,
+            class: "mb-0 pb-0"
+          ) %>
+        <% end %>
+
+        <% card.body do %>
+          <dl class="space-y-3 text-sm">
+            <div>
+              <dt class="text-[var(--surface-muted-content-color)]">Workspace</dt>
+              <dd class="font-medium"><%= @workspace&.name || "Not seeded" %></dd>
+            </div>
+            <div>
+              <dt class="text-[var(--surface-muted-content-color)]">Root recording</dt>
+              <dd class="font-mono text-xs"><%= @root_recording&.id || "Missing" %></dd>
+            </div>
+            <div>
+              <dt class="text-[var(--surface-muted-content-color)]">Signed in as</dt>
+              <dd class="font-medium"><%= current_user.email %></dd>
+            </div>
+          </dl>
+        <% end %>
+      <% end %>
+
+      <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+        <% card.header do %>
+          <%= render FlatPack::PageTitle::Component.new(
+            title: "Useful routes",
+            subtitle: "Quick links for checking the mounted engine and local app shell.",
+            variant: :h3,
+            class: "mb-0 pb-0"
+          ) %>
+        <% end %>
+
+        <% card.body do %>
+          <div class="space-y-3 text-sm">
+            <p><strong>App home:</strong> <code>/</code></p>
+            <p><strong>Recording Studio mount:</strong> <code>/recording_studio</code></p>
+            <p><strong>Health check:</strong> <code>/up</code></p>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>
