@@ -1,30 +1,33 @@
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
+# This file should ensure the existence of records required to run the application in every environment.
 
-# Create the admin user
-user = User.find_or_create_by!(email: "admin@admin.com") do |u|
-  u.password = "Password"
-  u.password_confirmation = "Password"
+admin = User.find_or_create_by!(email: "admin@admin.com") do |user|
+  user.password = "Password"
+  user.password_confirmation = "Password"
 end
 
-# Create the workspace recordable
-workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
+viewer = User.find_or_create_by!(email: "viewer@admin.com") do |user|
+  user.password = "Password"
+  user.password_confirmation = "Password"
+end
 
-# Create the root recording
-root_recording = RecordingStudio::Recording.unscoped.find_or_create_by!(
-  recordable: workspace,
-  parent_recording_id: nil
-)
+workspace = Workspace.find_or_create_by!(name: "Accessible Studio Workspace")
+root_recording = RecordingStudio::Recording.unscoped.find_or_create_by!(recordable: workspace, parent_recording_id: nil)
 
-# Grant root-level admin access to the admin user
-Current.actor = user
-access = RecordingStudio::Access.find_or_create_by!(actor: user, role: :admin)
+admin_access = RecordingStudio::Access.find_or_create_by!(actor: admin, role: :admin)
+viewer_access = RecordingStudio::Access.find_or_create_by!(actor: viewer, role: :view)
+
 RecordingStudio::Recording.unscoped.find_or_create_by!(
   root_recording_id: root_recording.id,
   parent_recording_id: root_recording.id,
-  recordable: access
+  recordable: admin_access
+)
+
+RecordingStudio::Recording.unscoped.find_or_create_by!(
+  root_recording_id: root_recording.id,
+  parent_recording_id: root_recording.id,
+  recordable: viewer_access
 )
 
 puts "Seeded: admin@admin.com / Password"
+puts "Seeded: viewer@admin.com / Password"
 puts "Seeded: Workspace '#{workspace.name}' with root recording ##{root_recording.id}"

@@ -1,35 +1,37 @@
 # Dummy App
 
-This Rails app exists to validate the Recording Studio addon template in a real host application.
+This Rails app demonstrates **Recording Studio Accessible** as a separately installed addon on top of RecordingStudio.
 
-## What It Covers
+## What it proves
 
-- Devise authentication with a seeded admin user
-- `Current.actor` wiring for Recording Studio events
-- Root workspace and root recording setup
-- FlatPack layout integration and Tailwind source scanning
-- Mounted `RecordingStudio::Engine` route behavior inside a host app
+- the host app installs `recording_studio_accessible` separately from `recording_studio`
+- the addon mounts its own engine at `/recording_studio_accessible`
+- seeded access data resolves through `RecordingStudio::Services::AccessCheck`
+- the host app continues to use normal RecordingStudio root-recording wiring
 
 ## Quick Start
 
 ```bash
 bundle install
 bin/rails db:setup
+bin/rails tailwindcss:build
 bin/dev
 ```
 
-Then open the app and sign in with:
+Then sign in with:
 
 - Email: `admin@admin.com`
 - Password: `Password`
 
+A second seeded user is also available for the access demo:
+
+- Email: `viewer@admin.com`
+- Password: `Password`
+
 ## Useful Routes
 
-- `/` - dummy app home page and template guidance
-- `/recording_studio` - mounted Recording Studio engine
+- `/` - dummy app summary and seeded access results
+- `/recording_studio` - RecordingStudio mount
+- `/recording_studio_accessible` - addon status/demo page
 - `/users/sign_in` - Devise sign-in page
 - `/up` - Rails health check
-
-## Why This App Exists
-
-Use this app to verify the generated addon experience before renaming the gem or copying patterns into another host app. If a layout, route, asset source, or Recording Studio initializer change breaks here, the template likely needs adjustment before reuse.

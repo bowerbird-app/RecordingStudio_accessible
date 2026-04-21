@@ -1,131 +1,143 @@
-# GemTemplate
+# Recording Studio Accessible
 
-Internal template for building Rails engine addons on top of RecordingStudio.
+Recording Studio Accessible is the optional access-control addon for `RecordingStudio`.
 
-## What's Included
+It extracts the access-specific pieces that currently live in RecordingStudio core into a standalone engine so host apps can install access behavior intentionally instead of assuming it is always present.
 
-- **RecordingStudio** gem installed and configured
-- **Devise** authentication with a pre-seeded admin user
-- **Workspace** root recording set up following RecordingStudio's Quick Start pattern
-- **FlatPack** UI component library for all views
-- **Dummy app** (`test/dummy/`) with a working login screen and FlatPack default sidebar layout for authenticated pages
+## What the gem provides
 
-## Quick Start
+- `RecordingStudio::Access` recordables for root-level and recording-level grants
+- `RecordingStudio::AccessBoundary` recordables for inheritance cutoffs
+- `RecordingStudio::Services::AccessCheck` for role lookup and authorization checks
+- install and migration generators for host apps
+- a dummy Rails app that demonstrates the addon mounted separately from RecordingStudio
 
-### GitHub Codespaces (Recommended)
+## Naming
 
-1. Click **Code** → **Codespaces** → **Create codespace**
-2. Wait for setup to complete
-3. Run:
-   ```bash
-   cd test/dummy
-   bin/rails db:setup
-   bin/dev
-   ```
-4. Open port 3000 — you'll see the login screen
+This repository follows the template rename conventions for **Recording Studio Accessible**:
 
-The dummy app already includes FlatPack generator output (`flat_pack:install` and default sidebar layout scaffold) so authenticated pages render with the FlatPack sidebar shell by default.
+- Product name: `Recording Studio Accessible`
+- Gem name: `recording_studio_accessible`
+- Ruby namespace: `RecordingStudioAccessible`
+- Engine namespace: `RecordingStudioAccessible::Engine`
 
-### Login Credentials
+The extracted public access API remains under `RecordingStudio::*` for compatibility with existing host code.
 
-| Field    | Value             |
-|----------|-------------------|
-| Email    | admin@admin.com   |
-| Password | Password          |
+## Installation
 
-The login form is prefilled with these credentials for fast access.
-
-## Architecture
-
-### Root Recording Pattern
-
-This template follows RecordingStudio's root recording pattern:
-
-- **Workspace** is the top-level recordable
-- A root `RecordingStudio::Recording` wraps the Workspace
-- The admin user has root-level admin access via `RecordingStudio::Access`
-- `Current.actor` is set from `current_user` (Devise) in `ApplicationController`
-
-### Extending RecordingStudio
-
-To add new recordable types:
-
-1. Create your model (e.g., `Page`, `Comment`)
-2. Register it in `config/initializers/recording_studio.rb`:
-   ```ruby
-   RecordingStudio.configure do |config|
-     config.recordable_types = ["Workspace", "YourNewType"]
-   end
-   ```
-3. Leave optional behavior off by default, then opt into capabilities on the specific recordable models that need them:
-   ```ruby
-   class YourNewType < ApplicationRecord
-     include RecordingStudio::Capabilities::Movable.to("Workspace")
-     include RecordingStudio::Capabilities::Copyable.to("Workspace")
-   end
-   ```
-4. If you want per-device root persistence, wire it explicitly in your controller layer:
-   ```ruby
-   class ApplicationController < ActionController::Base
-     include RecordingStudio::Concerns::DeviceSessionConcern
-   end
-   ```
-5. Create recordings under the root:
-   ```ruby
-   root_recording.record(YourNewType) do |record|
-     record.title = "Example"
-   end
-   ```
-
-### Capabilities
-
-This template uses the current RecordingStudio approach: built-in capabilities are off by default and are enabled per recordable type by including the relevant module on the model.
-
-- `movable`
-- `copyable`
-
-Device session persistence is separate from capabilities. It is enabled only when you include `RecordingStudio::Concerns::DeviceSessionConcern` in your controller layer.
-
-Enable behavior intentionally where it belongs:
+Add the gems to your host app:
 
 ```ruby
-class RecordingStudioPage < ApplicationRecord
-  include RecordingStudio::Capabilities::Movable.to("Workspace")
-  include RecordingStudio::Capabilities::Copyable.to("Workspace")
-end
+gem "recording_studio"
+gem "recording_studio_accessible"
+```
 
-class ApplicationController < ActionController::Base
-  include RecordingStudio::Concerns::DeviceSessionConcern
+Then run:
+
+```bash
+bundle install
+bin/rails generate recording_studio_accessible:install
+bin/rails generate recording_studio_accessible:migrations
+bin/rails db:migrate
+```
+
+## Compatibility with current RecordingStudio releases
+
+Current RecordingStudio releases may still ship the built-in access models and service.
+
+When that happens, Recording Studio Accessible runs in **compatibility mode**:
+
+- it does not redefine `RecordingStudio::Access`, `RecordingStudio::AccessBoundary`, or `RecordingStudio::Services::AccessCheck`
+- it still registers the access recordable types with RecordingStudio
+- it skips addon-owned access migrations because RecordingStudio core already owns those tables
+
+When RecordingStudio core stops shipping those constants, this addon becomes the source of truth for the extracted access implementation.
+
+## Setup notes
+
+### RecordingStudio configuration
+
+Your host app still configures RecordingStudio the normal way:
+
+```ruby
+RecordingStudio.configure do |config|
+  config.recordable_types = ["Workspace"]
+  config.actor = -> { Current.actor }
 end
 ```
 
-### FlatPack UI Components
+The addon automatically registers `RecordingStudio::Access` and `RecordingStudio::AccessBoundary` when it loads.
 
-All views use FlatPack ViewComponents. Available components include:
+### Granting access
 
-- `FlatPack::Button::Component` — Buttons (`:primary`, `:secondary`, `:ghost`)
-- `FlatPack::Card::Component` — Cards (`:default`, `:elevated`, `:outlined`)
-- `FlatPack::Alert::Component` — Alerts (`:success`, `:error`, `:warning`, `:info`)
-- `FlatPack::Badge::Component` — Status badges
-- `FlatPack::Table::Component` — Data tables
-- `FlatPack::TextInput::Component`, `EmailInput`, `PasswordInput` — Form inputs
-- `FlatPack::Breadcrumb::Component` — Navigation breadcrumbs
-- `FlatPack::Navbar::Component` — Navigation sidebar
+```ruby
+access = RecordingStudio::Access.create!(actor: user, role: :view)
 
-See the [FlatPack README](https://github.com/bowerbird-app/flatpack) for full documentation.
+RecordingStudio::Recording.create!(
+  root_recording: root_recording,
+  recordable: access,
+  parent_recording: root_recording
+)
+```
 
-## Tech Stack
+### Checking access
 
-| Component       | Version |
-|-----------------|---------|
-| Ruby            | 3.3+    |
-| Rails           | 8.1+    |
-| PostgreSQL      | 16      |
-| TailwindCSS     | 4       |
-| RecordingStudio | v0.1.0-alpha (pinned in `test/dummy/Gemfile`) |
-| FlatPack        | GitHub source (`bowerbird-app/flatpack`) |
-| Devise          | latest  |
+```ruby
+RecordingStudio::Services::AccessCheck.role_for(actor: user, recording: root_recording)
+RecordingStudio::Services::AccessCheck.allowed?(actor: user, recording: root_recording, role: :edit)
+```
+
+## Dummy app demo
+
+The dummy app lives in `test/dummy/` and mounts both RecordingStudio and Recording Studio Accessible.
+
+Run it with:
+
+```bash
+cd test/dummy
+bundle install
+bin/rails db:setup
+bin/rails tailwindcss:build
+bin/dev
+```
+
+Then sign in with:
+
+- Email: `admin@admin.com`
+- Password: `Password`
+
+Useful routes:
+
+- `/` - dummy app summary with seeded access results
+- `/recording_studio` - RecordingStudio mount
+- `/recording_studio_accessible` - addon status/demo page
+
+The demo seeds:
+
+- one workspace root recording
+- an admin user with root admin access
+- a viewer user with root view access
+
+That makes it obvious that the access feature is appearing because this addon is installed alongside RecordingStudio.
+
+## Running tests
+
+From the repository root:
+
+```bash
+bundle exec rake test
+bundle exec rake app:test
+bundle exec rubocop
+```
+
+If dummy app boot, assets, or migrations change, also run:
+
+```bash
+cd test/dummy
+bin/rails db:migrate RAILS_ENV=test
+bin/rails tailwindcss:build
+```
 
 ## Documentation
 
-The original gem template documentation is preserved in `docs/gem_template/` as architectural reference material. Use it as background on the engine conventions; the README and dummy app are the source of truth for the Recording Studio addon workflow.
+The original template architecture docs remain in `docs/gem_template/` as reference material.

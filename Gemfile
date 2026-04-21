@@ -2,8 +2,10 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in gem_template.gemspec
+# Specify your gem's dependencies in recording_studio_accessible.gemspec
 gemspec
+
+gem "recording_studio", github: "bowerbird-app/RecordingStudio"
 
 gem "puma"
 gem "sprockets-rails"
