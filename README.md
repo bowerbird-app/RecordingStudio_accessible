@@ -108,15 +108,15 @@ Then sign in with:
 
 Useful routes:
 
-- `/` - dummy app summary with seeded access results
-- `/recording_studio` - RecordingStudio mount
+- `/` - dummy app demo with seeded folders, pages, cards, and access results
 - `/recording_studio_accessible` - addon status/demo page
 
 The demo seeds:
 
 - one workspace root recording
-- an admin user with root admin access
-- a viewer user with root view access
+- folders and pages as recordable demo content
+- cards attached to seeded pages
+- multiple users with root, folder, page, and no-access states
 
 That makes it obvious that the access feature is appearing because this addon is installed alongside RecordingStudio.
 

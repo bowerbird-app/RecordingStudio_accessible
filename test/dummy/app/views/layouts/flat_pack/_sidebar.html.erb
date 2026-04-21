@@ -2,7 +2,7 @@
   <% sidebar.header do %>
     <%= render FlatPack::Sidebar::Header::Component.new(
       brand_abbr: "RS",
-      title: "Addon Template",
+      title: "Accessible",
       subtitle: "Recording Studio"
     ) %>
   <% end %>
@@ -14,19 +14,6 @@
         href: "/",
         icon: :home
       ) %>
-
-      <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Recording Studio",
-        href: "/recording_studio",
-        icon: :folder
-      ) %>
-
-      <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Health",
-        href: "/up",
-        icon: :activity
-      ) %>
-
     </nav>
   <% end %>
 

@@ -15,12 +15,6 @@
 
   <% end %>
 
-  <% nav.center do %>
-    <div class="hidden text-sm font-medium text-(--surface-muted-content-color) md:block">
-      Recording Studio addon template
-    </div>
-  <% end %>
-
   <% nav.right do %>
     <% if user_signed_in? %>
       <%= render FlatPack::Avatar::Component.new(

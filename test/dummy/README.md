@@ -7,7 +7,7 @@ This Rails app demonstrates **Recording Studio Accessible** as a separately inst
 - the host app installs `recording_studio_accessible` separately from `recording_studio`
 - the addon mounts its own engine at `/recording_studio_accessible`
 - seeded access data resolves through `RecordingStudio::Services::AccessCheck`
-- the host app continues to use normal RecordingStudio root-recording wiring
+- the host app uses folders and pages as recordable demo content
 
 ## Quick Start
 
@@ -23,15 +23,17 @@ Then sign in with:
 - Email: `admin@admin.com`
 - Password: `Password`
 
-A second seeded user is also available for the access demo:
+Additional seeded users:
 
-- Email: `viewer@admin.com`
-- Password: `Password`
+- `editor@admin.com`
+- `viewer@admin.com`
+- `page_owner@admin.com`
+- `outsider@admin.com`
+
+All use `Password`.
 
 ## Useful Routes
 
-- `/` - dummy app summary and seeded access results
-- `/recording_studio` - RecordingStudio mount
+- `/` - dummy app demo with seeded folders, pages, cards, and access results
 - `/recording_studio_accessible` - addon status/demo page
 - `/users/sign_in` - Devise sign-in page
-- `/up` - Rails health check

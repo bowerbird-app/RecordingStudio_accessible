@@ -1,44 +1,58 @@
 <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: @workspace&.name || "Recording Studio Accessible demo",
-    subtitle: "This dummy app shows access functionality arriving through the separately installed Recording Studio Accessible addon.",
+    title: "Accessible",
+    subtitle: "Seeded folders, pages, cards, and user grants demonstrate how this addon applies access throughout the dummy app.",
     variant: :h1
   ) %>
-
-  <div class="flex flex-wrap gap-2">
-    <%= render FlatPack::Badge::Component.new(text: "Addon gem in Gemfile", style: :info, size: :sm) %>
-    <%= render FlatPack::Badge::Component.new(text: "Mode: #{@integration_mode}", style: (@integration_mode == :addon ? :success : :warning), size: :sm) %>
-    <%= render FlatPack::Badge::Component.new(text: "RecordingStudio mounted", style: :success, size: :sm) %>
-  </div>
 
   <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
     <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
       <% card.header do %>
         <%= render FlatPack::PageTitle::Component.new(
-          title: "Access flow demo",
-          subtitle: "Seeded roles resolved through RecordingStudio::Services::AccessCheck.",
+          title: @workspace&.name || "Seeded structure pending",
+          subtitle: "Folders and pages are recordable. Cards provide page content for the access demo.",
           variant: :h3,
           class: "mb-0 pb-0"
         ) %>
       <% end %>
 
       <% card.body do %>
-        <dl class="space-y-4 text-sm leading-6 text-[var(--surface-content-color)]">
-          <div>
-            <dt class="text-[var(--surface-muted-content-color)]">Workspace</dt>
-            <dd class="font-medium"><%= @workspace&.name || "Not seeded" %></dd>
-          </div>
-          <div>
-            <dt class="text-[var(--surface-muted-content-color)]">Root recording</dt>
-            <dd class="font-mono text-xs"><%= @root_recording&.id || "Missing" %></dd>
-          </div>
-          <% @access_rows.each do |row| %>
-            <div>
-              <dt class="text-[var(--surface-muted-content-color)]"><%= row[:label] %></dt>
-              <dd class="font-medium">role=<%= row[:role] || "none" %>, allowed=<%= row[:allowed] %></dd>
-            </div>
+        <div class="space-y-5 text-sm leading-6 text-[var(--surface-content-color)]">
+          <% @demo_sections.each do |section| %>
+            <section class="space-y-3 rounded-lg border border-[var(--surface-border-color)] p-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p class="font-semibold"><%= section[:folder].name %></p>
+                  <p class="text-[var(--surface-muted-content-color)]"><%= section[:folder].summary %></p>
+                </div>
+                <%= render FlatPack::Badge::Component.new(text: "Folder", style: :info, size: :sm) %>
+              </div>
+
+              <div class="space-y-3">
+                <% section[:pages].each do |page_section| %>
+                  <div class="rounded-lg bg-[var(--surface-subtle-background-color)] p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p class="font-medium"><%= page_section[:page].title %></p>
+                        <p class="text-[var(--surface-muted-content-color)]"><%= page_section[:page].summary %></p>
+                      </div>
+                      <%= render FlatPack::Badge::Component.new(text: "Page", style: :success, size: :sm) %>
+                    </div>
+
+                    <ul class="mt-3 space-y-2">
+                      <% page_section[:cards].each do |card_record| %>
+                        <li class="rounded-md border border-[var(--surface-border-color)] px-3 py-2">
+                          <p class="font-medium"><%= card_record.title %></p>
+                          <p class="text-[var(--surface-muted-content-color)]"><%= card_record.body %></p>
+                        </li>
+                      <% end %>
+                    </ul>
+                  </div>
+                <% end %>
+              </div>
+            </section>
           <% end %>
-        </dl>
+        </div>
       <% end %>
     <% end %>
 
@@ -46,27 +60,8 @@
       <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
         <% card.header do %>
           <%= render FlatPack::PageTitle::Component.new(
-            title: "Separate installation",
-            subtitle: "Why this proves access is addon-owned.",
-            variant: :h3,
-            class: "mb-0 pb-0"
-          ) %>
-        <% end %>
-
-        <% card.body do %>
-          <ol class="space-y-3 text-sm leading-6 list-decimal pl-5">
-            <li>The host app installs <code>recording_studio_accessible</code> separately from <code>recording_studio</code>.</li>
-            <li>The addon is mounted at <code>/recording_studio_accessible</code>.</li>
-            <li>If the gem is removed, the addon route and this seeded access demo disappear with it.</li>
-          </ol>
-        <% end %>
-      <% end %>
-
-      <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
-        <% card.header do %>
-          <%= render FlatPack::PageTitle::Component.new(
-            title: "Useful routes",
-            subtitle: "Quick links for the host app and addon pages.",
+            title: "Demo accounts",
+            subtitle: "Every seeded user signs in with Password.",
             variant: :h3,
             class: "mb-0 pb-0"
           ) %>
@@ -74,9 +69,50 @@
 
         <% card.body do %>
           <div class="space-y-3 text-sm">
-            <p><strong>App home:</strong> <code>/</code></p>
-            <p><strong>Recording Studio mount:</strong> <code>/recording_studio</code></p>
-            <p><strong>Addon mount:</strong> <code>/recording_studio_accessible</code></p>
+            <% @demo_users.each do |user| %>
+              <div class="rounded-lg border border-[var(--surface-border-color)] px-4 py-3">
+                <p class="font-medium"><%= user.email %></p>
+                <p class="text-[var(--surface-muted-content-color)]">Password</p>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+
+      <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+        <% card.header do %>
+          <%= render FlatPack::PageTitle::Component.new(
+            title: "Access coverage",
+            subtitle: "Roles resolve through RecordingStudio::Services::AccessCheck for every seeded folder and page.",
+            variant: :h3,
+            class: "mb-0 pb-0"
+          ) %>
+        <% end %>
+
+        <% card.body do %>
+          <div class="space-y-4 text-sm">
+            <% @access_matrix.each do |row| %>
+              <div class="rounded-lg border border-[var(--surface-border-color)] px-4 py-3">
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p class="font-medium"><%= row[:user].email %></p>
+                  <% if row[:user] == current_user %>
+                    <%= render FlatPack::Badge::Component.new(text: "Signed in", style: :warning, size: :sm) %>
+                  <% end %>
+                </div>
+
+                <dl class="space-y-2">
+                  <% row[:resources].each do |resource| %>
+                    <div class="flex items-center justify-between gap-3">
+                      <dt class="text-[var(--surface-muted-content-color)]"><%= resource[:label] %></dt>
+                      <dd class="font-medium">
+                        role=<%= resource[:role] || "none" %>,
+                        allowed=<%= resource[:allowed] %>
+                      </dd>
+                    </div>
+                  <% end %>
+                </dl>
+              </div>
+            <% end %>
           </div>
         <% end %>
       <% end %>
