@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "active_record"
 
 class EngineTest < Minitest::Test
   def setup
@@ -53,6 +54,25 @@ class EngineTest < Minitest::Test
 
     assert warned
     assert registered
+  end
+
+  def test_load_missing_constants_initializer_loads_extracted_models_against_top_level_application_record
+    return if RecordingStudio.const_defined?(:Access, false)
+
+    application_record = Class.new(::ActiveRecord::Base) do
+      self.abstract_class = true
+    end
+
+    Object.const_set(:ApplicationRecord, application_record)
+
+    find_initializer("recording_studio_accessible.load_missing_constants").block.call
+
+    assert_equal application_record, RecordingStudio::Access.superclass
+    assert_equal application_record, RecordingStudio::AccessBoundary.superclass
+  ensure
+    RecordingStudio.send(:remove_const, :AccessBoundary) if RecordingStudio.const_defined?(:AccessBoundary, false)
+    RecordingStudio.send(:remove_const, :Access) if RecordingStudio.const_defined?(:Access, false)
+    Object.send(:remove_const, :ApplicationRecord) if Object.const_defined?(:ApplicationRecord, false) && Object.const_get(:ApplicationRecord) == application_record
   end
 
   private

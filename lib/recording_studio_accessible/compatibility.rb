@@ -28,6 +28,14 @@ module RecordingStudioAccessible
         addon_provides_access? ? :addon : :core
       end
 
+      def load_missing_constants!(app = nil)
+        ensure_application_record_loaded!(app)
+
+        missing_constant_paths.each do |path|
+          require path
+        end
+      end
+
       def ensure_recordable_types_registered!
         return unless defined?(::RecordingStudio)
 
@@ -73,6 +81,16 @@ module RecordingStudioAccessible
         true
       rescue NameError
         false
+      end
+
+      def ensure_application_record_loaded!(app)
+        return if defined?(::ApplicationRecord)
+        return unless app.respond_to?(:paths)
+
+        app.paths["app/models"].existent.each do |models_path|
+          application_record_path = File.join(models_path, "application_record.rb")
+          require application_record_path if File.file?(application_record_path)
+        end
       end
     end
   end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module RecordingStudio
-  class Access < ApplicationRecord
+  class Access < ::ApplicationRecord
     self.table_name = "recording_studio_accesses"
 
     include RecordingStudio::Recordable

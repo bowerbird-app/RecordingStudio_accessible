@@ -13,10 +13,10 @@ This Rails app demonstrates **Recording Studio Accessible** as a separately inst
 
 ```bash
 bundle install
-bin/rails db:setup
-bin/rails tailwindcss:build
 bin/dev
 ```
+
+`bin/dev` runs `bin/rails db:prepare` before starting Rails and Tailwind, so it will create or migrate the dummy database when needed.
 
 Then sign in with:
 

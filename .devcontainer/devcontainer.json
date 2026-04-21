@@ -25,19 +25,12 @@
           "diagnostics": true
         }
       }
-    },
-    "codespaces": {
-      "repositories": {
-        "bowerbird-app/gem_docs": {
-          "permissions": "read-all"
-        }
-      }
     }
   },
   "remoteUser": "root",
   "features": {},
-  "postCreateCommand": "git lfs install && npm install -g playwright && playwright install --with-deps && cd test/dummy && bundle install && bundle exec rails db:prepare && bundle exec rails tailwindcss:build",
-  "env": {
+  "postCreateCommand": "git lfs install && bundle config set --local path '/usr/local/bundle' && bundle install && cd test/dummy && bundle config set --local path '/usr/local/bundle' && bundle install && bundle exec rails db:prepare && bundle exec rails db:seed && bundle exec rails tailwindcss:build",
+  "containerEnv": {
     "CODESPACES": "true"
   }
 }

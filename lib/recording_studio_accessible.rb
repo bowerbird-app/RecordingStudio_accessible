@@ -7,10 +7,6 @@ require "recording_studio_accessible/configuration"
 require "recording_studio_accessible/compatibility"
 require "recording_studio_accessible/services/base_service"
 
-RecordingStudioAccessible::Compatibility.missing_constant_paths.each do |path|
-  require path
-end
-
 require "recording_studio_accessible/engine"
 
 module RecordingStudioAccessible

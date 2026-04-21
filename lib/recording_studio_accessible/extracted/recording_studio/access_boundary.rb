@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module RecordingStudio
-  class AccessBoundary < ApplicationRecord
+  class AccessBoundary < ::ApplicationRecord
     self.table_name = "recording_studio_access_boundaries"
 
     include RecordingStudio::Recordable
