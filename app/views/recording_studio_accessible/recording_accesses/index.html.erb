@@ -1,0 +1,61 @@
+<%= render FlatPack::Breadcrumb::Component.new(class: "mb-4") do |breadcrumb| %>
+  <% breadcrumb.item(text: "Back", href: request.referer || main_app.root_path, icon: "chevron-left") %>
+  <% breadcrumb.item(text: @recording_label) %>
+<% end %>
+
+<%= render FlatPack::PageTitle::Component.new(
+  title: "Manage access",
+  subtitle: @recording_label,
+  variant: :h1
+) %>
+
+<div class="mb-6 flex flex-wrap items-center gap-3">
+  <%= render FlatPack::Button::Component.new(
+    text: "Add access",
+    style: :primary,
+    size: :md,
+    url: new_recording_access_path(@recording)
+  ) %>
+</div>
+
+<% if @direct_access_rows.any? %>
+  <%= render FlatPack::Table::Component.new(data: @direct_access_rows) do |table| %>
+    <% table.column(title: "Person") { |row| access_person_cell(row) } %>
+    <% table.column(title: "Actor type") { |row| access_actor_type_cell(row) } %>
+    <% table.column(title: "Role") { |row| access_role_cell(row) } %>
+    <% table.column(title: "Actions") { |row| access_actions_cell(@recording, row) } %>
+  <% end %>
+<% else %>
+  <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+    <% card.body(class: "grid gap-3 justify-items-start") do %>
+      <%= render FlatPack::SectionTitle::Component.new(
+        title: "No direct grants yet",
+        subtitle: "Use Add access to create the first direct access entry for this recording"
+      ) %>
+      <%= render FlatPack::Button::Component.new(
+        text: "Add access",
+        style: :primary,
+        size: :sm,
+        url: new_recording_access_path(@recording)
+      ) %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<% if @inherited_access_rows.any? %>
+  <div class="mt-8 grid gap-4">
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: "Other people with access",
+      subtitle: "Access granted elsewhere",
+      anchor_link: true,
+      anchor_id: "other-people-with-access"
+    ) %>
+
+    <%= render FlatPack::Table::Component.new(data: @inherited_access_rows) do |table| %>
+      <% table.column(title: "Person") { |row| access_person_cell(row) } %>
+      <% table.column(title: "Actor type") { |row| access_actor_type_cell(row) } %>
+      <% table.column(title: "Access point") { |row| inherited_access_source_cell(row) } %>
+      <% table.column(title: "Role") { |row| inherited_access_source_role_cell(row) } %>
+    <% end %>
+  </div>
+<% end %>

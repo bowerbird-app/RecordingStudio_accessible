@@ -2,6 +2,12 @@
 
 PASSWORD = "Password"
 
+def demo_recording_scope(root_recording)
+  base_scope = RecordingStudio::Recording.unscoped
+
+  base_scope.where(id: root_recording.id).or(base_scope.where(root_recording_id: root_recording.id))
+end
+
 def upsert_user(email)
   user = User.find_or_initialize_by(email: email)
   user.password = PASSWORD if user.new_record?
@@ -53,6 +59,62 @@ def ensure_access_recording(actor:, role:, parent_recording:, root_recording:)
   )
 end
 
+def delete_orphaned_access(access_id)
+  return unless access_id
+
+  return if RecordingStudio::Recording.unscoped.where(recordable_type: "RecordingStudio::Access",
+                                                      recordable_id: access_id).exists?
+
+  RecordingStudio::Access.where(id: access_id).delete_all
+end
+
+def delete_recording_and_orphaned_access(recording)
+  access_id = recording.recordable_type == "RecordingStudio::Access" ? recording.recordable_id : nil
+
+  recording.delete
+  delete_orphaned_access(access_id)
+end
+
+def remove_invalid_demo_recordings(root_recording)
+  demo_recording_scope(root_recording)
+    .where.not(id: root_recording.id)
+    .order(created_at: :desc, id: :desc)
+    .find_each do |recording|
+      next if recording.recordable.present?
+
+      delete_recording_and_orphaned_access(recording)
+    end
+end
+
+def sync_access_recordings(parent_recording:, root_recording:, grants:)
+  desired_keys = grants.map { |grant| [grant.fetch(:actor).class.name, grant.fetch(:actor).id, grant.fetch(:role).to_s] }
+  seen_keys = {}
+
+  RecordingStudio::Recording.unscoped
+                           .where(parent_recording_id: parent_recording.id,
+                                  root_recording_id: root_recording.id,
+                                  recordable_type: "RecordingStudio::Access",
+                                  trashed_at: nil)
+                           .order(created_at: :asc, id: :asc)
+                           .find_each do |recording|
+    access = recording.recordable
+    key = access && [access.actor_type, access.actor_id, access.role.to_s]
+    keep = key && access.actor.present? && desired_keys.include?(key) && !seen_keys[key]
+
+    if keep
+      seen_keys[key] = true
+      next
+    end
+
+    delete_recording_and_orphaned_access(recording)
+  end
+
+  grants.each do |grant|
+    ensure_access_recording(actor: grant.fetch(:actor), role: grant.fetch(:role),
+                            parent_recording: parent_recording, root_recording: root_recording)
+  end
+end
+
 users = {
   admin: upsert_user("admin@admin.com"),
   editor: upsert_user("editor@admin.com"),
@@ -63,6 +125,8 @@ users = {
 
 workspace = Workspace.find_or_create_by!(name: "Accessible Demo Workspace")
 root_recording = ensure_root_recording(workspace)
+
+remove_invalid_demo_recordings(root_recording)
 
 client_onboarding = upsert_folder(
   workspace: workspace,
@@ -139,13 +203,37 @@ ensure_child_recording(
   root_recording: root_recording
 )
 
-ensure_access_recording(actor: users[:admin], role: :admin, parent_recording: root_recording, root_recording: root_recording)
-ensure_access_recording(actor: users[:editor], role: :edit, parent_recording: client_onboarding_recording,
-                        root_recording: root_recording)
-ensure_access_recording(actor: users[:viewer], role: :view, parent_recording: operations_recording,
-                        root_recording: root_recording)
-ensure_access_recording(actor: users[:page_owner], role: :edit, parent_recording: accessibility_checklist_recording,
-                        root_recording: root_recording)
+sync_access_recordings(
+  parent_recording: root_recording,
+  root_recording: root_recording,
+  grants: [
+    { actor: users[:admin], role: :admin }
+  ]
+)
+
+sync_access_recordings(
+  parent_recording: client_onboarding_recording,
+  root_recording: root_recording,
+  grants: [
+    { actor: users[:editor], role: :edit }
+  ]
+)
+
+sync_access_recordings(
+  parent_recording: operations_recording,
+  root_recording: root_recording,
+  grants: [
+    { actor: users[:viewer], role: :view }
+  ]
+)
+
+sync_access_recordings(
+  parent_recording: accessibility_checklist_recording,
+  root_recording: root_recording,
+  grants: [
+    { actor: users[:page_owner], role: :edit }
+  ]
+)
 
 users.each_value do |user|
   puts "Seeded: #{user.email} / #{PASSWORD}"

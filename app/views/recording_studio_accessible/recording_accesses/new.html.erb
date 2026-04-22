@@ -1,0 +1,8 @@
+<%= render "form",
+           title: "New access",
+           form_url: recording_accesses_path(@recording),
+           form_method: :post,
+           submit_label: "Create access",
+           show_actor_email_input: true,
+           show_recording_card: false,
+           wrap_form_card: false %>

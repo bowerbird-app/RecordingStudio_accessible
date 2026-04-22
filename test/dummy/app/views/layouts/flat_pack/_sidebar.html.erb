@@ -14,6 +14,21 @@
         href: "/",
         icon: :home
       ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Overview",
+        href: "/recording_studio_accessible/overview",
+        icon: :question
+      ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Methods",
+        href: "/recording_studio_accessible/methods",
+        icon: :menu
+      ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Boundaries",
+        href: "/recording_studio_accessible/boundaries",
+        icon: :folder
+      ) %>
     </nav>
   <% end %>
 
@@ -21,7 +36,7 @@
     <%= render FlatPack::Sidebar::Footer::Component.new(class: "text-sm text-[var(--surface-muted-content-color)]") do %>
       <%= render FlatPack::Sidebar::Item::Component.new(
         label: "Sign out",
-        href: destroy_user_session_path,
+        href: main_app.destroy_user_session_path,
         icon: :lock,
         class: "mx-0",
         data: { turbo_method: :delete }

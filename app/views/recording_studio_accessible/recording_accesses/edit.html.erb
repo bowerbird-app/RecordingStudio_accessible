@@ -1,0 +1,8 @@
+<%= render "form",
+           title: "Edit access",
+           form_url: recording_access_path(@recording, @access_recording),
+           form_method: :patch,
+           submit_label: "Update access",
+           show_actor_email_input: false,
+           show_recording_card: false,
+           wrap_form_card: false %>

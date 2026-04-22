@@ -6,6 +6,9 @@ require "recording_studio_accessible/hooks"
 require "recording_studio_accessible/configuration"
 require "recording_studio_accessible/compatibility"
 require "recording_studio_accessible/services/base_service"
+require "recording_studio_accessible/services/grant_recording_access"
+require "recording_studio_accessible/services/update_recording_access"
+require "recording_studio_accessible/services/revoke_recording_access"
 
 require "recording_studio_accessible/engine"
 

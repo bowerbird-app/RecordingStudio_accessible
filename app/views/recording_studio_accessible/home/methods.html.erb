@@ -1,0 +1,21 @@
+<div class="mx-auto w-full max-w-6xl">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Methods",
+    subtitle: "Access APIs provided by this gem",
+    variant: :h1
+  ) %>
+
+  <div class="mt-6 grid gap-6">
+    <% @method_sections.each_with_index do |section, index| %>
+      <section>
+        <%= render FlatPack::SectionTitle::Component.new(
+          title: section[:title],
+          anchor_link: true,
+          anchor_id: "method-#{index + 1}"
+        ) %>
+
+        <pre class="overflow-x-auto rounded-lg border border-[var(--surface-border-color)] bg-[var(--surface-muted-background-color)] p-4 text-sm"><code><%= section[:code] %></code></pre>
+      </section>
+    <% end %>
+  </div>
+</div>

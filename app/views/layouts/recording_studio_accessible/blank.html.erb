@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html class="h-full overflow-hidden overscroll-none">
+  <head>
+    <title><%= content_for(:title) || "Recording Studio Accessible" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Recording Studio Accessible">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "flat_pack/variables", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "flat_pack/application", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="m-0 h-full overflow-auto overscroll-none bg-(--surface-page-background-color) text-(--surface-content-color)">
+    <%= render "layouts/icon_sprite" %>
+
+    <main class="mx-auto w-full max-w-6xl px-6 pb-6 pt-16">
+      <% flash.each do |level, message| %>
+        <% next if message.blank? %>
+
+        <div class="mb-4">
+          <%= render FlatPack::Alert::Component.new(
+            description: message,
+            style: recording_studio_accessible_flash_style(level)
+          ) %>
+        </div>
+      <% end %>
+
+      <%= yield %>
+    </main>
+  </body>
+</html>

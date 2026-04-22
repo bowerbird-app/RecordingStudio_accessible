@@ -1,0 +1,34 @@
+<div class="mx-auto w-full max-w-6xl">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: @user.email,
+    subtitle: "Items this user can access",
+    variant: :h1
+  ) %>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Accessible items",
+    anchor_link: true,
+    anchor_id: "accessible-items"
+  ) %>
+
+  <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md, align: :start, class: "w-full") do %>
+    <% @accessible_items.each do |item| %>
+      <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+        <% card.body(class: "grid gap-2 justify-items-start") do %>
+          <%= render FlatPack::PageTitle::Component.new(
+            title: item[:label],
+            subtitle: item[:root_label],
+            variant: :h3,
+            class: "mb-0 pb-0"
+          ) %>
+          <%= render FlatPack::Badge::Component.new(text: item[:recordable_type], style: :default, size: :sm) %>
+          <%= render FlatPack::Chip::Component.new(
+            text: "#{item[:role]} access",
+            style: :default,
+            size: :sm
+          ) %>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

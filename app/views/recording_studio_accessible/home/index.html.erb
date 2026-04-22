@@ -1,27 +1,39 @@
-<section>
-  <h1>Recording Studio Accessible</h1>
-  <p>Optional access-control addon for RecordingStudio hosts.</p>
+<div class="mx-auto w-full max-w-6xl">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Recording Studio Accessible Demo",
+    subtitle: "Optional access-control addon",
+    variant: :h1
+  ) %>
 
-  <p>Integration mode: <strong><%= @integration_mode %></strong></p>
+  <div class="mt-6">
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: "Access check snapshot",
+      subtitle: "Demo of how access works for the seeded workspace",
+      anchor_link: true,
+      anchor_id: "access-check-snapshot"
+    ) %>
 
-  <h2>What this addon provides</h2>
-  <ul>
-    <li><code>RecordingStudio::Access</code> and <code>RecordingStudio::AccessBoundary</code> recordables</li>
-    <li><code>RecordingStudio::Services::AccessCheck</code> role lookup and authorization helpers</li>
-    <li>Install and migration generators for host applications</li>
-  </ul>
+    <div class="grid gap-3">
+      <p><strong>Integration mode:</strong> <%= @integration_mode %></p>
+      <p><strong>Workspace:</strong> <%= @workspace&.name || "Not available" %></p>
+      <p><strong>Root recording:</strong> <%= @root_recording&.id || "Not available" %></p>
+    </div>
 
-  <h2>Dummy app access flow</h2>
-  <dl>
-    <dt>Workspace</dt>
-    <dd><%= @workspace&.name || "Not seeded" %></dd>
-    <dt>Root recording</dt>
-    <dd><%= @root_recording&.id || "Missing" %></dd>
-    <% @access_rows.each do |row| %>
-      <dt><%= row[:label] %></dt>
-      <dd>role=<%= row[:role] || "none" %>, allowed=<%= row[:allowed] %></dd>
-    <% end %>
-  </dl>
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: "People with workspace access",
+      anchor_link: true,
+      anchor_id: "people-with-workspace-access"
+    ) %>
 
-  <p>This route is optional and is not mounted by the installer unless the host app explicitly asks for it.</p>
-</section>
+    <div class="grid gap-3">
+      <% @access_rows.each do |row| %>
+        <p>
+          <strong><%= row[:label] %></strong>
+          (<%= row[:role] || "none" %>)
+          -
+          <%= row[:allowed] ? "Allowed" : "Denied" %>
+        </p>
+      <% end %>
+    </div>
+  </div>
+</div>

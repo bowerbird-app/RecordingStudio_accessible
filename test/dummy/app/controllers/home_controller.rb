@@ -5,6 +5,9 @@ class HomeController < ApplicationController
     @demo_sections = build_demo_sections
     @demo_users = load_demo_users
     @access_matrix = build_access_matrix
+    @workspace_access_rows = build_workspace_access_rows
+    @access_rows_by_label = build_access_rows_by_label
+    @direct_access_counts_by_recording_id = build_direct_access_counts_by_recording_id
   end
 
   private
@@ -59,6 +62,52 @@ class HomeController < ApplicationController
         user: user,
         resources: resources.map { |resource| access_row(user: user, **resource) }
       }
+    end
+  end
+
+  def build_workspace_access_rows
+    return [] unless @workspace
+
+    @access_matrix.filter_map do |row|
+      workspace_access = row[:resources].find { |resource| resource[:label] == @workspace.name }
+      next unless workspace_access&.dig(:allowed)
+
+      {
+        user: row[:user],
+        email: row[:user].email,
+        role: workspace_access[:role]
+      }
+    end
+  end
+
+  def build_access_rows_by_label
+    @access_matrix.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |row, grouped_rows|
+      row[:resources].each do |resource|
+        next unless resource[:allowed]
+
+        grouped_rows[resource[:label]] << {
+          user: row[:user],
+          email: row[:user].email,
+          role: resource[:role]
+        }
+      end
+    end
+  end
+
+  def build_direct_access_counts_by_recording_id
+    recordings = @demo_sections.flat_map do |section|
+      [section[:folder_recording], *section[:pages].map { |page_section| page_section[:page_recording] }]
+    end.compact
+
+    recordings.each_with_object({}) do |recording, counts|
+      actor_keys = RecordingStudio::Services::AccessCheck.access_recordings_for(recording).filter_map do |access_recording|
+        actor = access_recording.recordable.actor
+        next unless actor
+
+        [actor.class.base_class.name, actor.id]
+      end
+
+      counts[recording.id] = actor_keys.uniq.count
     end
   end
 

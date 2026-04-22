@@ -1,0 +1,19 @@
+<div class="mx-auto w-full max-w-6xl">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Overview",
+    subtitle: "How access is structured",
+    variant: :h1
+  ) %>
+
+  <section class="mt-6">
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: "Add access to something",
+      subtitle: "Access is granted by adding a child recording using an access recordable."
+    ) %>
+
+    <%= render FlatPack::CodeBlock::Component.new(
+      code: "- Page\n-- Access",
+      separated: false
+    ) %>
+  </section>
+</div>

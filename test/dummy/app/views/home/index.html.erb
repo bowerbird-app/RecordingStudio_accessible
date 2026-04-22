@@ -1,121 +1,93 @@
-<div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+<div class="mx-auto w-full max-w-6xl">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "Accessible",
-    subtitle: "Seeded folders, pages, cards, and user grants demonstrate how this addon applies access throughout the dummy app.",
+    title: "Recording Studio Accessible Demo",
+    subtitle: "Demo of how access works",
     variant: :h1
   ) %>
 
-  <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
-      <% card.header do %>
-        <%= render FlatPack::PageTitle::Component.new(
-          title: @workspace&.name || "Seeded structure pending",
-          subtitle: "Folders and pages are recordable. Cards provide page content for the access demo.",
-          variant: :h3,
-          class: "mb-0 pb-0"
+  <div class="mt-6">
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: @workspace ? "Workspace: #{@workspace.name}" : "Workspace",
+      subtitle: "People with workspace access",
+      anchor_link: true,
+      anchor_id: "workspace-access"
+    ) %>
+
+    <% if @root_recording %>
+      <div class="mb-6">
+        <%= render FlatPack::Button::Component.new(
+          text: "Manage workspace access",
+          style: :primary,
+          size: :md,
+          url: recording_studio_accessible.recording_accesses_path(@root_recording)
         ) %>
-      <% end %>
+      </div>
+    <% end %>
 
-      <% card.body do %>
-        <div class="space-y-5 text-sm leading-6 text-[var(--surface-content-color)]">
-          <% @demo_sections.each do |section| %>
-            <section class="space-y-3 rounded-lg border border-[var(--surface-border-color)] p-4">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p class="font-semibold"><%= section[:folder].name %></p>
-                  <p class="text-[var(--surface-muted-content-color)]"><%= section[:folder].summary %></p>
-                </div>
-                <%= render FlatPack::Badge::Component.new(text: "Folder", style: :info, size: :sm) %>
-              </div>
-
-              <div class="space-y-3">
-                <% section[:pages].each do |page_section| %>
-                  <div class="rounded-lg bg-[var(--surface-subtle-background-color)] p-4">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p class="font-medium"><%= page_section[:page].title %></p>
-                        <p class="text-[var(--surface-muted-content-color)]"><%= page_section[:page].summary %></p>
-                      </div>
-                      <%= render FlatPack::Badge::Component.new(text: "Page", style: :success, size: :sm) %>
-                    </div>
-
-                    <ul class="mt-3 space-y-2">
-                      <% page_section[:cards].each do |card_record| %>
-                        <li class="rounded-md border border-[var(--surface-border-color)] px-3 py-2">
-                          <p class="font-medium"><%= card_record.title %></p>
-                          <p class="text-[var(--surface-muted-content-color)]"><%= card_record.body %></p>
-                        </li>
-                      <% end %>
-                    </ul>
-                  </div>
-                <% end %>
-              </div>
-            </section>
-          <% end %>
-        </div>
+    <%= render FlatPack::ChipGroup::Component.new(class: "mb-6") do %>
+      <% @workspace_access_rows.each do |access_row| %>
+        <%= render FlatPack::Chip::Component.new(
+          text: "#{access_row[:email]} (#{access_row[:role]})",
+          type: :link,
+          href: user_path(access_row[:user]),
+          style: :default,
+          size: :md
+        ) %>
       <% end %>
     <% end %>
 
-    <div class="flex flex-col gap-6">
-      <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
-        <% card.header do %>
-          <%= render FlatPack::PageTitle::Component.new(
-            title: "Demo accounts",
-            subtitle: "Every seeded user signs in with Password.",
-            variant: :h3,
-            class: "mb-0 pb-0"
-          ) %>
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: "Folders and pages",
+      anchor_link: true,
+      anchor_id: "folders-and-pages"
+    ) %>
+
+    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md, align: :start, class: "w-full") do %>
+      <% @demo_sections.each do |section| %>
+        <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+          <% card.body(class: "grid gap-3 justify-items-start") do %>
+            <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= section[:folder].name %></h3>
+            <%= render FlatPack::Badge::Component.new(text: section[:folder].class.name, style: :info, size: :sm) %>
+            <% folder_direct_access_count = @direct_access_counts_by_recording_id.fetch(section[:folder_recording]&.id, 0) %>
+            <%= render FlatPack::Badge::Component.new(
+              text: pluralize(folder_direct_access_count, "person") + " with direct access",
+              style: :default,
+              size: :sm
+            ) %>
+            <% if section[:folder_recording] %>
+              <%= render FlatPack::Button::Component.new(
+                text: "Access",
+                style: :default,
+                size: :sm,
+                url: recording_studio_accessible.recording_accesses_path(section[:folder_recording])
+              ) %>
+            <% end %>
+          <% end %>
         <% end %>
 
-        <% card.body do %>
-          <div class="space-y-3 text-sm">
-            <% @demo_users.each do |user| %>
-              <div class="rounded-lg border border-[var(--surface-border-color)] px-4 py-3">
-                <p class="font-medium"><%= user.email %></p>
-                <p class="text-[var(--surface-muted-content-color)]">Password</p>
-              </div>
+        <% section[:pages].each do |page_section| %>
+          <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+            <% card.body(class: "grid gap-3 justify-items-start") do %>
+              <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= page_section[:page].title %></h3>
+              <%= render FlatPack::Badge::Component.new(text: page_section[:page].class.name, style: :default, size: :sm) %>
+              <% page_direct_access_count = @direct_access_counts_by_recording_id.fetch(page_section[:page_recording]&.id, 0) %>
+              <%= render FlatPack::Badge::Component.new(
+                text: pluralize(page_direct_access_count, "person") + " with direct access",
+                style: :default,
+                size: :sm
+              ) %>
+              <% if page_section[:page_recording] %>
+                <%= render FlatPack::Button::Component.new(
+                  text: "Access",
+                  style: :default,
+                  size: :sm,
+                  url: recording_studio_accessible.recording_accesses_path(page_section[:page_recording])
+                ) %>
+              <% end %>
             <% end %>
-          </div>
+          <% end %>
         <% end %>
       <% end %>
-
-      <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
-        <% card.header do %>
-          <%= render FlatPack::PageTitle::Component.new(
-            title: "Access coverage",
-            subtitle: "Roles resolve through RecordingStudio::Services::AccessCheck for every seeded folder and page.",
-            variant: :h3,
-            class: "mb-0 pb-0"
-          ) %>
-        <% end %>
-
-        <% card.body do %>
-          <div class="space-y-4 text-sm">
-            <% @access_matrix.each do |row| %>
-              <div class="rounded-lg border border-[var(--surface-border-color)] px-4 py-3">
-                <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <p class="font-medium"><%= row[:user].email %></p>
-                  <% if row[:user] == current_user %>
-                    <%= render FlatPack::Badge::Component.new(text: "Signed in", style: :warning, size: :sm) %>
-                  <% end %>
-                </div>
-
-                <dl class="space-y-2">
-                  <% row[:resources].each do |resource| %>
-                    <div class="flex items-center justify-between gap-3">
-                      <dt class="text-[var(--surface-muted-content-color)]"><%= resource[:label] %></dt>
-                      <dd class="font-medium">
-                        role=<%= resource[:role] || "none" %>,
-                        allowed=<%= resource[:allowed] %>
-                      </dd>
-                    </div>
-                  <% end %>
-                </dl>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
-      <% end %>
-    </div>
+    <% end %>
   </div>
 </div>

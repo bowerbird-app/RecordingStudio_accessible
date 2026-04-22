@@ -9,6 +9,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 - `RecordingStudio::Access` recordables for root-level and recording-level grants
 - `RecordingStudio::AccessBoundary` recordables for inheritance cutoffs
 - `RecordingStudio::Services::AccessCheck` for role lookup and authorization checks
+- a mounted engine page for adding and removing direct access on a recording
 - install and migration generators for host apps
 - a dummy Rails app that demonstrates the addon mounted separately from RecordingStudio
 
@@ -37,6 +38,7 @@ Then run:
 ```bash
 bundle install
 bin/rails generate recording_studio_accessible:install
+bin/rails generate recording_studio_accessible:access_management --link-helper
 bin/rails generate recording_studio_accessible:migrations
 bin/rails db:migrate
 ```
@@ -80,6 +82,47 @@ RecordingStudio::Recording.create!(
 )
 ```
 
+### Managing access through the mounted engine
+
+If you mount `RecordingStudioAccessible::Engine`, the gem exposes a recording-scoped access management page at:
+
+```text
+/recording_studio_accessible/recordings/:recording_id/accesses
+```
+
+The page uses a blank layout, renders only FlatPack components, and lets authorized users add, update, and remove direct grants for the target recording.
+
+To set that up in a host app, run:
+
+```bash
+bin/rails generate recording_studio_accessible:access_management --link-helper
+```
+
+That generator:
+
+- mounts `RecordingStudioAccessible::Engine` if it is not already mounted
+- creates `config/initializers/recording_studio_accessible.rb` if it does not already exist
+- optionally creates a host helper with `recording_access_management_path` and `recording_access_management_link`
+
+By default, the new-access form accepts an email address and resolves it against `User` records. You can override that resolver and the authorization rule:
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.access_management_actor_email_resolver = lambda do |controller:, email:|
+    User.find_by(email: email.to_s.strip.downcase)
+  end
+  config.access_management_actor_label = ->(actor) { actor.email }
+  config.access_management_authorizer = lambda do |controller:, recording:|
+    actor = controller.current_user
+    actor.present? && RecordingStudio::Services::AccessCheck.allowed?(
+      actor: actor,
+      recording: recording,
+      role: :admin
+    )
+  end
+end
+```
+
 ### Checking access
 
 ```ruby
@@ -110,6 +153,7 @@ Useful routes:
 
 - `/` - dummy app demo with seeded folders, pages, cards, and access results
 - `/recording_studio_accessible` - addon status/demo page
+- `/recording_studio_accessible/recordings/:recording_id/accesses` - gem-provided page for managing direct recording access
 
 The demo seeds:
 
