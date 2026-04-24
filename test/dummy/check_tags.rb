@@ -34,9 +34,9 @@ class TagChecker < ActionDispatch::IntegrationTest
     puts "--- HEAD TAGS ---"
     puts response.body.scan(/<(?:link|script)[^>]*>/).join("\n")
     puts "---"
-    
+
     tags = response.body.scan(/<(?:link|script)[^>]*>/).join(" ")
-    
+
     [
       "flat_pack/variables",
       "flat_pack/application",
@@ -47,7 +47,7 @@ class TagChecker < ActionDispatch::IntegrationTest
       present = tags.include?(term)
       puts "#{term} present: #{present}"
     end
-    
+
     puts "importmap present: #{tags.include?('importmap')}"
   end
 

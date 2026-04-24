@@ -4,7 +4,7 @@ module RecordingStudioAccessible
   class HomeController < ApplicationController
     def index
       @integration_mode = RecordingStudioAccessible::Compatibility.integration_mode
-      @workspace = defined?(::Workspace) ? ::Workspace.first : nil
+      @workspace = demo_workspace
       @root_recording = find_root_recording
       @admin_user = resolve_admin_user
       @viewer_user = resolve_viewer_user
@@ -17,13 +17,13 @@ module RecordingStudioAccessible
       @method_sections = [
         {
           title: "Grant access with RecordingStudio::Access.create!",
-          code: <<~RUBY.strip
+          code: <<~'RUBY'.strip
             access = RecordingStudio::Access.create!(actor: user, role: :view)
           RUBY
         },
         {
           title: "Attach a grant to a recording",
-          code: <<~RUBY.strip
+          code: <<~'RUBY'.strip
             RecordingStudio::Recording.create!(
               root_recording: root_recording,
               recordable: access,
@@ -33,13 +33,13 @@ module RecordingStudioAccessible
         },
         {
           title: "Create an inheritance cutoff with RecordingStudio::AccessBoundary.create!",
-          code: <<~RUBY.strip
+          code: <<~'RUBY'.strip
             boundary = RecordingStudio::AccessBoundary.create!(minimum_role: :edit)
           RUBY
         },
         {
           title: "Resolve a user's role with RecordingStudio::Services::AccessCheck.role_for",
-          code: <<~RUBY.strip
+          code: <<~'RUBY'.strip
             RecordingStudio::Services::AccessCheck.role_for(
               actor: user,
               recording: recording
@@ -48,7 +48,7 @@ module RecordingStudioAccessible
         },
         {
           title: "Check authorization with RecordingStudio::Services::AccessCheck.allowed?",
-          code: <<~RUBY.strip
+          code: <<~'RUBY'.strip
             RecordingStudio::Services::AccessCheck.allowed?(
               actor: user,
               recording: recording,
@@ -58,7 +58,7 @@ module RecordingStudioAccessible
         },
         {
           title: "List accessible roots with RecordingStudio::Services::AccessCheck.root_recordings_for",
-          code: <<~RUBY.strip
+          code: <<~'RUBY'.strip
             RecordingStudio::Services::AccessCheck.root_recordings_for(
               actor: user,
               minimum_role: :view
@@ -102,7 +102,132 @@ module RecordingStudioAccessible
       ]
     end
 
+    def user_invites
+      @invite_status_rows = [
+        {
+          title: "found",
+          badge_style: :default,
+          body: "An existing actor was resolved from the submitted email, so the access grant can continue immediately."
+        },
+        {
+          title: "created",
+          badge_style: :info,
+          body: "Your missing-actor handler provisioned the user and returned that actor for the same grant request."
+        },
+        {
+          title: "invited",
+          badge_style: :default,
+          body: "Use this when another invite flow sent the invitation and you want the manager sent back to the access list with a notice."
+        },
+        {
+          title: "requires_resolution",
+          badge_style: :info,
+          body: "Redirect the manager into a setup flow, such as a custom user creation screen, before granting access."
+        },
+        {
+          title: "invalid",
+          badge_style: :default,
+          body: "The submitted email could not be used. The form re-renders with the returned error message."
+        }
+      ]
+
+      @invite_setup_examples = [
+        {
+          title: "Only find existing users",
+          body: "Use the resolver when your app should only grant access to users that already exist.",
+          code: <<~'RUBY'.strip
+            config.access_management_actor_email_resolver = lambda do |controller:, email:|
+              User.find_by(email: email.to_s.strip.downcase)
+            end
+          RUBY
+        },
+        {
+          title: "Create the user when missing",
+          body: "This dummy app currently follows this pattern in its initializer and returns :created when the email is new.",
+          code: <<~'RUBY'.strip
+            require "securerandom"
+
+            config.access_management_missing_actor_handler = lambda do |email:, **|
+              normalized_email = email.to_s.strip.downcase
+              next RecordingStudioAccessible::MissingActorResolution.invalid(error: "User is required") if normalized_email.blank?
+
+              user = User.find_or_initialize_by(email: normalized_email)
+
+              if user.new_record?
+                password = SecureRandom.hex(12)
+                user.password = password
+                user.password_confirmation = password
+                user.save!
+              end
+
+              RecordingStudioAccessible::MissingActorResolution.created(
+                actor: user,
+                notice: "Access granted to #{normalized_email}"
+              )
+            end
+          RUBY
+        },
+        {
+          title: "Send managers to a resolution flow",
+          body: "Return a redirect-style resolution when a person needs extra setup, approvals, or a richer invite workflow.",
+          code: <<~'RUBY'.strip
+            config.access_management_missing_actor_handler = lambda do |email:, **|
+              normalized_email = email.to_s.strip.downcase
+
+              RecordingStudioAccessible::MissingActorResolution.redirect(
+                location: "/users/new?email=#{normalized_email}",
+                alert: "Resolve #{normalized_email} before granting access",
+                status: :requires_resolution
+              )
+            end
+          RUBY
+        }
+      ]
+    end
+
+    def email_template
+      @workspace ||= demo_workspace
+      @root_recording ||= find_root_recording
+      @admin_user ||= resolve_admin_user
+      @viewer_user ||= resolve_viewer_user
+
+      @preview_recipient = resolve_email_template_recipient
+      @preview_sender = resolve_email_template_sender || @preview_recipient
+      @preview_sender_label = RecordingStudioAccessible::AccessGrantedMailer.display_label_for(@preview_sender)
+      @preview_role = :view
+      @preview_access_url = resolve_preview_access_url
+      @preview_subject = resolve_preview_subject
+
+      preview_params = {
+        recording: @root_recording,
+        actor: @preview_recipient,
+        role: @preview_role.to_s,
+        manager_actor: @preview_sender,
+        access_url: @preview_access_url,
+        subject: @preview_subject
+      }
+
+      preview_message = RecordingStudioAccessible::AccessGrantedMailer.with(preview_params).access_granted.message
+      @preview_headers = {
+        subject: preview_message.subject,
+        from: Array(preview_message.from).join(", "),
+        to: Array(preview_message.to).join(", ")
+      }
+      @preview_html_body = normalize_preview_body(
+        preview_message.html_part&.decoded || render_email_preview(format: :html, assigns: preview_params)
+      )
+      @preview_text_body = normalize_preview_body(
+        preview_message.text_part&.decoded || render_email_preview(format: :text, assigns: preview_params)
+      )
+    end
+
     private
+
+    def demo_workspace
+      return unless defined?(::Workspace)
+
+      ::Workspace.order(:name, :id).first
+    end
 
     def find_root_recording
       return unless @workspace && defined?(::RecordingStudio::Recording)
@@ -111,7 +236,8 @@ module RecordingStudioAccessible
     end
 
     def resolve_admin_user
-      return current_user if respond_to?(:current_user) && current_user.present?
+      current_actor = RecordingStudioAccessible.configuration.current_actor_for(controller: self)
+      return current_actor if current_actor.present?
       return unless defined?(::User)
 
       ::User.find_by(email: "admin@admin.com") || ::User.first
@@ -139,6 +265,64 @@ module RecordingStudioAccessible
         role: RecordingStudio::Services::AccessCheck.role_for(actor: actor, recording: @root_recording),
         allowed: RecordingStudio::Services::AccessCheck.allowed?(actor: actor, recording: @root_recording,
                                                                  role: minimum_role)
+      }
+    end
+
+    def render_email_preview(format:, assigns:)
+      render_to_string(
+        template: "recording_studio_accessible/access_granted_mailer/access_granted",
+        layout: false,
+        formats: [format],
+        assigns: assigns
+      )
+    end
+
+    def normalize_preview_body(body)
+      normalized = body.to_s.dup.force_encoding(Encoding::UTF_8)
+      normalized.valid_encoding? ? normalized : normalized.scrub
+    end
+
+    def resolve_email_template_recipient
+      return ::User.find_by(email: "viewer@admin.com") if defined?(::User) && ::User.exists?(email: "viewer@admin.com")
+
+      @viewer_user || @admin_user || current_user
+    end
+
+    def resolve_email_template_sender
+      return ::User.find_by(email: "admin@admin.com") if defined?(::User) && ::User.exists?(email: "admin@admin.com")
+
+      @admin_user || current_user
+    end
+
+    def resolve_preview_access_url
+      configuration = RecordingStudioAccessible.configuration
+      kwargs = preview_resolution_kwargs
+
+      if configuration.respond_to?(:access_granted_url_for)
+        configuration.access_granted_url_for(**kwargs)
+      else
+        configuration.send(:resolve_access_granted_url, **kwargs)
+      end
+    end
+
+    def resolve_preview_subject
+      configuration = RecordingStudioAccessible.configuration
+      kwargs = preview_resolution_kwargs
+
+      if configuration.respond_to?(:access_granted_subject_for)
+        configuration.access_granted_subject_for(**kwargs)
+      else
+        configuration.send(:resolve_access_granted_subject, **kwargs)
+      end
+    end
+
+    def preview_resolution_kwargs
+      {
+        controller: self,
+        recording: @root_recording,
+        actor: @preview_recipient,
+        role: @preview_role,
+        manager_actor: @preview_sender
       }
     end
   end

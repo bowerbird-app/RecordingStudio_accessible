@@ -10,15 +10,16 @@ class CompatibilityTest < Minitest::Test
   end
 
   def test_integration_mode_is_addon_when_core_access_missing
-    RecordingStudioAccessible::Compatibility.stub(:missing_constant_paths, ["recording_studio_accessible/extracted/recording_studio/access"]) do
+    RecordingStudioAccessible::Compatibility.stub(:missing_constant_paths,
+                                                  ["recording_studio_accessible/extracted/recording_studio/access"]) do
       assert_equal :addon, RecordingStudioAccessible::Compatibility.integration_mode
     end
   end
 
   def test_missing_constant_paths_load_in_dependency_order
-    RecordingStudioAccessible::Compatibility.singleton_class.class_eval do
-      define_method(:constant_defined_path?) { |_path| false }
-    end
+    singleton = RecordingStudioAccessible::Compatibility.singleton_class
+    original_method = singleton.instance_method(:constant_defined_path?)
+    singleton.send(:define_method, :constant_defined_path?) { |_path| false }
 
     expected = [
       "recording_studio_accessible/extracted/recording_studio/access",
@@ -29,15 +30,15 @@ class CompatibilityTest < Minitest::Test
 
     assert_equal expected, RecordingStudioAccessible::Compatibility.missing_constant_paths
   ensure
-    RecordingStudioAccessible::Compatibility.singleton_class.send(:remove_method, :constant_defined_path?)
+    singleton.send(:define_method, :constant_defined_path?, original_method)
   end
 
   def test_ensure_recordable_types_registered
     registered = []
 
-    RecordingStudioAccessible::Compatibility.singleton_class.class_eval do
-      define_method(:constant_defined_path?) { |_path| true }
-    end
+    singleton = RecordingStudioAccessible::Compatibility.singleton_class
+    original_method = singleton.instance_method(:constant_defined_path?)
+    singleton.send(:define_method, :constant_defined_path?) { |_path| true }
 
     RecordingStudio.stub(:register_recordable_type, ->(name) { registered << name }) do
       RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
@@ -46,6 +47,6 @@ class CompatibilityTest < Minitest::Test
     assert_includes registered, "RecordingStudio::Access"
     assert_includes registered, "RecordingStudio::AccessBoundary"
   ensure
-    RecordingStudioAccessible::Compatibility.singleton_class.send(:remove_method, :constant_defined_path?)
+    singleton.send(:define_method, :constant_defined_path?, original_method)
   end
 end

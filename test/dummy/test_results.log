@@ -1,0 +1,12 @@
+DEPRECATION WARNING: ActiveSupport::Configurable is deprecated without replacement, and will be removed in Rails 8.2.
+
+You can emulate the previous behavior with `class_attribute`.
+ (called from <main> at /workspace/test/dummy/config/environment.rb:5)
+Run options: --seed 45487
+
+# Running:
+
+........
+
+Finished in 2.863832s, 2.7935 runs/s, 38.7593 assertions/s.
+8 runs, 111 assertions, 0 failures, 0 errors, 0 skips

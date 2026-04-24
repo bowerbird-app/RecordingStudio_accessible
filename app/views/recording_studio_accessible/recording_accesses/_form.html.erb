@@ -1,3 +1,7 @@
+<%= render FlatPack::Breadcrumb::Component.new(class: "mb-4") do |breadcrumb| %>
+  <% breadcrumb.item(text: "Back", href: request.referer || recording_accesses_path(@recording), icon: "chevron-left") %>
+<% end %>
+
 <%= render FlatPack::PageTitle::Component.new(
   title: title,
   subtitle: @recording_label,
@@ -12,16 +16,10 @@
   <% if show_form_section_title %>
     <%= render FlatPack::SectionTitle::Component.new(
       title: form_title,
-      subtitle: form_subtitle
+      subtitle: form_subtitle,
+      anchor_link: true,
+      anchor_id: form_title.to_s.parameterize.presence || "access-form"
     ) %>
-  <% end %>
-
-  <% if @form_errors.any? %>
-    <%= render FlatPack::ChipGroup::Component.new do %>
-      <% @form_errors.each do |error| %>
-        <%= render FlatPack::Chip::Component.new(text: error, style: :danger, size: :sm) %>
-      <% end %>
-    <% end %>
   <% end %>
 
   <%= form_with url: form_url, scope: :access, method: form_method do %>
@@ -30,10 +28,9 @@
         <%= render FlatPack::EmailInput::Component.new(
           name: "access[email]",
           value: @selected_email,
-          label: "Email",
+          label: "User email",
           placeholder: "email@example.com",
-          required: true,
-          error: @form_errors.first
+          required: true
         ) %>
       <% else %>
         <%= render FlatPack::Chip::Component.new(text: @editing_actor_label, style: :default, size: :md) %>
@@ -64,7 +61,9 @@
       <% card.body do %>
         <%= render FlatPack::SectionTitle::Component.new(
           title: "Recording",
-          subtitle: "#{@recording.recordable_type.demodulize} inside #{@root_label}"
+          subtitle: "#{@recording.recordable_type.demodulize} inside #{@root_label}",
+          anchor_link: true,
+          anchor_id: "recording-details"
         ) %>
         <%= render FlatPack::Badge::Component.new(text: @recording.recordable_type.demodulize, style: :info, size: :sm) %>
       <% end %>

@@ -2,7 +2,7 @@
 
 module RecordingStudioAccessible
   module RecordingAccessesHelper
-    ROLE_OPTIONS = [["View", "view"], ["Edit", "edit"], ["Admin", "admin"]].freeze
+    ROLE_OPTIONS = [%w[View view], %w[Edit edit], %w[Admin admin]].freeze
 
     def access_role_options
       ROLE_OPTIONS
@@ -31,19 +31,19 @@ module RecordingStudioAccessible
     def access_actions_cell(recording, row)
       content_tag(:div, class: "flex items-center gap-3 text-sm") do
         safe_join([
-          link_to(
-            "Edit",
-            edit_recording_access_path(recording, row[:id]),
-            class: "text-[var(--link-color,var(--surface-content-color))] underline-offset-2 hover:underline"
-          ),
-          button_to(
-            "Delete",
-            recording_access_path(recording, row[:id]),
-            method: :delete,
-            form_class: "inline",
-            class: "cursor-pointer text-[var(--danger-text-color,var(--surface-content-color))] underline-offset-2 hover:underline"
-          )
-        ])
+                    link_to(
+                      "Edit",
+                      edit_recording_access_path(recording, row[:id]),
+                      class: "text-[var(--link-color,var(--surface-content-color))] underline-offset-2 hover:underline"
+                    ),
+                    button_to(
+                      "Delete",
+                      recording_access_path(recording, row[:id]),
+                      method: :delete,
+                      form_class: "inline",
+                      class: "cursor-pointer text-[var(--danger-text-color,var(--surface-content-color))] underline-offset-2 hover:underline"
+                    )
+                  ])
       end
     end
 

@@ -24,14 +24,21 @@ def upsert_folder(workspace:, name:, summary:, position:)
 end
 
 def upsert_page(folder:, title:, summary:, position:)
-  page = folder.pages.find_or_initialize_by(title: title)
+  page = Page.find_by(folder: folder, title: title)
+
+  if page&.readonly?
+    purge_readonly_page(page)
+    page = nil
+  end
+
+  page ||= Page.new(folder: folder, title: title)
   page.assign_attributes(summary: summary, position: position)
   page.save! if page.changed?
   page
 end
 
 def upsert_card(page:, title:, body:, position:)
-  card = page.cards.find_or_initialize_by(title: title)
+  card = Card.find_or_initialize_by(page: page, title: title)
   card.assign_attributes(body: body, position: position)
   card.save! if card.changed?
   card
@@ -75,19 +82,65 @@ def delete_recording_and_orphaned_access(recording)
   delete_orphaned_access(access_id)
 end
 
-def remove_invalid_demo_recordings(root_recording)
-  demo_recording_scope(root_recording)
-    .where.not(id: root_recording.id)
-    .order(created_at: :desc, id: :desc)
-    .find_each do |recording|
-      next if recording.recordable.present?
+def purge_readonly_page(page)
+  RecordingStudio::Recording.unscoped.where(recordable: page).find_each do |page_recording|
+    RecordingStudio::Recording.unscoped
+                             .where(parent_recording_id: page_recording.id,
+                                    recordable_type: "RecordingStudio::Access",
+                                    trashed_at: nil)
+                             .find_each do |access_recording|
+      delete_recording_and_orphaned_access(access_recording)
+    end
 
+    page_recording.delete
+  end
+
+  Card.where(page_id: page.id).delete_all
+  Page.where(id: page.id).delete_all
+end
+
+def remove_invalid_demo_recordings(root_recording)
+  loop do
+    invalid_recording_ids = demo_recording_scope(root_recording)
+                            .where.not(id: root_recording.id)
+                            .order(created_at: :desc, id: :desc)
+                            .filter_map do |recording|
+      recordable_missing = recording.recordable.blank?
+      missing_parent = recording.parent_recording_id.present? && recording.parent_recording.blank?
+
+      recording.id if recordable_missing || missing_parent
+    end
+
+    break if invalid_recording_ids.empty?
+
+    RecordingStudio::Recording.unscoped.where(id: invalid_recording_ids).find_each do |recording|
       delete_recording_and_orphaned_access(recording)
     end
+  end
+end
+
+def remove_obsolete_demo_content(workspace:, allowed_pages_by_folder_name:)
+  workspace.folders.where.not(name: allowed_pages_by_folder_name.keys).find_each do |folder|
+    page_ids = Page.where(folder_id: folder.id).pluck(:id)
+    Card.where(page_id: page_ids).delete_all if page_ids.any?
+    Page.where(id: page_ids).delete_all if page_ids.any?
+    Folder.where(id: folder.id).delete_all
+  end
+
+  allowed_pages_by_folder_name.each do |folder_name, allowed_page_titles|
+    folder = workspace.folders.find_by(name: folder_name)
+    next unless folder
+
+    obsolete_page_ids = Page.where(folder_id: folder.id).where.not(title: allowed_page_titles).pluck(:id)
+    next if obsolete_page_ids.empty?
+
+    Card.where(page_id: obsolete_page_ids).delete_all
+    Page.where(id: obsolete_page_ids).delete_all
+  end
 end
 
 def sync_access_recordings(parent_recording:, root_recording:, grants:)
-  desired_keys = grants.map { |grant| [grant.fetch(:actor).class.name, grant.fetch(:actor).id, grant.fetch(:role).to_s] }
+  desired_keys = grants.map { |grant| [ grant.fetch(:actor).class.name, grant.fetch(:actor).id, grant.fetch(:role).to_s ] }
   seen_keys = {}
 
   RecordingStudio::Recording.unscoped
@@ -98,7 +151,7 @@ def sync_access_recordings(parent_recording:, root_recording:, grants:)
                            .order(created_at: :asc, id: :asc)
                            .find_each do |recording|
     access = recording.recordable
-    key = access && [access.actor_type, access.actor_id, access.role.to_s]
+    key = access && [ access.actor_type, access.actor_id, access.role.to_s ]
     keep = key && access.actor.present? && desired_keys.include?(key) && !seen_keys[key]
 
     if keep
@@ -152,7 +205,7 @@ welcome_pack = upsert_page(
 accessibility_checklist = upsert_page(
   folder: client_onboarding,
   title: "Accessibility checklist",
-  summary: "Page-level edit access highlights targeted permissions.",
+  summary: "Pages inherit access from the folder but cannot host direct access entries.",
   position: 1
 )
 
@@ -162,6 +215,16 @@ ops_runbook = upsert_page(
   summary: "Read-only operational guidance for the support team.",
   position: 0
 )
+
+remove_obsolete_demo_content(
+  workspace: workspace,
+  allowed_pages_by_folder_name: {
+    client_onboarding.name => [ welcome_pack.title, accessibility_checklist.title ],
+    operations.name => [ ops_runbook.title ]
+  }
+)
+
+remove_invalid_demo_recordings(root_recording)
 
 [
   { page: welcome_pack, title: "Share credentials", body: "Send the starter account details and confirm sign-in.", position: 0 },
@@ -191,13 +254,13 @@ accessibility_checklist_recording = ensure_child_recording(
   root_recording: root_recording
 )
 
-ensure_child_recording(
+welcome_pack_recording = ensure_child_recording(
   recordable: welcome_pack,
   parent_recording: client_onboarding_recording,
   root_recording: root_recording
 )
 
-ensure_child_recording(
+ops_runbook_recording = ensure_child_recording(
   recordable: ops_runbook,
   parent_recording: operations_recording,
   root_recording: root_recording
@@ -227,16 +290,20 @@ sync_access_recordings(
   ]
 )
 
-sync_access_recordings(
-  parent_recording: accessibility_checklist_recording,
-  root_recording: root_recording,
-  grants: [
-    { actor: users[:page_owner], role: :edit }
-  ]
-)
+[ welcome_pack_recording, accessibility_checklist_recording, ops_runbook_recording ].each do |page_recording|
+  sync_access_recordings(
+    parent_recording: page_recording,
+    root_recording: root_recording,
+    grants: []
+  )
+end
 
-users.each_value do |user|
+puts "Seeded folder direct access: #{client_onboarding.name} (editor), #{operations.name} (viewer)"
+
+users.except(:page_owner).each_value do |user|
   puts "Seeded: #{user.email} / #{PASSWORD}"
 end
+
+puts "Seeded without direct page access for pages: #{welcome_pack.title}, #{accessibility_checklist.title}, #{ops_runbook.title}"
 
 puts "Seeded: Workspace '#{workspace.name}' with #{workspace.folders.count} folders"

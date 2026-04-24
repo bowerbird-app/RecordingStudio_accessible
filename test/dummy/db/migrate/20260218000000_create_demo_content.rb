@@ -24,8 +24,8 @@ class CreateDemoContent < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :folders, [:workspace_id, :position]
-    add_index :pages, [:folder_id, :position]
-    add_index :cards, [:page_id, :position]
+    add_index :folders, [ :workspace_id, :position ]
+    add_index :pages, [ :folder_id, :position ]
+    add_index :cards, [ :page_id, :position ]
   end
 end

@@ -15,7 +15,8 @@ class AccessManagementGeneratorTest < Minitest::Test
   end
 
   def build_generator(destination_root, options = {})
-    RecordingStudioAccessible::Generators::AccessManagementGenerator.new([], options, destination_root: destination_root)
+    RecordingStudioAccessible::Generators::AccessManagementGenerator.new([], options,
+                                                                         destination_root: destination_root)
   end
 
   def test_mount_engine_uses_configured_mount_path
@@ -65,6 +66,21 @@ class AccessManagementGeneratorTest < Minitest::Test
       generator.copy_initializer
 
       assert_equal "# existing\n", File.read(initializer)
+    end
+  end
+
+  def test_copy_mailer_templates_creates_templates_when_missing
+    with_temp_app do |dir|
+      generator = build_generator(dir)
+
+      generator.copy_mailer_templates
+
+      html_template = File.join(dir, "app/views/recording_studio_accessible/access_granted_mailer/access_granted.html.erb")
+      text_template = File.join(dir, "app/views/recording_studio_accessible/access_granted_mailer/access_granted.text.erb")
+
+      assert File.exist?(html_template)
+      assert File.exist?(text_template)
+      assert_includes File.read(html_template), "Open the shared item"
     end
   end
 

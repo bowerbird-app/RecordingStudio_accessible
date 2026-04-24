@@ -1,0 +1,65 @@
+<div class="mx-auto w-full max-w-6xl">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Email template",
+    subtitle: "Default message sent when access is granted",
+    variant: :h1
+  ) %>
+
+  <section class="mt-6 space-y-4">
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: "Message details",
+      subtitle: "Headers used by the default mailer",
+      anchor_link: true,
+      anchor_id: "message-details"
+    ) %>
+
+    <%= render FlatPack::CodeBlock::Component.new(
+      code: <<~TEXT.strip,
+        # Preview context for the default access-granted email.
+        # Includes generated message headers plus the sample sender and role used for this preview.
+
+        Subject
+        #{@preview_headers[:subject]}
+
+        From
+        #{@preview_headers[:from]}
+
+        To
+        #{@preview_headers[:to]}
+
+        Granted by
+        #{@preview_sender_label}
+
+        Role
+        #{@preview_role.to_s.humanize.downcase}
+      TEXT
+      separated: false
+    ) %>
+  </section>
+
+  <section class="mt-10 space-y-4">
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: "HTML preview",
+      subtitle: "Rendered from the default HTML email template",
+      anchor_link: true,
+      anchor_id: "html-preview"
+    ) %>
+
+    <iframe
+      title="HTML email preview"
+      class="block h-72 w-full rounded-lg border border-(--surface-border-color) bg-white"
+      srcdoc="<%= html_escape(@preview_html_body) %>">
+    </iframe>
+  </section>
+
+  <section class="mt-10 space-y-4">
+      <%= render FlatPack::SectionTitle::Component.new(
+        title: "Text preview",
+        subtitle: "Plain-text fallback from the default email template",
+        anchor_link: true,
+        anchor_id: "text-preview"
+      ) %>
+
+    <%= render FlatPack::CodeBlock::Component.new(code: @preview_text_body.strip, separated: false) %>
+  </section>
+</div>

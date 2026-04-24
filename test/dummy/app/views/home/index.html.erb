@@ -7,32 +7,45 @@
 
   <div class="mt-6">
     <%= render FlatPack::SectionTitle::Component.new(
-      title: @workspace ? "Workspace: #{@workspace.name}" : "Workspace",
-      subtitle: "People with workspace access",
+      title: "Workspaces",
+      subtitle: "Root recordables",
       anchor_link: true,
       anchor_id: "workspace-access"
     ) %>
 
-    <% if @root_recording %>
-      <div class="mb-6">
-        <%= render FlatPack::Button::Component.new(
-          text: "Manage workspace access",
-          style: :primary,
-          size: :md,
-          url: recording_studio_accessible.recording_accesses_path(@root_recording)
-        ) %>
-      </div>
-    <% end %>
-
-    <%= render FlatPack::ChipGroup::Component.new(class: "mb-6") do %>
-      <% @workspace_access_rows.each do |access_row| %>
-        <%= render FlatPack::Chip::Component.new(
-          text: "#{access_row[:email]} (#{access_row[:role]})",
-          type: :link,
-          href: user_path(access_row[:user]),
-          style: :default,
-          size: :md
-        ) %>
+    <%= render FlatPack::Grid::Component.new(cols: 3, gap: :md, align: :start, class: "mb-6 w-full") do %>
+      <% if @workspace %>
+        <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+          <% card.body(class: "grid gap-3 justify-items-start") do %>
+            <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= @workspace.name %></h3>
+            <%= render FlatPack::Badge::Component.new(text: @workspace.class.name, style: :default, size: :sm) %>
+            <p class="text-sm text-slate-600"><strong>Workspace:</strong> <%= @workspace.name %></p>
+            <p class="text-sm text-slate-600">
+              <%= pluralize(@workspace_access_rows.count, "person") %> with access
+            </p>
+            <% if @workspace_access_rows.any? %>
+              <div class="flex flex-wrap gap-2">
+                <% @workspace_access_rows.each do |row| %>
+                  <%= link_to user_path(row[:user]), class: "inline-flex" do %>
+                    <%= render FlatPack::Chip::Component.new(
+                      text: "#{row[:email]} (#{row[:role]})",
+                      style: :default,
+                      size: :sm
+                    ) %>
+                  <% end %>
+                <% end %>
+              </div>
+            <% end %>
+            <% if @root_recording && @root_access_management_enabled %>
+              <%= render FlatPack::Button::Component.new(
+                text: "Change access",
+                style: :default,
+                size: :sm,
+                url: recording_studio_accessible.recording_accesses_path(@root_recording)
+              ) %>
+            <% end %>
+          <% end %>
+        <% end %>
       <% end %>
     <% end %>
 
@@ -42,21 +55,17 @@
       anchor_id: "folders-and-pages"
     ) %>
 
-    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md, align: :start, class: "w-full") do %>
+    <%= render FlatPack::Grid::Component.new(cols: 3, gap: :md, align: :start, class: "w-full") do %>
       <% @demo_sections.each do |section| %>
         <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= section[:folder].name %></h3>
-            <%= render FlatPack::Badge::Component.new(text: section[:folder].class.name, style: :info, size: :sm) %>
             <% folder_direct_access_count = @direct_access_counts_by_recording_id.fetch(section[:folder_recording]&.id, 0) %>
-            <%= render FlatPack::Badge::Component.new(
-              text: pluralize(folder_direct_access_count, "person") + " with direct access",
-              style: :default,
-              size: :sm
-            ) %>
-            <% if section[:folder_recording] %>
+            <%= render FlatPack::Badge::Component.new(text: section[:folder].class.name, style: :default, size: :sm) %>
+            <p class="text-sm text-slate-600"><%= folder_direct_access_count %> access</p>
+            <% if section[:folder_recording] && section[:folder_access_management_enabled] %>
               <%= render FlatPack::Button::Component.new(
-                text: "Access",
+                text: "Change access",
                 style: :default,
                 size: :sm,
                 url: recording_studio_accessible.recording_accesses_path(section[:folder_recording])
@@ -69,16 +78,13 @@
           <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
             <% card.body(class: "grid gap-3 justify-items-start") do %>
               <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= page_section[:page].title %></h3>
-              <%= render FlatPack::Badge::Component.new(text: page_section[:page].class.name, style: :default, size: :sm) %>
               <% page_direct_access_count = @direct_access_counts_by_recording_id.fetch(page_section[:page_recording]&.id, 0) %>
-              <%= render FlatPack::Badge::Component.new(
-                text: pluralize(page_direct_access_count, "person") + " with direct access",
-                style: :default,
-                size: :sm
-              ) %>
-              <% if page_section[:page_recording] %>
+              <%= render FlatPack::Badge::Component.new(text: page_section[:page].class.name, style: :default, size: :sm) %>
+              <p class="text-sm text-slate-600"><%= page_direct_access_count %> access</p>
+              <p class="text-sm text-slate-600">Pages not allowed to add access</p>
+              <% if page_section[:page_recording] && page_section[:page_access_management_enabled] %>
                 <%= render FlatPack::Button::Component.new(
-                  text: "Access",
+                  text: "Change access",
                   style: :default,
                   size: :sm,
                   url: recording_studio_accessible.recording_accesses_path(page_section[:page_recording])

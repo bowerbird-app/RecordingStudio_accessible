@@ -1,17 +1,11 @@
 # frozen_string_literal: true
 
-require "set"
-
 module RecordingStudio
   module Services
     class AccessCheck < RecordingStudio::Services::BaseService
       extend AccessCheckClassMethods
 
       ROLE_ORDER = { "view" => 0, "edit" => 1, "admin" => 2 }.freeze
-      ACCESS_JOIN_SQL = <<~SQL.squish.freeze
-        INNER JOIN recording_studio_accesses
-          ON recording_studio_accesses.id = recording_studio_recordings.recordable_id
-      SQL
 
       def initialize(actor:, recording:, role: nil)
         super()
@@ -96,7 +90,7 @@ module RecordingStudio
       end
 
       def find_access_for_recording(recording)
-        access = access_recordings_for(recording).first
+        access = self.class.access_recordings_for_actor(recording: recording, actor: @actor).first
         access&.recordable&.role
       end
 
@@ -104,13 +98,9 @@ module RecordingStudio
         root = @recording.root_recording || @recording
         return nil unless root
 
-        base_access_recording_scope
-          .where(root_recording_id: root.id, parent_recording_id: root.id)
-          .first&.recordable&.role
-      end
-
-      def access_recordings_for(recording)
-        base_access_recording_scope.where(parent_recording_id: recording.id)
+        self.class.access_recordings_for_actor(recording: root, actor: @actor)
+            .where(root_recording_id: root.id)
+            .first&.recordable&.role
       end
 
       def recording_path_and_boundary
@@ -143,16 +133,6 @@ module RecordingStudio
         required_value = ROLE_ORDER.fetch(minimum_role, -1)
         role_value = ROLE_ORDER.fetch(inherited_role, -1)
         role_value >= required_value ? inherited_role : nil
-      end
-
-      def base_access_recording_scope
-        RecordingStudio::Recording.unscoped
-                                  .where(recordable_type: "RecordingStudio::Access")
-                                  .where(trashed_at: nil)
-                                  .joins(ACCESS_JOIN_SQL)
-                                  .where(recording_studio_accesses: { actor_type: @actor.class.name,
-                                                                      actor_id: @actor.id })
-                                  .order("recording_studio_recordings.created_at DESC")
       end
     end
   end

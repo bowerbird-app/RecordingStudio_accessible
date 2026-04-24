@@ -41,7 +41,7 @@ module RecordingStudioAccessible
       private
 
       def migration_files
-        Dir.glob(File.join(self.class.source_root, "db", "migrate", "*.rb")).sort
+        Dir.glob(File.join(self.class.source_root, "db", "migrate", "*.rb"))
       end
 
       def migration_exists?(migration_name)

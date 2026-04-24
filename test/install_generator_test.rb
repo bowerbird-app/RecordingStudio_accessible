@@ -6,10 +6,8 @@ require "tmpdir"
 require "generators/recording_studio_accessible/install/install_generator"
 
 class InstallGeneratorTest < Minitest::Test
-  def with_temp_app
-    Dir.mktmpdir do |dir|
-      yield dir
-    end
+  def with_temp_app(&)
+    Dir.mktmpdir(&)
   end
 
   def build_generator(destination_root, options = {})
@@ -47,6 +45,21 @@ class InstallGeneratorTest < Minitest::Test
       end
 
       assert File.exist?(File.join(dir, "config/recording_studio_accessible.yml"))
+    end
+  end
+
+  def test_copy_mailer_templates_creates_templates_when_missing
+    with_temp_app do |dir|
+      generator = build_generator(dir)
+
+      generator.copy_mailer_templates
+
+      html_template = File.join(dir, "app/views/recording_studio_accessible/access_granted_mailer/access_granted.html.erb")
+      text_template = File.join(dir, "app/views/recording_studio_accessible/access_granted_mailer/access_granted.text.erb")
+
+      assert File.exist?(html_template)
+      assert File.exist?(text_template)
+      assert_includes File.read(text_template), "Open the shared item"
     end
   end
 end

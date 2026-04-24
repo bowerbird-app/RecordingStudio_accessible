@@ -22,7 +22,7 @@ class UsersController < ApplicationController
   def active_recordings
     RecordingStudio::Recording.unscoped
                              .where(trashed_at: nil)
-                             .where.not(recordable_type: ["RecordingStudio::Access", "RecordingStudio::AccessBoundary"])
+                             .where.not(recordable_type: [ "RecordingStudio::Access", "RecordingStudio::AccessBoundary" ])
                              .includes(:recordable, :root_recording)
                              .order(:created_at)
   end

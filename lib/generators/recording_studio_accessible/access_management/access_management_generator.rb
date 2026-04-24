@@ -12,7 +12,7 @@ module RecordingStudioAccessible
       class_option :mount_path, type: :string, default: "/recording_studio_accessible",
                                 desc: "Route prefix used when mounting the engine"
       class_option :link_helper, type: :boolean, default: false,
-                            desc: "Generate a host helper for linking recordable pages to the access management route"
+                                 desc: "Generate a host helper for linking recordable pages to the access management route"
 
       def mount_engine
         return if engine_mount_present?
@@ -24,6 +24,11 @@ module RecordingStudioAccessible
         return if File.exist?(destination_file(initializer_path))
 
         template "recording_studio_accessible_initializer.rb", initializer_path
+      end
+
+      def copy_mailer_templates
+        copy_mailer_template("access_granted.html.erb")
+        copy_mailer_template("access_granted.text.erb")
       end
 
       def copy_helper
@@ -47,6 +52,10 @@ module RecordingStudioAccessible
         "app/helpers/recording_studio_accessible/access_management_helper.rb"
       end
 
+      def mailer_template_dir
+        "app/views/recording_studio_accessible/access_granted_mailer"
+      end
+
       def engine_mount_present?
         routes_file = destination_file("config/routes.rb")
         return false unless File.exist?(routes_file)
@@ -56,6 +65,13 @@ module RecordingStudioAccessible
 
       def destination_file(relative_path)
         File.join(destination_root, relative_path)
+      end
+
+      def copy_mailer_template(template_name)
+        target_path = File.join(mailer_template_dir, template_name)
+        return if File.exist?(destination_file(target_path))
+
+        copy_file template_name, target_path
       end
     end
   end

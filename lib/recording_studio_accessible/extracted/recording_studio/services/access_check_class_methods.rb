@@ -32,10 +32,11 @@ module RecordingStudio
       end
 
       def access_recordings_for(recording)
-        RecordingStudio::Recording.unscoped
-                                  .where(parent_recording_id: recording.id)
-                                  .where(recordable_type: "RecordingStudio::Access")
-                                  .where(trashed_at: nil)
+        RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(recording)
+      end
+
+      def access_recordings_for_actor(recording:, actor:)
+        RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(recording: recording, actor: actor)
       end
 
       private

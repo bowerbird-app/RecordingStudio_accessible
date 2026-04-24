@@ -24,14 +24,30 @@ module RecordingStudioAccessible
         template "recording_studio_accessible_initializer.rb", "config/initializers/recording_studio_accessible.rb"
       end
 
+      def copy_mailer_templates
+        copy_mailer_template("access_granted.html.erb")
+        copy_mailer_template("access_granted.text.erb")
+      end
+
       def add_yaml_config
-        return unless yes?("Would you like to add `config/recording_studio_accessible.yml` for environment-specific settings? [y/N]")
+        unless yes?("Would you like to add `config/recording_studio_accessible.yml` for environment-specific settings? [y/N]")
+          return
+        end
 
         template "recording_studio_accessible.yml", "config/recording_studio_accessible.yml"
       end
 
       def show_readme
         readme "INSTALL.md" if behavior == :invoke
+      end
+
+      private
+
+      def copy_mailer_template(template_name)
+        target_path = File.join("app/views/recording_studio_accessible/access_granted_mailer", template_name)
+        return if File.exist?(File.join(destination_root, target_path))
+
+        copy_file template_name, target_path
       end
     end
   end

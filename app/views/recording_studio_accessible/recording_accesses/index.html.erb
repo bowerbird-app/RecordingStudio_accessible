@@ -30,7 +30,9 @@
     <% card.body(class: "grid gap-3 justify-items-start") do %>
       <%= render FlatPack::SectionTitle::Component.new(
         title: "No direct grants yet",
-        subtitle: "Use Add access to create the first direct access entry for this recording"
+        subtitle: "Use Add access to create the first direct access entry for this recording",
+        anchor_link: true,
+        anchor_id: "no-direct-grants"
       ) %>
       <%= render FlatPack::Button::Component.new(
         text: "Add access",

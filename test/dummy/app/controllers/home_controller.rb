@@ -2,6 +2,7 @@ class HomeController < ApplicationController
   def index
     @workspace = Workspace.includes(folders: { pages: :cards }).order(:name).first
     @root_recording = root_recording_for(@workspace)
+    @root_access_management_enabled = access_management_enabled_for(@root_recording)
     @demo_sections = build_demo_sections
     @demo_users = load_demo_users
     @access_matrix = build_access_matrix
@@ -35,10 +36,14 @@ class HomeController < ApplicationController
       {
         folder: folder,
         folder_recording: folder_recording,
+        folder_access_management_enabled: access_management_enabled_for(folder_recording),
         pages: folder.pages.order(:position, :title).map do |page|
+          page_recording = recording_for(page)
+
           {
             page: page,
-            page_recording: recording_for(page),
+            page_recording: page_recording,
+            page_access_management_enabled: access_management_enabled_for(page_recording),
             cards: page.cards.order(:position, :title)
           }
         end
@@ -49,7 +54,7 @@ class HomeController < ApplicationController
   def build_access_matrix
     return [] unless @root_recording
 
-    resources = [{ label: @workspace.name, recording: @root_recording }]
+    resources = [ { label: @workspace.name, recording: @root_recording } ]
     @demo_sections.each do |section|
       resources << { label: section[:folder].name, recording: section[:folder_recording] }
       section[:pages].each do |page_section|
@@ -96,7 +101,7 @@ class HomeController < ApplicationController
 
   def build_direct_access_counts_by_recording_id
     recordings = @demo_sections.flat_map do |section|
-      [section[:folder_recording], *section[:pages].map { |page_section| page_section[:page_recording] }]
+      [ section[:folder_recording], *section[:pages].map { |page_section| page_section[:page_recording] } ]
     end.compact
 
     recordings.each_with_object({}) do |recording, counts|
@@ -104,7 +109,7 @@ class HomeController < ApplicationController
         actor = access_recording.recordable.actor
         next unless actor
 
-        [actor.class.base_class.name, actor.id]
+        [ actor.class.base_class.name, actor.id ]
       end
 
       counts[recording.id] = actor_keys.uniq.count
@@ -141,5 +146,9 @@ class HomeController < ApplicationController
     return unless recordable
 
     RecordingStudio::Recording.unscoped.find_by(recordable: recordable)
+  end
+
+  def access_management_enabled_for(recording)
+    RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(recording: recording, child_type: :access)
   end
 end

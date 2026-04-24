@@ -72,7 +72,8 @@ class EngineTest < Minitest::Test
   ensure
     RecordingStudio.send(:remove_const, :AccessBoundary) if RecordingStudio.const_defined?(:AccessBoundary, false)
     RecordingStudio.send(:remove_const, :Access) if RecordingStudio.const_defined?(:Access, false)
-    Object.send(:remove_const, :ApplicationRecord) if Object.const_defined?(:ApplicationRecord, false) && Object.const_get(:ApplicationRecord) == application_record
+    Object.send(:remove_const, :ApplicationRecord) if Object.const_defined?(:ApplicationRecord,
+                                                                            false) && Object.const_get(:ApplicationRecord) == application_record
   end
 
   private

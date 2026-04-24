@@ -38,7 +38,7 @@ class RecordingAccessesHelperTest < Minitest::Test
     include RecordingStudioAccessible::Engine.routes.url_helpers
     include RecordingStudioAccessible::RecordingAccessesHelper
 
-    def render(component, &block)
+    def render(component)
       component_name = component.class.name.to_s
 
       return "<span>chip</span>".html_safe if component_name == "FlatPack::Chip::Component"
@@ -99,7 +99,8 @@ class RecordingAccessesHelperTest < Minitest::Test
     assert_includes html, '<form class="inline" method="post" action="/recordings/42/accesses/7">'
     assert_includes html, 'name="_method" value="delete"'
     assert_includes html, 'type="submit" value="Delete"'
-    assert_includes html, 'class="cursor-pointer text-[var(--danger-text-color,var(--surface-content-color))] underline-offset-2 hover:underline"'
+    assert_includes html,
+                    'class="cursor-pointer text-[var(--danger-text-color,var(--surface-content-color))] underline-offset-2 hover:underline"'
     refute_includes html, ">Actions<"
     refute_includes html, "Edit access"
     refute_includes html, "Delete access"

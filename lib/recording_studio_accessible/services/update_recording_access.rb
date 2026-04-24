@@ -3,6 +3,8 @@
 module RecordingStudioAccessible
   module Services
     class UpdateRecordingAccess < BaseService
+      include AccessRecordLifecycle
+
       def initialize(recording:, access_recording:, role:, manager_actor: nil)
         @recording = recording
         @access_recording = access_recording
@@ -15,12 +17,17 @@ module RecordingStudioAccessible
       def perform
         return failure("Recording is required") unless @recording
         return failure("Access recording is required") unless @access_recording
-        return failure("Access recording is invalid") unless valid_access_recording?
+
+        authorization_result = authorize_access_management!(recording: @recording, manager_actor: @manager_actor)
+        return authorization_result unless authorization_result == true
+        return failure("Access recording is invalid") unless valid_access_recording_for_parent?(recording: @recording,
+                                                                                                access_recording: @access_recording)
         return failure("Role is invalid") unless valid_role?
 
         ensure_current_impersonator_accessor!
 
-        revised_recording = @access_recording.root_recording.revise(@access_recording, actor: @manager_actor) do |access|
+        revised_recording = @access_recording.root_recording.revise(@access_recording,
+                                                                    actor: @manager_actor) do |access|
           access.role = @role
         end
 
@@ -40,21 +47,8 @@ module RecordingStudioAccessible
         }
       end
 
-      def valid_access_recording?
-        @access_recording.parent_recording_id == @recording.id &&
-          @access_recording.recordable_type == "RecordingStudio::Access"
-      end
-
       def valid_role?
         RecordingStudio::Access.roles.key?(@role)
-      end
-
-      def ensure_current_impersonator_accessor!
-        return unless defined?(Current)
-        return unless Current.respond_to?(:attribute)
-        return if Current.respond_to?(:impersonator)
-
-        Current.attribute :impersonator
       end
     end
   end

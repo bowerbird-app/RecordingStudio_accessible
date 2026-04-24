@@ -18,22 +18,5 @@
       <p><strong>Workspace:</strong> <%= @workspace&.name || "Not available" %></p>
       <p><strong>Root recording:</strong> <%= @root_recording&.id || "Not available" %></p>
     </div>
-
-    <%= render FlatPack::SectionTitle::Component.new(
-      title: "People with workspace access",
-      anchor_link: true,
-      anchor_id: "people-with-workspace-access"
-    ) %>
-
-    <div class="grid gap-3">
-      <% @access_rows.each do |row| %>
-        <p>
-          <strong><%= row[:label] %></strong>
-          (<%= row[:role] || "none" %>)
-          -
-          <%= row[:allowed] ? "Allowed" : "Denied" %>
-        </p>
-      <% end %>
-    </div>
   </div>
 </div>

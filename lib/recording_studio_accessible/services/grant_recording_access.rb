@@ -3,10 +3,7 @@
 module RecordingStudioAccessible
   module Services
     class GrantRecordingAccess < BaseService
-      ACCESS_JOIN_SQL = <<~SQL.squish.freeze
-        INNER JOIN recording_studio_accesses
-          ON recording_studio_accesses.id = recording_studio_recordings.recordable_id
-      SQL
+      include AccessRecordLifecycle
 
       def initialize(recording:, actor:, role:, manager_actor: nil)
         @recording = recording
@@ -19,16 +16,24 @@ module RecordingStudioAccessible
 
       def perform
         return failure("Recording is required") unless @recording
-        return failure("Actor is required") unless @actor
+
+        authorization_result = authorize_access_management!(recording: @recording, manager_actor: @manager_actor)
+        return authorization_result unless authorization_result == true
+        return failure("Direct access is not enabled for this recording") unless access_enabled?
         return failure("Role is invalid") unless valid_role?
 
         access_recording = nil
         ensure_current_impersonator_accessor!
 
-        RecordingStudio::Access.transaction do
-          access_recording = existing_access_recording
+        RecordingStudio::Recording.transaction do
+          lock_grant_scope!
+
+          existing_recordings = existing_access_recordings.to_a
+          access_recording = existing_recordings.first
 
           if access_recording
+            deduplicate_access_recordings!(existing_recordings.drop(1))
+
             root_recording.revise(access_recording, actor: @manager_actor) do |access|
               access.role = @role
             end
@@ -64,27 +69,29 @@ module RecordingStudioAccessible
         RecordingStudio::Access.roles.key?(@role)
       end
 
+      def access_enabled?
+        RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(recording: @recording,
+                                                                               child_type: :access)
+      end
+
       def root_recording
         @recording.root_recording || @recording
       end
 
-      def ensure_current_impersonator_accessor!
-        return unless defined?(Current)
-        return unless Current.respond_to?(:attribute)
-        return if Current.respond_to?(:impersonator)
-
-        Current.attribute :impersonator
+      def lock_grant_scope!
+        @recording.lock!
       end
 
-      def existing_access_recording
-        RecordingStudio::Services::AccessCheck.access_recordings_for(@recording)
-                                              .joins(ACCESS_JOIN_SQL)
-                                              .where(recording_studio_accesses: {
-                                                       actor_type: @actor.class.name,
-                                                       actor_id: @actor.id
-                                                     })
-                                              .order(created_at: :desc, id: :desc)
-                                              .first
+      def existing_access_recordings
+        return unless @actor
+
+        RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(recording: @recording, actor: @actor)
+      end
+
+      def deduplicate_access_recordings!(access_recordings)
+        access_recordings.each do |access_recording|
+          destroy_access_recording!(access_recording, manager_actor: @manager_actor)
+        end
       end
     end
   end

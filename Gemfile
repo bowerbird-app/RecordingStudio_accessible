@@ -11,6 +11,7 @@ gem "puma"
 gem "sprockets-rails"
 
 group :development, :test do
+  gem "bootsnap", require: false
   gem "debug"
   gem "simplecov", require: false
 end

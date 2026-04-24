@@ -29,6 +29,16 @@
         href: "/recording_studio_accessible/boundaries",
         icon: :folder
       ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "User invites",
+        href: "/recording_studio_accessible/user_invites",
+        icon: :user
+      ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Email template",
+        href: "/recording_studio_accessible/email_template",
+        icon: :mail
+      ) %>
     </nav>
   <% end %>
 

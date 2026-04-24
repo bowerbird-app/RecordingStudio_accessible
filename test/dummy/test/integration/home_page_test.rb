@@ -39,9 +39,8 @@ class HomePageTest < ActionDispatch::IntegrationTest
     Card.create!(page: page, title: "Keyboard testing", body: "Verify keyboard-only navigation.", position: 0)
 
     grant_access(@admin, :admin, @root_recording)
-    grant_access(@editor, :edit, @folder_recording, @root_recording)
-    grant_access(@viewer, :view, @folder_recording, @root_recording)
-    grant_access(@page_owner, :edit, @page_recording, @root_recording)
+    grant_access(@editor, :edit, @root_recording)
+    grant_access(@viewer, :view, @root_recording)
   end
 
   test "home page renders the accessible demo and removed pages are absent" do
@@ -52,21 +51,13 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "Recording Studio Accessible Demo"
     assert_includes @response.body, "Workspace:"
-    assert_includes @response.body, "People with workspace access"
-    assert_includes @response.body, "Manage workspace access"
-    assert_includes @response.body, "/recording_studio_accessible/recordings/"
-    assert_includes @response.body, "/accesses"
     assert_includes @response.body, "Client onboarding"
     assert_includes @response.body, "Accessibility checklist"
-    assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@folder_recording.id}/accesses\""
-    assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@page_recording.id}/accesses\""
-    assert_includes @response.body, "admin@admin.com (admin)"
-    assert_includes @response.body, "2 people with direct access"
-    assert_includes @response.body, "1 person with direct access"
-    refute_includes @response.body, "editor@admin.com (edit)"
-    refute_includes @response.body, "viewer@admin.com (view)"
-    refute_includes @response.body, "page_owner@admin.com (edit)"
+    assert_includes @response.body, "0 access"
+    assert_includes @response.body, "Pages not allowed to add access"
     refute_includes @response.body, @outsider.email
+    assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@folder_recording.id}/accesses\""
+    refute_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@page_recording.id}/accesses\""
     refute_includes @response.body, "Recording Studio addon template"
     refute_includes @response.body, "href=\"/recording_studio\""
     refute_includes @response.body, "href=\"/up\""
@@ -136,6 +127,46 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Use a boundary when one branch of a workspace needs stricter rules than the rest."
     refute_includes @response.body, "Boundary hierarchy examples"
     refute_includes @response.body, "Workspace root"
+  end
+
+  test "user invites page explains missing-user handling and setup options" do
+    sign_in @admin
+
+    get "/recording_studio_accessible/user_invites"
+
+    assert_response :success
+    assert_includes @response.body, "User invites"
+    assert_includes @response.body, "How missing emails are resolved during access grants"
+    assert_includes @response.body, "href=\"/recording_studio_accessible/user_invites\""
+    assert_includes @response.body, "User with email ... was not found"
+    assert_includes @response.body, "This dummy app overrides that default in its initializer"
+    assert_includes @response.body, "requires_resolution"
+    assert_includes @response.body, "config.access_management_actor_email_resolver"
+    assert_includes @response.body, "config.access_management_missing_actor_handler"
+    assert_includes @response.body, 'Resolve #{normalized_email} before granting access'
+  end
+
+  test "email template page renders the default access granted email preview" do
+    sign_in @admin
+
+    get "/recording_studio_accessible/email_template"
+
+    shared_item_url_pattern = %r{http://[^/]+/workspaces/#{Regexp.escape(@root_recording.recordable.id.to_s)}}
+
+    assert_response :success
+    assert_includes @response.body, "Email template"
+    assert_includes @response.body, "Default message sent when access is granted"
+    assert_includes @response.body, "href=\"/recording_studio_accessible/email_template\""
+    assert_includes @response.body, "Message details"
+    assert_includes @response.body, "You were given access"
+    assert_includes @response.body, "from@example.com"
+    assert_includes @response.body, @viewer.email
+    assert_match %r{Granted by\s+Admin}, @response.body
+    assert_includes @response.body, "HTML preview"
+    assert_match %r{Admin\s+granted you &lt;strong&gt;view&lt;/strong&gt; access}, @response.body
+    assert_match %r{href=&quot;#{shared_item_url_pattern.source}&quot;}, @response.body
+    assert_includes @response.body, "Text preview"
+    assert_match %r{Admin granted you view access\.\s*Open the shared item: #{shared_item_url_pattern.source}}, @response.body
   end
 
   private

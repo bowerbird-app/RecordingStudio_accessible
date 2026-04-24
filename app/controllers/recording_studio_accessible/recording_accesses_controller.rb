@@ -5,6 +5,7 @@ module RecordingStudioAccessible
     layout "recording_studio_accessible/blank"
 
     before_action :set_recording
+    before_action :ensure_access_children_enabled!
     before_action :authorize_access_management!
     before_action :set_access_recording, only: %i[edit update destroy]
     before_action :prepare_index_page_state, only: [:index]
@@ -16,17 +17,31 @@ module RecordingStudioAccessible
     def new; end
 
     def create
+      actor_resolution = selected_actor_resolution
+      return handle_missing_actor_resolution(actor_resolution) unless actor_resolution.actor
+
       result = RecordingStudioAccessible::Services::GrantRecordingAccess.call(
         recording: @recording,
-        actor: selected_actor,
+        actor: actor_resolution.actor,
         role: access_params[:role],
         manager_actor: current_actor
       )
 
       if result.success?
-        redirect_to recording_accesses_path(@recording)
+        RecordingStudioAccessible.configuration.notify_access_granted(
+          controller: self,
+          recording: @recording,
+          actor: actor_resolution.actor,
+          role: access_params[:role],
+          manager_actor: current_actor
+        )
+
+        redirect_options = {}
+        redirect_options[:notice] = actor_resolution.notice if actor_resolution.notice.present?
+        redirect_to recording_accesses_path(@recording), **redirect_options
       else
         @form_errors = result.errors.presence || Array(result.error)
+        flash.now[:alert] = @form_errors.to_sentence
         render :new, status: :unprocessable_entity
       end
     end
@@ -45,6 +60,7 @@ module RecordingStudioAccessible
         redirect_to recording_accesses_path(@recording)
       else
         @form_errors = result.errors.presence || Array(result.error)
+        flash.now[:alert] = @form_errors.to_sentence
         render :edit, status: :unprocessable_entity
       end
     end
@@ -70,10 +86,20 @@ module RecordingStudioAccessible
     end
 
     def authorize_access_management!
-      return if RecordingStudioAccessible.configuration.authorize_access_management?(controller: self,
-                                                                                     recording: @recording)
+      return if RecordingStudioAccessible::AccessManagementPolicy.allowed?(
+        recording: @recording,
+        actor: current_actor,
+        controller: self
+      )
 
       head :forbidden
+    end
+
+    def ensure_access_children_enabled!
+      return if RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(recording: @recording,
+                                                                                       child_type: :access)
+
+      head :not_found
     end
 
     def prepare_index_page_state
@@ -110,16 +136,53 @@ module RecordingStudioAccessible
     end
 
     def current_actor
-      return unless respond_to?(:current_user, true)
-
-      send(:current_user)
+      RecordingStudioAccessible.configuration.current_actor_for(controller: self)
     end
 
-    def selected_actor
+    def selected_actor_resolution
       email = access_params[:email].to_s.strip
-      return if email.blank?
+      return RecordingStudioAccessible::MissingActorResolution.invalid(error: missing_actor_error) if email.blank?
 
-      RecordingStudioAccessible.configuration.resolve_actor_for_email(controller: self, email: email)
+      actor = RecordingStudioAccessible.configuration.resolve_actor_for_email(controller: self, email: email)
+      return RecordingStudioAccessible::MissingActorResolution.found(actor: actor) if actor
+
+      RecordingStudioAccessible.configuration.resolve_missing_actor(
+        controller: self,
+        email: email,
+        recording: @recording,
+        role: access_params[:role],
+        manager_actor: current_actor
+      )
+    end
+
+    def missing_actor_error
+      configuration = RecordingStudioAccessible.configuration
+      email = access_params[:email].to_s.strip
+
+      if configuration.respond_to?(:missing_actor_error_for_email)
+        configuration.missing_actor_error_for_email(email: email)
+      elsif email.blank?
+        "User is required"
+      else
+        "User with email #{email} was not found"
+      end
+    end
+
+    def handle_missing_actor_resolution(actor_resolution)
+      case actor_resolution.status
+      when :redirect, :requires_resolution
+        redirect_options = {}
+        redirect_options[:notice] = actor_resolution.notice if actor_resolution.notice.present?
+        redirect_options[:alert] = actor_resolution.alert if actor_resolution.alert.present?
+        redirect_to actor_resolution.location, **redirect_options
+      when :invited
+        redirect_options = { notice: actor_resolution.notice.presence || "Invitation sent." }
+        redirect_to recording_accesses_path(@recording), **redirect_options
+      else
+        @form_errors = Array(actor_resolution.error.presence || missing_actor_error)
+        flash.now[:alert] = @form_errors.to_sentence
+        render :new, status: :unprocessable_entity
+      end
     end
 
     def set_access_recording
@@ -171,7 +234,7 @@ module RecordingStudioAccessible
     def ancestor_access_recordings
       ancestor_recordings.flat_map do |recording|
         RecordingStudio::Services::AccessCheck.access_recordings_for(recording)
-                                             .order(created_at: :asc, id: :asc)
+                                              .order(created_at: :asc, id: :asc)
       end
     end
 
@@ -214,6 +277,5 @@ module RecordingStudioAccessible
 
       recordable.class.name.demodulize
     end
-
   end
 end

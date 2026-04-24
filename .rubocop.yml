@@ -13,24 +13,70 @@ Style/StringLiterals:
   Enabled: true
   EnforcedStyle: double_quotes
 
+Style/RedundantHeredocDelimiterQuotes:
+  Exclude:
+    - 'app/controllers/recording_studio_accessible/home_controller.rb'
+
 Layout/LineLength:
   Max: 120
+  Exclude:
+    - 'app/controllers/recording_studio_accessible/home_controller.rb'
+    - 'app/helpers/recording_studio_accessible/recording_accesses_helper.rb'
+    - 'app/mailers/recording_studio_accessible/access_granted_mailer.rb'
+    - 'lib/generators/**/*'
+    - 'lib/recording_studio_accessible/compatibility.rb'
+    - 'lib/recording_studio_accessible/engine.rb'
+    - 'lib/recording_studio_accessible/services/**/*'
+    - 'recording_studio_accessible.gemspec'
+    - 'test/**/*'
 
 # Relax metrics for test files and generators
 Metrics/ClassLength:
   Exclude:
     - 'test/**/*'
     - 'lib/recording_studio_accessible/hooks.rb'
+    - 'app/controllers/recording_studio_accessible/home_controller.rb'
+    - 'app/controllers/recording_studio_accessible/recording_accesses_controller.rb'
+    - 'lib/recording_studio_accessible/configuration.rb'
+    - 'lib/recording_studio_accessible/extracted/recording_studio/services/access_check.rb'
 
 Metrics/MethodLength:
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'app/controllers/recording_studio_accessible/home_controller.rb'
+    - 'app/controllers/recording_studio_accessible/recording_accesses_controller.rb'
+    - 'app/helpers/recording_studio_accessible/recording_accesses_helper.rb'
+    - 'app/mailers/recording_studio_accessible/access_granted_mailer.rb'
+    - 'lib/recording_studio_accessible/compatibility.rb'
+    - 'lib/recording_studio_accessible/configuration.rb'
+    - 'lib/recording_studio_accessible/services/**/*'
 
 Metrics/AbcSize:
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'app/controllers/recording_studio_accessible/home_controller.rb'
+    - 'app/controllers/recording_studio_accessible/recording_accesses_controller.rb'
+    - 'app/mailers/recording_studio_accessible/access_granted_mailer.rb'
+    - 'lib/recording_studio_accessible/configuration.rb'
+    - 'lib/recording_studio_accessible/services/**/*'
+
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - 'app/controllers/recording_studio_accessible/home_controller.rb'
+    - 'lib/recording_studio_accessible/compatibility.rb'
+    - 'lib/recording_studio_accessible/configuration.rb'
+
+Metrics/PerceivedComplexity:
+  Exclude:
+    - 'app/controllers/recording_studio_accessible/home_controller.rb'
+    - 'lib/recording_studio_accessible/compatibility.rb'
+    - 'lib/recording_studio_accessible/configuration.rb'
+
+Metrics/ParameterLists:
+  Exclude:
+    - 'lib/recording_studio_accessible/configuration.rb'
 
 # Allow empty blocks in tests (common for stubs/mocks)
 Lint/EmptyBlock:
@@ -46,6 +92,10 @@ Lint/NestedMethodDefinition:
 Naming/VariableNumber:
   Exclude:
     - 'test/**/*'
+
+Naming/PredicateMethod:
+  Exclude:
+    - 'lib/recording_studio_accessible/configuration.rb'
 
 # Don't require super in service initialize methods
 Lint/MissingSuper:

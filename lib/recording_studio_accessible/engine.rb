@@ -27,7 +27,8 @@ module RecordingStudioAccessible
       RecordingStudioAccessible::Hooks.run(:before_initialize, self)
     end
 
-    initializer "recording_studio_accessible.load_missing_constants", after: "recording_studio_accessible.load_config", before: "recording_studio_accessible.register_access_types" do |app|
+    initializer "recording_studio_accessible.load_missing_constants", after: "recording_studio_accessible.load_config",
+                                                                      before: "recording_studio_accessible.register_access_types" do |app|
       RecordingStudioAccessible::Compatibility.load_missing_constants!(app)
     end
 
@@ -36,7 +37,8 @@ module RecordingStudioAccessible
       RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
     end
 
-    initializer "recording_studio_accessible.after_initialize", after: "recording_studio_accessible.register_access_types" do
+    initializer "recording_studio_accessible.after_initialize",
+                after: "recording_studio_accessible.register_access_types" do
       RecordingStudioAccessible::Hooks.run(:after_initialize, self)
     end
   end

@@ -7,7 +7,7 @@ class UserShowPageTest < ActionDispatch::IntegrationTest
     @viewer = create_user("viewer@admin.com")
     @page_owner = create_user("page_owner@admin.com")
 
-    workspace = Workspace.create!(name: "Integration Workspace")
+    workspace = Workspace.create!(name: "000 Integration Workspace")
     root_recording = RecordingStudio::Recording.unscoped.create!(recordable: workspace, parent_recording_id: nil)
 
     folder = Folder.create!(
@@ -35,8 +35,7 @@ class UserShowPageTest < ActionDispatch::IntegrationTest
     )
 
     grant_access(@admin, :admin, root_recording)
-    grant_access(@editor, :edit, folder_recording, root_recording)
-    grant_access(@page_owner, :edit, page_recording, root_recording)
+    grant_access(@editor, :edit, root_recording)
   end
 
   test "home page links access chips to the user show page" do
