@@ -19,6 +19,25 @@ module RecordingStudioAccessible
         "Someone"
       end
 
+      def recordable_label_for(recording)
+        recordable = recording&.recordable
+        return nil unless recordable
+
+        if defined?(::RecordingStudio::Labels) && ::RecordingStudio::Labels.respond_to?(:title_for)
+          label = ::RecordingStudio::Labels.title_for(recordable)
+          return label if label.present?
+        end
+
+        %i[recordable_name name title].each do |method_name|
+          next unless recordable.respond_to?(method_name)
+
+          value = recordable.public_send(method_name)
+          return value if value.present?
+        end
+
+        recordable.class.name.demodulize.presence
+      end
+
       private
 
       def humanized_email_label(email)
@@ -29,6 +48,7 @@ module RecordingStudioAccessible
 
     def access_granted
       @recording = params[:recording]
+      @recording_label = self.class.recordable_label_for(@recording)
       @actor = params[:actor]
       @role = params[:role].to_s
       @manager_actor = params[:manager_actor]

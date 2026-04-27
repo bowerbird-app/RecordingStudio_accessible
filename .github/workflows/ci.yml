@@ -58,7 +58,13 @@ jobs:
     - name: Run RuboCop
       run: bundle exec rubocop
 
-    - name: Run tests
-      run: bundle exec rake app:test
+    - name: Run root gem tests
+      run: bundle exec rake test
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/recording_studio_accessible_test
+
+    - name: Run dummy app test suite
+      run: bin/rails test
+      working-directory: test/dummy
       env:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/recording_studio_accessible_test

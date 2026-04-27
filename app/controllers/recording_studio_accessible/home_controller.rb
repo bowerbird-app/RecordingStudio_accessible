@@ -2,6 +2,8 @@
 
 module RecordingStudioAccessible
   class HomeController < ApplicationController
+    before_action :authorize_mounted_page!
+
     def index
       @integration_mode = RecordingStudioAccessible::Compatibility.integration_mode
       @workspace = demo_workspace
@@ -223,6 +225,33 @@ module RecordingStudioAccessible
 
     private
 
+    def authorize_mounted_page!
+      return if RecordingStudioAccessible.configuration.authorize_mounted_page?(
+        controller: self,
+        actor: current_actor,
+        recording: authorization_recording
+      )
+
+      redirect_to unauthorized_mounted_page_redirect_path
+    end
+
+    def current_actor
+      RecordingStudioAccessible.configuration.current_actor_for(controller: self)
+    end
+
+    def authorization_recording
+      @authorization_recording ||= begin
+        @workspace ||= demo_workspace
+        @root_recording ||= find_root_recording
+      end
+    end
+
+    def unauthorized_mounted_page_redirect_path
+      return main_app.root_path if respond_to?(:main_app) && main_app.respond_to?(:root_path)
+
+      "/"
+    end
+
     def demo_workspace
       return unless defined?(::Workspace)
 
@@ -236,7 +265,6 @@ module RecordingStudioAccessible
     end
 
     def resolve_admin_user
-      current_actor = RecordingStudioAccessible.configuration.current_actor_for(controller: self)
       return current_actor if current_actor.present?
       return unless defined?(::User)
 

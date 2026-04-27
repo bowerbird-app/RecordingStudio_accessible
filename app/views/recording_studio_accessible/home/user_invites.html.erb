@@ -17,7 +17,7 @@
         <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <%= render FlatPack::Badge::Component.new(text: "Default", style: :default, size: :sm) %>
-            <p class="text-base leading-7 text-(--surface-content-color)">
+            <p class="text-base leading-7 text-[var(--surface-content-color)]">
               If you do nothing, the addon keeps the current validation error and the form shows
               <strong>User with email ... was not found</strong>.
             </p>
@@ -27,7 +27,7 @@
         <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <%= render FlatPack::Badge::Component.new(text: "Dummy app", style: :info, size: :sm) %>
-            <p class="text-base leading-7 text-(--surface-content-color)">
+            <p class="text-base leading-7 text-[var(--surface-content-color)]">
               This dummy app overrides that default in its initializer. It normalizes the email,
               rejects blank input, creates the user when needed, and returns <strong>:created</strong>
               so the grant finishes in the same request.
@@ -48,7 +48,7 @@
         <% @invite_status_rows.each do |row| %>
           <%= render FlatPack::List::Item.new(class: "py-3 px-0") do %>
             <div class="flex w-full items-start justify-between gap-4">
-              <p class="min-w-0 flex-1 text-base leading-7 text-(--surface-content-color)"><%= row[:body] %></p>
+              <p class="min-w-0 flex-1 text-base leading-7 text-[var(--surface-content-color)]"><%= row[:body] %></p>
               <%= render FlatPack::Badge::Component.new(text: row[:title], style: row[:badge_style], size: :sm) %>
             </div>
           <% end %>
@@ -64,7 +64,7 @@
         anchor_id: "setup-patterns"
       ) %>
 
-      <div class="grid gap-6">
+      <%= render FlatPack::Grid::Component.new(cols: 1, gap: :md, class: "w-full") do %>
         <% @invite_setup_examples.each do |example| %>
           <section>
             <%= render FlatPack::SectionTitle::Component.new(
@@ -80,7 +80,7 @@
             ) %>
           </section>
         <% end %>
-      </div>
+      <% end %>
     </section>
   </div>
 </div>

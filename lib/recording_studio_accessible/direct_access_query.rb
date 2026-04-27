@@ -23,6 +23,21 @@ module RecordingStudioAccessible
           .where(recording_studio_accesses: { actor_type: actor.class.name, actor_id: actor.id })
           .order(created_at: :desc, id: :desc)
       end
+
+      def access_recordings_for_actor_in(recordings:, actor:)
+        return RecordingStudio::Recording.none unless actor
+
+        recording_ids = Array(recordings).filter_map(&:id)
+        return RecordingStudio::Recording.none if recording_ids.empty?
+
+        RecordingStudio::Recording.unscoped
+                                  .where(parent_recording_id: recording_ids,
+                                         recordable_type: "RecordingStudio::Access",
+                                         trashed_at: nil)
+                                  .joins(ACCESS_JOIN_SQL)
+                                  .where(recording_studio_accesses: { actor_type: actor.class.name, actor_id: actor.id })
+                                  .order(created_at: :desc, id: :desc)
+      end
     end
   end
 end

@@ -5,6 +5,8 @@ require "test_helper"
 class AccessGrantedMailerTest < Minitest::Test
   RecipientStub = Struct.new(:email, keyword_init: true)
   ManagerActorStub = Struct.new(:email, :full_name, :name, :display_name, keyword_init: true)
+  RecordableStub = Struct.new(:name, keyword_init: true)
+  RecordingStub = Struct.new(:recordable, keyword_init: true)
 
   def setup
     RecordingStudioAccessible::AccessGrantedMailer.prepend_view_path(File.expand_path("../app/views", __dir__))
@@ -16,7 +18,7 @@ class AccessGrantedMailerTest < Minitest::Test
     )
 
     assert_includes message.html_part.decoded, "Alice Smith"
-    assert_includes message.text_part.decoded, "Alice Smith granted you view access."
+    assert_includes message.text_part.decoded, "Alice Smith granted you view access to Operations."
   end
 
   def test_access_granted_humanizes_manager_email_when_name_is_missing
@@ -25,13 +27,14 @@ class AccessGrantedMailerTest < Minitest::Test
     )
 
     assert_includes message.html_part.decoded, "Admin"
-    assert_includes message.text_part.decoded, "Admin granted you view access."
+    assert_includes message.text_part.decoded, "Admin granted you view access to Operations."
   end
 
   private
 
   def build_message(manager_actor:)
     RecordingStudioAccessible::AccessGrantedMailer.with(
+      recording: RecordingStub.new(recordable: RecordableStub.new(name: "Operations")),
       actor: RecipientStub.new(email: "viewer@example.com"),
       role: :view,
       manager_actor: manager_actor,

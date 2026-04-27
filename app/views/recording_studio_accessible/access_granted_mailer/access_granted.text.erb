@@ -1,6 +1,6 @@
 Hello <%= @actor.respond_to?(:email) ? @actor.email : "there" %>,
 
-<%= @manager_actor_display_name %> granted you <%= @role.humanize.downcase %> access.
+<%= @manager_actor_display_name %> granted you <%= @role.humanize.downcase %> access<%= @recording_label.present? ? " to #{@recording_label}" : "" %>.
 <% if @access_url.present? %>
 Open the shared item: <%= @access_url %>
 <% end %>

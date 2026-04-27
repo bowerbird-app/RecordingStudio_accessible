@@ -38,14 +38,16 @@ class UserShowPageTest < ActionDispatch::IntegrationTest
     grant_access(@editor, :edit, root_recording)
   end
 
-  test "home page links access chips to the user show page" do
+  test "home page does not list workspace access users" do
     sign_in @admin
 
     get "/"
 
     assert_response :success
-    assert_includes @response.body, user_path(@admin)
-    assert_includes @response.body, user_path(@editor)
+    refute_includes @response.body, "people with access"
+    refute_includes @response.body, "#{@admin.email} (admin)"
+    refute_includes @response.body, user_path(@admin)
+    refute_includes @response.body, user_path(@editor)
   end
 
   test "user show page lists items the user can access" do

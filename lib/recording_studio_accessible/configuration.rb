@@ -46,7 +46,8 @@ module RecordingStudioAccessible
                   :access_management_access_granted_notifier,
                   :access_management_access_granted_subject,
                   :access_management_access_granted_url_resolver,
-                  :access_management_authorizer
+                  :access_management_authorizer,
+                  :mounted_page_authorizer
     attr_reader :hooks
 
     def initialize
@@ -60,6 +61,7 @@ module RecordingStudioAccessible
       @access_management_access_granted_subject = method(:default_access_management_access_granted_subject)
       @access_management_access_granted_url_resolver = method(:default_access_management_access_granted_url_resolver)
       @access_management_authorizer = method(:default_access_management_authorizer)
+      @mounted_page_authorizer = method(:default_mounted_page_authorizer)
       @hooks = Hooks.new
     end
 
@@ -115,6 +117,10 @@ module RecordingStudioAccessible
 
     def authorize_access_management?(recording:, actor: nil, controller: nil)
       call_access_management_authorizer(recording: recording, actor: actor, controller: controller)
+    end
+
+    def authorize_mounted_page?(controller:, actor: nil, recording: nil)
+      call_mounted_page_authorizer(controller: controller, actor: actor, recording: recording)
     end
 
     def notify_access_granted(controller:, recording:, actor:, role:, manager_actor:)
@@ -261,6 +267,15 @@ module RecordingStudioAccessible
       RecordingStudio::Services::AccessCheck.allowed?(actor: actor, recording: recording, role: :admin)
     end
 
+    def default_mounted_page_authorizer(controller:, actor: nil, recording: nil)
+      return false unless defined?(::RecordingStudio::Services::AccessCheck)
+
+      actor ||= current_actor_for(controller: controller)
+      return false unless actor && recording
+
+      RecordingStudio::Services::AccessCheck.allowed?(actor: actor, recording: recording, role: :admin)
+    end
+
     def call_access_management_authorizer(recording:, actor:, controller:)
       callable = access_management_authorizer
       return false unless callable
@@ -269,6 +284,19 @@ module RecordingStudioAccessible
         recording: recording,
         actor: actor,
         controller: controller
+      }
+
+      callable.call(**filtered_keyword_arguments(callable, kwargs))
+    end
+
+    def call_mounted_page_authorizer(controller:, actor:, recording:)
+      callable = mounted_page_authorizer
+      return false unless callable
+
+      kwargs = {
+        controller: controller,
+        actor: actor,
+        recording: recording
       }
 
       callable.call(**filtered_keyword_arguments(callable, kwargs))

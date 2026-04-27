@@ -104,6 +104,8 @@ If you mount `RecordingStudioAccessible::Engine`, the gem exposes a recording-sc
 
 The page uses a blank layout, renders only FlatPack components, and lets authorized users add, update, and remove direct grants for the target recording.
 
+The mounted addon overview, docs, and email-preview pages under `/recording_studio_accessible` are authorized separately from the recording-scoped access-management page. By default they are fail-closed unless the current actor has admin access to the resolved demo root recording. If your host app wants a different policy, override `config.mounted_page_authorizer`.
+
 To set that up in a host app, run:
 
 ```bash
@@ -153,6 +155,13 @@ RecordingStudioAccessible.configure do |config|
   config.access_management_actor_label = ->(actor) { actor.email }
   config.access_management_authorizer = lambda do |recording:, actor:, **|
     actor.present? && RecordingStudio::Services::AccessCheck.allowed?(
+      actor: actor,
+      recording: recording,
+      role: :admin
+    )
+  end
+  config.mounted_page_authorizer = lambda do |controller:, actor:, recording:|
+    actor.present? && recording.present? && RecordingStudio::Services::AccessCheck.allowed?(
       actor: actor,
       recording: recording,
       role: :admin

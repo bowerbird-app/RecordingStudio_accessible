@@ -50,11 +50,13 @@ class HomePageTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes @response.body, "Recording Studio Accessible Demo"
-    assert_includes @response.body, "Workspace:"
     assert_includes @response.body, "Client onboarding"
     assert_includes @response.body, "Accessibility checklist"
     assert_includes @response.body, "0 access"
     assert_includes @response.body, "Pages not allowed to add access"
+    refute_includes @response.body, "Workspace:"
+    refute_includes @response.body, "people with access"
+    refute_includes @response.body, "admin@admin.com (admin)"
     refute_includes @response.body, @outsider.email
     assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@folder_recording.id}/accesses\""
     refute_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@page_recording.id}/accesses\""
@@ -80,6 +82,32 @@ class HomePageTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes @response.body, "Optional access-control addon"
+  end
+
+  test "non-admin users do not see mounted addon docs links" do
+    sign_in @viewer
+
+    get "/"
+
+    assert_response :success
+    refute_includes @response.body, 'href="/recording_studio_accessible/overview"'
+    refute_includes @response.body, 'href="/recording_studio_accessible/email_template"'
+  end
+
+  test "non-admin users are redirected away from mounted addon docs and previews" do
+    sign_in @viewer
+
+    get "/recording_studio_accessible"
+    assert_response :redirect
+    assert_redirected_to "/"
+
+    get "/recording_studio_accessible/methods"
+    assert_response :redirect
+    assert_redirected_to "/"
+
+    get "/recording_studio_accessible/email_template"
+    assert_response :redirect
+    assert_redirected_to "/"
   end
 
   test "methods page renders the documented access APIs" do
@@ -144,6 +172,8 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "config.access_management_actor_email_resolver"
     assert_includes @response.body, "config.access_management_missing_actor_handler"
     assert_includes @response.body, 'Resolve #{normalized_email} before granting access'
+    assert_includes @response.body, "text-[var(--surface-content-color)]"
+    refute_includes @response.body, "text-(--surface-content-color)"
   end
 
   test "email template page renders the default access granted email preview" do
@@ -159,14 +189,14 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "href=\"/recording_studio_accessible/email_template\""
     assert_includes @response.body, "Message details"
     assert_includes @response.body, "You were given access"
-    assert_includes @response.body, "from@example.com"
+    assert_includes @response.body, "no-reply@example.com"
     assert_includes @response.body, @viewer.email
     assert_match %r{Granted by\s+Admin}, @response.body
     assert_includes @response.body, "HTML preview"
-    assert_match %r{Admin\s+granted you &lt;strong&gt;view&lt;/strong&gt; access}, @response.body
+    assert_match %r{Admin\s+granted you &lt;strong&gt;view&lt;/strong&gt; access to #{@root_recording.recordable.name}}, @response.body
     assert_match %r{href=&quot;#{shared_item_url_pattern.source}&quot;}, @response.body
     assert_includes @response.body, "Text preview"
-    assert_match %r{Admin granted you view access\.\s*Open the shared item: #{shared_item_url_pattern.source}}, @response.body
+    assert_match %r{Admin granted you view access to #{@root_recording.recordable.name}\.\s*Open the shared item: #{shared_item_url_pattern.source}}, @response.body
   end
 
   private

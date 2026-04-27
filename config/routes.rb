@@ -10,5 +10,6 @@ RecordingStudioAccessible::Engine.routes.draw do
 
   resources :recordings, only: [] do
     resources :accesses, only: %i[index new create edit update destroy], controller: "recording_accesses"
+    resource :boundary, only: %i[new create destroy], controller: "recording_access_boundaries"
   end
 end

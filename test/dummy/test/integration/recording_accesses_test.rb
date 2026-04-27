@@ -46,7 +46,8 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, "People with access"
     refute_includes @response.body, "Direct access entries granted on this recording"
     assert_includes @response.body, "<table"
-    assert_includes @response.body, "Actor type"
+    assert_includes @response.body, "Who"
+    assert_includes @response.body, "Type"
     assert_includes @response.body, "Role"
     assert_includes @response.body, "User"
     assert_includes @response.body, "Edit"
@@ -54,6 +55,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, %(name="_method" value="delete")
     refute_includes @response.body, "Main navigation"
     refute_includes @response.body, "Sign out"
+    refute_includes @response.body, "Add boundary"
     refute_includes @response.body, "Other people with access"
     refute_includes @response.body, "other-people-with-access"
     refute_includes @response.body, "Access point"
@@ -67,6 +69,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "Client onboarding"
     assert_includes @response.body, "Other people with access"
+    assert_includes @response.body, "Add boundary"
 
     post recording_accesses_path, params: {
       access: {
@@ -76,6 +79,55 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :redirect
+  end
+
+  test "admin can add and remove a folder boundary from manage access" do
+    sign_in @admin
+
+    get recording_accesses_path
+
+    assert_response :success
+    assert_includes @response.body, "Add boundary"
+    refute_includes @response.body, "Access boundary added"
+
+    get new_recording_boundary_path
+
+    assert_response :success
+    assert_includes @response.body, "Add boundary"
+    assert_includes @response.body, "Before you add a boundary"
+    assert_includes @response.body, "This gives this folder its own access rules."
+    assert_includes @response.body, "This boundary requires Edit access."
+    assert_includes @response.body, "Confirm add boundary"
+
+    post recording_boundary_path
+
+    assert_response :redirect
+    follow_redirect!
+
+    assert_response :success
+    assert_includes @response.body, "Boundary added."
+    assert_includes @response.body, "Access boundary added"
+    assert_includes @response.body, "Minimum role: Edit"
+    assert_includes @response.body, "Remove boundary"
+    refute_includes @response.body, "href=\"#{new_recording_boundary_path}\""
+
+    boundary_recording = active_boundary_recording_for(@folder_recording)
+    refute_nil boundary_recording
+    assert_equal "edit", boundary_recording.recordable.minimum_role
+
+    boundary_id = boundary_recording.recordable_id
+
+    delete recording_boundary_path
+
+    assert_response :redirect
+    follow_redirect!
+
+    assert_response :success
+    assert_includes @response.body, "Boundary removed."
+    assert_includes @response.body, "Add boundary"
+    refute_includes @response.body, "Access boundary added"
+    assert_nil active_boundary_recording_for(@folder_recording)
+    assert_nil RecordingStudio::AccessBoundary.find_by(id: boundary_id)
   end
 
   test "admin can view the new access page" do
@@ -295,6 +347,14 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     "/recording_studio_accessible/recordings/#{@root_recording.id}/accesses"
   end
 
+  def new_recording_boundary_path
+    "/recording_studio_accessible/recordings/#{@folder_recording.id}/boundary/new"
+  end
+
+  def recording_boundary_path
+    "/recording_studio_accessible/recordings/#{@folder_recording.id}/boundary"
+  end
+
   def direct_access_recordings_for(user)
     RecordingStudio::Services::AccessCheck.access_recordings_for(@root_recording)
                                          .select { |recording| recording.recordable.actor == user }
@@ -302,5 +362,13 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
 
   def direct_access_recording_for(user)
     direct_access_recordings_for(user).first
+  end
+
+  def active_boundary_recording_for(recording)
+    RecordingStudio::Recording.unscoped.find_by(
+      parent_recording_id: recording.id,
+      recordable_type: "RecordingStudio::AccessBoundary",
+      trashed_at: nil
+    )
   end
 end

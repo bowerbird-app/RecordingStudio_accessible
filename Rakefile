@@ -26,9 +26,18 @@ namespace :test do
   end
 end
 
-namespace :app do
-  desc "Run all tests for the gem"
-  task test: :test
+namespace :dummy do
+  desc "Run the dummy Rails app test suite"
+  task :test do
+    dummy_root = File.expand_path("test/dummy", __dir__)
+
+    Dir.chdir(dummy_root) do
+      sh "env -u BUNDLE_GEMFILE -u BUNDLE_BIN_PATH -u RUBYOPT bin/rails test"
+    end
+  end
 end
+
+desc "Run the root gem tests and the dummy Rails app suite"
+task "app:test" => [:test, "dummy:test"]
 
 task default: :test

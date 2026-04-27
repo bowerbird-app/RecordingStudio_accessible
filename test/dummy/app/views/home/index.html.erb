@@ -19,23 +19,6 @@
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= @workspace.name %></h3>
             <%= render FlatPack::Badge::Component.new(text: @workspace.class.name, style: :default, size: :sm) %>
-            <p class="text-sm text-slate-600"><strong>Workspace:</strong> <%= @workspace.name %></p>
-            <p class="text-sm text-slate-600">
-              <%= pluralize(@workspace_access_rows.count, "person") %> with access
-            </p>
-            <% if @workspace_access_rows.any? %>
-              <div class="flex flex-wrap gap-2">
-                <% @workspace_access_rows.each do |row| %>
-                  <%= link_to user_path(row[:user]), class: "inline-flex" do %>
-                    <%= render FlatPack::Chip::Component.new(
-                      text: "#{row[:email]} (#{row[:role]})",
-                      style: :default,
-                      size: :sm
-                    ) %>
-                  <% end %>
-                <% end %>
-              </div>
-            <% end %>
             <% if @root_recording && @root_access_management_enabled %>
               <%= render FlatPack::Button::Component.new(
                 text: "Change access",

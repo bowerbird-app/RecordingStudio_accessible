@@ -64,6 +64,9 @@ class ConfigurationTest < Minitest::Test
       notifier_calls << [controller, recording, actor, role, manager_actor]
     end
     authorizer = ->(controller:, recording:) { controller == :controller && recording == :recording }
+    mounted_page_authorizer = lambda do |controller:, actor:, recording:|
+      controller == :controller && actor == :actor && recording == :recording
+    end
 
     @configuration.access_management_actor_scope = actor_scope
     @configuration.access_management_current_actor_resolver = current_actor_resolver
@@ -72,6 +75,7 @@ class ConfigurationTest < Minitest::Test
     @configuration.access_management_missing_actor_handler = missing_actor_handler
     @configuration.access_management_access_granted_notifier = access_granted_notifier
     @configuration.access_management_authorizer = authorizer
+    @configuration.mounted_page_authorizer = mounted_page_authorizer
 
     assert_equal [:custom_actor], @configuration.grantable_actors_for(controller: :controller)
     assert_equal %i[controller current_actor], @configuration.current_actor_for(controller: :controller)
@@ -100,6 +104,7 @@ class ConfigurationTest < Minitest::Test
 
     assert_equal [%i[controller recording actor view manager]], notifier_calls
     assert @configuration.authorize_access_management?(controller: :controller, recording: :recording)
+    assert @configuration.authorize_mounted_page?(controller: :controller, actor: :actor, recording: :recording)
   end
 
   def test_missing_actor_resolution_normalizes_actor_return_values

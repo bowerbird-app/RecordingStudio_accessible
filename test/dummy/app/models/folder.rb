@@ -1,7 +1,7 @@
 class Folder < ApplicationRecord
   include RecordingStudioAccessible::AllowsAccessibleChildren
 
-  recording_studio_accessible_children :access
+  recording_studio_accessible_children :access, :boundary
 
   belongs_to :workspace
   has_many :pages, -> { order(:position, :title) }, dependent: :destroy
