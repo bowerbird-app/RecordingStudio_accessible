@@ -1,0 +1,40 @@
+<div class="mx-auto w-full max-w-5xl">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: @workspace.name,
+    subtitle: "Shared workspace preview",
+    variant: :h1
+  ) %>
+
+  <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md, class: "mt-6") do %>
+    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+      <% card.header do %>
+        <%= render FlatPack::SectionTitle::Component.new(
+          title: "Folders",
+          subtitle: "Content currently inside this workspace",
+          anchor_link: true,
+          anchor_id: "workspace-folders"
+        ) %>
+      <% end %>
+
+      <% card.body do %>
+        <%= render FlatPack::List::Component.new(items: @workspace.folders.map(&:name), separated: false) %>
+      <% end %>
+    <% end %>
+
+    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+      <% card.header do %>
+        <%= render FlatPack::SectionTitle::Component.new(
+          title: "Pages",
+          subtitle: "Nested pages reachable from this workspace",
+          anchor_link: true,
+          anchor_id: "workspace-pages"
+        ) %>
+      <% end %>
+
+      <% card.body do %>
+        <% page_titles = @workspace.folders.flat_map { |folder| folder.pages.map(&:title) } %>
+        <%= render FlatPack::List::Component.new(items: page_titles, separated: false) %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

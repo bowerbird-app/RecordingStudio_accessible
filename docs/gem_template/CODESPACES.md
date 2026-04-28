@@ -35,14 +35,18 @@ git lfs install && \
 bundle config set --local path '/usr/local/bundle' && \
 bundle install && \
 cd test/dummy && \
+bundle config set --local path '/usr/local/bundle' && \
+bundle install && \
 bundle exec rails db:prepare && \
+bundle exec rails db:seed && \
 bundle exec rails tailwindcss:build
 ```
 
 This:
 - Installs Git LFS (if needed)
-- Installs gem dependencies
+- Installs gem dependencies for both the engine and the dummy app
 - Prepares the PostgreSQL database (creates, migrates, seeds)
+- Loads the dummy app seed data, including the demo Devise users
 - Builds TailwindCSS assets
 
 ---

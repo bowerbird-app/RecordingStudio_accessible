@@ -1,0 +1,21 @@
+<div class="mx-auto w-full max-w-6xl">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Boundaries",
+    subtitle: "How to limit access to children",
+    variant: :h1
+  ) %>
+
+  <div class="mt-6 grid gap-6">
+    <% @boundary_sections.each do |section| %>
+      <section>
+        <%= render FlatPack::SectionTitle::Component.new(
+          title: section[:title],
+          anchor_link: true,
+          anchor_id: section[:title].parameterize
+        ) %>
+
+        <p class="text-base leading-7 text-[var(--surface-content-color)]"><%= section[:body] %></p>
+      </section>
+    <% end %>
+  </div>
+</div>

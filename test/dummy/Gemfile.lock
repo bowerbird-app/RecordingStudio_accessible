@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio.git
-  revision: c1aec2222f685037debcbce56422fdff0b6cb4f7
-  tag: v0.1.0-alpha
+  revision: 795ff3d00b690e132418658c00ea06856b716675
+  ref: 795ff3d00b690e132418658c00ea06856b716675
   specs:
-    recording_studio (0.1.0)
+    recording_studio (0.2.0)
       rails (>= 8.1.0)
 
 GIT
@@ -19,8 +19,9 @@ GIT
 PATH
   remote: ../..
   specs:
-    gem_template (0.1.0)
+    recording_studio_accessible (0.1.0)
       rails (~> 8.1.0)
+      recording_studio (>= 0.1.0)
 
 GEM
   remote: https://rubygems.org/
@@ -434,7 +435,6 @@ DEPENDENCIES
   debug
   devise
   flat_pack!
-  gem_template!
   image_processing (~> 1.2)
   importmap-rails
   jbuilder
@@ -444,6 +444,7 @@ DEPENDENCIES
   puma (>= 5.0)
   rails (~> 8.1.1)
   recording_studio!
+  recording_studio_accessible!
   rubocop-rails-omakase
   solid_cable
   solid_cache
@@ -502,7 +503,6 @@ CHECKSUMS
   ffi (1.17.2-x86_64-linux-musl) sha256=97c0eb3981414309285a64dc4d466bd149e981c279a56371ef811395d68cb95c
   flat_pack (0.1.2)
   fugit (1.12.1) sha256=5898f478ede9b415f0804e42b8f3fd53f814bd85eebffceebdbc34e1107aaf68
-  gem_template (0.1.0)
   globalid (1.3.0) sha256=05c639ad6eb4594522a0b07983022f04aa7254626ab69445a0e493aa3786ff11
   i18n (1.14.8) sha256=285778639134865c5e0f6269e0b818256017e8cde89993fdfcbfb64d088824a5
   image_processing (1.14.0) sha256=754cc169c9c262980889bec6bfd325ed1dafad34f85242b5a07b60af004742fb
@@ -570,7 +570,8 @@ CHECKSUMS
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.3.1) sha256=8c9e89d09f66a26a01264e7e3480ec0607f0c497a861ef16063604b1b08eb19c
   rdoc (7.2.0) sha256=8650f76cd4009c3b54955eb5d7e3a075c60a57276766ebf36f9085e8c9f23192
-  recording_studio (0.1.0)
+  recording_studio (0.2.0)
+  recording_studio_accessible (0.1.0)
   regexp_parser (2.11.3) sha256=ca13f381a173b7a93450e53459075c9b76a10433caadcb2f1180f2c741fc55a4
   reline (0.6.3) sha256=1198b04973565b36ec0f11542ab3f5cfeeec34823f4e54cebde90968092b1835
   responders (3.2.0) sha256=89c2d6ac0ae16f6458a11524cae4a8efdceba1a3baea164d28ee9046bd3df55a

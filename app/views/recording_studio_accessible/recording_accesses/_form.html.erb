@@ -1,0 +1,90 @@
+<%= render FlatPack::Breadcrumb::Component.new(class: "mb-4") do |breadcrumb| %>
+  <% breadcrumb.item(text: "Back", href: request.referer || recording_accesses_path(@recording), icon: "chevron-left") %>
+<% end %>
+
+<%= render FlatPack::PageTitle::Component.new(
+  title: title,
+  subtitle: @recording_label,
+  variant: :h1
+) %>
+
+<% show_recording_card = local_assigns.fetch(:show_recording_card, true) %>
+<% wrap_form_card = local_assigns.fetch(:wrap_form_card, true) %>
+<% show_form_section_title = local_assigns[:form_title].present? || local_assigns[:form_subtitle].present? %>
+
+<% form_content = capture do %>
+  <% if show_form_section_title %>
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: form_title,
+      subtitle: form_subtitle,
+      anchor_link: true,
+      anchor_id: form_title.to_s.parameterize.presence || "access-form"
+    ) %>
+  <% end %>
+
+  <%= form_with url: form_url, scope: :access, method: form_method do %>
+    <div class="space-y-4">
+      <% if show_actor_email_input %>
+        <%= render FlatPack::EmailInput::Component.new(
+          name: "access[email]",
+          value: @selected_email,
+          label: "User email",
+          placeholder: "email@example.com",
+          required: true
+        ) %>
+      <% else %>
+        <%= render FlatPack::Chip::Component.new(text: @editing_actor_label, style: :default, size: :md) %>
+        <%= render FlatPack::Chip::Component.new(text: @editing_actor_type, style: :default, size: :md) %>
+      <% end %>
+
+      <%= render FlatPack::RadioGroup::Component.new(
+        name: "access[role]",
+        options: access_role_options,
+        value: @selected_role,
+        label: "Role",
+        required: true
+      ) %>
+
+      <%= render FlatPack::Button::Component.new(
+        text: submit_label,
+        style: :primary,
+        size: :md,
+        type: "submit"
+      ) %>
+    </div>
+  <% end %>
+<% end %>
+
+<% if show_recording_card %>
+  <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md, align: :start) do %>
+    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+      <% card.body do %>
+        <%= render FlatPack::SectionTitle::Component.new(
+          title: "Recording",
+          subtitle: "#{@recording.recordable_type.demodulize} inside #{@root_label}",
+          anchor_link: true,
+          anchor_id: "recording-details"
+        ) %>
+        <%= render FlatPack::Badge::Component.new(text: @recording.recordable_type.demodulize, style: :info, size: :sm) %>
+      <% end %>
+    <% end %>
+
+    <% if wrap_form_card %>
+      <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+        <% card.body do %>
+          <%= form_content %>
+        <% end %>
+      <% end %>
+    <% else %>
+      <%= form_content %>
+    <% end %>
+  <% end %>
+<% elsif wrap_form_card %>
+  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+    <% card.body do %>
+      <%= form_content %>
+    <% end %>
+  <% end %>
+<% else %>
+  <%= form_content %>
+<% end %>

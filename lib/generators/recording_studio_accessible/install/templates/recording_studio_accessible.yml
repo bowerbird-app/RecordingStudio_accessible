@@ -1,0 +1,11 @@
+default: &default
+  warn_on_core_conflict: true
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default

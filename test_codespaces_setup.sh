@@ -24,12 +24,24 @@ echo "Step 4: Change to dummy app directory"
 echo "Command: cd test/dummy"
 echo
 
-echo "Step 5: Prepare database"
+echo "Step 5: Configure Bundler for the dummy app"
+echo "Command: bundle config set --local path '/usr/local/bundle'"
+echo
+
+echo "Step 6: Bundle install (dummy app)"
+echo "Command: bundle install"
+echo
+
+echo "Step 7: Prepare database"
 echo "Command: bin/rails db:prepare"
 echo "Note: Requires PostgreSQL to be running"
 echo
 
-echo "Step 6: Build Tailwind CSS"
+echo "Step 8: Load dummy seed data"
+echo "Command: bin/rails db:seed"
+echo
+
+echo "Step 9: Build Tailwind CSS"
 echo "Command: bin/rails tailwindcss:build"
 echo
 
@@ -39,4 +51,4 @@ echo "To start the server:"
 echo "  cd test/dummy"
 echo "  bundle exec rails server -p 3000 -b 0.0.0.0"
 echo
-echo "Then visit: http://localhost:3000/gem_template"
+echo "Then visit: http://localhost:3000/recording_studio_accessible"

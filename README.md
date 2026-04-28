@@ -1,131 +1,255 @@
-# GemTemplate
+# Recording Studio Accessible
 
-Internal template for building Rails engine addons on top of RecordingStudio.
+Recording Studio Accessible is the optional access-control addon for `RecordingStudio`.
 
-## What's Included
+It extracts the access-specific pieces that currently live in RecordingStudio core into a standalone engine so host apps can install access behavior intentionally instead of assuming it is always present.
 
-- **RecordingStudio** gem installed and configured
-- **Devise** authentication with a pre-seeded admin user
-- **Workspace** root recording set up following RecordingStudio's Quick Start pattern
-- **FlatPack** UI component library for all views
-- **Dummy app** (`test/dummy/`) with a working login screen and FlatPack default sidebar layout for authenticated pages
+## What the gem provides
 
-## Quick Start
+- `RecordingStudio::Access` recordables for root-level and recording-level grants
+- `RecordingStudio::AccessBoundary` recordables for inheritance cutoffs
+- `RecordingStudio::Services::AccessCheck` for role lookup and authorization checks
+- a mounted engine page for adding and removing direct access on a recording
+- install and migration generators for host apps
+- a dummy Rails app that demonstrates the addon mounted separately from RecordingStudio
 
-### GitHub Codespaces (Recommended)
+## Naming
 
-1. Click **Code** → **Codespaces** → **Create codespace**
-2. Wait for setup to complete
-3. Run:
-   ```bash
-   cd test/dummy
-   bin/rails db:setup
-   bin/dev
-   ```
-4. Open port 3000 — you'll see the login screen
+This repository follows the template rename conventions for **Recording Studio Accessible**:
 
-The dummy app already includes FlatPack generator output (`flat_pack:install` and default sidebar layout scaffold) so authenticated pages render with the FlatPack sidebar shell by default.
+- Product name: `Recording Studio Accessible`
+- Gem name: `recording_studio_accessible`
+- Ruby namespace: `RecordingStudioAccessible`
+- Engine namespace: `RecordingStudioAccessible::Engine`
 
-### Login Credentials
+The extracted public access API remains under `RecordingStudio::*` for compatibility with existing host code.
 
-| Field    | Value             |
-|----------|-------------------|
-| Email    | admin@admin.com   |
-| Password | Password          |
+## Installation
 
-The login form is prefilled with these credentials for fast access.
-
-## Architecture
-
-### Root Recording Pattern
-
-This template follows RecordingStudio's root recording pattern:
-
-- **Workspace** is the top-level recordable
-- A root `RecordingStudio::Recording` wraps the Workspace
-- The admin user has root-level admin access via `RecordingStudio::Access`
-- `Current.actor` is set from `current_user` (Devise) in `ApplicationController`
-
-### Extending RecordingStudio
-
-To add new recordable types:
-
-1. Create your model (e.g., `Page`, `Comment`)
-2. Register it in `config/initializers/recording_studio.rb`:
-   ```ruby
-   RecordingStudio.configure do |config|
-     config.recordable_types = ["Workspace", "YourNewType"]
-   end
-   ```
-3. Leave optional behavior off by default, then opt into capabilities on the specific recordable models that need them:
-   ```ruby
-   class YourNewType < ApplicationRecord
-     include RecordingStudio::Capabilities::Movable.to("Workspace")
-     include RecordingStudio::Capabilities::Copyable.to("Workspace")
-   end
-   ```
-4. If you want per-device root persistence, wire it explicitly in your controller layer:
-   ```ruby
-   class ApplicationController < ActionController::Base
-     include RecordingStudio::Concerns::DeviceSessionConcern
-   end
-   ```
-5. Create recordings under the root:
-   ```ruby
-   root_recording.record(YourNewType) do |record|
-     record.title = "Example"
-   end
-   ```
-
-### Capabilities
-
-This template uses the current RecordingStudio approach: built-in capabilities are off by default and are enabled per recordable type by including the relevant module on the model.
-
-- `movable`
-- `copyable`
-
-Device session persistence is separate from capabilities. It is enabled only when you include `RecordingStudio::Concerns::DeviceSessionConcern` in your controller layer.
-
-Enable behavior intentionally where it belongs:
+Add the gems to your host app:
 
 ```ruby
-class RecordingStudioPage < ApplicationRecord
-  include RecordingStudio::Capabilities::Movable.to("Workspace")
-  include RecordingStudio::Capabilities::Copyable.to("Workspace")
-end
+gem "recording_studio"
+gem "recording_studio_accessible"
+```
 
-class ApplicationController < ActionController::Base
-  include RecordingStudio::Concerns::DeviceSessionConcern
+Then run:
+
+```bash
+bundle install
+bin/rails generate recording_studio_accessible:install
+bin/rails generate recording_studio_accessible:access_management --link-helper
+bin/rails generate recording_studio_accessible:migrations
+bin/rails db:migrate
+```
+
+## Compatibility with current RecordingStudio releases
+
+Current RecordingStudio releases may still ship the built-in access models and service.
+
+When that happens, Recording Studio Accessible runs in **compatibility mode**:
+
+- it does not redefine `RecordingStudio::Access`, `RecordingStudio::AccessBoundary`, or `RecordingStudio::Services::AccessCheck`
+- it still registers the access recordable types with RecordingStudio
+- it skips addon-owned access migrations because RecordingStudio core already owns those tables
+
+When RecordingStudio core stops shipping those constants, this addon becomes the source of truth for the extracted access implementation.
+
+## Setup notes
+
+### RecordingStudio configuration
+
+Your host app still configures RecordingStudio the normal way:
+
+```ruby
+RecordingStudio.configure do |config|
+  config.recordable_types = ["Workspace"]
+  config.actor = -> { Current.actor }
 end
 ```
 
-### FlatPack UI Components
+The addon automatically registers `RecordingStudio::Access` and `RecordingStudio::AccessBoundary` when it loads.
 
-All views use FlatPack ViewComponents. Available components include:
+To allow direct access grants or boundaries beneath a host recordable, opt that class in explicitly:
 
-- `FlatPack::Button::Component` — Buttons (`:primary`, `:secondary`, `:ghost`)
-- `FlatPack::Card::Component` — Cards (`:default`, `:elevated`, `:outlined`)
-- `FlatPack::Alert::Component` — Alerts (`:success`, `:error`, `:warning`, `:info`)
-- `FlatPack::Badge::Component` — Status badges
-- `FlatPack::Table::Component` — Data tables
-- `FlatPack::TextInput::Component`, `EmailInput`, `PasswordInput` — Form inputs
-- `FlatPack::Breadcrumb::Component` — Navigation breadcrumbs
-- `FlatPack::Navbar::Component` — Navigation sidebar
+```ruby
+class Workspace < ApplicationRecord
+  include RecordingStudioAccessible::AllowsAccessibleChildren
 
-See the [FlatPack README](https://github.com/bowerbird-app/flatpack) for full documentation.
+  recording_studio_accessible_children :access, :boundary
+end
+```
 
-## Tech Stack
+Without that opt-in, the mounted access-management UI and grant service reject direct access placements for the recordable.
 
-| Component       | Version |
-|-----------------|---------|
-| Ruby            | 3.3+    |
-| Rails           | 8.1+    |
-| PostgreSQL      | 16      |
-| TailwindCSS     | 4       |
-| RecordingStudio | v0.1.0-alpha (pinned in `test/dummy/Gemfile`) |
-| FlatPack        | GitHub source (`bowerbird-app/flatpack`) |
-| Devise          | latest  |
+### Granting access
+
+```ruby
+access = RecordingStudio::Access.create!(actor: user, role: :view)
+
+RecordingStudio::Recording.create!(
+  root_recording: root_recording,
+  recordable: access,
+  parent_recording: root_recording
+)
+```
+
+### Managing access through the mounted engine
+
+If you mount `RecordingStudioAccessible::Engine`, the gem exposes a recording-scoped access management page at:
+
+```text
+/recording_studio_accessible/recordings/:recording_id/accesses
+```
+
+The page uses a blank layout, renders only FlatPack components, and lets authorized users add, update, and remove direct grants for the target recording.
+
+The mounted addon overview, docs, and email-preview pages under `/recording_studio_accessible` are authorized separately from the recording-scoped access-management page. By default they are fail-closed unless the current actor has admin access to the resolved demo root recording. If your host app wants a different policy, override `config.mounted_page_authorizer`.
+
+To set that up in a host app, run:
+
+```bash
+bin/rails generate recording_studio_accessible:access_management --link-helper
+```
+
+That generator:
+
+- mounts `RecordingStudioAccessible::Engine` if it is not already mounted
+- creates `config/initializers/recording_studio_accessible.rb` if it does not already exist
+- copies overrideable share-email templates to `app/views/recording_studio_accessible/access_granted_mailer/`
+- optionally creates a host helper with `recording_access_management_path` and `recording_access_management_link`
+
+By default, the new-access form accepts an email address and resolves it against `User` records. If no existing user matches, Recording Studio Accessible keeps the current "not found" error until your host app decides whether to provision an account or redirect into a host-specific resolution flow. After a successful grant, the default notifier sends `RecordingStudioAccessible::AccessGrantedMailer` using the copied templates above. You can override the lookup step, missing-user behavior, share-email subject, destination URL, or the notifier itself:
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.access_management_actor_email_resolver = lambda do |controller:, email:|
+    User.find_by(email: email.to_s.strip.downcase)
+  end
+  config.access_management_current_actor_resolver = lambda do |controller:|
+    Current.actor || controller.current_user
+  end
+  config.access_management_missing_actor_handler = lambda do |email:, **|
+    normalized_email = email.to_s.strip.downcase
+    password = SecureRandom.hex(12)
+
+    user = User.find_or_initialize_by(email: normalized_email)
+
+    if user.new_record?
+      user.password = password
+      user.password_confirmation = password
+      user.save!
+    end
+
+    RecordingStudioAccessible::MissingActorResolution.created(
+      actor: user,
+      notice: "Access granted to #{normalized_email}"
+    )
+  end
+  config.access_management_access_granted_subject = lambda do |recording:, **|
+    "A recording was shared with you: #{RecordingStudio::Labels.title_for(recording.recordable)}"
+  end
+  config.access_management_access_granted_url_resolver = lambda do |controller:, recording:, **|
+    controller.main_app.root_url
+  end
+  config.access_management_actor_label = ->(actor) { actor.email }
+  config.access_management_authorizer = lambda do |recording:, actor:, **|
+    actor.present? && RecordingStudio::Services::AccessCheck.allowed?(
+      actor: actor,
+      recording: recording,
+      role: :admin
+    )
+  end
+  config.mounted_page_authorizer = lambda do |controller:, actor:, recording:|
+    actor.present? && recording.present? && RecordingStudio::Services::AccessCheck.allowed?(
+      actor: actor,
+      recording: recording,
+      role: :admin
+    )
+  end
+end
+```
+
+The missing-actor handler may return an actor directly, or a `RecordingStudioAccessible::MissingActorResolution` describing whether the controller should grant access, render an error, or redirect into a host-app workflow. If the default mailer is close but not quite right, edit the copied templates under `app/views/recording_studio_accessible/access_granted_mailer/`. If you need a fully custom delivery strategy, replace `config.access_management_access_granted_notifier` entirely.
+
+By default, the mounted engine resolves the acting user from `Current.actor` so it follows the same actor source that RecordingStudio uses. If your host app needs a different source, override `config.access_management_current_actor_resolver`. The built-in resolver only falls back to `controller.current_user` when `Current.actor` is unavailable.
+
+The create flow works like this:
+
+1. The controller submits the entered email to `config.access_management_actor_email_resolver`.
+2. If that resolver returns an actor, the engine grants access to that actor immediately.
+3. If no actor is found, the controller calls `config.access_management_missing_actor_handler`.
+4. If that handler returns `MissingActorResolution.created(...)` or an actor, the engine grants access using that actor.
+5. If the grant succeeds, the controller calls `config.access_management_access_granted_notifier`.
+6. The built-in notifier delivers `RecordingStudioAccessible::AccessGrantedMailer` with the configured subject and URL.
+
+That separation is intentional:
+
+- account lookup and optional account provisioning live in host-app configuration
+- granting access lives in the engine service layer
+- post-grant share notification lives in the notifier/mailer layer
+
+### Checking access
+
+```ruby
+RecordingStudio::Services::AccessCheck.role_for(actor: user, recording: root_recording)
+RecordingStudio::Services::AccessCheck.allowed?(actor: user, recording: root_recording, role: :edit)
+```
+
+## Dummy app demo
+
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of the RecordingStudio dependency.
+
+The dummy app also installs a demo-only override in `test/dummy/config/initializers/recording_studio_accessible.rb`. That initializer creates a `User` automatically when an unknown email is granted access, so the demo can show a successful end-to-end flow without requiring a separate invitation or signup system. That behavior is not the engine default for host apps.
+
+Run it with:
+
+```bash
+cd test/dummy
+bundle install
+bin/rails db:setup
+bin/rails tailwindcss:build
+bin/dev
+```
+
+Then sign in with:
+
+- Email: `admin@admin.com`
+- Password: `Password`
+
+Useful routes:
+
+- `/` - dummy app demo with seeded folders, pages, cards, and access results
+- `/recording_studio_accessible` - addon status/demo page
+- `/recording_studio_accessible/recordings/:recording_id/accesses` - gem-provided page for managing direct recording access
+
+The demo seeds:
+
+- one workspace root recording
+- folders and pages as recordable demo content
+- cards attached to seeded pages
+- multiple users with root, folder, page, and no-access states
+
+That makes it obvious that the access feature is appearing because this addon is installed alongside RecordingStudio.
+
+## Running tests
+
+From the repository root:
+
+```bash
+bundle exec rake test
+bundle exec rake app:test
+bundle exec rubocop
+```
+
+If dummy app boot, assets, or migrations change, also run:
+
+```bash
+cd test/dummy
+bin/rails db:migrate RAILS_ENV=test
+bin/rails tailwindcss:build
+```
 
 ## Documentation
 
-The original gem template documentation is preserved in `docs/gem_template/` as architectural reference material. Use it as background on the engine conventions; the README and dummy app are the source of truth for the Recording Studio addon workflow.
+The original template architecture docs remain in `docs/gem_template/` as reference material.

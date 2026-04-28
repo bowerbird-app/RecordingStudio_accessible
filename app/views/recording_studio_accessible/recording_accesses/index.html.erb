@@ -1,0 +1,103 @@
+<%= render FlatPack::Breadcrumb::Component.new(class: "mb-4") do |breadcrumb| %>
+  <% breadcrumb.item(text: "Back", href: request.referer || main_app.root_path, icon: "chevron-left") %>
+  <% breadcrumb.item(text: @recording_label) %>
+<% end %>
+
+<%= render FlatPack::PageTitle::Component.new(
+  title: "Manage access",
+  subtitle: @recording_label,
+  variant: :h1
+) %>
+
+<% if @boundary_recordable %>
+  <div class="mb-6">
+    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+      <% card.body(class: "grid gap-4 justify-items-start") do %>
+        <%= render FlatPack::SectionTitle::Component.new(
+          title: "Access boundary added",
+          subtitle: "Inherited access above this recording now has to meet the boundary minimum role before it applies inside this branch.",
+          anchor_link: true,
+          anchor_id: "access-boundary"
+        ) %>
+        <%= render FlatPack::Badge::Component.new(
+          text: "Minimum role: #{send(:access_role_label, @boundary_recordable.minimum_role)}",
+          style: :info,
+          size: :sm
+        ) %>
+        <p class="text-sm text-[var(--surface-content-color)]">
+          People without a direct grant inside this boundary only keep inherited access when it is strong enough to satisfy the boundary minimum.
+        </p>
+        <%= form_with url: recording_boundary_path(@recording), method: :delete do %>
+          <%= render FlatPack::Button::Component.new(
+            text: "Remove boundary",
+            style: :default,
+            size: :sm,
+            type: "submit"
+          ) %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>
+
+<div class="mb-6 flex flex-wrap items-center gap-3">
+  <%= render FlatPack::Button::Component.new(
+    text: "Add access",
+    style: :primary,
+    size: :md,
+    url: new_recording_access_path(@recording)
+  ) %>
+
+  <% if @boundary_enabled && @boundary_recordable.blank? %>
+    <%= render FlatPack::Button::Component.new(
+      text: "Add boundary",
+      style: :default,
+      size: :md,
+      url: new_recording_boundary_path(@recording)
+    ) %>
+  <% end %>
+</div>
+
+<% if @direct_access_rows.any? %>
+  <%= render FlatPack::Table::Component.new(data: @direct_access_rows) do |table| %>
+    <% table.column(title: "Who") { |row| access_person_cell(row) } %>
+    <% table.column(title: "Type") { |row| access_actor_type_cell(row) } %>
+    <% table.column(title: "Role") { |row| access_role_cell(row) } %>
+    <% table.column(title: "Actions") { |row| access_actions_cell(@recording, row) } %>
+  <% end %>
+<% else %>
+  <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+    <% card.body(class: "grid gap-3 justify-items-start") do %>
+      <%= render FlatPack::SectionTitle::Component.new(
+        title: "No direct grants yet",
+        subtitle: "Use Add access to create the first direct access entry for this recording",
+        anchor_link: true,
+        anchor_id: "no-direct-grants"
+      ) %>
+      <%= render FlatPack::Button::Component.new(
+        text: "Add access",
+        style: :primary,
+        size: :sm,
+        url: new_recording_access_path(@recording)
+      ) %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<% if @inherited_access_rows.any? %>
+  <div class="mt-8 grid gap-4">
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: "Other people with access",
+      subtitle: "Access granted elsewhere",
+      anchor_link: true,
+      anchor_id: "other-people-with-access"
+    ) %>
+
+    <%= render FlatPack::Table::Component.new(data: @inherited_access_rows) do |table| %>
+      <% table.column(title: "Who") { |row| access_person_cell(row) } %>
+      <% table.column(title: "Type") { |row| access_actor_type_cell(row) } %>
+      <% table.column(title: "Access point") { |row| inherited_access_source_cell(row) } %>
+      <% table.column(title: "Role") { |row| inherited_access_source_role_cell(row) } %>
+    <% end %>
+  </div>
+<% end %>
