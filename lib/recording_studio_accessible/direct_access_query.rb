@@ -20,7 +20,7 @@ module RecordingStudioAccessible
 
         access_recordings_for(recording)
           .joins(ACCESS_JOIN_SQL)
-          .where(recording_studio_accesses: { actor_type: actor.class.name, actor_id: actor.id })
+          .where(recording_studio_accesses: actor_filter(actor))
           .order(created_at: :desc, id: :desc)
       end
 
@@ -35,8 +35,14 @@ module RecordingStudioAccessible
                                          recordable_type: "RecordingStudio::Access",
                                          trashed_at: nil)
                                   .joins(ACCESS_JOIN_SQL)
-                                  .where(recording_studio_accesses: { actor_type: actor.class.name, actor_id: actor.id })
+                                  .where(recording_studio_accesses: actor_filter(actor))
                                   .order(created_at: :desc, id: :desc)
+      end
+
+      private
+
+      def actor_filter(actor)
+        { actor_type: actor.class.name, actor_id: actor.id }
       end
     end
   end

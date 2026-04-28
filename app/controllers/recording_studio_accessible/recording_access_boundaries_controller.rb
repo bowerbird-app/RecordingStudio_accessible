@@ -15,11 +15,7 @@ module RecordingStudioAccessible
     def new; end
 
     def create
-      result = RecordingStudioAccessible::Services::CreateRecordingAccessBoundary.call(
-        recording: @recording,
-        minimum_role: DEFAULT_MINIMUM_ROLE,
-        manager_actor: current_actor
-      )
+      result = create_boundary
 
       if result.success?
         redirect_to recording_accesses_path(@recording), notice: "Boundary added."
@@ -47,6 +43,14 @@ module RecordingStudioAccessible
 
     def set_recording
       @recording = RecordingStudio::Recording.unscoped.find(params[:recording_id])
+    end
+
+    def create_boundary
+      RecordingStudioAccessible::Services::CreateRecordingAccessBoundary.call(
+        recording: @recording,
+        minimum_role: DEFAULT_MINIMUM_ROLE,
+        manager_actor: current_actor
+      )
     end
 
     def ensure_boundary_children_enabled!

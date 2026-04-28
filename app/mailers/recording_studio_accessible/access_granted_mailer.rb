@@ -23,22 +23,27 @@ module RecordingStudioAccessible
         recordable = recording&.recordable
         return nil unless recordable
 
-        if defined?(::RecordingStudio::Labels) && ::RecordingStudio::Labels.respond_to?(:title_for)
-          label = ::RecordingStudio::Labels.title_for(recordable)
-          return label if label.present?
-        end
-
-        %i[recordable_name name title].each do |method_name|
-          next unless recordable.respond_to?(method_name)
-
-          value = recordable.public_send(method_name)
-          return value if value.present?
-        end
-
-        recordable.class.name.demodulize.presence
+        recordable_label_from_registry(recordable) ||
+          recordable_label_from_methods(recordable) ||
+          recordable.class.name.demodulize.presence
       end
 
       private
+
+      def recordable_label_from_registry(recordable)
+        return unless defined?(::RecordingStudio::Labels) && ::RecordingStudio::Labels.respond_to?(:title_for)
+
+        ::RecordingStudio::Labels.title_for(recordable).presence
+      end
+
+      def recordable_label_from_methods(recordable)
+        %i[recordable_name name title].each do |method_name|
+          value = recordable.public_send(method_name) if recordable.respond_to?(method_name)
+          return value if value.present?
+        end
+
+        nil
+      end
 
       def humanized_email_label(email)
         local_part = email.to_s.split("@", 2).first.to_s.tr("._-", " ").squish.titleize

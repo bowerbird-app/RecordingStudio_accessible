@@ -61,19 +61,22 @@ module RecordingStudio
       private
 
       def boundary_parent_ids
-        @boundary_parent_ids ||= begin
-          if root_recording
-            root_id = recording.root_recording_id || recording.id
-            RecordingStudio::Recording.unscoped
-                                      .where(root_recording_id: root_id,
-                                             recordable_type: "RecordingStudio::AccessBoundary",
-                                             trashed_at: nil)
-                                      .pluck(:parent_recording_id)
-                                      .to_set
-          else
-            Set.new
-          end
-        end
+        @boundary_parent_ids ||= load_boundary_parent_ids
+      end
+
+      def load_boundary_parent_ids
+        return Set.new unless root_recording
+
+        RecordingStudio::Recording.unscoped
+                                  .where(root_recording_id: boundary_root_id,
+                                         recordable_type: "RecordingStudio::AccessBoundary",
+                                         trashed_at: nil)
+                                  .pluck(:parent_recording_id)
+                                  .to_set
+      end
+
+      def boundary_root_id
+        recording.root_recording_id || recording.id
       end
 
       def boundary_parent?(candidate)

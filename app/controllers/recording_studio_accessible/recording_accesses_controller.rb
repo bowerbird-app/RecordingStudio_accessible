@@ -106,8 +106,10 @@ module RecordingStudioAccessible
       @direct_access_rows = build_direct_access_rows
       @inherited_access_rows = build_inherited_access_rows
       @boundary_enabled = @recording.parent_recording_id.present? &&
-        RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(recording: @recording,
-                                                                               child_type: :boundary)
+                          RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(
+                            recording: @recording,
+                            child_type: :boundary
+                          )
       @boundary_recording = active_boundary_recording
       @boundary_recordable = @boundary_recording&.recordable
       prepare_shared_page_state
