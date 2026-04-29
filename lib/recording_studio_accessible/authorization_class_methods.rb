@@ -1,0 +1,73 @@
+# frozen_string_literal: true
+
+module RecordingStudioAccessible
+  module AuthorizationClassMethods
+    def role_for(actor:, recording:)
+      return nil unless actor
+
+      call(actor: actor, recording: recording).value
+    end
+
+    def allowed?(actor:, recording:, role:)
+      return false unless actor
+
+      call(actor: actor, recording: recording, role: role).value
+    end
+
+    def root_recordings_for(actor:, minimum_role: nil)
+      return [] unless actor
+
+      root_recordings_relation_for(actor: actor, minimum_role: minimum_role).to_a
+    end
+
+    def root_recording_ids_for(actor:, minimum_role: nil)
+      return [] unless actor
+
+      root_access_recordings_for(actor: actor, minimum_role: minimum_role)
+        .distinct
+        .pluck(:root_recording_id)
+    end
+
+    def access_recordings_for(recording)
+      RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(recording)
+    end
+
+    def access_recordings_for_actor(recording:, actor:)
+      RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(recording: recording, actor: actor)
+    end
+
+    private
+
+    def root_recordings_relation_for(actor:, minimum_role:)
+      root_access_recordings = root_access_recordings_for(actor: actor, minimum_role: minimum_role)
+      return RecordingStudio::Recording.none unless root_access_recordings.exists?
+
+      RecordingStudio::Recording.unscoped.where(id: root_access_recordings.select(:root_recording_id)).distinct
+    end
+
+    def root_access_recordings_for(actor:, minimum_role:)
+      access_scope = access_scope_for(actor: actor, minimum_role: minimum_role)
+      return RecordingStudio::Recording.none unless access_scope
+
+      root_ids = RecordingStudio::Recording.unscoped.where(parent_recording_id: nil).select(:id)
+      RecordingStudio::Recording.unscoped
+                                .where(recordable_type: "RecordingStudio::Access")
+                                .where(parent_recording_id: root_ids)
+                                .where(trashed_at: nil)
+                                .where(recordable_id: access_scope.select(:id))
+    end
+
+    def access_scope_for(actor:, minimum_role:)
+      scope = RecordingStudio::Access.where(
+        actor_type: RecordingStudioAccessible::ActorType.for(actor),
+        actor_id: actor.id
+      )
+      return scope if minimum_role.blank?
+
+      minimum_value = RecordingStudio::Access.roles[minimum_role.to_s]
+      return nil unless minimum_value
+
+      scope.where(role: minimum_value..)
+    end
+  end
+end

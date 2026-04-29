@@ -32,7 +32,9 @@ namespace :dummy do
     dummy_root = File.expand_path("test/dummy", __dir__)
 
     Dir.chdir(dummy_root) do
-      sh "env -u BUNDLE_GEMFILE -u BUNDLE_BIN_PATH -u RUBYOPT bin/rails test"
+      Bundler.with_unbundled_env do
+        sh "bin/rails test"
+      end
     end
   end
 end

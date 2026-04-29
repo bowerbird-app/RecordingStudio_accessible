@@ -8,12 +8,12 @@ class UsersController < ApplicationController
 
   def accessible_items_for(user)
     active_recordings.filter_map do |recording|
-      next unless RecordingStudio::Services::AccessCheck.allowed?(actor: user, recording: recording, role: :view)
+      next unless RecordingStudioAccessible.authorized?(actor: user, recording: recording, role: :view)
 
       {
         label: recordable_label_for(recording.recordable),
         recordable_type: recording.recordable_type.demodulize,
-        role: RecordingStudio::Services::AccessCheck.role_for(actor: user, recording: recording),
+        role: RecordingStudioAccessible.role_for(actor: user, recording: recording),
         root_label: recordable_label_for(recording.root_recording&.recordable || recording.recordable)
       }
     end
@@ -22,7 +22,7 @@ class UsersController < ApplicationController
   def active_recordings
     RecordingStudio::Recording.unscoped
                              .where(trashed_at: nil)
-                             .where.not(recordable_type: [ "RecordingStudio::Access", "RecordingStudio::AccessBoundary" ])
+                             .where.not(recordable_type: [ "RecordingStudio::Access" ])
                              .includes(:recordable, :root_recording)
                              .order(:created_at)
   end

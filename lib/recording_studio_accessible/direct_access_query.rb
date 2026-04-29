@@ -42,7 +42,7 @@ module RecordingStudioAccessible
       private
 
       def actor_filter(actor)
-        { actor_type: actor.class.name, actor_id: actor.id }
+        { actor_type: RecordingStudioAccessible::ActorType.for(actor), actor_id: actor.id }
       end
     end
   end

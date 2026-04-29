@@ -105,7 +105,7 @@ class HomeController < ApplicationController
     end.compact
 
     recordings.each_with_object({}) do |recording, counts|
-      actor_keys = RecordingStudio::Services::AccessCheck.access_recordings_for(recording).filter_map do |access_recording|
+      actor_keys = RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(recording).filter_map do |access_recording|
         actor = access_recording.recordable.actor
         next unless actor
 
@@ -127,13 +127,13 @@ class HomeController < ApplicationController
   def role_for(user, recording)
     return nil unless recording
 
-    RecordingStudio::Services::AccessCheck.role_for(actor: user, recording: recording)
+    RecordingStudioAccessible.role_for(actor: user, recording: recording)
   end
 
   def allowed_to_view?(user, recording)
     return false unless recording
 
-    RecordingStudio::Services::AccessCheck.allowed?(actor: user, recording: recording, role: :view)
+    RecordingStudioAccessible.authorized?(actor: user, recording: recording, role: :view)
   end
 
   def root_recording_for(recordable)

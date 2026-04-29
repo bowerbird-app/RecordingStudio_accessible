@@ -1,4 +1,5 @@
 require_relative "../test_helper"
+require "cgi"
 
 class RecordingAccessesTest < ActionDispatch::IntegrationTest
   setup do
@@ -55,7 +56,6 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, %(name="_method" value="delete")
     refute_includes @response.body, "Main navigation"
     refute_includes @response.body, "Sign out"
-    refute_includes @response.body, "Add boundary"
     refute_includes @response.body, "Other people with access"
     refute_includes @response.body, "other-people-with-access"
     refute_includes @response.body, "Access point"
@@ -69,7 +69,6 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "Client onboarding"
     assert_includes @response.body, "Other people with access"
-    assert_includes @response.body, "Add boundary"
 
     post recording_accesses_path, params: {
       access: {
@@ -81,53 +80,25 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_response :redirect
   end
 
-  test "admin can add and remove a folder boundary from manage access" do
+  test "recording access page breadcrumb back link prefers back_url param" do
     sign_in @admin
 
-    get recording_accesses_path
+    get recording_accesses_path, params: { back_url: "/users/#{@admin.id}" }, headers: { "Referer" => "/users/#{@viewer.id}" }
 
     assert_response :success
-    assert_includes @response.body, "Add boundary"
-    refute_includes @response.body, "Access boundary added"
+    assert_includes @response.body, "href=\"/users/#{@admin.id}\""
+    refute_includes @response.body, "href=\"/users/#{@viewer.id}\""
+  end
 
-    get new_recording_boundary_path
+  test "recording access page add access links preserve a stable back_url" do
+    sign_in @admin
 
-    assert_response :success
-    assert_includes @response.body, "Add boundary"
-    assert_includes @response.body, "Before you add a boundary"
-    assert_includes @response.body, "This gives this folder its own access rules."
-    assert_includes @response.body, "This boundary requires Edit access."
-    assert_includes @response.body, "Confirm add boundary"
-
-    post recording_boundary_path
-
-    assert_response :redirect
-    follow_redirect!
+    get root_recording_accesses_path
 
     assert_response :success
-    assert_includes @response.body, "Boundary added."
-    assert_includes @response.body, "Access boundary added"
-    assert_includes @response.body, "Minimum role: Edit"
-    assert_includes @response.body, "Remove boundary"
-    refute_includes @response.body, "href=\"#{new_recording_boundary_path}\""
 
-    boundary_recording = active_boundary_recording_for(@folder_recording)
-    refute_nil boundary_recording
-    assert_equal "edit", boundary_recording.recordable.minimum_role
-
-    boundary_id = boundary_recording.recordable_id
-
-    delete recording_boundary_path
-
-    assert_response :redirect
-    follow_redirect!
-
-    assert_response :success
-    assert_includes @response.body, "Boundary removed."
-    assert_includes @response.body, "Add boundary"
-    refute_includes @response.body, "Access boundary added"
-    assert_nil active_boundary_recording_for(@folder_recording)
-    assert_nil RecordingStudio::AccessBoundary.find_by(id: boundary_id)
+    expected_new_path = "#{root_recording_accesses_path}/new?back_url=#{CGI.escape("#{root_recording_accesses_path}?back_url=/") }"
+    assert_includes @response.body, "href=\"#{expected_new_path}\""
   end
 
   test "admin can view the new access page" do
@@ -142,6 +113,17 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, 'placeholder="email@example.com"'
     refute_includes @response.body, "Select an actor"
     refute_includes @response.body, "<h2>Recording</h2>"
+  end
+
+  test "new access page breadcrumb back link uses back_url param" do
+    sign_in @admin
+
+    back_url = "#{root_recording_accesses_path}?back_url=/"
+
+    get "#{root_recording_accesses_path}/new", params: { back_url: back_url }, headers: { "Referer" => "#{root_recording_accesses_path}/new" }
+
+    assert_response :success
+    assert_includes @response.body, "href=\"#{back_url}\""
   end
 
   test "admin can view the edit access page" do
@@ -347,28 +329,12 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     "/recording_studio_accessible/recordings/#{@root_recording.id}/accesses"
   end
 
-  def new_recording_boundary_path
-    "/recording_studio_accessible/recordings/#{@folder_recording.id}/boundary/new"
-  end
-
-  def recording_boundary_path
-    "/recording_studio_accessible/recordings/#{@folder_recording.id}/boundary"
-  end
-
   def direct_access_recordings_for(user)
-    RecordingStudio::Services::AccessCheck.access_recordings_for(@root_recording)
-                                         .select { |recording| recording.recordable.actor == user }
+    RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(@root_recording)
+                                                .select { |recording| recording.recordable.actor == user }
   end
 
   def direct_access_recording_for(user)
     direct_access_recordings_for(user).first
-  end
-
-  def active_boundary_recording_for(recording)
-    RecordingStudio::Recording.unscoped.find_by(
-      parent_recording_id: recording.id,
-      recordable_type: "RecordingStudio::AccessBoundary",
-      trashed_at: nil
-    )
   end
 end

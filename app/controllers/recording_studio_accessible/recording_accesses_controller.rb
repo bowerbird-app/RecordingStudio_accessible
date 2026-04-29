@@ -105,13 +105,6 @@ module RecordingStudioAccessible
     def prepare_index_page_state
       @direct_access_rows = build_direct_access_rows
       @inherited_access_rows = build_inherited_access_rows
-      @boundary_enabled = @recording.parent_recording_id.present? &&
-                          RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(
-                            recording: @recording,
-                            child_type: :boundary
-                          )
-      @boundary_recording = active_boundary_recording
-      @boundary_recordable = @boundary_recording&.recordable
       prepare_shared_page_state
     end
 
@@ -234,14 +227,14 @@ module RecordingStudioAccessible
     end
 
     def direct_access_recordings
-      @direct_access_recordings ||= RecordingStudio::Services::AccessCheck.access_recordings_for(@recording)
-                                                                          .order(created_at: :asc, id: :asc)
+      @direct_access_recordings ||= RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(@recording)
+                                                                                .order(created_at: :asc, id: :asc)
     end
 
     def ancestor_access_recordings
       ancestor_recordings.flat_map do |recording|
-        RecordingStudio::Services::AccessCheck.access_recordings_for(recording)
-                                              .order(created_at: :asc, id: :asc)
+        RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(recording)
+                                                    .order(created_at: :asc, id: :asc)
       end
     end
 
@@ -273,7 +266,7 @@ module RecordingStudioAccessible
     def effective_role_for(actor)
       return unless actor
 
-      RecordingStudio::Services::AccessCheck.role_for(actor: actor, recording: @recording)
+      RecordingStudioAccessible.role_for(actor: actor, recording: @recording)
     end
 
     def recordable_label_for(recordable)
@@ -283,14 +276,6 @@ module RecordingStudioAccessible
       return recordable.title if recordable.respond_to?(:title)
 
       recordable.class.name.demodulize
-    end
-
-    def active_boundary_recording
-      RecordingStudio::Recording.unscoped.find_by(
-        parent_recording_id: @recording.id,
-        recordable_type: "RecordingStudio::AccessBoundary",
-        trashed_at: nil
-      )
     end
   end
 end

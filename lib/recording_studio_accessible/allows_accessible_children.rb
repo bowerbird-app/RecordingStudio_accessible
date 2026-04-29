@@ -6,7 +6,7 @@ module RecordingStudioAccessible
   module AllowsAccessibleChildren
     extend ActiveSupport::Concern
 
-    VALID_CHILD_TYPES = %i[access boundary].freeze
+    VALID_CHILD_TYPES = %i[access].freeze
 
     included do
       class_attribute :recording_studio_accessible_child_types, instance_writer: false, default: [].freeze
