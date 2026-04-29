@@ -40,18 +40,18 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "Resolve a user's role with RecordingStudio::Services::AccessCheck.role_for",
+          title: "Resolve a user's role with RecordingStudioAccessible.role_for",
           code: <<~'RUBY'.strip
-            RecordingStudio::Services::AccessCheck.role_for(
+            RecordingStudioAccessible.role_for(
               actor: user,
               recording: recording
             )
           RUBY
         },
         {
-          title: "Check authorization with RecordingStudio::Services::AccessCheck.allowed?",
+          title: "Check authorization with RecordingStudioAccessible.authorized?",
           code: <<~'RUBY'.strip
-            RecordingStudio::Services::AccessCheck.allowed?(
+            RecordingStudioAccessible.authorized?(
               actor: user,
               recording: recording,
               role: :edit
@@ -59,7 +59,7 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "List accessible roots with RecordingStudio::Services::AccessCheck.root_recordings_for",
+          title: "Legacy compatibility helper: RecordingStudio::Services::AccessCheck.root_recordings_for",
           code: <<~'RUBY'.strip
             RecordingStudio::Services::AccessCheck.root_recordings_for(
               actor: user,
@@ -68,7 +68,7 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "List accessible root ids with RecordingStudio::Services::AccessCheck.root_recording_ids_for",
+          title: "Legacy compatibility helper: RecordingStudio::Services::AccessCheck.root_recording_ids_for",
           code: <<~RUBY.strip
             RecordingStudio::Services::AccessCheck.root_recording_ids_for(
               actor: user,
@@ -77,7 +77,7 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "Find direct grants with RecordingStudio::Services::AccessCheck.access_recordings_for",
+          title: "Legacy compatibility helper: RecordingStudio::Services::AccessCheck.access_recordings_for",
           code: <<~RUBY.strip
             RecordingStudio::Services::AccessCheck.access_recordings_for(recording)
           RUBY
@@ -95,7 +95,7 @@ module RecordingStudioAccessible
         },
         {
           title: "How resolution works",
-          body: "AccessCheck looks for direct grants on the current recording and walks upward until it reaches the boundary parent. If it finds a direct grant inside that path, that role wins. If it does not, it checks the inherited role from above the boundary and compares it against the boundary minimum role."
+          body: "RecordingStudioAccessible.role_for looks for direct grants on the current recording and walks upward until it reaches the boundary parent. If it finds a direct grant inside that path, that role wins. If it does not, it checks the inherited role from above the boundary and compares it against the boundary minimum role."
         },
         {
           title: "When access is denied",
@@ -114,7 +114,7 @@ module RecordingStudioAccessible
         {
           title: "created",
           badge_style: :info,
-          body: "Your missing-actor handler provisioned the user and returned that actor for the same grant request."
+          body: "Use this only after your app has already verified the recipient and finished any setup needed for the same grant request."
         },
         {
           title: "invited",
@@ -144,41 +144,35 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "Create the user when missing",
-          body: "This dummy app currently follows this pattern in its initializer and returns :created when the email is new.",
+          title: "Keep the form blocked until a trusted workflow resolves the email",
+          body: "Prefer returning an error until your app finishes any invite, approval, or verification work for that address.",
           code: <<~'RUBY'.strip
-            require "securerandom"
-
             config.access_management_missing_actor_handler = lambda do |email:, **|
               normalized_email = email.to_s.strip.downcase
               next RecordingStudioAccessible::MissingActorResolution.invalid(error: "User is required") if normalized_email.blank?
 
-              user = User.find_or_initialize_by(email: normalized_email)
-
-              if user.new_record?
-                password = SecureRandom.hex(12)
-                user.password = password
-                user.password_confirmation = password
-                user.save!
-              end
-
-              RecordingStudioAccessible::MissingActorResolution.created(
-                actor: user,
-                notice: "Access granted to #{normalized_email}"
+              RecordingStudioAccessible::MissingActorResolution.invalid(
+                error: "Invite #{normalized_email} in your user-management flow before granting access"
               )
             end
           RUBY
         },
         {
           title: "Send managers to a resolution flow",
-          body: "Return a redirect-style resolution when a person needs extra setup, approvals, or a richer invite workflow.",
+          body: "Return a redirect-style resolution when a person needs extra setup, approvals, or a richer invite workflow before the grant continues.",
           code: <<~'RUBY'.strip
-            config.access_management_missing_actor_handler = lambda do |email:, **|
+            config.access_management_missing_actor_handler = lambda do |controller:, email:, **|
               normalized_email = email.to_s.strip.downcase
+              next RecordingStudioAccessible::MissingActorResolution.invalid(error: "User is required") if normalized_email.blank?
 
               RecordingStudioAccessible::MissingActorResolution.redirect(
-                location: "/users/new?email=#{normalized_email}",
-                alert: "Resolve #{normalized_email} before granting access",
+                location: controller.main_app.url_for(
+                  controller: "/users",
+                  action: :new,
+                  email: normalized_email,
+                  only_path: true
+                ),
+                alert: "Review #{normalized_email} before granting access",
                 status: :requires_resolution
               )
             end
@@ -278,7 +272,7 @@ module RecordingStudioAccessible
     end
 
     def build_access_rows
-      return [] unless @root_recording && defined?(::RecordingStudio::Services::AccessCheck)
+      return [] unless @root_recording && RecordingStudioAccessible::Compatibility.authorization_service
 
       [
         access_row(label: @admin_user&.email || "Admin", actor: @admin_user, minimum_role: :admin),
@@ -290,9 +284,8 @@ module RecordingStudioAccessible
     def access_row(label:, actor:, minimum_role:)
       {
         label: label,
-        role: RecordingStudio::Services::AccessCheck.role_for(actor: actor, recording: @root_recording),
-        allowed: RecordingStudio::Services::AccessCheck.allowed?(actor: actor, recording: @root_recording,
-                                                                 role: minimum_role)
+        role: RecordingStudioAccessible.role_for(actor: actor, recording: @root_recording),
+        allowed: RecordingStudioAccessible.authorized?(actor: actor, recording: @root_recording, role: minimum_role)
       }
     end
 

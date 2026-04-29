@@ -121,7 +121,8 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "href=\"/recording_studio_accessible/methods\""
     assert_includes @response.body, "RecordingStudio::Access.create!"
     assert_includes @response.body, "RecordingStudio::AccessBoundary.create!"
-    assert_includes @response.body, "RecordingStudio::Services::AccessCheck.allowed?"
+    assert_includes @response.body, "RecordingStudioAccessible.authorized?"
+    assert_includes @response.body, "RecordingStudioAccessible.role_for"
     assert_includes @response.body, "RecordingStudio::Services::AccessCheck.root_recording_ids_for"
   end
 
@@ -167,11 +168,12 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "How missing emails are resolved during access grants"
     assert_includes @response.body, "href=\"/recording_studio_accessible/user_invites\""
     assert_includes @response.body, "User with email ... was not found"
-    assert_includes @response.body, "This dummy app overrides that default in its initializer"
+    assert_includes @response.body, "before the grant continues"
     assert_includes @response.body, "requires_resolution"
     assert_includes @response.body, "config.access_management_actor_email_resolver"
     assert_includes @response.body, "config.access_management_missing_actor_handler"
-    assert_includes @response.body, 'Resolve #{normalized_email} before granting access'
+    assert_includes @response.body, 'Review #{normalized_email} before granting access'
+    assert_includes @response.body, 'controller.main_app.url_for'
     assert_includes @response.body, "text-[var(--surface-content-color)]"
     refute_includes @response.body, "text-(--surface-content-color)"
   end

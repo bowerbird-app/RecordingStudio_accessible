@@ -35,23 +35,23 @@ RecordingStudioAccessible.configure do |config|
   # - RecordingStudioAccessible::MissingActorResolution.redirect(location: ..., alert: ...)
   # - RecordingStudioAccessible::MissingActorResolution.invalid(error: ...)
   #
-  # require "securerandom"
+  # Prefer :invalid or :requires_resolution until your app has verified the
+  # recipient and completed any required setup. Returning an actor or :created
+  # continues the original grant immediately.
   #
-  # config.access_management_missing_actor_handler = lambda do |email:, **|
+  # config.access_management_missing_actor_handler = lambda do |controller:, email:, **|
   #   normalized_email = email.to_s.strip.downcase
-  #   password = SecureRandom.hex(12)
+  #   next RecordingStudioAccessible::MissingActorResolution.invalid(error: "User is required") if normalized_email.blank?
   #
-  #   user = User.find_or_initialize_by(email: normalized_email)
-  #
-  #   if user.new_record?
-  #     user.password = password
-  #     user.password_confirmation = password
-  #     user.save!
-  #   end
-  #
-  #   RecordingStudioAccessible::MissingActorResolution.created(
-  #     actor: user,
-  #     notice: "Access granted to #{normalized_email}"
+  #   RecordingStudioAccessible::MissingActorResolution.redirect(
+  #     location: controller.main_app.url_for(
+  #       controller: "/users",
+  #       action: :new,
+  #       email: normalized_email,
+  #       only_path: true
+  #     ),
+  #     alert: "Review #{normalized_email} before granting access",
+  #     status: :requires_resolution
   #   )
   # end
 
@@ -88,7 +88,7 @@ RecordingStudioAccessible.configure do |config|
 
   # Optional: customize who can manage access for a recording.
   # config.access_management_authorizer = lambda do |recording:, actor:, **|
-  #   actor.present? && RecordingStudio::Services::AccessCheck.allowed?(
+  #   actor.present? && RecordingStudioAccessible.authorized?(
   #     actor: actor,
   #     recording: recording,
   #     role: :admin
@@ -99,7 +99,7 @@ RecordingStudioAccessible.configure do |config|
   # pages under /recording_studio_accessible. The default is fail-closed unless
   # the current actor has admin access to the resolved demo root recording.
   # config.mounted_page_authorizer = lambda do |controller:, actor:, recording:|
-  #   actor.present? && recording.present? && RecordingStudio::Services::AccessCheck.allowed?(
+  #   actor.present? && recording.present? && RecordingStudioAccessible.authorized?(
   #     actor: actor,
   #     recording: recording,
   #     role: :admin

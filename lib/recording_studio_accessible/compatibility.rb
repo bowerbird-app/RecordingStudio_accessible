@@ -28,6 +28,12 @@ module RecordingStudioAccessible
         addon_provides_access? ? :addon : :core
       end
 
+      def authorization_service
+        return unless constant_defined_path?("RecordingStudio::Services::AccessCheck")
+
+        ::RecordingStudio::Services::AccessCheck
+      end
+
       def load_missing_constants!(app = nil)
         ensure_application_record_loaded!(app)
 

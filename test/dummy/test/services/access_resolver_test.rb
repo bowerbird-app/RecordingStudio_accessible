@@ -34,8 +34,12 @@ class AccessResolverTest < ActiveSupport::TestCase
   test "inherits root access when no boundary exists on the path" do
     grant_access(@editor, :edit, @root_recording)
 
-    assert_equal :edit, RecordingStudio::Services::AccessCheck.role_for(actor: @editor, recording: @page_recording)
-    assert RecordingStudio::Services::AccessCheck.allowed?(actor: @editor, recording: @page_recording, role: :view)
+    assert_equal :edit, RecordingStudioAccessible.role_for(actor: @editor, recording: @page_recording)
+    assert RecordingStudioAccessible.authorized?(actor: @editor, recording: @page_recording, role: :view)
+    assert_equal RecordingStudioAccessible.role_for(actor: @editor, recording: @page_recording),
+                 RecordingStudio::Services::AccessCheck.role_for(actor: @editor, recording: @page_recording)
+    assert_equal RecordingStudioAccessible.authorized?(actor: @editor, recording: @page_recording, role: :view),
+                 RecordingStudio::Services::AccessCheck.allowed?(actor: @editor, recording: @page_recording, role: :view)
   end
 
   test "boundary blocks weaker inherited access" do
@@ -51,8 +55,8 @@ class AccessResolverTest < ActiveSupport::TestCase
     create_boundary(parent_recording: @folder_recording, minimum_role: :admin)
     grant_access(@viewer, :edit, @page_recording, @root_recording)
 
-    assert_equal :edit, RecordingStudio::Services::AccessCheck.role_for(actor: @viewer, recording: @page_recording)
-    assert RecordingStudio::Services::AccessCheck.allowed?(actor: @viewer, recording: @page_recording, role: :edit)
+    assert_equal :edit, RecordingStudioAccessible::Authorization.role_for(actor: @viewer, recording: @page_recording)
+    assert RecordingStudioAccessible::Authorization.allowed?(actor: @viewer, recording: @page_recording, role: :edit)
   end
 
   test "root listing helpers remain aligned" do
@@ -62,6 +66,28 @@ class AccessResolverTest < ActiveSupport::TestCase
 
     assert_equal expected_ids, RecordingStudio::Services::AccessCheck.root_recordings_for(actor: @admin)
     assert_equal expected_ids, RecordingStudio::Services::AccessCheck.root_recording_ids_for(actor: @admin)
+  end
+
+  test "subclass actors resolve through the stored base polymorphic type" do
+    actor_class = define_actor_subclass("ResolverSpecialUser")
+    special_user = actor_class.create!(
+      email: "resolver-special@example.com",
+      password: "Password",
+      password_confirmation: "Password"
+    )
+    access_recording = grant_access(special_user, :view, @root_recording)
+
+    assert_equal stored_actor_type_for(special_user), access_recording.recordable.actor_type
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: special_user, recording: @root_recording)
+    assert_equal [access_recording.id],
+                 RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(
+                   recording: @root_recording,
+                   actor: special_user
+                 ).pluck(:id)
+    assert_equal [@root_recording.id],
+                 RecordingStudio::Services::AccessCheck.root_recording_ids_for(actor: special_user)
+  ensure
+    remove_actor_subclass("ResolverSpecialUser")
   end
 
   private
@@ -86,5 +112,21 @@ class AccessResolverTest < ActiveSupport::TestCase
       parent_recording_id: parent_recording.id,
       recordable: boundary
     )
+  end
+
+  def define_actor_subclass(name)
+    remove_actor_subclass(name)
+    Object.const_set(name, Class.new(User))
+  end
+
+  def remove_actor_subclass(name)
+    Object.send(:remove_const, name) if Object.const_defined?(name, false)
+  end
+
+  def stored_actor_type_for(actor)
+    base_class = actor.class.base_class
+    return base_class.polymorphic_name if base_class.respond_to?(:polymorphic_name)
+
+    base_class.name
   end
 end

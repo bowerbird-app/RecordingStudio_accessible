@@ -8,7 +8,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 
 - `RecordingStudio::Access` recordables for root-level and recording-level grants
 - `RecordingStudio::AccessBoundary` recordables for inheritance cutoffs
-- `RecordingStudio::Services::AccessCheck` for role lookup and authorization checks
+- `RecordingStudioAccessible.role_for` and `RecordingStudioAccessible.authorized?` for role lookup and authorization checks
 - a mounted engine page for adding and removing direct access on a recording
 - install and migration generators for host apps
 - a dummy Rails app that demonstrates the addon mounted separately from RecordingStudio
@@ -22,7 +22,7 @@ This repository follows the template rename conventions for **Recording Studio A
 - Ruby namespace: `RecordingStudioAccessible`
 - Engine namespace: `RecordingStudioAccessible::Engine`
 
-The extracted public access API remains under `RecordingStudio::*` for compatibility with existing host code.
+Use `RecordingStudioAccessible.*` as the public access API for new host-app code. The extracted `RecordingStudio::*` constants remain available as legacy compatibility bridges when RecordingStudio core still provides them or when this addon backfills them.
 
 ## Installation
 
@@ -53,7 +53,7 @@ When that happens, Recording Studio Accessible runs in **compatibility mode**:
 - it still registers the access recordable types with RecordingStudio
 - it skips addon-owned access migrations because RecordingStudio core already owns those tables
 
-When RecordingStudio core stops shipping those constants, this addon becomes the source of truth for the extracted access implementation.
+When RecordingStudio core stops shipping those constants, this addon becomes the source of truth for the extracted access implementation behind the `RecordingStudioAccessible` API.
 
 ## Setup notes
 
@@ -129,21 +129,19 @@ RecordingStudioAccessible.configure do |config|
   config.access_management_current_actor_resolver = lambda do |controller:|
     Current.actor || controller.current_user
   end
-  config.access_management_missing_actor_handler = lambda do |email:, **|
+  config.access_management_missing_actor_handler = lambda do |controller:, email:, **|
     normalized_email = email.to_s.strip.downcase
-    password = SecureRandom.hex(12)
+    next RecordingStudioAccessible::MissingActorResolution.invalid(error: "User is required") if normalized_email.blank?
 
-    user = User.find_or_initialize_by(email: normalized_email)
-
-    if user.new_record?
-      user.password = password
-      user.password_confirmation = password
-      user.save!
-    end
-
-    RecordingStudioAccessible::MissingActorResolution.created(
-      actor: user,
-      notice: "Access granted to #{normalized_email}"
+    RecordingStudioAccessible::MissingActorResolution.redirect(
+      location: controller.main_app.url_for(
+        controller: "/users",
+        action: :new,
+        email: normalized_email,
+        only_path: true
+      ),
+      alert: "Review #{normalized_email} before granting access",
+      status: :requires_resolution
     )
   end
   config.access_management_access_granted_subject = lambda do |recording:, **|
@@ -154,14 +152,14 @@ RecordingStudioAccessible.configure do |config|
   end
   config.access_management_actor_label = ->(actor) { actor.email }
   config.access_management_authorizer = lambda do |recording:, actor:, **|
-    actor.present? && RecordingStudio::Services::AccessCheck.allowed?(
+    actor.present? && RecordingStudioAccessible.authorized?(
       actor: actor,
       recording: recording,
       role: :admin
     )
   end
   config.mounted_page_authorizer = lambda do |controller:, actor:, recording:|
-    actor.present? && recording.present? && RecordingStudio::Services::AccessCheck.allowed?(
+    actor.present? && recording.present? && RecordingStudioAccessible.authorized?(
       actor: actor,
       recording: recording,
       role: :admin
@@ -170,7 +168,7 @@ RecordingStudioAccessible.configure do |config|
 end
 ```
 
-The missing-actor handler may return an actor directly, or a `RecordingStudioAccessible::MissingActorResolution` describing whether the controller should grant access, render an error, or redirect into a host-app workflow. If the default mailer is close but not quite right, edit the copied templates under `app/views/recording_studio_accessible/access_granted_mailer/`. If you need a fully custom delivery strategy, replace `config.access_management_access_granted_notifier` entirely.
+The missing-actor handler may return an actor directly, or a `RecordingStudioAccessible::MissingActorResolution` describing whether the controller should grant access, render an error, or redirect into a host-app workflow. Prefer `:invalid` or `:requires_resolution` until your host app has actually verified the recipient and completed any required setup. Returning an actor or `MissingActorResolution.created(...)` continues the grant immediately. If the default mailer is close but not quite right, edit the copied templates under `app/views/recording_studio_accessible/access_granted_mailer/`. If you need a fully custom delivery strategy, replace `config.access_management_access_granted_notifier` entirely.
 
 By default, the mounted engine resolves the acting user from `Current.actor` so it follows the same actor source that RecordingStudio uses. If your host app needs a different source, override `config.access_management_current_actor_resolver`. The built-in resolver only falls back to `controller.current_user` when `Current.actor` is unavailable.
 
@@ -179,7 +177,7 @@ The create flow works like this:
 1. The controller submits the entered email to `config.access_management_actor_email_resolver`.
 2. If that resolver returns an actor, the engine grants access to that actor immediately.
 3. If no actor is found, the controller calls `config.access_management_missing_actor_handler`.
-4. If that handler returns `MissingActorResolution.created(...)` or an actor, the engine grants access using that actor.
+4. If that handler returns `MissingActorResolution.created(...)` or an actor, the engine grants access using that actor immediately.
 5. If the grant succeeds, the controller calls `config.access_management_access_granted_notifier`.
 6. The built-in notifier delivers `RecordingStudioAccessible::AccessGrantedMailer` with the configured subject and URL.
 
@@ -192,15 +190,18 @@ That separation is intentional:
 ### Checking access
 
 ```ruby
-RecordingStudio::Services::AccessCheck.role_for(actor: user, recording: root_recording)
-RecordingStudio::Services::AccessCheck.allowed?(actor: user, recording: root_recording, role: :edit)
+RecordingStudioAccessible.role_for(actor: user, recording: root_recording)
+RecordingStudioAccessible.authorized?(actor: user, recording: root_recording, role: :edit)
+
+# Equivalent namespaced form:
+RecordingStudioAccessible::Authorization.allowed?(actor: user, recording: root_recording, role: :edit)
 ```
 
 ## Dummy app demo
 
 The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of the RecordingStudio dependency.
 
-The dummy app also installs a demo-only override in `test/dummy/config/initializers/recording_studio_accessible.rb`. That initializer creates a `User` automatically when an unknown email is granted access, so the demo can show a successful end-to-end flow without requiring a separate invitation or signup system. That behavior is not the engine default for host apps.
+The dummy app also installs a demo-only override in `test/dummy/config/initializers/recording_studio_accessible.rb`. That initializer creates a `User` automatically when an unknown email is granted access, so the demo can show a successful end-to-end flow without requiring a separate invitation or signup system. That shortcut keeps the demo simple, but it is not the engine default and should not be treated as the recommended production pattern for host apps.
 
 Run it with:
 

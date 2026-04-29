@@ -234,14 +234,14 @@ module RecordingStudioAccessible
     end
 
     def direct_access_recordings
-      @direct_access_recordings ||= RecordingStudio::Services::AccessCheck.access_recordings_for(@recording)
-                                                                          .order(created_at: :asc, id: :asc)
+      @direct_access_recordings ||= RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(@recording)
+                                                                                .order(created_at: :asc, id: :asc)
     end
 
     def ancestor_access_recordings
       ancestor_recordings.flat_map do |recording|
-        RecordingStudio::Services::AccessCheck.access_recordings_for(recording)
-                                              .order(created_at: :asc, id: :asc)
+        RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(recording)
+                                                    .order(created_at: :asc, id: :asc)
       end
     end
 
@@ -273,7 +273,7 @@ module RecordingStudioAccessible
     def effective_role_for(actor)
       return unless actor
 
-      RecordingStudio::Services::AccessCheck.role_for(actor: actor, recording: @recording)
+      RecordingStudioAccessible.role_for(actor: actor, recording: @recording)
     end
 
     def recordable_label_for(recordable)

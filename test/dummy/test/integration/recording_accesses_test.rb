@@ -356,8 +356,8 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
   end
 
   def direct_access_recordings_for(user)
-    RecordingStudio::Services::AccessCheck.access_recordings_for(@root_recording)
-                                         .select { |recording| recording.recordable.actor == user }
+    RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(@root_recording)
+                                                .select { |recording| recording.recordable.actor == user }
   end
 
   def direct_access_recording_for(user)

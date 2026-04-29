@@ -259,21 +259,17 @@ module RecordingStudioAccessible
     end
 
     def default_access_management_authorizer(recording:, controller: nil, actor: nil)
-      return false unless defined?(::RecordingStudio::Services::AccessCheck)
-
       actor ||= current_actor_for(controller: controller)
       return false unless actor && recording
 
-      RecordingStudio::Services::AccessCheck.allowed?(actor: actor, recording: recording, role: :admin)
+      RecordingStudioAccessible.authorized?(actor: actor, recording: recording, role: :admin)
     end
 
     def default_mounted_page_authorizer(controller:, actor: nil, recording: nil)
-      return false unless defined?(::RecordingStudio::Services::AccessCheck)
-
       actor ||= current_actor_for(controller: controller)
       return false unless actor && recording
 
-      RecordingStudio::Services::AccessCheck.allowed?(actor: actor, recording: recording, role: :admin)
+      RecordingStudioAccessible.authorized?(actor: actor, recording: recording, role: :admin)
     end
 
     def call_access_management_authorizer(recording:, actor:, controller:)

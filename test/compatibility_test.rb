@@ -49,4 +49,8 @@ class CompatibilityTest < Minitest::Test
   ensure
     singleton.send(:define_method, :constant_defined_path?, original_method)
   end
+
+  def test_authorization_service_returns_legacy_access_check_constant
+    assert_equal RecordingStudio::Services::AccessCheck, RecordingStudioAccessible::Compatibility.authorization_service
+  end
 end

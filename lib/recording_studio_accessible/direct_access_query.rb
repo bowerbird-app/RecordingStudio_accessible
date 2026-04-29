@@ -42,7 +42,14 @@ module RecordingStudioAccessible
       private
 
       def actor_filter(actor)
-        { actor_type: actor.class.name, actor_id: actor.id }
+        { actor_type: stored_actor_type_for(actor), actor_id: actor.id }
+      end
+
+      def stored_actor_type_for(actor)
+        base_class = actor.class.base_class
+        return base_class.polymorphic_name if base_class.respond_to?(:polymorphic_name)
+
+        base_class.name
       end
     end
   end
