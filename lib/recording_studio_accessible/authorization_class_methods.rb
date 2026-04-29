@@ -17,10 +17,7 @@ module RecordingStudioAccessible
     def root_recordings_for(actor:, minimum_role: nil)
       return [] unless actor
 
-      root_ids = root_recording_ids_for(actor: actor, minimum_role: minimum_role)
-      return [] if root_ids.empty?
-
-      RecordingStudio::Recording.unscoped.where(id: root_ids).to_a
+      root_recordings_relation_for(actor: actor, minimum_role: minimum_role).to_a
     end
 
     def root_recording_ids_for(actor:, minimum_role: nil)
@@ -40,6 +37,13 @@ module RecordingStudioAccessible
     end
 
     private
+
+    def root_recordings_relation_for(actor:, minimum_role:)
+      root_access_recordings = root_access_recordings_for(actor: actor, minimum_role: minimum_role)
+      return RecordingStudio::Recording.none unless root_access_recordings.exists?
+
+      RecordingStudio::Recording.unscoped.where(id: root_access_recordings.select(:root_recording_id)).distinct
+    end
 
     def root_access_recordings_for(actor:, minimum_role:)
       access_scope = access_scope_for(actor: actor, minimum_role: minimum_role)
