@@ -124,7 +124,7 @@ module RecordingStudioAccessible
     end
 
     def prepare_shared_page_state
-      @recording_label = RecordingStudio::Labels.title_for(@recording.recordable)
+      @recording_label = recordable_label_for(@recording.recordable)
       @root_label = recordable_label_for((@recording.root_recording || @recording).recordable)
       @effective_role = effective_role_for(current_actor)
     end
