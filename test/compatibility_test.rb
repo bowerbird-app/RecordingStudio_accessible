@@ -23,9 +23,7 @@ class CompatibilityTest < Minitest::Test
 
     expected = [
       "recording_studio_accessible/extracted/recording_studio/access",
-      "recording_studio_accessible/extracted/recording_studio/access_boundary",
-      "recording_studio_accessible/extracted/recording_studio/services/access_check_class_methods",
-      "recording_studio_accessible/extracted/recording_studio/services/access_check"
+      "recording_studio_accessible/extracted/recording_studio/access_boundary"
     ]
 
     assert_equal expected, RecordingStudioAccessible::Compatibility.missing_constant_paths
@@ -48,9 +46,5 @@ class CompatibilityTest < Minitest::Test
     assert_includes registered, "RecordingStudio::AccessBoundary"
   ensure
     singleton.send(:define_method, :constant_defined_path?, original_method)
-  end
-
-  def test_authorization_service_returns_legacy_access_check_constant
-    assert_equal RecordingStudio::Services::AccessCheck, RecordingStudioAccessible::Compatibility.authorization_service
   end
 end

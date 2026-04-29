@@ -59,27 +59,27 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "Legacy compatibility helper: RecordingStudio::Services::AccessCheck.root_recordings_for",
+          title: "List accessible roots with RecordingStudioAccessible.root_recordings_for",
           code: <<~'RUBY'.strip
-            RecordingStudio::Services::AccessCheck.root_recordings_for(
+            RecordingStudioAccessible.root_recordings_for(
               actor: user,
               minimum_role: :view
             )
           RUBY
         },
         {
-          title: "Legacy compatibility helper: RecordingStudio::Services::AccessCheck.root_recording_ids_for",
+          title: "List accessible root ids with RecordingStudioAccessible.root_recording_ids_for",
           code: <<~RUBY.strip
-            RecordingStudio::Services::AccessCheck.root_recording_ids_for(
+            RecordingStudioAccessible.root_recording_ids_for(
               actor: user,
               minimum_role: :edit
             )
           RUBY
         },
         {
-          title: "Legacy compatibility helper: RecordingStudio::Services::AccessCheck.access_recordings_for",
+          title: "List direct grants on a recording with RecordingStudioAccessible.access_recordings_for",
           code: <<~RUBY.strip
-            RecordingStudio::Services::AccessCheck.access_recordings_for(recording)
+            RecordingStudioAccessible.access_recordings_for(recording)
           RUBY
         }
       ]
@@ -272,7 +272,7 @@ module RecordingStudioAccessible
     end
 
     def build_access_rows
-      return [] unless @root_recording && RecordingStudioAccessible::Compatibility.authorization_service
+      return [] unless @root_recording
 
       [
         access_row(label: @admin_user&.email || "Admin", actor: @admin_user, minimum_role: :admin),

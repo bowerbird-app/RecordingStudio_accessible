@@ -7,9 +7,11 @@ require "recording_studio_accessible/hooks"
 require "recording_studio_accessible/allows_accessible_children"
 require "recording_studio_accessible/access_management_policy"
 require "recording_studio_accessible/actor_type"
+require "recording_studio_accessible/authorization_class_methods"
 require "recording_studio_accessible/configuration"
 require "recording_studio_accessible/compatibility"
 require "recording_studio_accessible/authorization"
+require "recording_studio_accessible/authorization_service"
 require "recording_studio_accessible/direct_access_query"
 require "recording_studio_accessible/services/base_service"
 require "recording_studio_accessible/services/access_record_lifecycle"
@@ -38,6 +40,22 @@ module RecordingStudioAccessible
 
     def authorized?(actor:, recording:, role:)
       Authorization.allowed?(actor: actor, recording: recording, role: role)
+    end
+
+    def root_recordings_for(actor:, minimum_role: nil)
+      Authorization.root_recordings_for(actor: actor, minimum_role: minimum_role)
+    end
+
+    def root_recording_ids_for(actor:, minimum_role: nil)
+      Authorization.root_recording_ids_for(actor: actor, minimum_role: minimum_role)
+    end
+
+    def access_recordings_for(recording)
+      Authorization.access_recordings_for(recording)
+    end
+
+    def access_recordings_for_actor(recording:, actor:)
+      Authorization.access_recordings_for_actor(recording: recording, actor: actor)
     end
   end
 end

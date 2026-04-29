@@ -38,7 +38,7 @@ Metrics/ClassLength:
     - 'app/controllers/recording_studio_accessible/home_controller.rb'
     - 'app/controllers/recording_studio_accessible/recording_accesses_controller.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
-    - 'lib/recording_studio_accessible/extracted/recording_studio/services/access_check.rb'
+    - 'lib/recording_studio_accessible/authorization_service.rb'
 
 Metrics/MethodLength:
   Exclude:

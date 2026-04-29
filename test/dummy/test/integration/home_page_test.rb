@@ -123,7 +123,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "RecordingStudio::AccessBoundary.create!"
     assert_includes @response.body, "RecordingStudioAccessible.authorized?"
     assert_includes @response.body, "RecordingStudioAccessible.role_for"
-    assert_includes @response.body, "RecordingStudio::Services::AccessCheck.root_recording_ids_for"
+    assert_includes @response.body, "RecordingStudioAccessible.root_recording_ids_for"
   end
 
   test "overview page renders only the title and subtitle" do

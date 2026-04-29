@@ -4,9 +4,7 @@ module RecordingStudioAccessible
   module Compatibility
     EXTRACTED_FILES = {
       "RecordingStudio::Access" => "recording_studio_accessible/extracted/recording_studio/access",
-      "RecordingStudio::AccessBoundary" => "recording_studio_accessible/extracted/recording_studio/access_boundary",
-      "RecordingStudio::Services::AccessCheck" => "recording_studio_accessible/extracted/recording_studio/services/access_check",
-      "RecordingStudio::Services::AccessCheckClassMethods" => "recording_studio_accessible/extracted/recording_studio/services/access_check_class_methods"
+      "RecordingStudio::AccessBoundary" => "recording_studio_accessible/extracted/recording_studio/access_boundary"
     }.freeze
     RECORDABLE_TYPES = ["RecordingStudio::Access", "RecordingStudio::AccessBoundary"].freeze
 
@@ -17,7 +15,7 @@ module RecordingStudioAccessible
       end
 
       def core_access_present?
-        RECORDABLE_TYPES.all? { |path| constant_defined_path?(path) } && constant_defined_path?("RecordingStudio::Services::AccessCheck")
+        RECORDABLE_TYPES.all? { |path| constant_defined_path?(path) }
       end
 
       def addon_provides_access?
@@ -26,12 +24,6 @@ module RecordingStudioAccessible
 
       def integration_mode
         addon_provides_access? ? :addon : :core
-      end
-
-      def authorization_service
-        return unless constant_defined_path?("RecordingStudio::Services::AccessCheck")
-
-        ::RecordingStudio::Services::AccessCheck
       end
 
       def load_missing_constants!(app = nil)
@@ -56,7 +48,7 @@ module RecordingStudioAccessible
         return if defined?(Rails) && Rails.env.test?
         return if @warned_core_access
 
-        message = "[RecordingStudioAccessible] RecordingStudio already provides access models/services. Running in compatibility mode and skipping addon-owned constants and migrations."
+        message = "[RecordingStudioAccessible] RecordingStudio already provides access models. Running in compatibility mode and skipping addon-owned constants and migrations."
 
         if defined?(Rails) && Rails.respond_to?(:logger) && Rails.logger
           Rails.logger.info(message)
@@ -72,9 +64,7 @@ module RecordingStudioAccessible
       def load_priority
         {
           "RecordingStudio::Access" => 1,
-          "RecordingStudio::AccessBoundary" => 2,
-          "RecordingStudio::Services::AccessCheckClassMethods" => 3,
-          "RecordingStudio::Services::AccessCheck" => 4
+          "RecordingStudio::AccessBoundary" => 2
         }
       end
 

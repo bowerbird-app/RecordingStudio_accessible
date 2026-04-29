@@ -5,11 +5,14 @@ require "test_helper"
 class AuthorizationTest < Minitest::Test
   AuthorizationServiceStub = Class.new do
     class << self
-      attr_reader :allowed_call, :role_call
+      attr_reader :allowed_call, :role_call, :root_recordings_call, :root_recording_ids_call, :access_recordings_call
 
       def reset!
         @allowed_call = nil
         @role_call = nil
+        @root_recordings_call = nil
+        @root_recording_ids_call = nil
+        @access_recordings_call = nil
       end
 
       def allowed?(**kwargs)
@@ -21,6 +24,21 @@ class AuthorizationTest < Minitest::Test
         @role_call = kwargs
         :edit
       end
+
+      def root_recordings_for(**kwargs)
+        @root_recordings_call = kwargs
+        [:recording]
+      end
+
+      def root_recording_ids_for(**kwargs)
+        @root_recording_ids_call = kwargs
+        [123]
+      end
+
+      def access_recordings_for(recording)
+        @access_recordings_call = recording
+        [:grant]
+      end
     end
   end
 
@@ -28,22 +46,20 @@ class AuthorizationTest < Minitest::Test
     AuthorizationServiceStub.reset!
   end
 
-  def test_module_level_authorization_api_delegates_to_compatibility_service
-    RecordingStudioAccessible::Compatibility.stub(:authorization_service, AuthorizationServiceStub) do
+  def test_module_level_authorization_api_delegates_to_authorization_service
+    RecordingStudioAccessible::Authorization.stub(:authorization_service, AuthorizationServiceStub) do
       assert_equal :edit, RecordingStudioAccessible.role_for(actor: :actor, recording: :recording)
       assert RecordingStudioAccessible.authorized?(actor: :actor, recording: :recording, role: :admin)
       assert RecordingStudioAccessible::Authorization.allowed?(actor: :actor, recording: :recording, role: :view)
+      assert_equal [:recording], RecordingStudioAccessible.root_recordings_for(actor: :actor, minimum_role: :view)
+      assert_equal [123], RecordingStudioAccessible.root_recording_ids_for(actor: :actor, minimum_role: :edit)
+      assert_equal [:grant], RecordingStudioAccessible.access_recordings_for(:recording)
     end
 
     assert_equal({ actor: :actor, recording: :recording }, AuthorizationServiceStub.role_call)
     assert_equal({ actor: :actor, recording: :recording, role: :view }, AuthorizationServiceStub.allowed_call)
-  end
-
-  def test_authorization_api_fails_closed_without_compatibility_service
-    RecordingStudioAccessible::Compatibility.stub(:authorization_service, nil) do
-      assert_nil RecordingStudioAccessible.role_for(actor: :actor, recording: :recording)
-      refute RecordingStudioAccessible.authorized?(actor: :actor, recording: :recording, role: :admin)
-      refute RecordingStudioAccessible::Authorization.allowed?(actor: :actor, recording: :recording, role: :view)
-    end
+    assert_equal({ actor: :actor, minimum_role: :view }, AuthorizationServiceStub.root_recordings_call)
+    assert_equal({ actor: :actor, minimum_role: :edit }, AuthorizationServiceStub.root_recording_ids_call)
+    assert_equal :recording, AuthorizationServiceStub.access_recordings_call
   end
 end

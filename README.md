@@ -45,11 +45,11 @@ bin/rails db:migrate
 
 ## Compatibility with current RecordingStudio releases
 
-Current RecordingStudio releases may still ship the built-in access models and service.
+Current RecordingStudio releases may still ship the built-in access models.
 
 When that happens, Recording Studio Accessible runs in **compatibility mode**:
 
-- it does not redefine `RecordingStudio::Access`, `RecordingStudio::AccessBoundary`, or `RecordingStudio::Services::AccessCheck`
+- it does not redefine `RecordingStudio::Access` or `RecordingStudio::AccessBoundary`
 - it still registers the access recordable types with RecordingStudio
 - it skips addon-owned access migrations because RecordingStudio core already owns those tables
 
