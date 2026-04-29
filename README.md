@@ -7,7 +7,6 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 ## What the gem provides
 
 - `RecordingStudio::Access` recordables for root-level and recording-level grants
-- `RecordingStudio::AccessBoundary` recordables for inheritance cutoffs
 - `RecordingStudioAccessible.role_for` and `RecordingStudioAccessible.authorized?` for role lookup and authorization checks
 - a mounted engine page for adding and removing direct access on a recording
 - install and migration generators for host apps
@@ -49,7 +48,7 @@ Current RecordingStudio releases may still ship the built-in access models.
 
 When that happens, Recording Studio Accessible runs in **compatibility mode**:
 
-- it does not redefine `RecordingStudio::Access` or `RecordingStudio::AccessBoundary`
+- it does not redefine `RecordingStudio::Access`
 - it still registers the access recordable types with RecordingStudio
 - it skips addon-owned access migrations because RecordingStudio core already owns those tables
 
@@ -68,15 +67,15 @@ RecordingStudio.configure do |config|
 end
 ```
 
-The addon automatically registers `RecordingStudio::Access` and `RecordingStudio::AccessBoundary` when it loads.
+The addon automatically registers `RecordingStudio::Access` when it loads.
 
-To allow direct access grants or boundaries beneath a host recordable, opt that class in explicitly:
+To allow direct access grants beneath a host recordable, opt that class in explicitly:
 
 ```ruby
 class Workspace < ApplicationRecord
   include RecordingStudioAccessible::AllowsAccessibleChildren
 
-  recording_studio_accessible_children :access, :boundary
+  recording_studio_accessible_children :access
 end
 ```
 

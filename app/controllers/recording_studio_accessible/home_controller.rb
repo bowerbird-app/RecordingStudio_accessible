@@ -34,12 +34,6 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "Create an inheritance cutoff with RecordingStudio::AccessBoundary.create!",
-          code: <<~'RUBY'.strip
-            boundary = RecordingStudio::AccessBoundary.create!(minimum_role: :edit)
-          RUBY
-        },
-        {
           title: "Resolve a user's role with RecordingStudioAccessible.role_for",
           code: <<~'RUBY'.strip
             RecordingStudioAccessible.role_for(
@@ -85,23 +79,6 @@ module RecordingStudioAccessible
       ]
 
       render :methods
-    end
-
-    def boundaries
-      @boundary_sections = [
-        {
-          title: "What a boundary is",
-          body: "Use a boundary when one branch of a workspace needs stricter rules than the rest. For example, a studio can give a client view access to the overall workspace, then place a boundary on an internal review folder with a minimum role of edit. That keeps drafts, notes, and approval checklists inside that folder hidden from the client unless the team adds a direct grant within the bounded area."
-        },
-        {
-          title: "How resolution works",
-          body: "RecordingStudioAccessible.role_for looks for direct grants on the current recording and walks upward until it reaches the boundary parent. If it finds a direct grant inside that path, that role wins. If it does not, it checks the inherited role from above the boundary and compares it against the boundary minimum role."
-        },
-        {
-          title: "When access is denied",
-          body: "If there is no inherited role above the boundary, or the inherited role is weaker than the boundary minimum, the bounded subtree resolves to no access unless a direct grant exists inside the boundary."
-        }
-      ]
     end
 
     def user_invites

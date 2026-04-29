@@ -31,28 +31,11 @@ class AccessResolverTest < ActiveSupport::TestCase
     assert_equal :edit, RecordingStudioAccessible.role_for(actor: @viewer, recording: @folder_recording)
   end
 
-  test "inherits root access when no boundary exists on the path" do
+  test "inherits root access on descendant recordings" do
     grant_access(@editor, :edit, @root_recording)
 
     assert_equal :edit, RecordingStudioAccessible.role_for(actor: @editor, recording: @page_recording)
     assert RecordingStudioAccessible.authorized?(actor: @editor, recording: @page_recording, role: :view)
-  end
-
-  test "boundary blocks weaker inherited access" do
-    grant_access(@viewer, :view, @root_recording)
-    create_boundary(parent_recording: @folder_recording, minimum_role: :edit)
-
-    assert_nil RecordingStudioAccessible.role_for(actor: @viewer, recording: @page_recording)
-    refute RecordingStudioAccessible.authorized?(actor: @viewer, recording: @page_recording, role: :view)
-  end
-
-  test "direct access inside a boundary overrides blocked inherited access" do
-    grant_access(@viewer, :view, @root_recording)
-    create_boundary(parent_recording: @folder_recording, minimum_role: :admin)
-    grant_access(@viewer, :edit, @page_recording, @root_recording)
-
-    assert_equal :edit, RecordingStudioAccessible::Authorization.role_for(actor: @viewer, recording: @page_recording)
-    assert RecordingStudioAccessible::Authorization.allowed?(actor: @viewer, recording: @page_recording, role: :edit)
   end
 
   test "root listing helpers remain aligned" do
@@ -101,16 +84,6 @@ class AccessResolverTest < ActiveSupport::TestCase
       recordable: access
     )
   end
-
-  def create_boundary(parent_recording:, minimum_role:)
-    boundary = RecordingStudio::AccessBoundary.create!(minimum_role: minimum_role)
-    RecordingStudio::Recording.unscoped.create!(
-      root_recording_id: @root_recording.id,
-      parent_recording_id: parent_recording.id,
-      recordable: boundary
-    )
-  end
-
   def define_actor_subclass(name)
     remove_actor_subclass(name)
     Object.const_set(name, Class.new(User))

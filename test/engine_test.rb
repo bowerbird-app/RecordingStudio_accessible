@@ -68,9 +68,7 @@ class EngineTest < Minitest::Test
     find_initializer("recording_studio_accessible.load_missing_constants").block.call
 
     assert_equal application_record, RecordingStudio::Access.superclass
-    assert_equal application_record, RecordingStudio::AccessBoundary.superclass
   ensure
-    RecordingStudio.send(:remove_const, :AccessBoundary) if RecordingStudio.const_defined?(:AccessBoundary, false)
     RecordingStudio.send(:remove_const, :Access) if RecordingStudio.const_defined?(:Access, false)
     Object.send(:remove_const, :ApplicationRecord) if Object.const_defined?(:ApplicationRecord,
                                                                             false) && Object.const_get(:ApplicationRecord) == application_record

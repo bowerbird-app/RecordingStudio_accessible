@@ -4,6 +4,22 @@ module RecordingStudioAccessible
   module RecordingAccessesHelper
     ROLE_OPTIONS = [%w[View view], %w[Edit edit], %w[Admin admin]].freeze
 
+    def recording_access_index_back_url
+      params[:back_url].presence || main_app.root_path
+    end
+
+    def recording_access_index_path_with_back_url(recording)
+      recording_accesses_path(recording, back_url: recording_access_index_back_url)
+    end
+
+    def new_recording_access_path_with_back_url(recording)
+      new_recording_access_path(recording, back_url: recording_access_index_back_reference(recording))
+    end
+
+    def edit_recording_access_path_with_back_url(recording, access_id)
+      edit_recording_access_path(recording, access_id, back_url: recording_access_index_back_reference(recording))
+    end
+
     def access_role_options
       ROLE_OPTIONS
     end
@@ -33,7 +49,7 @@ module RecordingStudioAccessible
         safe_join([
                     link_to(
                       "Edit",
-                      edit_recording_access_path(recording, row[:id]),
+                      edit_recording_access_path_with_back_url(recording, row[:id]),
                       class: "text-[var(--link-color,var(--surface-content-color))] underline-offset-2 hover:underline"
                     ),
                     button_to(
@@ -48,6 +64,10 @@ module RecordingStudioAccessible
     end
 
     private
+
+    def recording_access_index_back_reference(recording)
+      "#{recording_accesses_path(recording)}?back_url=#{recording_access_index_back_url}"
+    end
 
     def access_role_label(role)
       role.to_s.humanize

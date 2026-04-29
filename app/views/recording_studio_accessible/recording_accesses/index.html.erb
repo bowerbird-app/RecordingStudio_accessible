@@ -1,5 +1,8 @@
-<%= render FlatPack::Breadcrumb::Component.new(class: "mb-4") do |breadcrumb| %>
-  <% breadcrumb.item(text: "Back", href: request.referer || main_app.root_path, icon: "chevron-left") %>
+<%= render FlatPack::Breadcrumb::Component.new(
+  class: "mb-4",
+  show_back: true,
+  back_href: recording_access_index_back_url
+) do |breadcrumb| %>
   <% breadcrumb.item(text: @recording_label) %>
 <% end %>
 
@@ -9,53 +12,13 @@
   variant: :h1
 ) %>
 
-<% if @boundary_recordable %>
-  <div class="mb-6">
-    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
-      <% card.body(class: "grid gap-4 justify-items-start") do %>
-        <%= render FlatPack::SectionTitle::Component.new(
-          title: "Access boundary added",
-          subtitle: "Inherited access above this recording now has to meet the boundary minimum role before it applies inside this branch.",
-          anchor_link: true,
-          anchor_id: "access-boundary"
-        ) %>
-        <%= render FlatPack::Badge::Component.new(
-          text: "Minimum role: #{send(:access_role_label, @boundary_recordable.minimum_role)}",
-          style: :info,
-          size: :sm
-        ) %>
-        <p class="text-sm text-[var(--surface-content-color)]">
-          People without a direct grant inside this boundary only keep inherited access when it is strong enough to satisfy the boundary minimum.
-        </p>
-        <%= form_with url: recording_boundary_path(@recording), method: :delete do %>
-          <%= render FlatPack::Button::Component.new(
-            text: "Remove boundary",
-            style: :default,
-            size: :sm,
-            type: "submit"
-          ) %>
-        <% end %>
-      <% end %>
-    <% end %>
-  </div>
-<% end %>
-
 <div class="mb-6 flex flex-wrap items-center gap-3">
   <%= render FlatPack::Button::Component.new(
     text: "Add access",
     style: :primary,
     size: :md,
-    url: new_recording_access_path(@recording)
+    url: new_recording_access_path_with_back_url(@recording)
   ) %>
-
-  <% if @boundary_enabled && @boundary_recordable.blank? %>
-    <%= render FlatPack::Button::Component.new(
-      text: "Add boundary",
-      style: :default,
-      size: :md,
-      url: new_recording_boundary_path(@recording)
-    ) %>
-  <% end %>
 </div>
 
 <% if @direct_access_rows.any? %>
@@ -78,7 +41,7 @@
         text: "Add access",
         style: :primary,
         size: :sm,
-        url: new_recording_access_path(@recording)
+        url: new_recording_access_path_with_back_url(@recording)
       ) %>
     <% end %>
   <% end %>

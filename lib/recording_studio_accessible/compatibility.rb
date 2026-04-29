@@ -3,10 +3,9 @@
 module RecordingStudioAccessible
   module Compatibility
     EXTRACTED_FILES = {
-      "RecordingStudio::Access" => "recording_studio_accessible/extracted/recording_studio/access",
-      "RecordingStudio::AccessBoundary" => "recording_studio_accessible/extracted/recording_studio/access_boundary"
+      "RecordingStudio::Access" => "recording_studio_accessible/extracted/recording_studio/access"
     }.freeze
-    RECORDABLE_TYPES = ["RecordingStudio::Access", "RecordingStudio::AccessBoundary"].freeze
+    RECORDABLE_TYPES = ["RecordingStudio::Access"].freeze
 
     class << self
       def missing_constant_paths
@@ -63,8 +62,7 @@ module RecordingStudioAccessible
 
       def load_priority
         {
-          "RecordingStudio::Access" => 1,
-          "RecordingStudio::AccessBoundary" => 2
+          "RecordingStudio::Access" => 1
         }
       end
 

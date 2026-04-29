@@ -3,6 +3,7 @@
 require "test_helper"
 require "action_view"
 require "ostruct"
+require "cgi"
 require "recording_studio_accessible/engine"
 require "recording_studio_accessible"
 require_relative "../app/helpers/recording_studio_accessible/recording_accesses_helper"
@@ -38,6 +39,8 @@ class RecordingAccessesHelperTest < Minitest::Test
     include RecordingStudioAccessible::Engine.routes.url_helpers
     include RecordingStudioAccessible::RecordingAccessesHelper
 
+    attr_writer :params
+
     def render(component)
       component_name = component.class.name.to_s
 
@@ -56,12 +59,42 @@ class RecordingAccessesHelperTest < Minitest::Test
       {}
     end
 
-    def edit_recording_access_path(recording, access)
-      "/recordings/#{recording.to_param}/accesses/#{access}/edit"
+    def params
+      @params ||= {}
+    end
+
+    def main_app
+      self
+    end
+
+    def root_path
+      "/"
+    end
+
+    def edit_recording_access_path(recording, access, options = {})
+      append_query_string("/recordings/#{recording.to_param}/accesses/#{access}/edit", options)
     end
 
     def recording_access_path(recording, access)
       "/recordings/#{recording.to_param}/accesses/#{access}"
+    end
+
+    def recording_accesses_path(recording, options = {})
+      append_query_string("/recordings/#{recording.to_param}/accesses", options)
+    end
+
+    def new_recording_access_path(recording, options = {})
+      append_query_string("/recordings/#{recording.to_param}/accesses/new", options)
+    end
+
+    private
+
+    def append_query_string(path, options)
+      query = options.compact.map do |key, value|
+        "#{CGI.escape(key.to_s)}=#{CGI.escape(value.to_s)}"
+      end.join("&")
+
+      query.empty? ? path : "#{path}?#{query}"
     end
   end
 
@@ -90,11 +123,13 @@ class RecordingAccessesHelperTest < Minitest::Test
 
   def test_access_actions_cell_renders_edit_link_and_delete_form_button
     recording = Struct.new(:id, :to_param).new(42, "42")
+    view_context = ViewContext.new
+    view_context.params = { back_url: "/users/7" }
 
-    html = ViewContext.new.access_actions_cell(recording, id: 7)
+    html = view_context.access_actions_cell(recording, id: 7)
 
     assert_includes html, ">Edit<"
-    assert_includes html, "/recordings/42/accesses/7/edit"
+    assert_includes html, "/recordings/42/accesses/7/edit?back_url=%2Frecordings%2F42%2Faccesses%3Fback_url%3D%2Fusers%2F7"
     assert_includes html, "/recordings/42/accesses/7"
     assert_includes html, '<form class="inline" method="post" action="/recordings/42/accesses/7">'
     assert_includes html, 'name="_method" value="delete"'
@@ -104,5 +139,13 @@ class RecordingAccessesHelperTest < Minitest::Test
     refute_includes html, ">Actions<"
     refute_includes html, "Edit access"
     refute_includes html, "Delete access"
+  end
+
+  def test_new_recording_access_path_with_back_url_escapes_nested_back_url_once
+    recording = Struct.new(:id, :to_param).new(42, "42")
+
+    path = ViewContext.new.new_recording_access_path_with_back_url(recording)
+
+    assert_equal "/recordings/42/accesses/new?back_url=%2Frecordings%2F42%2Faccesses%3Fback_url%3D%2F", path
   end
 end

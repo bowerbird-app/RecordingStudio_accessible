@@ -120,7 +120,6 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Access APIs provided by this gem"
     assert_includes @response.body, "href=\"/recording_studio_accessible/methods\""
     assert_includes @response.body, "RecordingStudio::Access.create!"
-    assert_includes @response.body, "RecordingStudio::AccessBoundary.create!"
     assert_includes @response.body, "RecordingStudioAccessible.authorized?"
     assert_includes @response.body, "RecordingStudioAccessible.role_for"
     assert_includes @response.body, "RecordingStudioAccessible.root_recording_ids_for"
@@ -139,23 +138,6 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Access is granted by adding a child recording using an access recordable."
     assert_includes @response.body, "- Page"
     assert_includes @response.body, "-- Access"
-  end
-
-  test "boundaries page renders the rebuilt guidance content" do
-    sign_in @admin
-
-    get "/recording_studio_accessible/boundaries"
-
-    assert_response :success
-    assert_includes @response.body, "Boundaries"
-    assert_includes @response.body, "How to limit access to children"
-    assert_includes @response.body, "href=\"/recording_studio_accessible/boundaries\""
-    assert_includes @response.body, "What a boundary is"
-    assert_includes @response.body, "How resolution works"
-    assert_includes @response.body, "When access is denied"
-    assert_includes @response.body, "Use a boundary when one branch of a workspace needs stricter rules than the rest."
-    refute_includes @response.body, "Boundary hierarchy examples"
-    refute_includes @response.body, "Workspace root"
   end
 
   test "user invites page explains missing-user handling and setup options" do

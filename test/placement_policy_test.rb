@@ -6,20 +6,18 @@ class PlacementPolicyTest < Minitest::Test
   class RootRecordable
     include RecordingStudioAccessible::AllowsAccessibleChildren
 
-    recording_studio_accessible_children :access, :boundary
+    recording_studio_accessible_children :access
   end
 
   class PlainRecordable
     include RecordingStudioAccessible::AllowsAccessibleChildren
   end
 
-  def test_opted_in_recordable_allows_access_and_boundary_children
+  def test_opted_in_recordable_allows_access_children
     root_recording = Struct.new(:recordable).new(RootRecordable.new)
 
     assert RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(recording: root_recording,
                                                                                   child_type: :access)
-    assert RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(recording: root_recording,
-                                                                                  child_type: :boundary)
   end
 
   def test_non_opted_in_recordable_rejects_access_children

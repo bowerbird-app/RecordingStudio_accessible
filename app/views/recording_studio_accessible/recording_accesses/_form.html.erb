@@ -1,5 +1,8 @@
-<%= render FlatPack::Breadcrumb::Component.new(class: "mb-4") do |breadcrumb| %>
-  <% breadcrumb.item(text: "Back", href: request.referer || recording_accesses_path(@recording), icon: "chevron-left") %>
+<%= render FlatPack::Breadcrumb::Component.new(
+  class: "mb-4",
+  show_back: true,
+  back_href: params[:back_url].presence || recording_access_index_path_with_back_url(@recording)
+) do |breadcrumb| %>
 <% end %>
 
 <%= render FlatPack::PageTitle::Component.new(

@@ -105,13 +105,6 @@ module RecordingStudioAccessible
     def prepare_index_page_state
       @direct_access_rows = build_direct_access_rows
       @inherited_access_rows = build_inherited_access_rows
-      @boundary_enabled = @recording.parent_recording_id.present? &&
-                          RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(
-                            recording: @recording,
-                            child_type: :boundary
-                          )
-      @boundary_recording = active_boundary_recording
-      @boundary_recordable = @boundary_recording&.recordable
       prepare_shared_page_state
     end
 
@@ -283,14 +276,6 @@ module RecordingStudioAccessible
       return recordable.title if recordable.respond_to?(:title)
 
       recordable.class.name.demodulize
-    end
-
-    def active_boundary_recording
-      RecordingStudio::Recording.unscoped.find_by(
-        parent_recording_id: @recording.id,
-        recordable_type: "RecordingStudio::AccessBoundary",
-        trashed_at: nil
-      )
     end
   end
 end
