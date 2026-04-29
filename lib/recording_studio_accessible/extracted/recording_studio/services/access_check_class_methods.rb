@@ -18,9 +18,10 @@ module RecordingStudio
       def root_recordings_for(actor:, minimum_role: nil)
         return [] unless actor
 
-        root_access_recordings_for(actor: actor, minimum_role: minimum_role)
-          .distinct
-          .pluck(:root_recording_id)
+        root_ids = root_recording_ids_for(actor: actor, minimum_role: minimum_role)
+        return [] if root_ids.empty?
+
+        RecordingStudio::Recording.unscoped.where(id: root_ids).to_a
       end
 
       def root_recording_ids_for(actor:, minimum_role: nil)

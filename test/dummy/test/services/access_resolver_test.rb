@@ -62,9 +62,10 @@ class AccessResolverTest < ActiveSupport::TestCase
   test "root listing helpers remain aligned" do
     grant_access(@admin, :admin, @root_recording)
 
-    expected_ids = [@root_recording.id]
+    expected_recordings = [@root_recording]
+    expected_ids = expected_recordings.map(&:id)
 
-    assert_equal expected_ids, RecordingStudio::Services::AccessCheck.root_recordings_for(actor: @admin)
+    assert_equal expected_recordings, RecordingStudio::Services::AccessCheck.root_recordings_for(actor: @admin)
     assert_equal expected_ids, RecordingStudio::Services::AccessCheck.root_recording_ids_for(actor: @admin)
   end
 
