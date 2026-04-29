@@ -55,20 +55,14 @@ module RecordingStudio
       end
 
       def access_scope_for(actor:, minimum_role:)
-        scope = RecordingStudio::Access.where(actor_type: stored_actor_type_for(actor), actor_id: actor.id)
+        scope = RecordingStudio::Access.where(actor_type: RecordingStudioAccessible::ActorType.for(actor),
+                                              actor_id: actor.id)
         return scope if minimum_role.blank?
 
         minimum_value = RecordingStudio::Access.roles[minimum_role.to_s]
         return nil unless minimum_value
 
         scope.where(role: minimum_value..)
-      end
-
-      def stored_actor_type_for(actor)
-        base_class = actor.class.base_class
-        return base_class.polymorphic_name if base_class.respond_to?(:polymorphic_name)
-
-        base_class.name
       end
     end
   end

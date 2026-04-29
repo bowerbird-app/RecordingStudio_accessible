@@ -78,12 +78,12 @@ class AccessResolverTest < ActiveSupport::TestCase
     )
     access_recording = grant_access(special_user, :view, @root_recording)
 
-    assert_equal stored_actor_type_for(special_user), access_recording.recordable.actor_type
+    assert_equal RecordingStudioAccessible::ActorType.for(special_user), access_recording.recordable.actor_type
     assert_equal :view, RecordingStudioAccessible.role_for(actor: special_user, recording: @root_recording)
     assert_equal [access_recording.id],
                  RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(
-                   recording: @root_recording,
-                   actor: special_user
+                    recording: @root_recording,
+                    actor: special_user
                  ).pluck(:id)
     assert_equal [@root_recording.id],
                  RecordingStudio::Services::AccessCheck.root_recording_ids_for(actor: special_user)
@@ -122,12 +122,5 @@ class AccessResolverTest < ActiveSupport::TestCase
 
   def remove_actor_subclass(name)
     Object.send(:remove_const, name) if Object.const_defined?(name, false)
-  end
-
-  def stored_actor_type_for(actor)
-    base_class = actor.class.base_class
-    return base_class.polymorphic_name if base_class.respond_to?(:polymorphic_name)
-
-    base_class.name
   end
 end
