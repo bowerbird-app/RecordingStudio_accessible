@@ -54,7 +54,10 @@ module RecordingStudioAccessible
     end
 
     def access_scope_for(actor:, minimum_role:)
-      scope = RecordingStudio::Access.where(actor_type: RecordingStudioAccessible::ActorType.for(actor), actor_id: actor.id)
+      scope = RecordingStudio::Access.where(
+        actor_type: RecordingStudioAccessible::ActorType.for(actor),
+        actor_id: actor.id
+      )
       return scope if minimum_role.blank?
 
       minimum_value = RecordingStudio::Access.roles[minimum_role.to_s]
