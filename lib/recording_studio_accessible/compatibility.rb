@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 module RecordingStudioAccessible
   # rubocop:disable Metrics/ModuleLength
   module Compatibility
@@ -125,7 +127,6 @@ module RecordingStudioAccessible
           application_record_path = File.join(models_path, "application_record.rb")
           require application_record_path if File.file?(application_record_path)
         end
-        # rubocop:enable Metrics/ModuleLength
       end
 
       def include_guard(class_name, guard)
@@ -151,5 +152,6 @@ module RecordingStudioAccessible
         nil
       end
     end
+    # rubocop:enable Metrics/ModuleLength
   end
 end

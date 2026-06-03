@@ -45,7 +45,15 @@ module RecordingStudioAccessible
       end
 
       def migration_exists?(migration_name)
-        Dir.glob(File.join(destination_root, "db/migrate", "*_#{migration_name}")).any?
+        expected_name = logical_migration_name(migration_name)
+
+        Dir.glob(File.join(destination_root, "db/migrate", "*.rb")).any? do |path|
+          logical_migration_name(File.basename(path).sub(/^\d+_/, "")) == expected_name
+        end
+      end
+
+      def logical_migration_name(migration_name)
+        migration_name.sub(/\.recording_studio(?=\.rb\z)/, "")
       end
 
       def next_migration_number

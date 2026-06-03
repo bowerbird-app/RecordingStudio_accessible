@@ -164,4 +164,15 @@ class RecordingAccessesHelperTest < Minitest::Test
   def test_recording_access_index_back_url_falls_back_without_host_root_path
     assert_equal "/", ViewContextWithoutRoot.new.recording_access_index_back_url
   end
+
+  def test_recording_access_anchor_url_falls_back_without_host_root_path
+    assert_equal "/", ViewContextWithoutRoot.new.recording_access_anchor_url
+  end
+
+  def test_recording_access_index_back_url_prefers_explicit_param_without_host_root_path
+    view_context = ViewContextWithoutRoot.new
+    view_context.params = { back_url: "/recordings" }
+
+    assert_equal "/recordings", view_context.recording_access_index_back_url
+  end
 end

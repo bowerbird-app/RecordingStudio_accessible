@@ -36,6 +36,7 @@ Then run:
 
 ```bash
 bundle install
+bin/rails recording_studio:install:migrations
 bin/rails generate recording_studio_accessible:install
 bin/rails generate recording_studio_accessible:access_management --link-helper
 bin/rails generate recording_studio_accessible:migrations

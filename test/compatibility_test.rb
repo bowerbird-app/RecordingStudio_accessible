@@ -19,13 +19,14 @@ class CompatibilityTest < Minitest::Test
                                                   ["recording_studio_accessible/extracted/recording_studio/access"]) do
       assert_equal :addon, RecordingStudioAccessible::Compatibility.integration_mode
     end
+  end
 
-    def test_integration_mode_stays_addon_after_addon_loads_access_constant
-      RecordingStudioAccessible::Compatibility.instance_variable_set(:@addon_loaded_access, true)
+  def test_integration_mode_stays_addon_after_addon_loads_access_constant
+    RecordingStudioAccessible::Compatibility.instance_variable_set(:@addon_loaded_access, true)
 
-      assert_equal :addon, RecordingStudioAccessible::Compatibility.integration_mode
-      refute RecordingStudioAccessible::Compatibility.core_access_present?
-    end
+    assert_equal :addon, RecordingStudioAccessible::Compatibility.integration_mode
+    assert RecordingStudioAccessible::Compatibility.addon_provides_access?
+    refute RecordingStudioAccessible::Compatibility.core_access_present?
   end
 
   def test_missing_constant_paths_load_in_dependency_order
@@ -97,5 +98,19 @@ class CompatibilityTest < Minitest::Test
     assert_includes access_class.validations, [:prevent_unsupported_direct_creation, { on: :create }]
     assert_includes recording_class.included_modules, RecordingStudioAccessible::AccessRecordingCreationGuard
     assert_includes recording_class.validations, [:prevent_unsupported_access_recording_creation, { on: :create }]
+  end
+
+  def test_ensure_access_recordable_declaration_ignores_class_without_recordable_api
+    access_class = Class.new
+
+    RecordingStudio.stub(:const_defined?, lambda { |name, inherit = true|
+      name.to_s == "Access" || Object.const_defined?(name, inherit)
+    }) do
+      RecordingStudio.stub(:const_get, lambda { |name, inherit = true|
+        name.to_s == "Access" ? access_class : Object.const_get(name, inherit)
+      }) do
+        RecordingStudioAccessible::Compatibility.ensure_access_recordable_declaration!
+      end
+    end
   end
 end
