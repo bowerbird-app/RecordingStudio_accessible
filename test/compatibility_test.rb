@@ -68,12 +68,12 @@ class CompatibilityTest < Minitest::Test
     end
 
     RecordingStudio.stub(:const_defined?, lambda { |name, inherit = true|
-      %i[Access Recording].include?(name) || Object.const_defined?(name, inherit)
+      %w[Access Recording].include?(name.to_s) || Object.const_defined?(name, inherit)
     }) do
       RecordingStudio.stub(:const_get, lambda { |name, inherit = true|
-        case name
-        when :Access then access_class
-        when :Recording then recording_class
+        case name.to_s
+        when "Access" then access_class
+        when "Recording" then recording_class
         else Object.const_get(name, inherit)
         end
       }) do

@@ -95,12 +95,22 @@ module RecordingStudioAccessible
       end
 
       def include_guard(class_name, guard)
-        return unless constant_defined_path?(class_name)
+        model_class = constant_for_path(class_name)
+        return unless model_class
 
-        model_class = class_name.constantize
         return if model_class.included_modules.include?(guard)
 
         model_class.include guard
+      end
+
+      def constant_for_path(path)
+        path.split("::").reject(&:empty?).inject(Object) do |scope, const_name|
+          return unless scope.const_defined?(const_name, false)
+
+          scope.const_get(const_name, false)
+        end
+      rescue NameError
+        nil
       end
     end
   end
