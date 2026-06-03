@@ -1,6 +1,8 @@
 require_relative "../test_helper"
 
 class RecordingStudioAccessTest < ActiveSupport::TestCase
+  ACCESS_GRANT_ERROR = "Create access grants through RecordingStudioAccessible.grant_access"
+
   test "direct access creation is blocked" do
     user = create_user("direct-access-blocked@example.com")
 
@@ -9,7 +11,7 @@ class RecordingStudioAccessTest < ActiveSupport::TestCase
         RecordingStudio::Access.create!(actor: user, role: :view)
       end
 
-      assert_includes error.record.errors.full_messages.join, "Create access grants through RecordingStudioAccessible.grant_access"
+      assert_includes error.record.errors.full_messages.join, ACCESS_GRANT_ERROR
     end
   end
 
@@ -30,7 +32,30 @@ class RecordingStudioAccessTest < ActiveSupport::TestCase
         )
       end
 
-      assert_includes error.record.errors.full_messages.join, "Create access grants through RecordingStudioAccessible.grant_access"
+      assert_includes error.record.errors.full_messages.join, ACCESS_GRANT_ERROR
+    end
+  end
+
+  test "recording studio record API cannot create access grants directly" do
+    user = create_user("record-api-access-blocked@example.com")
+    workspace = Workspace.create!(name: "Record API Access Blocked Workspace")
+    parent_recording = RecordingStudio::Recording.unscoped.create!(recordable: workspace, parent_recording_id: nil)
+
+    assert_no_difference -> { RecordingStudio::Access.count } do
+      assert_no_difference -> { RecordingStudio::Recording.unscoped.count } do
+        error = assert_raises(ActiveRecord::RecordInvalid) do
+          parent_recording.record(
+            RecordingStudio::Access,
+            actor: user,
+            parent_recording: parent_recording
+          ) do |access|
+            access.actor = user
+            access.role = :view
+          end
+        end
+
+        assert_includes error.record.errors.full_messages.join, ACCESS_GRANT_ERROR
+      end
     end
   end
 

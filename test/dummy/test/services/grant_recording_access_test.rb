@@ -45,6 +45,22 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal @recording.id, result.value.parent_recording_id
   end
 
+  test "granting access requires an actor" do
+    assert_no_difference -> { RecordingStudio::Access.count } do
+      assert_no_difference -> { RecordingStudio::Recording.unscoped.count } do
+        @result = RecordingStudioAccessible.grant_access(
+          recording: @recording,
+          actor: nil,
+          role: :view,
+          manager_actor: @manager_actor
+        )
+      end
+    end
+
+    assert @result.failure?
+    assert_equal "Actor is required", @result.error
+  end
+
   test "granting access deduplicates existing direct grants for the same actor" do
     stale_recording = create_legacy_direct_access_recording(@user, :view, @recording)
     create_legacy_direct_access_recording(@user, :admin, @recording)

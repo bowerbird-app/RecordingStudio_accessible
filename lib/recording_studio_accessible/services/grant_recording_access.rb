@@ -16,6 +16,7 @@ module RecordingStudioAccessible
 
       def perform
         return failure("Recording is required") unless @recording
+        return failure("Actor is required") unless @actor
 
         authorization_result = authorize_access_management!(recording: @recording, manager_actor: @manager_actor)
         return authorization_result unless authorization_result == true
@@ -87,7 +88,7 @@ module RecordingStudioAccessible
       end
 
       def existing_access_recordings
-        return unless @actor
+        return RecordingStudio::Recording.none unless @actor
 
         RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(recording: @recording, actor: @actor)
       end

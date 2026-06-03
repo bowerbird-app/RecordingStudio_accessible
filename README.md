@@ -54,7 +54,9 @@ When that happens, Recording Studio Accessible runs in **compatibility mode**:
 
 When RecordingStudio core stops shipping those constants, this addon becomes the source of truth for the extracted access implementation behind the `RecordingStudioAccessible` API.
 
-Direct `RecordingStudio::Access` creation is blocked when this addon owns the extracted access model. In compatibility mode, host applications should still use `RecordingStudioAccessible.grant_access`, but hard direct-creation blocking depends on the RecordingStudio core-provided model.
+Direct `RecordingStudio::Access` and access-recording creation are blocked when
+this addon is loaded, including compatibility mode. Host applications should use
+`RecordingStudioAccessible.grant_access` for direct access grants.
 
 ## Setup notes
 
@@ -98,8 +100,8 @@ RecordingStudio Accessible treats `RecordingStudio::Access` as an internal
 recordable. Applications should not create access records directly. Use
 `RecordingStudioAccessible.grant_access` or
 `RecordingStudioAccessible::Services::GrantRecordingAccess`.
-When this addon owns the extracted access model, direct creation raises a
-validation error.
+When this addon is loaded, direct access grant creation raises a validation
+error.
 
 The supported grant path enforces placement, authorization, role validation, and
 deduplication so each actor has at most one direct active access grant under a
