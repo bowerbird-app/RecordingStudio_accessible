@@ -84,14 +84,22 @@ Without that opt-in, the mounted access-management UI and grant service reject d
 ### Granting access
 
 ```ruby
-access = RecordingStudio::Access.create!(actor: user, role: :view)
-
-RecordingStudio::Recording.create!(
-  root_recording: root_recording,
-  recordable: access,
-  parent_recording: root_recording
+RecordingStudioAccessible.grant_access(
+  recording: recording,
+  actor: user,
+  role: :view,
+  manager_actor: current_actor
 )
 ```
+
+RecordingStudio Accessible treats `RecordingStudio::Access` as an internal
+recordable. Applications should not create access records directly. Use
+`RecordingStudioAccessible.grant_access` or
+`RecordingStudioAccessible::Services::GrantRecordingAccess`.
+
+The supported grant path enforces placement, authorization, role validation, and
+deduplication so each actor has at most one direct active access grant under a
+given parent recording.
 
 ### Managing access through the mounted engine
 

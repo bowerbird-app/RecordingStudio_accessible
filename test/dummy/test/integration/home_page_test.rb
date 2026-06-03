@@ -119,7 +119,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Methods"
     assert_includes @response.body, "Access APIs provided by this gem"
     assert_includes @response.body, "href=\"/recording_studio_accessible/methods\""
-    assert_includes @response.body, "RecordingStudio::Access.create!"
+    assert_includes @response.body, "RecordingStudioAccessible.grant_access"
     assert_includes @response.body, "RecordingStudioAccessible.authorized?"
     assert_includes @response.body, "RecordingStudioAccessible.role_for"
     assert_includes @response.body, "RecordingStudioAccessible.root_recording_ids_for"
@@ -190,7 +190,10 @@ class HomePageTest < ActionDispatch::IntegrationTest
   end
 
   def grant_access(user, role, parent_recording, root_recording = parent_recording)
-    access = RecordingStudio::Access.create!(actor: user, role: role)
+    access = RecordingStudioAccessible::AccessCreationContext.allow do
+      RecordingStudio::Access.create!(actor: user, role: role)
+    end
+
     RecordingStudio::Recording.unscoped.create!(
       root_recording_id: root_recording.id,
       parent_recording_id: parent_recording.id,

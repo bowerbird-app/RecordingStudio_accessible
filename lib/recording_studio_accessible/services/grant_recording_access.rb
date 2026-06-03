@@ -38,13 +38,15 @@ module RecordingStudioAccessible
               access.role = @role
             end
           else
-            access_recording = root_recording.record(
-              RecordingStudio::Access,
-              actor: @manager_actor,
-              parent_recording: @recording
-            ) do |access|
-              access.actor = @actor
-              access.role = @role
+            access_recording = RecordingStudioAccessible::AccessCreationContext.allow do
+              root_recording.record(
+                RecordingStudio::Access,
+                actor: @manager_actor,
+                parent_recording: @recording
+              ) do |access|
+                access.actor = @actor
+                access.role = @role
+              end
             end
           end
         end
