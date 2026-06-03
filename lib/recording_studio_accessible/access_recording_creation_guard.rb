@@ -21,8 +21,10 @@ module RecordingStudioAccessible
     end
 
     def access_recordable?
-      recordable_type == "RecordingStudio::Access" ||
-        (defined?(::RecordingStudio::Access) && recordable.is_a?(::RecordingStudio::Access))
+      return true if recordable_type == "RecordingStudio::Access"
+      return false unless defined?(::RecordingStudio::Access)
+
+      association(:recordable).target.is_a?(::RecordingStudio::Access)
     end
   end
 end

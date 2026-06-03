@@ -5,10 +5,11 @@ module RecordingStudioAccessible
     class RevokeRecordingAccess < BaseService
       include AccessRecordLifecycle
 
-      def initialize(recording:, access_recording:, manager_actor: nil)
+      def initialize(recording:, access_recording:, manager_actor: nil, controller: nil)
         @recording = recording
         @access_recording = access_recording
         @manager_actor = manager_actor
+        @controller = controller
       end
 
       private
@@ -17,7 +18,11 @@ module RecordingStudioAccessible
         return failure("Recording is required") unless @recording
         return failure("Access recording is required") unless @access_recording
 
-        authorization_result = authorize_access_management!(recording: @recording, manager_actor: @manager_actor)
+        authorization_result = authorize_access_management!(
+          recording: @recording,
+          manager_actor: @manager_actor,
+          controller: @controller
+        )
         return authorization_result unless authorization_result == true
         return failure("Access recording is invalid") unless valid_access_recording_for_parent?(recording: @recording,
                                                                                                 access_recording: @access_recording)

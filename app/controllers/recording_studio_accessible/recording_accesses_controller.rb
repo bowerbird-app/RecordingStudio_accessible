@@ -24,7 +24,8 @@ module RecordingStudioAccessible
         recording: @recording,
         actor: actor_resolution.actor,
         role: access_params[:role],
-        manager_actor: current_actor
+        manager_actor: current_actor,
+        controller: self
       )
 
       if result.success?
@@ -53,7 +54,8 @@ module RecordingStudioAccessible
         recording: @recording,
         access_recording: @access_recording,
         role: access_params[:role],
-        manager_actor: current_actor
+        manager_actor: current_actor,
+        controller: self
       )
 
       if result.success?
@@ -69,7 +71,8 @@ module RecordingStudioAccessible
       result = RecordingStudioAccessible::Services::RevokeRecordingAccess.call(
         recording: @recording,
         access_recording: @access_recording,
-        manager_actor: current_actor
+        manager_actor: current_actor,
+        controller: self
       )
 
       if result.success?
