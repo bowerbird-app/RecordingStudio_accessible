@@ -49,7 +49,9 @@ hierarchy declaration model. RecordingStudio core no longer ships built-in acces
 control, so this addon provides `RecordingStudio::Access` and declares it as a
 child-only recordable.
 
-When that happens, Recording Studio Accessible runs in **compatibility mode**:
+RecordingStudio 2.0 normally uses the addon-provided `RecordingStudio::Access`
+model and the addon-owned migrations. In older/core-access-present setups,
+Recording Studio Accessible runs in **compatibility mode**:
 
 - it does not redefine `RecordingStudio::Access`
 - it still registers the access recordable types with RecordingStudio

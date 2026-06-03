@@ -5,7 +5,7 @@ module RecordingStudioAccessible
     ROLE_OPTIONS = [%w[View view], %w[Edit edit], %w[Admin admin]].freeze
 
     def recording_access_index_back_url
-      params[:back_url].presence || main_app.root_path
+      params[:back_url].presence || host_root_path
     end
 
     def recording_access_anchor_url
@@ -85,6 +85,12 @@ module RecordingStudioAccessible
       navigation_params = { anchor_url: recording_access_anchor_url }
       navigation_params[:back_url] = back_url if back_url.present?
       navigation_params
+    end
+
+    def host_root_path
+      return main_app.root_path if respond_to?(:main_app) && main_app.respond_to?(:root_path)
+
+      "/"
     end
 
     def access_role_label(role)

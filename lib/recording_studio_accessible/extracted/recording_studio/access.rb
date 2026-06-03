@@ -14,7 +14,10 @@ module RecordingStudio
     self.table_name = "recording_studio_accesses"
     include RecordingStudio::Recordable
     include RecordingStudioAccessible::AccessCreationGuard
-    recording_studio_recordable label: "Access", root: false, allowed_parent_types: []
+
+    if respond_to?(:recording_studio_recordable)
+      recording_studio_recordable label: "Access", root: false, allowed_parent_types: []
+    end
 
     belongs_to :actor, polymorphic: true
 

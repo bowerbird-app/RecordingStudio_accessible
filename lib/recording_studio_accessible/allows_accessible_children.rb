@@ -17,7 +17,9 @@ module RecordingStudioAccessible
         normalized_child_types = child_types.flatten.compact.map { |child_type| normalize_child_type(child_type) }
 
         self.recording_studio_accessible_child_types = normalized_child_types.uniq.freeze
-        RecordingStudioAccessible::Compatibility.register_access_parent_type!(self) if normalized_child_types.include?(:access)
+        return unless normalized_child_types.include?(:access)
+
+        RecordingStudioAccessible::Compatibility.register_access_parent_type!(self)
       end
 
       def allows_recording_studio_accessible_child?(child_type)

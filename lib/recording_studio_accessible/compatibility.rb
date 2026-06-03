@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-require "set"
-
 module RecordingStudioAccessible
+  # rubocop:disable Metrics/ModuleLength
   module Compatibility
     EXTRACTED_FILES = {
       "RecordingStudio::Access" => "recording_studio_accessible/extracted/recording_studio/access"
@@ -10,7 +9,7 @@ module RecordingStudioAccessible
     RECORDABLE_TYPES = ["RecordingStudio::Access"].freeze
     ACCESS_RECORDABLE_TYPE = "RecordingStudio::Access"
 
-    class << self
+    class << self # rubocop:disable Metrics/ClassLength
       def access_parent_types
         @access_parent_types ||= Set.new
       end
@@ -29,11 +28,11 @@ module RecordingStudioAccessible
       end
 
       def core_access_present?
-        RECORDABLE_TYPES.all? { |path| constant_defined_path?(path) }
+        !addon_loaded_access? && RECORDABLE_TYPES.all? { |path| constant_defined_path?(path) }
       end
 
       def addon_provides_access?
-        missing_constant_paths.any?
+        addon_loaded_access? || missing_constant_paths.any?
       end
 
       def integration_mode
@@ -45,9 +44,14 @@ module RecordingStudioAccessible
 
         missing_constant_paths.each do |path|
           require path
+          @addon_loaded_access = true if path == EXTRACTED_FILES.fetch(ACCESS_RECORDABLE_TYPE)
         end
 
         ensure_creation_guards!
+      end
+
+      def addon_loaded_access?
+        @addon_loaded_access == true
       end
 
       def ensure_recordable_types_registered!
@@ -68,7 +72,7 @@ module RecordingStudioAccessible
         return unless defined?(::RecordingStudio)
 
         access_class = constant_for_path(ACCESS_RECORDABLE_TYPE)
-        return unless access_class&.respond_to?(:recording_studio_recordable)
+        return unless access_class.respond_to?(:recording_studio_recordable)
 
         access_class.recording_studio_recordable(
           label: "Access",
@@ -121,6 +125,7 @@ module RecordingStudioAccessible
           application_record_path = File.join(models_path, "application_record.rb")
           require application_record_path if File.file?(application_record_path)
         end
+        # rubocop:enable Metrics/ModuleLength
       end
 
       def include_guard(class_name, guard)

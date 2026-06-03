@@ -3,6 +3,11 @@
 require "test_helper"
 
 class CompatibilityTest < Minitest::Test
+  def teardown
+    RecordingStudioAccessible::Compatibility.remove_instance_variable(:@addon_loaded_access) if
+      RecordingStudioAccessible::Compatibility.instance_variable_defined?(:@addon_loaded_access)
+  end
+
   def test_integration_mode_is_core_when_core_access_present
     RecordingStudioAccessible::Compatibility.stub(:missing_constant_paths, []) do
       assert_equal :core, RecordingStudioAccessible::Compatibility.integration_mode
@@ -13,6 +18,13 @@ class CompatibilityTest < Minitest::Test
     RecordingStudioAccessible::Compatibility.stub(:missing_constant_paths,
                                                   ["recording_studio_accessible/extracted/recording_studio/access"]) do
       assert_equal :addon, RecordingStudioAccessible::Compatibility.integration_mode
+    end
+
+    def test_integration_mode_stays_addon_after_addon_loads_access_constant
+      RecordingStudioAccessible::Compatibility.instance_variable_set(:@addon_loaded_access, true)
+
+      assert_equal :addon, RecordingStudioAccessible::Compatibility.integration_mode
+      refute RecordingStudioAccessible::Compatibility.core_access_present?
     end
   end
 
