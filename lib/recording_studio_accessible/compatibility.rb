@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 module RecordingStudioAccessible
   # rubocop:disable Metrics/ModuleLength
   module Compatibility
