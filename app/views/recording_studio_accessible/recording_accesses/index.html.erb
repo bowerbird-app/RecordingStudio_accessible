@@ -1,10 +1,7 @@
-<%= render FlatPack::Breadcrumb::Component.new(
+<%= render FlatPack::PageNav::Component.new(
   class: "mb-4",
-  show_back: true,
-  back_href: recording_access_index_back_url
-) do |breadcrumb| %>
-  <% breadcrumb.item(text: @recording_label) %>
-<% end %>
+  anchor_url: recording_access_anchor_url
+) %>
 
 <%= render FlatPack::PageTitle::Component.new(
   title: "Manage access",

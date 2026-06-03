@@ -5,10 +5,11 @@ module RecordingStudioAccessible
     module AccessRecordLifecycle
       private
 
-      def authorize_access_management!(recording:, manager_actor:)
+      def authorize_access_management!(recording:, manager_actor:, controller: nil)
         return true if RecordingStudioAccessible::AccessManagementPolicy.allowed?(
           recording: recording,
-          actor: manager_actor
+          actor: manager_actor,
+          controller: controller
         )
 
         failure("Not authorized to manage access")

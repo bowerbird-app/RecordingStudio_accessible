@@ -5,6 +5,7 @@ class SignInPageTest < ActionDispatch::IntegrationTest
     get "/users/sign_in"
 
     assert_response :success
+    assert_match %r{<html[^>]*data-theme="rounded"}, @response.body
     assert_match %r{href="/assets/tailwind(?:-[^"]+)?\.css"}, @response.body
   end
 end

@@ -18,18 +18,13 @@ module RecordingStudioAccessible
     def access_methods
       @method_sections = [
         {
-          title: "Grant access with RecordingStudio::Access.create!",
+          title: "Grant access with RecordingStudioAccessible.grant_access",
           code: <<~'RUBY'.strip
-            access = RecordingStudio::Access.create!(actor: user, role: :view)
-          RUBY
-        },
-        {
-          title: "Attach a grant to a recording",
-          code: <<~'RUBY'.strip
-            RecordingStudio::Recording.create!(
-              root_recording: root_recording,
-              recordable: access,
-              parent_recording: root_recording
+            RecordingStudioAccessible.grant_access(
+              recording: recording,
+              actor: user,
+              role: :view,
+              manager_actor: current_actor
             )
           RUBY
         },

@@ -43,17 +43,20 @@ class EngineTest < Minitest::Test
   end
 
   def test_register_access_types_initializer_calls_compatibility_helpers
-    warned = false
-    registered = false
+    events = []
+    warn = -> { events << :warned }
+    register = -> { events << :registered }
+    guard = -> { events << :guarded }
 
-    RecordingStudioAccessible::Compatibility.stub(:warn_if_core_access_present!, -> { warned = true }) do
-      RecordingStudioAccessible::Compatibility.stub(:ensure_recordable_types_registered!, -> { registered = true }) do
-        find_initializer("recording_studio_accessible.register_access_types").block.call
+    RecordingStudioAccessible::Compatibility.stub(:warn_if_core_access_present!, warn) do
+      RecordingStudioAccessible::Compatibility.stub(:ensure_recordable_types_registered!, register) do
+        RecordingStudioAccessible::Compatibility.stub(:ensure_creation_guards!, guard) do
+          find_initializer("recording_studio_accessible.register_access_types").block.call
+        end
       end
     end
 
-    assert warned
-    assert registered
+    assert_equal %i[warned registered guarded], events
   end
 
   def test_load_missing_constants_initializer_loads_extracted_models_against_top_level_application_record

@@ -8,16 +8,28 @@ module RecordingStudioAccessible
       params[:back_url].presence || main_app.root_path
     end
 
+    def recording_access_anchor_url
+      params[:anchor_url].presence || recording_access_index_back_url
+    end
+
     def recording_access_index_path_with_back_url(recording)
-      recording_accesses_path(recording, back_url: recording_access_index_back_url)
+      recording_accesses_path(recording, **recording_access_navigation_params(back_url: recording_access_index_back_url))
     end
 
     def new_recording_access_path_with_back_url(recording)
-      new_recording_access_path(recording, back_url: recording_access_index_back_reference(recording))
+      new_recording_access_path(recording, **recording_access_navigation_params(back_url: recording_access_index_back_reference(recording)))
     end
 
     def edit_recording_access_path_with_back_url(recording, access_id)
-      edit_recording_access_path(recording, access_id, back_url: recording_access_index_back_reference(recording))
+      edit_recording_access_path(recording, access_id, **recording_access_navigation_params(back_url: recording_access_index_back_reference(recording)))
+    end
+
+    def recording_access_collection_path_with_navigation(recording)
+      recording_accesses_path(recording, **recording_access_navigation_params)
+    end
+
+    def recording_access_path_with_navigation(recording, access_id)
+      recording_access_path(recording, access_id, **recording_access_navigation_params)
     end
 
     def access_role_options
@@ -54,7 +66,7 @@ module RecordingStudioAccessible
                     ),
                     button_to(
                       "Delete",
-                      recording_access_path(recording, row[:id]),
+                      recording_access_path_with_navigation(recording, row[:id]),
                       method: :delete,
                       form_class: "inline",
                       class: "cursor-pointer text-[var(--danger-text-color,var(--surface-content-color))] underline-offset-2 hover:underline"
@@ -66,7 +78,13 @@ module RecordingStudioAccessible
     private
 
     def recording_access_index_back_reference(recording)
-      "#{recording_accesses_path(recording)}?back_url=#{recording_access_index_back_url}"
+      recording_accesses_path(recording, **recording_access_navigation_params(back_url: recording_access_index_back_url))
+    end
+
+    def recording_access_navigation_params(back_url: params[:back_url].presence)
+      navigation_params = { anchor_url: recording_access_anchor_url }
+      navigation_params[:back_url] = back_url if back_url.present?
+      navigation_params
     end
 
     def access_role_label(role)

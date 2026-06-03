@@ -25,15 +25,15 @@ class AccessManagementPolicyTest < Minitest::Test
   end
 
   def test_policy_remains_compatible_with_controller_based_authorizer
-    controller = Object.new
+    expected_controller = Object.new
     RecordingStudioAccessible.configuration.access_management_authorizer = lambda do |controller:, recording:|
-      controller.equal?(controller) && recording == :recording
+      controller.equal?(expected_controller) && recording == :recording
     end
 
     assert RecordingStudioAccessible::AccessManagementPolicy.allowed?(
       recording: :recording,
       actor: :admin,
-      controller: controller
+      controller: expected_controller
     )
   end
 end

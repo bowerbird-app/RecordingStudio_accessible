@@ -57,13 +57,15 @@ def ensure_child_recording(recordable:, parent_recording:, root_recording:)
 end
 
 def ensure_access_recording(actor:, role:, parent_recording:, root_recording:)
-  access = RecordingStudio::Access.find_or_create_by!(actor: actor, role: role)
+  RecordingStudioAccessible::AccessCreationContext.allow do
+    access = RecordingStudio::Access.find_or_create_by!(actor: actor, role: role)
 
-  RecordingStudio::Recording.unscoped.find_or_create_by!(
-    root_recording_id: root_recording.id,
-    parent_recording_id: parent_recording.id,
-    recordable: access
-  )
+    RecordingStudio::Recording.unscoped.find_or_create_by!(
+      root_recording_id: root_recording.id,
+      parent_recording_id: parent_recording.id,
+      recordable: access
+    )
+  end
 end
 
 def delete_orphaned_access(access_id)

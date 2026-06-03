@@ -5,6 +5,9 @@ require "action_mailer"
 require "recording_studio_accessible/version"
 require "recording_studio_accessible/hooks"
 require "recording_studio_accessible/allows_accessible_children"
+require "recording_studio_accessible/access_creation_context"
+require "recording_studio_accessible/access_creation_guard"
+require "recording_studio_accessible/access_recording_creation_guard"
 require "recording_studio_accessible/access_management_policy"
 require "recording_studio_accessible/actor_type"
 require "recording_studio_accessible/authorization_class_methods"
@@ -38,6 +41,15 @@ module RecordingStudioAccessible
 
     def authorized?(actor:, recording:, role:)
       Authorization.allowed?(actor: actor, recording: recording, role: role)
+    end
+
+    def grant_access(recording:, actor:, role:, manager_actor: nil)
+      Services::GrantRecordingAccess.call(
+        recording: recording,
+        actor: actor,
+        role: role,
+        manager_actor: manager_actor
+      )
     end
 
     def root_recordings_for(actor:, minimum_role: nil)

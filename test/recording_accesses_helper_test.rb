@@ -75,8 +75,8 @@ class RecordingAccessesHelperTest < Minitest::Test
       append_query_string("/recordings/#{recording.to_param}/accesses/#{access}/edit", options)
     end
 
-    def recording_access_path(recording, access)
-      "/recordings/#{recording.to_param}/accesses/#{access}"
+    def recording_access_path(recording, access, options = {})
+      append_query_string("/recordings/#{recording.to_param}/accesses/#{access}", options)
     end
 
     def recording_accesses_path(recording, options = {})
@@ -125,13 +125,18 @@ class RecordingAccessesHelperTest < Minitest::Test
     recording = Struct.new(:id, :to_param).new(42, "42")
     view_context = ViewContext.new
     view_context.params = { back_url: "/users/7" }
+    expected_index_path = "/recordings/42/accesses?anchor_url=%2Fusers%2F7&back_url=%2Fusers%2F7"
+    expected_edit_path = "/recordings/42/accesses/7/edit?anchor_url=%2Fusers%2F7&back_url=#{CGI.escape(expected_index_path)}"
+    expected_delete_path = "/recordings/42/accesses/7?anchor_url=%2Fusers%2F7&back_url=%2Fusers%2F7"
+    expected_edit_href = CGI.escapeHTML(expected_edit_path)
+    expected_delete_action = CGI.escapeHTML(expected_delete_path)
 
     html = view_context.access_actions_cell(recording, id: 7)
 
     assert_includes html, ">Edit<"
-    assert_includes html, "/recordings/42/accesses/7/edit?back_url=%2Frecordings%2F42%2Faccesses%3Fback_url%3D%2Fusers%2F7"
-    assert_includes html, "/recordings/42/accesses/7"
-    assert_includes html, '<form class="inline" method="post" action="/recordings/42/accesses/7">'
+    assert_includes html, expected_edit_href
+    assert_includes html, expected_delete_action
+    assert_includes html, %(<form class="inline" method="post" action="#{expected_delete_action}">)
     assert_includes html, 'name="_method" value="delete"'
     assert_includes html, 'type="submit" value="Delete"'
     assert_includes html,
@@ -143,9 +148,10 @@ class RecordingAccessesHelperTest < Minitest::Test
 
   def test_new_recording_access_path_with_back_url_escapes_nested_back_url_once
     recording = Struct.new(:id, :to_param).new(42, "42")
+    expected_index_path = "/recordings/42/accesses?anchor_url=%2F&back_url=%2F"
 
     path = ViewContext.new.new_recording_access_path_with_back_url(recording)
 
-    assert_equal "/recordings/42/accesses/new?back_url=%2Frecordings%2F42%2Faccesses%3Fback_url%3D%2F", path
+    assert_equal "/recordings/42/accesses/new?anchor_url=%2F&back_url=#{CGI.escape(expected_index_path)}", path
   end
 end

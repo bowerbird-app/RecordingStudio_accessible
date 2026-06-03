@@ -5,49 +5,23 @@ module RecordingStudioAccessible
     class GrantRecordingAccess < BaseService
       include AccessRecordLifecycle
 
-      def initialize(recording:, actor:, role:, manager_actor: nil)
+      def initialize(recording:, actor:, role:, manager_actor: nil, controller: nil)
         @recording = recording
         @actor = actor
         @role = role.to_s
         @manager_actor = manager_actor
+        @controller = controller
       end
 
       private
 
       def perform
-        return failure("Recording is required") unless @recording
+        validation_result = validate_request
+        return validation_result unless validation_result == true
 
-        authorization_result = authorize_access_management!(recording: @recording, manager_actor: @manager_actor)
-        return authorization_result unless authorization_result == true
-        return failure("Direct access is not enabled for this recording") unless access_enabled?
-        return failure("Role is invalid") unless valid_role?
-
-        access_recording = nil
         ensure_current_impersonator_accessor!
 
-        RecordingStudio::Recording.transaction do
-          lock_grant_scope!
-
-          existing_recordings = existing_access_recordings.to_a
-          access_recording = existing_recordings.first
-
-          if access_recording
-            deduplicate_access_recordings!(existing_recordings.drop(1))
-
-            root_recording.revise(access_recording, actor: @manager_actor) do |access|
-              access.role = @role
-            end
-          else
-            access_recording = root_recording.record(
-              RecordingStudio::Access,
-              actor: @manager_actor,
-              parent_recording: @recording
-            ) do |access|
-              access.actor = @actor
-              access.role = @role
-            end
-          end
-        end
+        access_recording = upsert_access_recording!
 
         success(access_recording)
       rescue ActiveRecord::RecordInvalid => e
@@ -56,12 +30,66 @@ module RecordingStudioAccessible
         failure(e)
       end
 
+      def validate_request
+        return failure("Recording is required") unless @recording
+        return failure("Actor is required") unless @actor
+
+        authorization_result = authorize_access_management!(
+          recording: @recording,
+          manager_actor: @manager_actor,
+          controller: @controller
+        )
+        return authorization_result unless authorization_result == true
+        return failure("Direct access is not enabled for this recording") unless access_enabled?
+        return failure("Role is invalid") unless valid_role?
+
+        true
+      end
+
+      def upsert_access_recording!
+        RecordingStudio::Recording.transaction do
+          lock_grant_scope!
+
+          existing_recordings = existing_access_recordings.to_a
+          access_recording = existing_recordings.first
+
+          if access_recording
+            update_existing_access_recording(access_recording, existing_recordings)
+          else
+            create_access_recording
+          end
+        end
+      end
+
+      def update_existing_access_recording(access_recording, existing_recordings)
+        deduplicate_access_recordings!(existing_recordings.drop(1))
+
+        RecordingStudioAccessible::AccessCreationContext.allow do
+          root_recording.revise(access_recording, actor: @manager_actor) do |access|
+            access.role = @role
+          end
+        end
+      end
+
+      def create_access_recording
+        RecordingStudioAccessible::AccessCreationContext.allow do
+          root_recording.record(
+            RecordingStudio::Access,
+            actor: @manager_actor,
+            parent_recording: @recording
+          ) do |access|
+            access.actor = @actor
+            access.role = @role
+          end
+        end
+      end
+
       def service_args
         {
           recording_id: @recording&.id,
-          actor_gid: @actor&.to_global_id&.to_s,
+          actor_gid: global_id_string_for(@actor),
           role: @role,
-          manager_actor_gid: @manager_actor&.to_global_id&.to_s
+          manager_actor_gid: global_id_string_for(@manager_actor)
         }
       end
 
@@ -83,7 +111,7 @@ module RecordingStudioAccessible
       end
 
       def existing_access_recordings
-        return unless @actor
+        return RecordingStudio::Recording.none unless @actor
 
         RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(recording: @recording, actor: @actor)
       end

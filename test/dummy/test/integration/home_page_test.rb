@@ -49,6 +49,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     get "/"
 
     assert_response :success
+    assert_match %r{<html[^>]*data-theme="rounded"}, @response.body
     assert_includes @response.body, "Recording Studio Accessible Demo"
     assert_includes @response.body, "Client onboarding"
     assert_includes @response.body, "Accessibility checklist"
@@ -58,7 +59,9 @@ class HomePageTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, "people with access"
     refute_includes @response.body, "admin@admin.com (admin)"
     refute_includes @response.body, @outsider.email
-    assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@folder_recording.id}/accesses\""
+    assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@folder_recording.id}/accesses"
+    assert_includes @response.body, "back_url=%2F%23folders-and-pages"
+    assert_includes @response.body, "anchor_url=%2F%23folders-and-pages"
     refute_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@page_recording.id}/accesses\""
     refute_includes @response.body, "Recording Studio addon template"
     refute_includes @response.body, "href=\"/recording_studio\""
@@ -119,7 +122,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Methods"
     assert_includes @response.body, "Access APIs provided by this gem"
     assert_includes @response.body, "href=\"/recording_studio_accessible/methods\""
-    assert_includes @response.body, "RecordingStudio::Access.create!"
+    assert_includes @response.body, "RecordingStudioAccessible.grant_access"
     assert_includes @response.body, "RecordingStudioAccessible.authorized?"
     assert_includes @response.body, "RecordingStudioAccessible.role_for"
     assert_includes @response.body, "RecordingStudioAccessible.root_recording_ids_for"
@@ -190,11 +193,14 @@ class HomePageTest < ActionDispatch::IntegrationTest
   end
 
   def grant_access(user, role, parent_recording, root_recording = parent_recording)
-    access = RecordingStudio::Access.create!(actor: user, role: role)
-    RecordingStudio::Recording.unscoped.create!(
-      root_recording_id: root_recording.id,
-      parent_recording_id: parent_recording.id,
-      recordable: access
-    )
+    RecordingStudioAccessible::AccessCreationContext.allow do
+      access = RecordingStudio::Access.create!(actor: user, role: role)
+
+      RecordingStudio::Recording.unscoped.create!(
+        root_recording_id: root_recording.id,
+        parent_recording_id: parent_recording.id,
+        recordable: access
+      )
+    end
   end
 end

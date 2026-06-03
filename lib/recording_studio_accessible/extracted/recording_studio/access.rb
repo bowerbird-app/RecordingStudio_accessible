@@ -1,10 +1,19 @@
 # frozen_string_literal: true
 
 module RecordingStudio
+  # Internal recordable used by RecordingStudioAccessible to represent a direct
+  # access grant.
+  #
+  # Application code should not create Access records directly. Use:
+  #
+  #   RecordingStudioAccessible.grant_access(...)
+  #
+  # Direct creation bypasses placement checks, authorization checks, and
+  # duplicate-grant deduplication.
   class Access < ::ApplicationRecord
     self.table_name = "recording_studio_accesses"
-
     include RecordingStudio::Recordable
+    include RecordingStudioAccessible::AccessCreationGuard
 
     belongs_to :actor, polymorphic: true
 

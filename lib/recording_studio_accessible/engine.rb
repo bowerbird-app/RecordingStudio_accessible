@@ -4,6 +4,10 @@ module RecordingStudioAccessible
   class Engine < ::Rails::Engine
     isolate_namespace RecordingStudioAccessible
 
+    config.to_prepare do
+      RecordingStudioAccessible::Compatibility.ensure_creation_guards!
+    end
+
     initializer "recording_studio_accessible.load_config" do |app|
       if app.respond_to?(:config_for)
         begin
@@ -35,6 +39,7 @@ module RecordingStudioAccessible
     initializer "recording_studio_accessible.register_access_types", after: "recording_studio_accessible.load_config" do
       RecordingStudioAccessible::Compatibility.warn_if_core_access_present!
       RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
+      RecordingStudioAccessible::Compatibility.ensure_creation_guards!
     end
 
     initializer "recording_studio_accessible.after_initialize",

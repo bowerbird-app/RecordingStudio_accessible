@@ -54,12 +54,15 @@ class TagChecker < ActionDispatch::IntegrationTest
   private
 
   def grant_access(user, role, parent_recording, root_recording = parent_recording)
-    access = RecordingStudio::Access.create!(actor: user, role: role)
-    RecordingStudio::Recording.unscoped.create!(
-      root_recording_id: root_recording.id,
-      parent_recording_id: parent_recording.id,
-      recordable: access
-    )
+    RecordingStudioAccessible::AccessCreationContext.allow do
+      access = RecordingStudio::Access.create!(actor: user, role: role)
+
+      RecordingStudio::Recording.unscoped.create!(
+        root_recording_id: root_recording.id,
+        parent_recording_id: parent_recording.id,
+        recordable: access
+      )
+    end
   end
 end
 
