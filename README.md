@@ -58,6 +58,61 @@ Direct `RecordingStudio::Access` and access-recording creation are blocked when
 this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
+### Upgrading existing apps
+
+If your app previously created direct grants with `RecordingStudio::Access.create!`
+plus a matching `RecordingStudio::Recording`, or by calling
+`parent_recording.record(RecordingStudio::Access, ...)`, update that code to use
+`RecordingStudioAccessible.grant_access` instead.
+
+Before:
+
+```ruby
+access = RecordingStudio::Access.create!(actor: user, role: :view)
+
+RecordingStudio::Recording.unscoped.create!(
+  root_recording_id: recording.id,
+  parent_recording_id: recording.id,
+  recordable: access
+)
+```
+
+Or:
+
+```ruby
+parent_recording.record(
+  RecordingStudio::Access,
+  actor: user,
+  parent_recording: parent_recording
+) do |access|
+  access.actor = user
+  access.role = :view
+end
+```
+
+After:
+
+```ruby
+result = RecordingStudioAccessible.grant_access(
+  recording: recording,
+  actor: user,
+  role: :view,
+  manager_actor: current_actor
+)
+
+raise result.error if result.failure?
+```
+
+When this addon is loaded, unsupported direct creation now raises
+`ActiveRecord::RecordInvalid` with the validation message:
+
+```text
+Create access grants through RecordingStudioAccessible.grant_access
+```
+
+The supported grant path keeps placement checks, authorization checks, role
+validation, and duplicate-grant deduplication in one place.
+
 ## Setup notes
 
 ### RecordingStudio configuration

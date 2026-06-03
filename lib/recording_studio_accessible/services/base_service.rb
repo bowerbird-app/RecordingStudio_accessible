@@ -163,6 +163,12 @@ module RecordingStudioAccessible
       def service_args
         {}
       end
+
+      def global_id_string_for(record)
+        return unless record.respond_to?(:to_global_id)
+
+        record.to_global_id.to_s
+      end
     end
   end
 end

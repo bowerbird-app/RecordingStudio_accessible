@@ -49,6 +49,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     get "/"
 
     assert_response :success
+    assert_match %r{<html[^>]*data-theme="rounded"}, @response.body
     assert_includes @response.body, "Recording Studio Accessible Demo"
     assert_includes @response.body, "Client onboarding"
     assert_includes @response.body, "Accessibility checklist"
@@ -58,7 +59,9 @@ class HomePageTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, "people with access"
     refute_includes @response.body, "admin@admin.com (admin)"
     refute_includes @response.body, @outsider.email
-    assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@folder_recording.id}/accesses\""
+    assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@folder_recording.id}/accesses"
+    assert_includes @response.body, "back_url=%2F%23folders-and-pages"
+    assert_includes @response.body, "anchor_url=%2F%23folders-and-pages"
     refute_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@page_recording.id}/accesses\""
     refute_includes @response.body, "Recording Studio addon template"
     refute_includes @response.body, "href=\"/recording_studio\""

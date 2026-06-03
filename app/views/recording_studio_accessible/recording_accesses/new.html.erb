@@ -1,6 +1,6 @@
 <%= render "form",
            title: "New access",
-           form_url: recording_accesses_path(@recording),
+           form_url: recording_access_collection_path_with_navigation(@recording),
            form_method: :post,
            submit_label: "Create access",
            show_actor_email_input: true,

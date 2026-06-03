@@ -39,7 +39,7 @@ module RecordingStudioAccessible
 
         redirect_options = {}
         redirect_options[:notice] = actor_resolution.notice if actor_resolution.notice.present?
-        redirect_to recording_accesses_path(@recording), **redirect_options
+        redirect_to recording_access_index_redirect_path, **redirect_options
       else
         @form_errors = result.errors.presence || Array(result.error)
         flash.now[:alert] = @form_errors.to_sentence
@@ -59,7 +59,7 @@ module RecordingStudioAccessible
       )
 
       if result.success?
-        redirect_to recording_accesses_path(@recording)
+        redirect_to recording_access_index_redirect_path
       else
         @form_errors = result.errors.presence || Array(result.error)
         flash.now[:alert] = @form_errors.to_sentence
@@ -76,7 +76,7 @@ module RecordingStudioAccessible
       )
 
       if result.success?
-        redirect_to recording_accesses_path(@recording), notice: "Access removed."
+        redirect_to recording_access_index_redirect_path, notice: "Access removed."
       else
         head :unprocessable_entity
       end
@@ -180,7 +180,7 @@ module RecordingStudioAccessible
         redirect_to actor_resolution.location, **redirect_options
       when :invited
         redirect_options = { notice: actor_resolution.notice.presence || "Invitation sent." }
-        redirect_to recording_accesses_path(@recording), **redirect_options
+        redirect_to recording_access_index_redirect_path, **redirect_options
       else
         @form_errors = Array(actor_resolution.error.presence || missing_actor_error)
         flash.now[:alert] = @form_errors.to_sentence
@@ -279,6 +279,20 @@ module RecordingStudioAccessible
       return recordable.title if recordable.respond_to?(:title)
 
       recordable.class.name.demodulize
+    end
+
+    def recording_access_index_redirect_path
+      recording_accesses_path(@recording, **recording_access_navigation_params)
+    end
+
+    def recording_access_navigation_params
+      back_url = params[:back_url].presence || main_app.root_path
+      anchor_url = params[:anchor_url].presence || back_url
+
+      {
+        back_url: back_url,
+        anchor_url: anchor_url
+      }
     end
   end
 end

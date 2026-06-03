@@ -24,7 +24,11 @@
                 text: "Change access",
                 style: :default,
                 size: :sm,
-                url: recording_studio_accessible.recording_accesses_path(@root_recording)
+                url: recording_studio_accessible.recording_accesses_path(
+                  @root_recording,
+                  back_url: "#{request.path}#workspace-access",
+                  anchor_url: "#{request.path}#workspace-access"
+                )
               ) %>
             <% end %>
           <% end %>
@@ -51,7 +55,11 @@
                 text: "Change access",
                 style: :default,
                 size: :sm,
-                url: recording_studio_accessible.recording_accesses_path(section[:folder_recording])
+                url: recording_studio_accessible.recording_accesses_path(
+                  section[:folder_recording],
+                  back_url: "#{request.path}#folders-and-pages",
+                  anchor_url: "#{request.path}#folders-and-pages"
+                )
               ) %>
             <% end %>
           <% end %>
@@ -70,7 +78,11 @@
                   text: "Change access",
                   style: :default,
                   size: :sm,
-                  url: recording_studio_accessible.recording_accesses_path(page_section[:page_recording])
+                  url: recording_studio_accessible.recording_accesses_path(
+                    page_section[:page_recording],
+                    back_url: "#{request.path}#folders-and-pages",
+                    anchor_url: "#{request.path}#folders-and-pages"
+                  )
                 ) %>
               <% end %>
             <% end %>

@@ -44,7 +44,7 @@ module RecordingStudioAccessible
         {
           recording_id: @recording&.id,
           access_recording_id: @access_recording&.id,
-          manager_actor_gid: @manager_actor&.to_global_id&.to_s
+          manager_actor_gid: global_id_string_for(@manager_actor)
         }
       end
     end

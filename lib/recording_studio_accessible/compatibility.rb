@@ -104,11 +104,15 @@ module RecordingStudioAccessible
       end
 
       def constant_for_path(path)
-        path.split("::").reject(&:empty?).inject(Object) do |scope, const_name|
-          return unless scope.const_defined?(const_name, false)
+        scope = Object
 
-          scope.const_get(const_name, false)
+        path.split("::").reject(&:empty?).each do |const_name|
+          return nil unless scope.const_defined?(const_name, false)
+
+          scope = scope.const_get(const_name, false)
         end
+
+        scope
       rescue NameError
         nil
       end

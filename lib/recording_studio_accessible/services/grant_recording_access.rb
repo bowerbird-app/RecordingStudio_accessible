@@ -16,6 +16,21 @@ module RecordingStudioAccessible
       private
 
       def perform
+        validation_result = validate_request
+        return validation_result unless validation_result == true
+
+        ensure_current_impersonator_accessor!
+
+        access_recording = upsert_access_recording!
+
+        success(access_recording)
+      rescue ActiveRecord::RecordInvalid => e
+        failure(e.message, errors: e.record.errors.full_messages)
+      rescue StandardError => e
+        failure(e)
+      end
+
+      def validate_request
         return failure("Recording is required") unless @recording
         return failure("Actor is required") unless @actor
 
@@ -28,9 +43,10 @@ module RecordingStudioAccessible
         return failure("Direct access is not enabled for this recording") unless access_enabled?
         return failure("Role is invalid") unless valid_role?
 
-        access_recording = nil
-        ensure_current_impersonator_accessor!
+        true
+      end
 
+      def upsert_access_recording!
         RecordingStudio::Recording.transaction do
           lock_grant_scope!
 
@@ -38,40 +54,42 @@ module RecordingStudioAccessible
           access_recording = existing_recordings.first
 
           if access_recording
-            deduplicate_access_recordings!(existing_recordings.drop(1))
-
-            access_recording = RecordingStudioAccessible::AccessCreationContext.allow do
-              root_recording.revise(access_recording, actor: @manager_actor) do |access|
-                access.role = @role
-              end
-            end
+            update_existing_access_recording(access_recording, existing_recordings)
           else
-            access_recording = RecordingStudioAccessible::AccessCreationContext.allow do
-              root_recording.record(
-                RecordingStudio::Access,
-                actor: @manager_actor,
-                parent_recording: @recording
-              ) do |access|
-                access.actor = @actor
-                access.role = @role
-              end
-            end
+            create_access_recording
           end
         end
+      end
 
-        success(access_recording)
-      rescue ActiveRecord::RecordInvalid => e
-        failure(e.message, errors: e.record.errors.full_messages)
-      rescue StandardError => e
-        failure(e)
+      def update_existing_access_recording(access_recording, existing_recordings)
+        deduplicate_access_recordings!(existing_recordings.drop(1))
+
+        RecordingStudioAccessible::AccessCreationContext.allow do
+          root_recording.revise(access_recording, actor: @manager_actor) do |access|
+            access.role = @role
+          end
+        end
+      end
+
+      def create_access_recording
+        RecordingStudioAccessible::AccessCreationContext.allow do
+          root_recording.record(
+            RecordingStudio::Access,
+            actor: @manager_actor,
+            parent_recording: @recording
+          ) do |access|
+            access.actor = @actor
+            access.role = @role
+          end
+        end
       end
 
       def service_args
         {
           recording_id: @recording&.id,
-          actor_gid: @actor&.to_global_id&.to_s,
+          actor_gid: global_id_string_for(@actor),
           role: @role,
-          manager_actor_gid: @manager_actor&.to_global_id&.to_s
+          manager_actor_gid: global_id_string_for(@manager_actor)
         }
       end
 
