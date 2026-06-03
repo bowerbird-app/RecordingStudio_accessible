@@ -11,7 +11,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     @new_user = create_user("new_user@admin.com")
 
     workspace = Workspace.create!(name: "Integration Workspace")
-    @root_recording = RecordingStudio::Recording.unscoped.create!(recordable: workspace, parent_recording_id: nil)
+    @root_recording = create_root_recording(workspace)
 
     folder = Folder.create!(
       workspace: workspace,
@@ -20,11 +20,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
       position: 0
     )
 
-    @folder_recording = RecordingStudio::Recording.unscoped.create!(
-      recordable: folder,
-      parent_recording_id: @root_recording.id,
-      root_recording_id: @root_recording.id
-    )
+    @folder_recording = create_child_recording(recordable: folder, parent_recording: @root_recording)
 
     grant_access(@admin, :admin, @root_recording)
     grant_access(@editor, :edit, @root_recording)
@@ -336,15 +332,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
   end
 
   def grant_access(user, role, parent_recording, root_recording = parent_recording)
-    RecordingStudioAccessible::AccessCreationContext.allow do
-      access = RecordingStudio::Access.create!(actor: user, role: role)
-
-      RecordingStudio::Recording.unscoped.create!(
-        root_recording_id: root_recording.id,
-        parent_recording_id: parent_recording.id,
-        recordable: access
-      )
-    end
+    create_direct_access_recording(actor: user, role: role, parent_recording: parent_recording)
   end
 
   def recording_accesses_path

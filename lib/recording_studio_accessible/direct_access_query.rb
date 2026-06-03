@@ -9,10 +9,9 @@ module RecordingStudioAccessible
 
     class << self
       def access_recordings_for(recording)
-        RecordingStudio::Recording.unscoped
-                                  .where(parent_recording_id: recording.id)
-                                  .where(recordable_type: "RecordingStudio::Access")
-                                  .where(trashed_at: nil)
+        active_recordings_scope
+          .where(parent_recording_id: recording.id)
+          .where(recordable_type: "RecordingStudio::Access")
       end
 
       def access_recordings_for_actor(recording:, actor:)
@@ -30,16 +29,21 @@ module RecordingStudioAccessible
         recording_ids = Array(recordings).filter_map(&:id)
         return RecordingStudio::Recording.none if recording_ids.empty?
 
-        RecordingStudio::Recording.unscoped
-                                  .where(parent_recording_id: recording_ids,
-                                         recordable_type: "RecordingStudio::Access",
-                                         trashed_at: nil)
-                                  .joins(ACCESS_JOIN_SQL)
-                                  .where(recording_studio_accesses: actor_filter(actor))
-                                  .order(created_at: :desc, id: :desc)
+        active_recordings_scope
+          .where(parent_recording_id: recording_ids, recordable_type: "RecordingStudio::Access")
+          .joins(ACCESS_JOIN_SQL)
+          .where(recording_studio_accesses: actor_filter(actor))
+          .order(created_at: :desc, id: :desc)
       end
 
       private
+
+      def active_recordings_scope
+        scope = RecordingStudio::Recording.unscoped
+        return scope unless RecordingStudio::Recording.column_names.include?("trashed_at")
+
+        scope.where(trashed_at: nil)
+      end
 
       def actor_filter(actor)
         { actor_type: RecordingStudioAccessible::ActorType.for(actor), actor_id: actor.id }

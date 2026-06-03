@@ -7,6 +7,11 @@ class RecordingStudioAccessibleTest < Minitest::Test
     refute_nil RecordingStudioAccessible::VERSION
   end
 
+  def test_recording_studio_version_is_2
+    assert_equal "2.0.0", RecordingStudio::VERSION
+    assert_equal Gem::Version.new("2.0.0"), Gem.loaded_specs.fetch("recording_studio").version
+  end
+
   def test_engine_exists
     assert_kind_of Class, RecordingStudioAccessible::Engine
   end

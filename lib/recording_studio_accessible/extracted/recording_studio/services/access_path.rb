@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 module RecordingStudio
   module Services
     class AccessPath
@@ -13,8 +15,12 @@ module RecordingStudio
 
       def build
         current = recording
+        seen_ids = Set.new
 
         while current
+          break if current.id && seen_ids.include?(current.id)
+
+          seen_ids.add(current.id) if current.id
           @path_recordings << current
           current = current.parent_recording
         end

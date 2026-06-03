@@ -7,21 +7,13 @@ class AccessResolverTest < ActiveSupport::TestCase
     @viewer = create_user("resolver-viewer@example.com")
 
     workspace = Workspace.create!(name: "Resolver Workspace")
-    @root_recording = RecordingStudio::Recording.unscoped.create!(recordable: workspace, parent_recording_id: nil)
+    @root_recording = create_root_recording(workspace)
 
     folder = Folder.create!(workspace: workspace, name: "Resolver Folder", summary: "Folder", position: 0)
-    @folder_recording = RecordingStudio::Recording.unscoped.create!(
-      recordable: folder,
-      parent_recording_id: @root_recording.id,
-      root_recording_id: @root_recording.id
-    )
+    @folder_recording = create_child_recording(recordable: folder, parent_recording: @root_recording)
 
     page = Page.create!(folder: folder, title: "Resolver Page", summary: "Page", position: 0)
-    @page_recording = RecordingStudio::Recording.unscoped.create!(
-      recordable: page,
-      parent_recording_id: @folder_recording.id,
-      root_recording_id: @root_recording.id
-    )
+    @page_recording = create_child_recording(recordable: page, parent_recording: @folder_recording)
   end
 
   test "returns direct access on the current recording before inherited access" do
@@ -46,6 +38,16 @@ class AccessResolverTest < ActiveSupport::TestCase
 
     assert_equal expected_recordings, RecordingStudioAccessible.root_recordings_for(actor: @admin)
     assert_equal expected_ids, RecordingStudioAccessible.root_recording_ids_for(actor: @admin)
+  end
+
+  test "root listing helpers resolve descendant grants to their RecordingStudio root" do
+    access_recording = grant_access(@admin, :admin, @folder_recording, @root_recording)
+
+    assert_equal @root_recording.id, @root_recording.root_recording_id
+    assert_equal @root_recording.id, @folder_recording.root_recording_id
+    assert_equal @root_recording.id, access_recording.root_recording_id
+    assert_equal [@root_recording], RecordingStudioAccessible.root_recordings_for(actor: @admin)
+    assert_equal [@root_recording.id], RecordingStudioAccessible.root_recording_ids_for(actor: @admin)
   end
 
   test "subclass actors resolve through the stored base polymorphic type" do
@@ -77,15 +79,7 @@ class AccessResolverTest < ActiveSupport::TestCase
   end
 
   def grant_access(user, role, parent_recording, root_recording = parent_recording)
-    RecordingStudioAccessible::AccessCreationContext.allow do
-      access = RecordingStudio::Access.create!(actor: user, role: role)
-
-      RecordingStudio::Recording.unscoped.create!(
-        root_recording_id: root_recording.id,
-        parent_recording_id: parent_recording.id,
-        recordable: access
-      )
-    end
+    create_direct_access_recording(actor: user, role: role, parent_recording: parent_recording)
   end
 
   def define_actor_subclass(name)

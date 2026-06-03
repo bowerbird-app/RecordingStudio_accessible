@@ -7,8 +7,12 @@ gemspec
 
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "recording_studio/v2.0.0"
 
+gem "pg"
 gem "puma"
+gem "devise"
+gem "importmap-rails"
 gem "sprockets-rails"
+gem "tailwindcss-rails"
 
 group :development, :test do
   gem "bootsnap", require: false

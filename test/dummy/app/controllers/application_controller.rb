@@ -30,7 +30,7 @@ class ApplicationController < ActionController::Base
     workspace = Workspace.order(:name, :id).first
     return false unless workspace
 
-    root_recording = RecordingStudio::Recording.unscoped.find_by(recordable: workspace, parent_recording_id: nil)
+    root_recording = RecordingStudio.root_recording_for(workspace)
     return false unless root_recording
 
     RecordingStudioAccessible.configuration.authorize_mounted_page?(

@@ -5,7 +5,7 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     @manager_actor = create_user("grant-manager@example.com")
     @user = create_user("grant-user@example.com")
     @workspace = Workspace.create!(name: "Grant Recording Access Workspace")
-    @recording = RecordingStudio::Recording.unscoped.create!(recordable: @workspace, parent_recording_id: nil)
+    @recording = create_root_recording(@workspace)
 
     create_legacy_direct_access_recording(@manager_actor, :admin, @recording)
   end
@@ -43,6 +43,43 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal @user, result.value.recordable.actor
     assert_equal "edit", result.value.recordable.role
     assert_equal @recording.id, result.value.parent_recording_id
+  end
+
+  test "service creates access grants under opted in folder recordings" do
+    folder = Folder.create!(workspace: @workspace, name: "Grant Folder", summary: "Folder", position: 1)
+    folder_recording = create_child_recording(recordable: folder, parent_recording: @recording)
+
+    result = RecordingStudioAccessible.grant_access(
+      recording: folder_recording,
+      actor: @user,
+      role: :view,
+      manager_actor: @manager_actor
+    )
+
+    assert result.success?
+    assert_equal folder_recording.id, result.value.parent_recording_id
+    assert_equal @recording.id, RecordingStudio.root_recording_id_for(result.value)
+  end
+
+  test "service rejects access grants under recordables that did not opt in" do
+    folder = Folder.create!(workspace: @workspace, name: "Page Parent", summary: "Folder", position: 2)
+    folder_recording = create_child_recording(recordable: folder, parent_recording: @recording)
+    page = Page.create!(folder: folder, title: "Closed Page", summary: "Page", position: 0)
+    page_recording = create_child_recording(recordable: page, parent_recording: folder_recording)
+
+    assert_no_difference -> { RecordingStudio::Access.count } do
+      assert_no_difference -> { RecordingStudio::Recording.unscoped.count } do
+        @result = RecordingStudioAccessible.grant_access(
+          recording: page_recording,
+          actor: @user,
+          role: :view,
+          manager_actor: @manager_actor
+        )
+      end
+    end
+
+    assert @result.failure?
+    assert_equal "Direct access is not enabled for this recording", @result.error
   end
 
   test "granting access requires an actor" do
@@ -130,16 +167,8 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     User.find_by(email: email) || User.create!(email: email, password: "Password", password_confirmation: "Password")
   end
 
-  def create_legacy_direct_access_recording(user, role, parent_recording, root_recording = parent_recording)
-    RecordingStudioAccessible::AccessCreationContext.allow do
-      access = RecordingStudio::Access.create!(actor: user, role: role)
-
-      RecordingStudio::Recording.unscoped.create!(
-        root_recording_id: root_recording.id,
-        parent_recording_id: parent_recording.id,
-        recordable: access
-      )
-    end
+  def create_legacy_direct_access_recording(user, role, parent_recording)
+    create_direct_access_recording(actor: user, role: role, parent_recording: parent_recording)
   end
 
   def direct_access_recordings_for(user)

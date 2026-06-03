@@ -49,11 +49,10 @@ module RecordingStudioAccessible
       access_scope = access_scope_for(actor: actor, minimum_role: minimum_role)
       return RecordingStudio::Recording.none unless access_scope
 
-      RecordingStudio::Recording.unscoped
-                                .where(recordable_type: "RecordingStudio::Access")
-                                .where(trashed_at: nil)
-                                .where.not(root_recording_id: nil)
-                                .where(recordable_id: access_scope.select(:id))
+      active_recordings_scope
+        .where(recordable_type: "RecordingStudio::Access")
+        .where.not(root_recording_id: nil)
+        .where(recordable_id: access_scope.select(:id))
     end
 
     def access_scope_for(actor:, minimum_role:)
@@ -67,6 +66,13 @@ module RecordingStudioAccessible
       return nil unless minimum_value
 
       scope.where(role: minimum_value..)
+    end
+
+    def active_recordings_scope
+      scope = RecordingStudio::Recording.unscoped
+      return scope unless RecordingStudio::Recording.column_names.include?("trashed_at")
+
+      scope.where(trashed_at: nil)
     end
   end
 end
