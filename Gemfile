@@ -5,7 +5,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in recording_studio_accessible.gemspec
 gemspec
 
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", ref: "795ff3d00b690e132418658c00ea06856b716675"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "recording_studio/v2.0.0"
 
 gem "puma"
 gem "sprockets-rails"
