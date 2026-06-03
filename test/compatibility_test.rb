@@ -48,22 +48,22 @@ class CompatibilityTest < Minitest::Test
 
   def test_ensure_creation_guards_includes_access_guard_for_core_access
     access_class = Class.new do
-      def self.before_create(callback)
-        callbacks << callback
+      def self.validate(callback, **options)
+        validations << [callback, options]
       end
 
-      def self.callbacks
-        @callbacks ||= []
+      def self.validations
+        @validations ||= []
       end
     end
 
     recording_class = Class.new do
-      def self.before_create(callback)
-        callbacks << callback
+      def self.validate(callback, **options)
+        validations << [callback, options]
       end
 
-      def self.callbacks
-        @callbacks ||= []
+      def self.validations
+        @validations ||= []
       end
     end
 
@@ -82,8 +82,8 @@ class CompatibilityTest < Minitest::Test
     end
 
     assert_includes access_class.included_modules, RecordingStudioAccessible::AccessCreationGuard
-    assert_includes access_class.callbacks, :prevent_unsupported_direct_creation
+    assert_includes access_class.validations, [:prevent_unsupported_direct_creation, { on: :create }]
     assert_includes recording_class.included_modules, RecordingStudioAccessible::AccessRecordingCreationGuard
-    assert_includes recording_class.callbacks, :prevent_unsupported_access_recording_creation
+    assert_includes recording_class.validations, [:prevent_unsupported_access_recording_creation, { on: :create }]
   end
 end

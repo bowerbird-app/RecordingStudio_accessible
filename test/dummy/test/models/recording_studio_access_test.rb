@@ -24,7 +24,7 @@ class RecordingStudioAccessTest < ActiveSupport::TestCase
     end
 
     assert_no_difference -> { RecordingStudio::Recording.unscoped.count } do
-      error = assert_raises(ActiveRecord::RecordNotSaved) do
+      error = assert_raises(ActiveRecord::RecordInvalid) do
         RecordingStudio::Recording.unscoped.create!(
           root_recording_id: parent_recording.id,
           parent_recording_id: parent_recording.id,

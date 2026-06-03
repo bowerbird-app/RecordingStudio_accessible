@@ -7,7 +7,7 @@ module RecordingStudioAccessible
     extend ActiveSupport::Concern
 
     included do
-      before_create :prevent_unsupported_direct_creation
+      validate :prevent_unsupported_direct_creation, on: :create
     end
 
     private
@@ -16,7 +16,6 @@ module RecordingStudioAccessible
       return if RecordingStudioAccessible::AccessCreationContext.allowed?
 
       errors.add(:base, "Create access grants through RecordingStudioAccessible.grant_access")
-      throw :abort
     end
   end
 end
