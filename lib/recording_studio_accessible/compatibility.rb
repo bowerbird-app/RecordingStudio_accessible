@@ -41,13 +41,6 @@ module RecordingStudioAccessible
         end
       end
 
-      def install_access_creation_guard!
-        return unless constant_defined_path?("RecordingStudio::Access")
-        return if RecordingStudio::Access < RecordingStudioAccessible::AccessCreationGuard
-
-        RecordingStudio::Access.include(RecordingStudioAccessible::AccessCreationGuard)
-      end
-
       def warn_if_core_access_present!
         return unless core_access_present?
         return unless RecordingStudioAccessible.configuration.warn_on_core_conflict

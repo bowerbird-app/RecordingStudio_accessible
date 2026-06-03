@@ -34,8 +34,10 @@ module RecordingStudioAccessible
           if access_recording
             deduplicate_access_recordings!(existing_recordings.drop(1))
 
-            root_recording.revise(access_recording, actor: @manager_actor) do |access|
-              access.role = @role
+            access_recording = RecordingStudioAccessible::AccessCreationContext.allow do
+              root_recording.revise(access_recording, actor: @manager_actor) do |access|
+                access.role = @role
+              end
             end
           else
             access_recording = RecordingStudioAccessible::AccessCreationContext.allow do

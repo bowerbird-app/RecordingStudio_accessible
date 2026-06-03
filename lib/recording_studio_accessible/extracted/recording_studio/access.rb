@@ -13,7 +13,6 @@ module RecordingStudio
   class Access < ::ApplicationRecord
     self.table_name = "recording_studio_accesses"
     include RecordingStudio::Recordable
-    include RecordingStudio::Recordable
     include RecordingStudioAccessible::AccessCreationGuard
 
     belongs_to :actor, polymorphic: true

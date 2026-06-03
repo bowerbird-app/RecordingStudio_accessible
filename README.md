@@ -54,6 +54,8 @@ When that happens, Recording Studio Accessible runs in **compatibility mode**:
 
 When RecordingStudio core stops shipping those constants, this addon becomes the source of truth for the extracted access implementation behind the `RecordingStudioAccessible` API.
 
+Direct `RecordingStudio::Access` creation is blocked when this addon owns the extracted access model. In compatibility mode, host applications should still use `RecordingStudioAccessible.grant_access`, but hard direct-creation blocking depends on the RecordingStudio core-provided model.
+
 ## Setup notes
 
 ### RecordingStudio configuration

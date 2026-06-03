@@ -67,6 +67,47 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_nil RecordingStudio::Access.find_by(id: stale_recording.recordable_id)
   end
 
+  test "granting access can revise an existing direct grant" do
+    original = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: @user,
+      role: :view,
+      manager_actor: @manager_actor
+    )
+
+    assert original.success?
+
+    result = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: @user,
+      role: :edit,
+      manager_actor: @manager_actor
+    )
+
+    assert result.success?
+    assert_equal 1, direct_access_recordings_for(@user).count
+    assert_equal "edit", result.value.recordable.role
+  end
+
+  test "update service can revise an existing direct grant" do
+    access_recording = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: @user,
+      role: :view,
+      manager_actor: @manager_actor
+    ).value
+
+    result = RecordingStudioAccessible::Services::UpdateRecordingAccess.call(
+      recording: @recording,
+      access_recording: access_recording,
+      role: :admin,
+      manager_actor: @manager_actor
+    )
+
+    assert result.success?
+    assert_equal "admin", result.value.recordable.role
+  end
+
   private
 
   def create_user(email)

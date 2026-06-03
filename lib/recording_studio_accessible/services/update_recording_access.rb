@@ -26,9 +26,11 @@ module RecordingStudioAccessible
 
         ensure_current_impersonator_accessor!
 
-        revised_recording = @access_recording.root_recording.revise(@access_recording,
-                                                                    actor: @manager_actor) do |access|
-          access.role = @role
+        revised_recording = RecordingStudioAccessible::AccessCreationContext.allow do
+          @access_recording.root_recording.revise(@access_recording,
+                                                  actor: @manager_actor) do |access|
+            access.role = @role
+          end
         end
 
         success(revised_recording)
