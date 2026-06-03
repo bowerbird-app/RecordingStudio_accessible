@@ -44,15 +44,19 @@ class EngineTest < Minitest::Test
 
   def test_register_access_types_initializer_calls_compatibility_helpers
     warned = false
+    guarded = false
     registered = false
 
     RecordingStudioAccessible::Compatibility.stub(:warn_if_core_access_present!, -> { warned = true }) do
-      RecordingStudioAccessible::Compatibility.stub(:ensure_recordable_types_registered!, -> { registered = true }) do
-        find_initializer("recording_studio_accessible.register_access_types").block.call
+      RecordingStudioAccessible::Compatibility.stub(:ensure_creation_guards!, -> { guarded = true }) do
+        RecordingStudioAccessible::Compatibility.stub(:ensure_recordable_types_registered!, -> { registered = true }) do
+          find_initializer("recording_studio_accessible.register_access_types").block.call
+        end
       end
     end
 
     assert warned
+    assert guarded
     assert registered
   end
 

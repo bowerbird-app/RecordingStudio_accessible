@@ -30,7 +30,7 @@ class RecordingStudioAccessTest < ActiveSupport::TestCase
         )
       end
 
-      assert_includes error.message, "Failed to save the record"
+      assert_includes error.record.errors.full_messages.join, "Create access grants through RecordingStudioAccessible.grant_access"
     end
   end
 
