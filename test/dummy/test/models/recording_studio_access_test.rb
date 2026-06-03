@@ -13,6 +13,27 @@ class RecordingStudioAccessTest < ActiveSupport::TestCase
     end
   end
 
+  test "direct access recording creation is blocked" do
+    user = create_user("direct-access-recording-blocked@example.com")
+    workspace = Workspace.create!(name: "Direct Access Recording Blocked Workspace")
+    parent_recording = RecordingStudio::Recording.unscoped.create!(recordable: workspace, parent_recording_id: nil)
+    access = RecordingStudioAccessible::AccessCreationContext.allow do
+      RecordingStudio::Access.create!(actor: user, role: :view)
+    end
+
+    assert_no_difference -> { RecordingStudio::Recording.unscoped.count } do
+      error = assert_raises(ActiveRecord::RecordNotSaved) do
+        RecordingStudio::Recording.unscoped.create!(
+          root_recording_id: parent_recording.id,
+          parent_recording_id: parent_recording.id,
+          recordable: access
+        )
+      end
+
+      assert_includes error.message, "Failed to save the record"
+    end
+  end
+
   private
 
   def create_user(email)

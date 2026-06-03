@@ -31,6 +31,8 @@ module RecordingStudioAccessible
         missing_constant_paths.each do |path|
           require path
         end
+
+        ensure_creation_guards!
       end
 
       def ensure_recordable_types_registered!
@@ -39,6 +41,11 @@ module RecordingStudioAccessible
         RECORDABLE_TYPES.each do |type_name|
           RecordingStudio.register_recordable_type(type_name) if constant_defined_path?(type_name)
         end
+      end
+
+      def ensure_creation_guards!
+        include_guard("RecordingStudio::Access", RecordingStudioAccessible::AccessCreationGuard)
+        include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AccessRecordingCreationGuard)
       end
 
       def warn_if_core_access_present!
@@ -85,6 +92,15 @@ module RecordingStudioAccessible
           application_record_path = File.join(models_path, "application_record.rb")
           require application_record_path if File.file?(application_record_path)
         end
+      end
+
+      def include_guard(class_name, guard)
+        return unless constant_defined_path?(class_name)
+
+        model_class = class_name.constantize
+        return if model_class.included_modules.include?(guard)
+
+        model_class.include guard
       end
     end
   end

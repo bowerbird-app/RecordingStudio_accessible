@@ -34,6 +34,7 @@ module RecordingStudioAccessible
 
     initializer "recording_studio_accessible.register_access_types", after: "recording_studio_accessible.load_config" do
       RecordingStudioAccessible::Compatibility.warn_if_core_access_present!
+      RecordingStudioAccessible::Compatibility.ensure_creation_guards!
       RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
     end
 

@@ -45,4 +45,45 @@ class CompatibilityTest < Minitest::Test
   ensure
     singleton.send(:define_method, :constant_defined_path?, original_method)
   end
+
+  def test_ensure_creation_guards_includes_access_guard_for_core_access
+    access_class = Class.new do
+      def self.before_create(callback)
+        callbacks << callback
+      end
+
+      def self.callbacks
+        @callbacks ||= []
+      end
+    end
+
+    recording_class = Class.new do
+      def self.before_create(callback)
+        callbacks << callback
+      end
+
+      def self.callbacks
+        @callbacks ||= []
+      end
+    end
+
+    RecordingStudio.stub(:const_defined?, lambda { |name, inherit = true|
+      %i[Access Recording].include?(name) || Object.const_defined?(name, inherit)
+    }) do
+      RecordingStudio.stub(:const_get, lambda { |name, inherit = true|
+        case name
+        when :Access then access_class
+        when :Recording then recording_class
+        else Object.const_get(name, inherit)
+        end
+      }) do
+        RecordingStudioAccessible::Compatibility.ensure_creation_guards!
+      end
+    end
+
+    assert_includes access_class.included_modules, RecordingStudioAccessible::AccessCreationGuard
+    assert_includes access_class.callbacks, :prevent_unsupported_direct_creation
+    assert_includes recording_class.included_modules, RecordingStudioAccessible::AccessRecordingCreationGuard
+    assert_includes recording_class.callbacks, :prevent_unsupported_access_recording_creation
+  end
 end

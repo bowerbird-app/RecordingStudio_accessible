@@ -115,15 +115,15 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
   end
 
   def create_legacy_direct_access_recording(user, role, parent_recording, root_recording = parent_recording)
-    access = RecordingStudioAccessible::AccessCreationContext.allow do
-      RecordingStudio::Access.create!(actor: user, role: role)
-    end
+    RecordingStudioAccessible::AccessCreationContext.allow do
+      access = RecordingStudio::Access.create!(actor: user, role: role)
 
-    RecordingStudio::Recording.unscoped.create!(
-      root_recording_id: root_recording.id,
-      parent_recording_id: parent_recording.id,
-      recordable: access
-    )
+      RecordingStudio::Recording.unscoped.create!(
+        root_recording_id: root_recording.id,
+        parent_recording_id: parent_recording.id,
+        recordable: access
+      )
+    end
   end
 
   def direct_access_recordings_for(user)
