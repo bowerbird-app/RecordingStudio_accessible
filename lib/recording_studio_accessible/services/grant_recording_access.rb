@@ -103,7 +103,7 @@ module RecordingStudioAccessible
       end
 
       def root_recording
-        @recording.root_recording || @recording
+        RecordingStudio.root_recording_or_self(@recording)
       end
 
       def lock_grant_scope!

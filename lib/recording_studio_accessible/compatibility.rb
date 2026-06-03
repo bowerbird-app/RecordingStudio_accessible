@@ -1,13 +1,28 @@
 # frozen_string_literal: true
 
+require "set"
+
 module RecordingStudioAccessible
   module Compatibility
     EXTRACTED_FILES = {
       "RecordingStudio::Access" => "recording_studio_accessible/extracted/recording_studio/access"
     }.freeze
     RECORDABLE_TYPES = ["RecordingStudio::Access"].freeze
+    ACCESS_RECORDABLE_TYPE = "RecordingStudio::Access"
 
     class << self
+      def access_parent_types
+        @access_parent_types ||= Set.new
+      end
+
+      def register_access_parent_type!(recordable_or_type)
+        type_name = RecordingStudio.recordable_type_name(recordable_or_type)
+        return if type_name.blank?
+
+        access_parent_types.add(type_name)
+        ensure_access_recordable_declaration!
+      end
+
       def missing_constant_paths
         missing = EXTRACTED_FILES.keys.reject { |name| constant_defined_path?(name) }
         missing.sort_by { |name| load_priority.fetch(name, 99) }.map { |name| EXTRACTED_FILES.fetch(name) }
@@ -41,11 +56,25 @@ module RecordingStudioAccessible
         RECORDABLE_TYPES.each do |type_name|
           RecordingStudio.register_recordable_type(type_name) if constant_defined_path?(type_name)
         end
+        ensure_access_recordable_declaration!
       end
 
       def ensure_creation_guards!
         include_guard("RecordingStudio::Access", RecordingStudioAccessible::AccessCreationGuard)
         include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AccessRecordingCreationGuard)
+      end
+
+      def ensure_access_recordable_declaration!
+        return unless defined?(::RecordingStudio)
+
+        access_class = constant_for_path(ACCESS_RECORDABLE_TYPE)
+        return unless access_class&.respond_to?(:recording_studio_recordable)
+
+        access_class.recording_studio_recordable(
+          label: "Access",
+          root: false,
+          allowed_parent_types: access_parent_types.to_a.sort
+        )
       end
 
       def warn_if_core_access_present!

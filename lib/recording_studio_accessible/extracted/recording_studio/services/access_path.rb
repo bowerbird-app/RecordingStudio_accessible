@@ -8,7 +8,7 @@ module RecordingStudio
       def initialize(recording:)
         @recording = recording
         @path_recordings = []
-        @root_recording = recording&.root_recording || recording
+        @root_recording = RecordingStudio.root_recording_or_self(recording)
       end
 
       def build

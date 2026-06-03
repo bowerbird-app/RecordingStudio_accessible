@@ -23,7 +23,7 @@ module RecordingStudioAccessible
       def destroy_access_recording!(access_recording, manager_actor:)
         access_id = access_recording.recordable_id
 
-        access_recording.root_recording.hard_delete(access_recording, actor: manager_actor)
+        RecordingStudio.root_recording_or_self(access_recording).hard_delete(access_recording, actor: manager_actor)
         RecordingStudio::Access.where(id: access_id).delete_all if orphaned_access_id?(access_id)
       end
 

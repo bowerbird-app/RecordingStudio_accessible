@@ -49,11 +49,10 @@ module RecordingStudioAccessible
       access_scope = access_scope_for(actor: actor, minimum_role: minimum_role)
       return RecordingStudio::Recording.none unless access_scope
 
-      root_ids = RecordingStudio::Recording.unscoped.where(parent_recording_id: nil).select(:id)
       RecordingStudio::Recording.unscoped
                                 .where(recordable_type: "RecordingStudio::Access")
-                                .where(parent_recording_id: root_ids)
                                 .where(trashed_at: nil)
+                                .where.not(root_recording_id: nil)
                                 .where(recordable_id: access_scope.select(:id))
     end
 
