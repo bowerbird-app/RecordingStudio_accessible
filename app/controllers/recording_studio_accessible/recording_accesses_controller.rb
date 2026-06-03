@@ -128,7 +128,7 @@ module RecordingStudioAccessible
 
     def prepare_shared_page_state
       @recording_label = RecordingStudio::Labels.title_for(@recording.recordable)
-      @root_label = recordable_label_for((@recording.root_recording || @recording).recordable)
+      @root_label = recordable_label_for(RecordingStudio.root_recording_or_self(@recording).recordable)
       @effective_role = effective_role_for(current_actor)
     end
 
@@ -286,13 +286,19 @@ module RecordingStudioAccessible
     end
 
     def recording_access_navigation_params
-      back_url = params[:back_url].presence || main_app.root_path
+      back_url = params[:back_url].presence || host_root_path
       anchor_url = params[:anchor_url].presence || back_url
 
       {
         back_url: back_url,
         anchor_url: anchor_url
       }
+    end
+
+    def host_root_path
+      return main_app.root_path if respond_to?(:main_app) && main_app.respond_to?(:root_path)
+
+      "/"
     end
   end
 end

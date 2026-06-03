@@ -45,26 +45,32 @@ def upsert_card(page:, title:, body:, position:)
 end
 
 def ensure_root_recording(recordable)
-  RecordingStudio::Recording.unscoped.find_or_create_by!(recordable: recordable, parent_recording_id: nil)
+  RecordingStudio.root_recording_for(recordable)
 end
 
 def ensure_child_recording(recordable:, parent_recording:, root_recording:)
-  RecordingStudio::Recording.unscoped.find_or_create_by!(
+  RecordingStudio::Recording.unscoped.find_by(
     recordable: recordable,
     parent_recording_id: parent_recording.id,
     root_recording_id: root_recording.id
-  )
+  ) || root_recording.record(recordable, parent_recording: parent_recording)
 end
 
 def ensure_access_recording(actor:, role:, parent_recording:, root_recording:)
   RecordingStudioAccessible::AccessCreationContext.allow do
-    access = RecordingStudio::Access.find_or_create_by!(actor: actor, role: role)
-
-    RecordingStudio::Recording.unscoped.find_or_create_by!(
+    RecordingStudio::Recording.unscoped.find_by(
       root_recording_id: root_recording.id,
       parent_recording_id: parent_recording.id,
-      recordable: access
-    )
+      recordable_type: "RecordingStudio::Access"
+    )&.then do |recording|
+      access = recording.recordable
+      return recording if access&.actor == actor && access.role == role.to_s
+    end
+
+    root_recording.record(RecordingStudio::Access, parent_recording: parent_recording) do |access|
+      access.actor = actor
+      access.role = role
+    end
   end
 end
 

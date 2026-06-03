@@ -139,7 +139,7 @@ class HomeController < ApplicationController
   def root_recording_for(recordable)
     return unless recordable
 
-    RecordingStudio::Recording.unscoped.find_by(recordable: recordable, parent_recording_id: nil)
+    RecordingStudio.root_recording_for(recordable)
   end
 
   def recording_for(recordable)

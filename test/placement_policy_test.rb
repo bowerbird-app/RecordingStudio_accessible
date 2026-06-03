@@ -3,6 +3,10 @@
 require "test_helper"
 
 class PlacementPolicyTest < Minitest::Test
+  class RegisteredRecordable
+    include RecordingStudioAccessible::AllowsAccessibleChildren
+  end
+
   class RootRecordable
     include RecordingStudioAccessible::AllowsAccessibleChildren
 
@@ -31,5 +35,27 @@ class PlacementPolicyTest < Minitest::Test
     assert_raises(ArgumentError) do
       RootRecordable.allows_recording_studio_accessible_child?(:unknown)
     end
+  end
+
+  def test_access_child_declaration_registers_access_parent_type
+    registered = []
+
+    RecordingStudioAccessible::Compatibility.stub(:register_access_parent_type!, ->(recordable) { registered << recordable }) do
+      RegisteredRecordable.recording_studio_accessible_children :access, :access
+    end
+
+    assert_equal [RegisteredRecordable], registered
+    assert_equal [:access], RegisteredRecordable.recording_studio_accessible_child_types
+  end
+
+  def test_blank_child_declaration_does_not_register_access_parent_type
+    registered = []
+
+    RecordingStudioAccessible::Compatibility.stub(:register_access_parent_type!, ->(recordable) { registered << recordable }) do
+      RegisteredRecordable.recording_studio_accessible_children nil
+    end
+
+    assert_empty registered
+    assert_empty RegisteredRecordable.recording_studio_accessible_child_types
   end
 end

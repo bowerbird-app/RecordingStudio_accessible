@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-03
+
+### Added
+- `allow_accessible_children` declarations for hierarchy-aware recordables and matching dummy app coverage
+- Focused regression coverage for placement policy, migration generation, access helpers, and RecordingStudio 2 access flows
+
+### Changed
+- Updated the `recording_studio` dependency target and compatibility layer for the RecordingStudio 2 follow-up release
+- Refined direct-access queries, authorization helpers, and access record lifecycle handling for nested accessible content
+- Refreshed the dummy app seeds and installation guidance to match the current RecordingStudio 2 setup
+
+### Fixed
+- `rake app:test` now runs the dummy app suite with the dummy app's Bundler context
+- Removed redundant standard-library requires flagged by RuboCop
+
+### Upgrade Notes
+- If a host app expects child recordings to participate in access lookups, declare those relationships with `allow_accessible_children`
+
 ## [0.2.0] - 2026-06-03
 
 ### Added
@@ -20,5 +38,6 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.1.0...v0.2.0

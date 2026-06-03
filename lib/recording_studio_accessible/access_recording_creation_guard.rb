@@ -14,6 +14,7 @@ module RecordingStudioAccessible
 
     def prevent_unsupported_access_recording_creation
       return unless access_recordable?
+      return unless access_placement_enabled?
       return if RecordingStudioAccessible::AccessCreationContext.allowed?
 
       errors.add(:base, "Create access grants through RecordingStudioAccessible.grant_access")
@@ -25,6 +26,17 @@ module RecordingStudioAccessible
       return true if recordable.is_a?(::RecordingStudio::Access)
 
       association(:recordable).target.is_a?(::RecordingStudio::Access)
+    end
+
+    def access_placement_enabled?
+      return false if parent_recording.blank?
+      return true if RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(
+        recording: parent_recording,
+        child_type: :access
+      )
+
+      errors.add(:parent_recording, "does not allow RecordingStudio::Access children")
+      false
     end
   end
 end

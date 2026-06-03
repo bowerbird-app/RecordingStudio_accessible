@@ -8,7 +8,7 @@ class UserShowPageTest < ActionDispatch::IntegrationTest
     @page_owner = create_user("page_owner@admin.com")
 
     workspace = Workspace.create!(name: "000 Integration Workspace")
-    root_recording = RecordingStudio::Recording.unscoped.create!(recordable: workspace, parent_recording_id: nil)
+    root_recording = create_root_recording(workspace)
 
     folder = Folder.create!(
       workspace: workspace,
@@ -16,11 +16,7 @@ class UserShowPageTest < ActionDispatch::IntegrationTest
       summary: "Folder-level access",
       position: 0
     )
-    folder_recording = RecordingStudio::Recording.unscoped.create!(
-      recordable: folder,
-      parent_recording_id: root_recording.id,
-      root_recording_id: root_recording.id
-    )
+    folder_recording = create_child_recording(recordable: folder, parent_recording: root_recording)
 
     page = Page.create!(
       folder: folder,
@@ -28,11 +24,7 @@ class UserShowPageTest < ActionDispatch::IntegrationTest
       summary: "Page-level access",
       position: 0
     )
-    page_recording = RecordingStudio::Recording.unscoped.create!(
-      recordable: page,
-      parent_recording_id: folder_recording.id,
-      root_recording_id: root_recording.id
-    )
+    page_recording = create_child_recording(recordable: page, parent_recording: folder_recording)
 
     grant_access(@admin, :admin, root_recording)
     grant_access(@editor, :edit, root_recording)
@@ -72,14 +64,6 @@ class UserShowPageTest < ActionDispatch::IntegrationTest
   end
 
   def grant_access(user, role, parent_recording, root_recording = parent_recording)
-    RecordingStudioAccessible::AccessCreationContext.allow do
-      access = RecordingStudio::Access.create!(actor: user, role: role)
-
-      RecordingStudio::Recording.unscoped.create!(
-        root_recording_id: root_recording.id,
-        parent_recording_id: parent_recording.id,
-        recordable: access
-      )
-    end
+    create_direct_access_recording(actor: user, role: role, parent_recording: parent_recording)
   end
 end

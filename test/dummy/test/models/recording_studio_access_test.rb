@@ -18,7 +18,7 @@ class RecordingStudioAccessTest < ActiveSupport::TestCase
   test "direct access recording creation is blocked" do
     user = create_user("direct-access-recording-blocked@example.com")
     workspace = Workspace.create!(name: "Direct Access Recording Blocked Workspace")
-    parent_recording = RecordingStudio::Recording.unscoped.create!(recordable: workspace, parent_recording_id: nil)
+    parent_recording = create_root_recording(workspace)
     access = RecordingStudioAccessible::AccessCreationContext.allow do
       RecordingStudio::Access.create!(actor: user, role: :view)
     end
@@ -39,7 +39,7 @@ class RecordingStudioAccessTest < ActiveSupport::TestCase
   test "recording studio record API cannot create access grants directly" do
     user = create_user("record-api-access-blocked@example.com")
     workspace = Workspace.create!(name: "Record API Access Blocked Workspace")
-    parent_recording = RecordingStudio::Recording.unscoped.create!(recordable: workspace, parent_recording_id: nil)
+    parent_recording = create_root_recording(workspace)
 
     assert_no_difference -> { RecordingStudio::Access.count } do
       assert_no_difference -> { RecordingStudio::Recording.unscoped.count } do

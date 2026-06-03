@@ -30,10 +30,11 @@ namespace :dummy do
   desc "Run the dummy Rails app test suite"
   task :test do
     dummy_root = File.expand_path("test/dummy", __dir__)
+    dummy_gemfile = File.join(dummy_root, "Gemfile")
 
     Dir.chdir(dummy_root) do
-      Bundler.with_unbundled_env do
-        sh "bin/rails test"
+      Bundler.with_original_env do
+        sh({ "BUNDLE_GEMFILE" => dummy_gemfile }, "bin/rails test")
       end
     end
   end

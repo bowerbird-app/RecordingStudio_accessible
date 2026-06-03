@@ -15,6 +15,10 @@ module RecordingStudio
     include RecordingStudio::Recordable
     include RecordingStudioAccessible::AccessCreationGuard
 
+    if respond_to?(:recording_studio_recordable)
+      recording_studio_recordable label: "Access", root: false, allowed_parent_types: []
+    end
+
     belongs_to :actor, polymorphic: true
 
     enum :role, { view: 0, edit: 1, admin: 2 }

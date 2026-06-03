@@ -6,7 +6,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 
 ## What the gem provides
 
-- `RecordingStudio::Access` recordables for root-level and recording-level grants
+- child-only `RecordingStudio::Access` recordables for direct grants under opted-in recordings
 - `RecordingStudioAccessible.role_for` and `RecordingStudioAccessible.authorized?` for role lookup and authorization checks
 - a mounted engine page for adding and removing direct access on a recording
 - install and migration generators for host apps
@@ -28,7 +28,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio"
+gem "recording_studio", "~> 2.0"
 gem "recording_studio_accessible"
 ```
 
@@ -36,23 +36,32 @@ Then run:
 
 ```bash
 bundle install
+bin/rails generate recording_studio:install
+bin/rails generate recording_studio:migrations
 bin/rails generate recording_studio_accessible:install
 bin/rails generate recording_studio_accessible:access_management --link-helper
 bin/rails generate recording_studio_accessible:migrations
 bin/rails db:migrate
 ```
 
-## Compatibility with current RecordingStudio releases
+## Compatibility with RecordingStudio 2.0
 
-Current RecordingStudio releases may still ship the built-in access models.
+Recording Studio Accessible targets RecordingStudio `2.0.0` and its explicit
+hierarchy declaration model. RecordingStudio core no longer ships built-in access
+control, so this addon provides `RecordingStudio::Access` and declares it as a
+child-only recordable.
 
-When that happens, Recording Studio Accessible runs in **compatibility mode**:
+RecordingStudio 2.0 normally uses the addon-provided `RecordingStudio::Access`
+model and the addon-owned migrations. In older/core-access-present setups,
+Recording Studio Accessible runs in **compatibility mode**:
 
 - it does not redefine `RecordingStudio::Access`
 - it still registers the access recordable types with RecordingStudio
 - it skips addon-owned access migrations because RecordingStudio core already owns those tables
 
-When RecordingStudio core stops shipping those constants, this addon becomes the source of truth for the extracted access implementation behind the `RecordingStudioAccessible` API.
+For older applications where RecordingStudio core still provides those constants,
+this addon remains a compatibility bridge behind the `RecordingStudioAccessible`
+API.
 
 Direct `RecordingStudio::Access` and access-recording creation are blocked when
 this addon is loaded, including compatibility mode. Host applications should use
@@ -126,23 +135,45 @@ RecordingStudio.configure do |config|
 end
 ```
 
-The addon automatically registers `RecordingStudio::Access` when it loads.
+RecordingStudio `2.0.0` requires each configured recordable to declare its
+hierarchy rules:
 
-To allow direct access grants beneath a host recordable, opt that class in explicitly:
+```ruby
+class Workspace < ApplicationRecord
+  recording_studio_recordable label: "Workspace", root: true
+end
+
+class Page < ApplicationRecord
+  recording_studio_recordable label: "Page", root: false, allowed_parent_types: ["Workspace"]
+end
+```
+
+The addon automatically registers `RecordingStudio::Access` when it loads and
+declares it as `root: false`. To allow direct access grants beneath a host
+recordable, opt that class in explicitly:
 
 ```ruby
 class Workspace < ApplicationRecord
   include RecordingStudioAccessible::AllowsAccessibleChildren
 
+  recording_studio_recordable label: "Workspace", root: true
+
   recording_studio_accessible_children :access
 end
 ```
 
-Without that opt-in, the mounted access-management UI and grant service reject direct access placements for the recordable.
+The RecordingStudio declaration controls the core hierarchy. The
+`recording_studio_accessible_children :access` opt-in controls whether this addon
+enables direct access management under that recordable and adds the type to
+`RecordingStudio::Access` allowed parents. Without that opt-in, the mounted
+access-management UI and grant service reject direct access placements for the
+recordable.
 
 ### Granting access
 
 ```ruby
+recording = RecordingStudio.root_recording_for(workspace)
+
 RecordingStudioAccessible.grant_access(
   recording: recording,
   actor: user,

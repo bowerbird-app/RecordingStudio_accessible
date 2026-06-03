@@ -227,7 +227,7 @@ module RecordingStudioAccessible
     def find_root_recording
       return unless @workspace && defined?(::RecordingStudio::Recording)
 
-      RecordingStudio::Recording.unscoped.find_by(recordable: @workspace, parent_recording_id: nil)
+      RecordingStudio.root_recording_for(@workspace)
     end
 
     def resolve_admin_user

@@ -14,17 +14,18 @@ class UsersController < ApplicationController
         label: recordable_label_for(recording.recordable),
         recordable_type: recording.recordable_type.demodulize,
         role: RecordingStudioAccessible.role_for(actor: user, recording: recording),
-        root_label: recordable_label_for(recording.root_recording&.recordable || recording.recordable)
+        root_label: recordable_label_for(RecordingStudio.root_recording_or_self(recording).recordable)
       }
     end
   end
 
   def active_recordings
-    RecordingStudio::Recording.unscoped
-                             .where(trashed_at: nil)
-                             .where.not(recordable_type: [ "RecordingStudio::Access" ])
-                             .includes(:recordable, :root_recording)
-                             .order(:created_at)
+    scope = RecordingStudio::Recording.unscoped
+    scope = scope.where(trashed_at: nil) if RecordingStudio::Recording.column_names.include?("trashed_at")
+
+    scope.where.not(recordable_type: [ "RecordingStudio::Access" ])
+         .includes(:recordable, :root_recording)
+         .order(:created_at)
   end
 
   def recordable_label_for(recordable)

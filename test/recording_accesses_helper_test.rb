@@ -98,6 +98,12 @@ class RecordingAccessesHelperTest < Minitest::Test
     end
   end
 
+  class ViewContextWithoutRoot < ViewContext
+    def main_app
+      Object.new
+    end
+  end
+
   def test_access_person_cell_renders_only_the_actor_label
     html = ViewContext.new.access_person_cell(actor_label: "Ada Lovelace", actor_type: "User")
 
@@ -153,5 +159,20 @@ class RecordingAccessesHelperTest < Minitest::Test
     path = ViewContext.new.new_recording_access_path_with_back_url(recording)
 
     assert_equal "/recordings/42/accesses/new?anchor_url=%2F&back_url=#{CGI.escape(expected_index_path)}", path
+  end
+
+  def test_recording_access_index_back_url_falls_back_without_host_root_path
+    assert_equal "/", ViewContextWithoutRoot.new.recording_access_index_back_url
+  end
+
+  def test_recording_access_anchor_url_falls_back_without_host_root_path
+    assert_equal "/", ViewContextWithoutRoot.new.recording_access_anchor_url
+  end
+
+  def test_recording_access_index_back_url_prefers_explicit_param_without_host_root_path
+    view_context = ViewContextWithoutRoot.new
+    view_context.params = { back_url: "/recordings" }
+
+    assert_equal "/recordings", view_context.recording_access_index_back_url
   end
 end
