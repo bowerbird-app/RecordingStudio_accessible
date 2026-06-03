@@ -98,6 +98,8 @@ RecordingStudio Accessible treats `RecordingStudio::Access` as an internal
 recordable. Applications should not create access records directly. Use
 `RecordingStudioAccessible.grant_access` or
 `RecordingStudioAccessible::Services::GrantRecordingAccess`.
+When this addon owns the extracted access model, direct creation raises a
+validation error.
 
 The supported grant path enforces placement, authorization, role validation, and
 deduplication so each actor has at most one direct active access grant under a
