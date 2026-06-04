@@ -1,7 +1,7 @@
 require_relative "../test_helper"
 
 class RecordableDeclarationsTest < ActiveSupport::TestCase
-  test "dummy app declarations are valid for RecordingStudio 2" do
+  test "dummy app declarations are valid for RecordingStudio 3" do
     assert RecordingStudio.validate_recordable_declarations!
   end
 
@@ -18,6 +18,16 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
 
   test "access declaration is child-only and follows accessible child opt ins" do
     refute RecordingStudio.root_allowed?(RecordingStudio::Access)
+    assert_equal [], RecordingStudio.declared_allowed_parent_types_for(RecordingStudio::Access)
+
+    assert_equal ["RecordingStudio::Access"], RecordingStudio.capability_child_recordables_for(:accessible)
+    assert_equal ["Folder", "Workspace"],
+                 RecordingStudio.capability_allowed_parent_types_for(RecordingStudio::Access)
     assert_equal ["Folder", "Workspace"], RecordingStudio.allowed_parent_types_for(RecordingStudio::Access)
+    assert_equal({ "recording_studio_accessible" => ["Folder", "Workspace"] },
+                 RecordingStudio.recordable_parent_allowances_for(RecordingStudio::Access))
+
+    refute_includes RecordingStudio.capability_allowed_parent_types_for(RecordingStudio::Access), "Page"
+    refute_includes RecordingStudio.capability_allowed_parent_types_for(RecordingStudio::Access), "Card"
   end
 end

@@ -19,7 +19,7 @@ module RecordingStudioAccessible
         self.recording_studio_accessible_child_types = normalized_child_types.uniq.freeze
         return unless normalized_child_types.include?(:access)
 
-        RecordingStudioAccessible::Compatibility.register_access_parent_type!(self)
+        RecordingStudioAccessible::Compatibility.enable_access_capability!(self)
       end
 
       def allows_recording_studio_accessible_child?(child_type)
@@ -45,9 +45,20 @@ module RecordingStudioAccessible
     class << self
       def allowed_child_on_recording?(recording:, child_type:)
         recordable = recording&.recordable
-        return false unless recordable.respond_to?(:allows_recording_studio_accessible_child?)
+        return false unless normalize_child_type(child_type) == :access
+        return false unless recordable
 
-        recordable.allows_recording_studio_accessible_child?(child_type)
+        RecordingStudio.child_recordable_types_for(recordable).include?(
+          RecordingStudioAccessible::Compatibility::ACCESS_RECORDABLE_TYPE
+        )
+      end
+
+      private
+
+      def normalize_child_type(child_type)
+        child_type.to_sym
+      rescue NoMethodError
+        nil
       end
     end
   end

@@ -45,18 +45,50 @@ class CompatibilityTest < Minitest::Test
 
   def test_ensure_recordable_types_registered
     registered = []
+    capabilities = []
 
     singleton = RecordingStudioAccessible::Compatibility.singleton_class
     original_method = singleton.instance_method(:constant_defined_path?)
     singleton.send(:define_method, :constant_defined_path?) { |_path| true }
 
     RecordingStudio.stub(:register_recordable_type, ->(name) { registered << name }) do
-      RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
+      RecordingStudio.stub(:register_capability, ->(name, **options) { capabilities << [name, options] }) do
+        RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
+      end
     end
 
     assert_includes registered, "RecordingStudio::Access"
+    assert_includes capabilities,
+                    [
+                      :accessible,
+                      {
+                        source: "recording_studio_accessible",
+                        child_recordables: ["RecordingStudio::Access"]
+                      }
+                    ]
   ensure
     singleton.send(:define_method, :constant_defined_path?, original_method)
+  end
+
+  def test_enable_access_capability_registers_and_enables_core_capability
+    capabilities = []
+
+    RecordingStudio.stub(:register_capability, ->(name, **options) { capabilities << [name, options] }) do
+      RecordingStudio.stub(:enable_capability, ->(name, on:) { capabilities << [name, { on: on }] }) do
+        RecordingStudioAccessible::Compatibility.enable_access_capability!("Workspace")
+      end
+    end
+
+    assert_equal [
+      [
+        :accessible,
+        {
+          source: "recording_studio_accessible",
+          child_recordables: ["RecordingStudio::Access"]
+        }
+      ],
+      [:accessible, { on: "Workspace" }]
+    ], capabilities
   end
 
   def test_ensure_creation_guards_includes_access_guard_for_core_access
@@ -112,5 +144,26 @@ class CompatibilityTest < Minitest::Test
         RecordingStudioAccessible::Compatibility.ensure_access_recordable_declaration!
       end
     end
+  end
+
+  def test_ensure_access_recordable_declaration_keeps_access_child_only_without_parent_types
+    declarations = []
+    access_class = Class.new do
+      define_singleton_method(:recording_studio_recordable) do |**options|
+        declarations << options
+      end
+    end
+
+    RecordingStudio.stub(:const_defined?, lambda { |name, inherit = true|
+      name.to_s == "Access" || Object.const_defined?(name, inherit)
+    }) do
+      RecordingStudio.stub(:const_get, lambda { |name, inherit = true|
+        name.to_s == "Access" ? access_class : Object.const_get(name, inherit)
+      }) do
+        RecordingStudioAccessible::Compatibility.ensure_access_recordable_declaration!
+      end
+    end
+
+    assert_equal [{ label: "Access", root: false }], declarations
   end
 end
