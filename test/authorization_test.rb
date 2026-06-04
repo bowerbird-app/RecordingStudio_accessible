@@ -47,7 +47,7 @@ class AuthorizationTest < Minitest::Test
   end
 
   def test_module_level_authorization_api_delegates_to_authorization_service
-    RecordingStudioAccessible::Authorization.stub(:authorization_service, AuthorizationServiceStub) do
+    stub_method(RecordingStudioAccessible::Authorization, :authorization_service, AuthorizationServiceStub) do
       assert_equal :edit, RecordingStudioAccessible.role_for(actor: :actor, recording: :recording)
       assert RecordingStudioAccessible.authorized?(actor: :actor, recording: :recording, role: :admin)
       assert RecordingStudioAccessible::Authorization.allowed?(actor: :actor, recording: :recording, role: :view)

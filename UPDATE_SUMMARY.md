@@ -73,7 +73,10 @@
    - Seeds execute successfully
 
 ### Breaking Changes
-**None** - This update is fully backward compatible with existing code.
+Recording Studio Accessible now requires RecordingStudio `~> 3.0`. The existing
+`recording_studio_accessible_children :access` host opt-in remains available,
+but it now enables RecordingStudio's `:accessible` capability so core derives
+`RecordingStudio::Access` parent allowances.
 
 ### New API Available (Device Sessions)
 The RecordingStudio gem now provides device session tracking capabilities:
@@ -82,7 +85,7 @@ The RecordingStudio gem now provides device session tracking capabilities:
 - Useful for multi-device authentication and session management
 
 ### Recommendations
-1. No immediate action required - all existing code continues to work
+1. Upgrade host applications to RecordingStudio `~> 3.0`
 2. Consider using the new device sessions feature for enhanced session tracking
 3. Review RecordingStudio CHANGELOG for additional features: https://github.com/bowerbird-app/RecordingStudio
 
@@ -90,4 +93,3 @@ The RecordingStudio gem now provides device session tracking capabilities:
 - Ruby 3.3.6 was installed via rbenv to meet gem requirements
 - PostgreSQL running via Docker (port 5432)
 - All dependencies installed successfully
-

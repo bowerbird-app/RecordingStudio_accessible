@@ -18,7 +18,7 @@ class InstallGeneratorTest < Minitest::Test
     generator = build_generator("/tmp")
     routes = []
 
-    generator.stub(:route, ->(value) { routes << value }) do
+    stub_method(generator, :route, ->(value) { routes << value }) do
       generator.mount_engine
     end
 
@@ -29,7 +29,7 @@ class InstallGeneratorTest < Minitest::Test
     generator = build_generator("/tmp", mount: true, mount_path: "/addons/access")
     routes = []
 
-    generator.stub(:route, ->(value) { routes << value }) do
+    stub_method(generator, :route, ->(value) { routes << value }) do
       generator.mount_engine
     end
 
@@ -40,7 +40,7 @@ class InstallGeneratorTest < Minitest::Test
     with_temp_app do |dir|
       generator = build_generator(dir)
 
-      generator.stub(:yes?, true) do
+      stub_method(generator, :yes?, true) do
         generator.add_yaml_config
       end
 

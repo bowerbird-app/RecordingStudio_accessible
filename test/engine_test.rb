@@ -48,9 +48,9 @@ class EngineTest < Minitest::Test
     register = -> { events << :registered }
     guard = -> { events << :guarded }
 
-    RecordingStudioAccessible::Compatibility.stub(:warn_if_core_access_present!, warn) do
-      RecordingStudioAccessible::Compatibility.stub(:ensure_recordable_types_registered!, register) do
-        RecordingStudioAccessible::Compatibility.stub(:ensure_creation_guards!, guard) do
+    stub_method(RecordingStudioAccessible::Compatibility, :warn_if_core_access_present!, warn) do
+      stub_method(RecordingStudioAccessible::Compatibility, :ensure_recordable_types_registered!, register) do
+        stub_method(RecordingStudioAccessible::Compatibility, :ensure_creation_guards!, guard) do
           find_initializer("recording_studio_accessible.register_access_types").block.call
         end
       end

@@ -9,13 +9,13 @@ class CompatibilityTest < Minitest::Test
   end
 
   def test_integration_mode_is_core_when_core_access_present
-    stub_singleton(RecordingStudioAccessible::Compatibility, :missing_constant_paths, -> { [] }) do
+    stub_method(RecordingStudioAccessible::Compatibility, :missing_constant_paths, -> { [] }) do
       assert_equal :core, RecordingStudioAccessible::Compatibility.integration_mode
     end
   end
 
   def test_integration_mode_is_addon_when_core_access_missing
-    stub_singleton(
+    stub_method(
       RecordingStudioAccessible::Compatibility,
       :missing_constant_paths,
       -> { ["recording_studio_accessible/extracted/recording_studio/access"] }
@@ -33,30 +33,24 @@ class CompatibilityTest < Minitest::Test
   end
 
   def test_missing_constant_paths_load_in_dependency_order
-    singleton = RecordingStudioAccessible::Compatibility.singleton_class
-    original_method = singleton.instance_method(:constant_defined_path?)
-    singleton.send(:define_method, :constant_defined_path?) { |_path| false }
-
     expected = [
       "recording_studio_accessible/extracted/recording_studio/access"
     ]
 
-    assert_equal expected, RecordingStudioAccessible::Compatibility.missing_constant_paths
-  ensure
-    singleton.send(:define_method, :constant_defined_path?, original_method)
+    stub_method(RecordingStudioAccessible::Compatibility, :constant_defined_path?, ->(_path) { false }) do
+      assert_equal expected, RecordingStudioAccessible::Compatibility.missing_constant_paths
+    end
   end
 
   def test_ensure_recordable_types_registered
     registered = []
     capabilities = []
 
-    singleton = RecordingStudioAccessible::Compatibility.singleton_class
-    original_method = singleton.instance_method(:constant_defined_path?)
-    singleton.send(:define_method, :constant_defined_path?) { |_path| true }
-
-    stub_recording_studio(:register_recordable_type, ->(name) { registered << name }) do
-      stub_recording_studio(:register_capability, ->(name, **options) { capabilities << [name, options] }) do
-        RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
+    stub_method(RecordingStudioAccessible::Compatibility, :constant_defined_path?, ->(_path) { true }) do
+      stub_recording_studio(:register_recordable_type, ->(name) { registered << name }) do
+        stub_recording_studio(:register_capability, ->(name, **options) { capabilities << [name, options] }) do
+          RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
+        end
       end
     end
 
@@ -69,8 +63,6 @@ class CompatibilityTest < Minitest::Test
                         child_recordables: ["RecordingStudio::Access"]
                       }
                     ]
-  ensure
-    singleton.send(:define_method, :constant_defined_path?, original_method)
   end
 
   def test_enable_access_capability_registers_and_enables_core_capability
@@ -173,16 +165,6 @@ class CompatibilityTest < Minitest::Test
   private
 
   def stub_recording_studio(method_name, implementation, &)
-    stub_singleton(RecordingStudio, method_name, implementation, &)
-  end
-
-  def stub_singleton(object, method_name, implementation)
-    singleton = object.singleton_class
-    original_method = singleton.instance_method(method_name)
-    singleton.send(:define_method, method_name, implementation)
-
-    yield
-  ensure
-    singleton.send(:define_method, method_name, original_method)
+    stub_method(RecordingStudio, method_name, implementation, &)
   end
 end
