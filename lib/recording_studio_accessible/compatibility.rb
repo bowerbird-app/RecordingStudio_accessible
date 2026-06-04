@@ -81,8 +81,8 @@ module RecordingStudioAccessible
 
         access_class = constant_for_path(ACCESS_RECORDABLE_TYPE)
         return unless access_class.respond_to?(:recording_studio_recordable)
+
         access_class.recording_studio_recordable(
-          label: "Access",
           label: "Access",
           root: false
         )

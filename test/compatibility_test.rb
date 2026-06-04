@@ -9,14 +9,17 @@ class CompatibilityTest < Minitest::Test
   end
 
   def test_integration_mode_is_core_when_core_access_present
-    RecordingStudioAccessible::Compatibility.stub(:missing_constant_paths, []) do
+    stub_singleton(RecordingStudioAccessible::Compatibility, :missing_constant_paths, -> { [] }) do
       assert_equal :core, RecordingStudioAccessible::Compatibility.integration_mode
     end
   end
 
   def test_integration_mode_is_addon_when_core_access_missing
-    RecordingStudioAccessible::Compatibility.stub(:missing_constant_paths,
-                                                  ["recording_studio_accessible/extracted/recording_studio/access"]) do
+    stub_singleton(
+      RecordingStudioAccessible::Compatibility,
+      :missing_constant_paths,
+      -> { ["recording_studio_accessible/extracted/recording_studio/access"] }
+    ) do
       assert_equal :addon, RecordingStudioAccessible::Compatibility.integration_mode
     end
   end
@@ -51,8 +54,8 @@ class CompatibilityTest < Minitest::Test
     original_method = singleton.instance_method(:constant_defined_path?)
     singleton.send(:define_method, :constant_defined_path?) { |_path| true }
 
-    RecordingStudio.stub(:register_recordable_type, ->(name) { registered << name }) do
-      RecordingStudio.stub(:register_capability, ->(name, **options) { capabilities << [name, options] }) do
+    stub_recording_studio(:register_recordable_type, ->(name) { registered << name }) do
+      stub_recording_studio(:register_capability, ->(name, **options) { capabilities << [name, options] }) do
         RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
       end
     end
@@ -73,8 +76,8 @@ class CompatibilityTest < Minitest::Test
   def test_enable_access_capability_registers_and_enables_core_capability
     capabilities = []
 
-    RecordingStudio.stub(:register_capability, ->(name, **options) { capabilities << [name, options] }) do
-      RecordingStudio.stub(:enable_capability, ->(name, on:) { capabilities << [name, { on: on }] }) do
+    stub_recording_studio(:register_capability, ->(name, **options) { capabilities << [name, options] }) do
+      stub_recording_studio(:enable_capability, ->(name, on:) { capabilities << [name, { on: on }] }) do
         RecordingStudioAccessible::Compatibility.enable_access_capability!("Workspace")
       end
     end
@@ -112,10 +115,10 @@ class CompatibilityTest < Minitest::Test
       end
     end
 
-    RecordingStudio.stub(:const_defined?, lambda { |name, inherit = true|
+    stub_recording_studio(:const_defined?, lambda { |name, inherit = true|
       %w[Access Recording].include?(name.to_s) || Object.const_defined?(name, inherit)
     }) do
-      RecordingStudio.stub(:const_get, lambda { |name, inherit = true|
+      stub_recording_studio(:const_get, lambda { |name, inherit = true|
         case name.to_s
         when "Access" then access_class
         when "Recording" then recording_class
@@ -135,10 +138,10 @@ class CompatibilityTest < Minitest::Test
   def test_ensure_access_recordable_declaration_ignores_class_without_recordable_api
     access_class = Class.new
 
-    RecordingStudio.stub(:const_defined?, lambda { |name, inherit = true|
+    stub_recording_studio(:const_defined?, lambda { |name, inherit = true|
       name.to_s == "Access" || Object.const_defined?(name, inherit)
     }) do
-      RecordingStudio.stub(:const_get, lambda { |name, inherit = true|
+      stub_recording_studio(:const_get, lambda { |name, inherit = true|
         name.to_s == "Access" ? access_class : Object.const_get(name, inherit)
       }) do
         RecordingStudioAccessible::Compatibility.ensure_access_recordable_declaration!
@@ -154,10 +157,10 @@ class CompatibilityTest < Minitest::Test
       end
     end
 
-    RecordingStudio.stub(:const_defined?, lambda { |name, inherit = true|
+    stub_recording_studio(:const_defined?, lambda { |name, inherit = true|
       name.to_s == "Access" || Object.const_defined?(name, inherit)
     }) do
-      RecordingStudio.stub(:const_get, lambda { |name, inherit = true|
+      stub_recording_studio(:const_get, lambda { |name, inherit = true|
         name.to_s == "Access" ? access_class : Object.const_get(name, inherit)
       }) do
         RecordingStudioAccessible::Compatibility.ensure_access_recordable_declaration!
@@ -165,5 +168,21 @@ class CompatibilityTest < Minitest::Test
     end
 
     assert_equal [{ label: "Access", root: false }], declarations
+  end
+
+  private
+
+  def stub_recording_studio(method_name, implementation, &)
+    stub_singleton(RecordingStudio, method_name, implementation, &)
+  end
+
+  def stub_singleton(object, method_name, implementation)
+    singleton = object.singleton_class
+    original_method = singleton.instance_method(method_name)
+    singleton.send(:define_method, method_name, implementation)
+
+    yield
+  ensure
+    singleton.send(:define_method, method_name, original_method)
   end
 end

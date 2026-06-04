@@ -40,7 +40,7 @@ class PlacementPolicyTest < Minitest::Test
   def test_access_child_declaration_enables_accessible_capability
     enabled = []
 
-    RecordingStudio.stub(:enable_capability, ->(capability, on:) { enabled << [capability, on] }) do
+    with_stubbed_recording_studio_enable_capability(enabled) do
       RegisteredRecordable.recording_studio_accessible_children :access, :access
     end
 
@@ -51,7 +51,7 @@ class PlacementPolicyTest < Minitest::Test
   def test_blank_child_declaration_does_not_enable_accessible_capability
     enabled = []
 
-    RecordingStudio.stub(:enable_capability, ->(capability, on:) { enabled << [capability, on] }) do
+    with_stubbed_recording_studio_enable_capability(enabled) do
       RegisteredRecordable.recording_studio_accessible_children nil
     end
 
@@ -64,5 +64,19 @@ class PlacementPolicyTest < Minitest::Test
 
     refute RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(recording: root_recording,
                                                                                   child_type: :unknown)
+  end
+
+  private
+
+  def with_stubbed_recording_studio_enable_capability(enabled)
+    singleton = RecordingStudio.singleton_class
+    original_method = singleton.instance_method(:enable_capability)
+    singleton.send(:define_method, :enable_capability) do |capability, on:|
+      enabled << [capability, on]
+    end
+
+    yield
+  ensure
+    singleton.send(:define_method, :enable_capability, original_method)
   end
 end
