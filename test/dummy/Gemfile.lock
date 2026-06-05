@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio.git
-  revision: 8a62762c6ed8e89e9785438fa6c595704e274ccf
-  tag: recording_studio/v2.0.0
+  revision: 7667687155bf05ab41b66dfccae330dc3834c39c
+  tag: recording_studio/v3.0.0
   specs:
-    recording_studio (2.0.0)
+    recording_studio (3.0.0)
       rails (>= 8.1.0)
 
 GIT
@@ -19,9 +19,9 @@ GIT
 PATH
   remote: ../..
   specs:
-    recording_studio_accessible (0.2.1)
+    recording_studio_accessible (0.3.0)
       rails (~> 8.1.0)
-      recording_studio (~> 2.0)
+      recording_studio (~> 3.0)
 
 GEM
   remote: https://rubygems.org/
@@ -571,8 +571,8 @@ CHECKSUMS
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.4.2) sha256=cb825b2bd5f1f8e91ca37bddb4b9aaf345551b4731da62949be002fa89283701
   rdoc (7.2.0) sha256=8650f76cd4009c3b54955eb5d7e3a075c60a57276766ebf36f9085e8c9f23192
-  recording_studio (2.0.0)
-  recording_studio_accessible (0.2.1)
+  recording_studio (3.0.0)
+  recording_studio_accessible (0.3.0)
   regexp_parser (2.11.3) sha256=ca13f381a173b7a93450e53459075c9b76a10433caadcb2f1180f2c741fc55a4
   reline (0.6.3) sha256=1198b04973565b36ec0f11542ab3f5cfeeec34823f4e54cebde90968092b1835
   responders (3.2.0) sha256=89c2d6ac0ae16f6458a11524cae4a8efdceba1a3baea164d28ee9046bd3df55a
