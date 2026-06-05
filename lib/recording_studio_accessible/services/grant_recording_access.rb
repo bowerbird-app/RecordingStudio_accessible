@@ -98,8 +98,7 @@ module RecordingStudioAccessible
       end
 
       def access_enabled?
-        RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(recording: @recording,
-                                                                               child_type: :access)
+        RecordingStudioAccessible::Compatibility.access_parent_allowed?(@recording)
       end
 
       def root_recording

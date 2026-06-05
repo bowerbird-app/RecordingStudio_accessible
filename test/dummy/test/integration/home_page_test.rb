@@ -150,7 +150,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "config.access_management_actor_email_resolver"
     assert_includes @response.body, "config.access_management_missing_actor_handler"
     assert_includes @response.body, 'Review #{normalized_email} before granting access'
-    assert_includes @response.body, 'controller.main_app.url_for'
+    assert_includes @response.body, "controller.main_app.url_for"
     assert_includes @response.body, "text-[var(--surface-content-color)]"
     refute_includes @response.body, "text-(--surface-content-color)"
   end

@@ -149,6 +149,6 @@ class HomeController < ApplicationController
   end
 
   def access_management_enabled_for(recording)
-    RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(recording: recording, child_type: :access)
+    RecordingStudioAccessible::Compatibility.access_parent_allowed?(recording)
   end
 end

@@ -5,7 +5,7 @@ require "action_mailer"
 require "recording_studio_accessible/version"
 require "recording_studio_accessible/hooks"
 require "recording_studio_accessible/compatibility"
-require "recording_studio_accessible/allows_accessible_children"
+RecordingStudioAccessible::Compatibility.register_access_capability!
 require "recording_studio_accessible/access_creation_context"
 require "recording_studio_accessible/access_creation_guard"
 require "recording_studio_accessible/access_recording_creation_guard"
