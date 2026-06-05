@@ -63,7 +63,8 @@ RecordingStudio.register_capability(
 ```
 
 Host recordables opt into direct access management through the addon mixin/API.
-That opt-in enables the `:accessible` capability on the host recordable type, and
+Host recordables opt into direct access management by enabling the
+`:accessible` capability with RecordingStudio itself, and
 RecordingStudio core derives the effective parent allowances for
 `RecordingStudio::Access` from enabled capabilities.
 
@@ -155,24 +156,22 @@ end
 The addon automatically registers `RecordingStudio::Access` when it loads,
 declares it as `root: false`, and registers it as a child recordable owned by the
 `:accessible` capability. To allow direct access grants beneath a host
-recordable, opt that class in explicitly:
+recordable, enable that capability in host application code:
 
 ```ruby
 class Workspace < ApplicationRecord
-  include RecordingStudioAccessible::AllowsAccessibleChildren
-
   recording_studio_recordable label: "Workspace", root: true
 
-  recording_studio_accessible_children :access
+  RecordingStudio.enable_capability(:accessible, on: self)
 end
 ```
 
-The RecordingStudio declaration controls the host recordable hierarchy. The
-`recording_studio_accessible_children :access` opt-in enables the `:accessible`
-capability for that recordable type. RecordingStudio core then derives effective
-parent allowances for `RecordingStudio::Access` from that capability state.
-Without that opt-in, the mounted access-management UI and grant service reject
-direct access placements for the recordable.
+The RecordingStudio declaration controls the host recordable hierarchy.
+`RecordingStudio.enable_capability(:accessible, on: ...)` enables the
+`:accessible` capability for that recordable type, and RecordingStudio core
+derives effective parent allowances for `RecordingStudio::Access` from that
+capability state. Without that enablement, the mounted access-management UI and
+grant service reject direct access placements for the recordable.
 
 Useful RecordingStudio 3 introspection helpers:
 

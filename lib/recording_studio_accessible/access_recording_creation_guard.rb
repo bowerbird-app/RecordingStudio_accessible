@@ -30,10 +30,7 @@ module RecordingStudioAccessible
 
     def access_placement_enabled?
       return false if parent_recording.blank?
-      return true if RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(
-        recording: parent_recording,
-        child_type: :access
-      )
+      return true if RecordingStudioAccessible::Compatibility.access_parent_allowed?(parent_recording)
 
       errors.add(:parent_recording, "does not allow RecordingStudio::Access children")
       false

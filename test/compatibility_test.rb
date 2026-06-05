@@ -3,9 +3,12 @@
 require "test_helper"
 
 class CompatibilityTest < Minitest::Test
+  def setup
+    reset_addon_loaded_access!
+  end
+
   def teardown
-    RecordingStudioAccessible::Compatibility.remove_instance_variable(:@addon_loaded_access) if
-      RecordingStudioAccessible::Compatibility.instance_variable_defined?(:@addon_loaded_access)
+    reset_addon_loaded_access!
   end
 
   def test_integration_mode_is_core_when_core_access_present
@@ -112,5 +115,44 @@ class CompatibilityTest < Minitest::Test
         RecordingStudioAccessible::Compatibility.ensure_access_recordable_declaration!
       end
     end
+  end
+
+  def test_access_parent_allowed_delegates_to_recording_studio_parent_allowed
+    recording = Object.new
+    calls = []
+
+    RecordingStudio.stub(:parent_allowed?, lambda { |child_type:, parent_recording:|
+      calls << [child_type, parent_recording]
+      true
+    }) do
+      assert RecordingStudioAccessible::Compatibility.access_parent_allowed?(recording)
+    end
+
+    assert_equal [[RecordingStudioAccessible::Compatibility::ACCESS_RECORDABLE_TYPE, recording]], calls
+  end
+
+  def test_access_parent_allowed_returns_false_when_parent_rejected
+    recording = Object.new
+
+    RecordingStudio.stub(:parent_allowed?, false) do
+      refute RecordingStudioAccessible::Compatibility.access_parent_allowed?(recording)
+    end
+  end
+
+  def test_access_parent_allowed_returns_false_when_declarations_are_invalid
+    recording = Object.new
+
+    RecordingStudio.stub(:parent_allowed?, ->(**) { raise RecordingStudio::InvalidRecordableDeclaration, "boom" }) do
+      refute RecordingStudioAccessible::Compatibility.access_parent_allowed?(recording)
+    end
+  end
+
+  private
+
+  def reset_addon_loaded_access!
+    compatibility = RecordingStudioAccessible::Compatibility
+    return unless compatibility.instance_variable_defined?(:@addon_loaded_access)
+
+    compatibility.remove_instance_variable(:@addon_loaded_access)
   end
 end

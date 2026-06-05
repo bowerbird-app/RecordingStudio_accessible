@@ -99,8 +99,7 @@ module RecordingStudioAccessible
     end
 
     def ensure_access_children_enabled!
-      return if RecordingStudioAccessible::PlacementPolicy.allowed_child_on_recording?(recording: @recording,
-                                                                                       child_type: :access)
+      return if RecordingStudioAccessible::Compatibility.access_parent_allowed?(@recording)
 
       head :not_found
     end

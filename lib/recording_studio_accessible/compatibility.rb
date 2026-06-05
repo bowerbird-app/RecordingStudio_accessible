@@ -81,6 +81,18 @@ module RecordingStudioAccessible
         )
       end
 
+      def access_parent_allowed?(recording)
+        return false unless defined?(::RecordingStudio)
+        return false if recording.blank?
+
+        RecordingStudio.parent_allowed?(
+          child_type: ACCESS_RECORDABLE_TYPE,
+          parent_recording: recording
+        )
+      rescue RecordingStudio::InvalidRecordableDeclaration, RecordingStudio::MissingRecordableDeclaration
+        false
+      end
+
       def warn_if_core_access_present!
         return unless core_access_present?
         return unless RecordingStudioAccessible.configuration.warn_on_core_conflict
