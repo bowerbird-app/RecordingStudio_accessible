@@ -15,9 +15,7 @@ module RecordingStudio
     include RecordingStudio::Recordable
     include RecordingStudioAccessible::AccessCreationGuard
 
-    if respond_to?(:recording_studio_recordable)
-      recording_studio_recordable label: "Access", root: false
-    end
+    recording_studio_recordable label: "Access", root: false if respond_to?(:recording_studio_recordable)
 
     belongs_to :actor, polymorphic: true
 

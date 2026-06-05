@@ -5,6 +5,8 @@ module RecordingStudioAccessible
     isolate_namespace RecordingStudioAccessible
 
     config.to_prepare do
+      RecordingStudioAccessible::Compatibility.register_access_capability!
+      RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
       RecordingStudioAccessible::Compatibility.ensure_creation_guards!
     end
 

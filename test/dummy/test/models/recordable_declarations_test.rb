@@ -17,6 +17,7 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
   end
 
   test "access declaration is child-only and follows accessible child opt ins" do
+    assert_includes RecordingStudio.configuration.recordable_types, "RecordingStudio::Access"
     refute RecordingStudio.root_allowed?(RecordingStudio::Access)
     assert_equal [], RecordingStudio.declared_allowed_parent_types_for(RecordingStudio::Access)
     assert_equal ["RecordingStudio::Access"], RecordingStudio.capability_child_recordables_for(:accessible)

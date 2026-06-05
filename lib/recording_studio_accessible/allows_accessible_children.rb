@@ -19,7 +19,10 @@ module RecordingStudioAccessible
         self.recording_studio_accessible_child_types = normalized_child_types.uniq.freeze
         return unless normalized_child_types.include?(:access)
 
-        RecordingStudio.enable_capability(RecordingStudioAccessible::Compatibility::ACCESS_CAPABILITY, on: self)
+        RecordingStudio.enable_capability(
+          RecordingStudioAccessible::Compatibility::ACCESS_CAPABILITY,
+          on: self
+        )
       end
 
       def allows_recording_studio_accessible_child?(child_type)
@@ -51,16 +54,26 @@ module RecordingStudioAccessible
         recordable_type = RecordingStudio.recordable_type_name(recordable)
         return false if recordable_type.blank?
 
-        RecordingStudio.capability_enabled?(
-          RecordingStudioAccessible::Compatibility::ACCESS_CAPABILITY,
-          for: recordable_type
-        ) ||
-          RecordingStudio.child_recordable_types_for(recordable_type).include?(
-            RecordingStudioAccessible::Compatibility::ACCESS_RECORDABLE_TYPE
-          )
+        access_capability_enabled?(recordable_type) && access_parent_allowed?(recording)
+      rescue RecordingStudio::InvalidRecordableDeclaration, RecordingStudio::MissingRecordableDeclaration
+        false
       end
 
       private
+
+      def access_capability_enabled?(recordable_type)
+        RecordingStudio.capability_enabled?(
+          RecordingStudioAccessible::Compatibility::ACCESS_CAPABILITY,
+          for: recordable_type
+        )
+      end
+
+      def access_parent_allowed?(recording)
+        RecordingStudio.parent_allowed?(
+          child_type: RecordingStudioAccessible::Compatibility::ACCESS_RECORDABLE_TYPE,
+          parent_recording: recording
+        )
+      end
 
       def normalize_child_type(child_type)
         child_type.to_sym

@@ -55,6 +55,7 @@ module RecordingStudioAccessible
 
       def register_access_capability!
         return unless defined?(::RecordingStudio)
+        return if compatible_access_capability_registered?
 
         RecordingStudio.register_capability(
           ACCESS_CAPABILITY,
@@ -73,8 +74,8 @@ module RecordingStudioAccessible
 
         access_class = constant_for_path(ACCESS_RECORDABLE_TYPE)
         return unless access_class.respond_to?(:recording_studio_recordable)
+
         access_class.recording_studio_recordable(
-          label: "Access",
           label: "Access",
           root: false
         )
@@ -98,6 +99,14 @@ module RecordingStudioAccessible
       end
 
       private
+
+      def compatible_access_capability_registered?
+        registration = RecordingStudio.registered_capabilities[ACCESS_CAPABILITY]
+        return false unless registration
+        return false if registration[:source].blank? || registration[:source] == ACCESS_CAPABILITY_SOURCE
+
+        Array(registration[:child_recordables]).include?(ACCESS_RECORDABLE_TYPE)
+      end
 
       def load_priority
         {
