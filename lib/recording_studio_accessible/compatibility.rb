@@ -8,20 +8,10 @@ module RecordingStudioAccessible
     }.freeze
     RECORDABLE_TYPES = ["RecordingStudio::Access"].freeze
     ACCESS_RECORDABLE_TYPE = "RecordingStudio::Access"
+    ACCESS_CAPABILITY = :accessible
+    ACCESS_CAPABILITY_SOURCE = "recording_studio_accessible"
 
     class << self # rubocop:disable Metrics/ClassLength
-      def access_parent_types
-        @access_parent_types ||= Set.new
-      end
-
-      def register_access_parent_type!(recordable_or_type)
-        type_name = RecordingStudio.recordable_type_name(recordable_or_type)
-        return if type_name.blank?
-
-        access_parent_types.add(type_name)
-        ensure_access_recordable_declaration!
-      end
-
       def missing_constant_paths
         missing = EXTRACTED_FILES.keys.reject { |name| constant_defined_path?(name) }
         missing.sort_by { |name| load_priority.fetch(name, 99) }.map { |name| EXTRACTED_FILES.fetch(name) }
@@ -63,6 +53,16 @@ module RecordingStudioAccessible
         ensure_access_recordable_declaration!
       end
 
+      def register_access_capability!
+        return unless defined?(::RecordingStudio)
+
+        RecordingStudio.register_capability(
+          ACCESS_CAPABILITY,
+          source: ACCESS_CAPABILITY_SOURCE,
+          child_recordables: [ACCESS_RECORDABLE_TYPE]
+        )
+      end
+
       def ensure_creation_guards!
         include_guard("RecordingStudio::Access", RecordingStudioAccessible::AccessCreationGuard)
         include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AccessRecordingCreationGuard)
@@ -73,11 +73,10 @@ module RecordingStudioAccessible
 
         access_class = constant_for_path(ACCESS_RECORDABLE_TYPE)
         return unless access_class.respond_to?(:recording_studio_recordable)
-
         access_class.recording_studio_recordable(
           label: "Access",
-          root: false,
-          allowed_parent_types: access_parent_types.to_a.sort
+          label: "Access",
+          root: false
         )
       end
 

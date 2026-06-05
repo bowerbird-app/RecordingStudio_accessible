@@ -33,10 +33,12 @@ module RecordingStudioAccessible
 
     initializer "recording_studio_accessible.load_missing_constants", after: "recording_studio_accessible.load_config",
                                                                       before: "recording_studio_accessible.register_access_types" do |app|
+      RecordingStudioAccessible::Compatibility.register_access_capability!
       RecordingStudioAccessible::Compatibility.load_missing_constants!(app)
     end
 
     initializer "recording_studio_accessible.register_access_types", after: "recording_studio_accessible.load_config" do
+      RecordingStudioAccessible::Compatibility.register_access_capability!
       RecordingStudioAccessible::Compatibility.warn_if_core_access_present!
       RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
       RecordingStudioAccessible::Compatibility.ensure_creation_guards!

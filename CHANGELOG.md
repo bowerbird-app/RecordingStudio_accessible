@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Updated Recording Studio Accessible for RecordingStudio `3.0.0` capability-owned child recordables
+- Replaced addon-maintained `RecordingStudio::Access` parent injection with RecordingStudio core capability enablement
+
+### Upgrade Notes
+- Breaking: host apps must use RecordingStudio `~> 3.0`
+- `RecordingStudio::Access` remains child-only, but its effective parents now come from enabling the `:accessible` capability through `recording_studio_accessible_children :access`
+- Continue creating direct grants through `RecordingStudioAccessible.grant_access`; direct `RecordingStudio::Access` creation remains unsupported
+
 ## [0.2.1] - 2026-06-03
 
 ### Added
