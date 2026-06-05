@@ -4,13 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-05
+
 ### Changed
 - Updated Recording Studio Accessible for RecordingStudio `3.0.0` capability-owned child recordables
-- Replaced addon-maintained `RecordingStudio::Access` parent injection with RecordingStudio core capability enablement
+- Replaced addon-maintained `RecordingStudio::Access` parent injection and placement policy with RecordingStudio core capability enablement and parent checks
+- Removed the addon-owned `recording_studio_accessible_children` workaround in favor of direct `RecordingStudio.enable_capability(:accessible, on: ...)` usage
+
+### Fixed
+- Updated the dummy app, README, and regression coverage to follow the final RecordingStudio 3 capability API
+- Removed stale generated dummy app artifacts that caused RuboCop failures during full validation
 
 ### Upgrade Notes
 - Breaking: host apps must use RecordingStudio `~> 3.0`
-- `RecordingStudio::Access` remains child-only, but its effective parents now come from enabling the `:accessible` capability through `recording_studio_accessible_children :access`
+- `RecordingStudio::Access` remains child-only, but its effective parents now come from enabling the `:accessible` capability with `RecordingStudio.enable_capability(:accessible, on: YourRecordable)`
+- Remove any `include RecordingStudioAccessible::AllowsAccessibleChildren` or `recording_studio_accessible_children :access` usage from host apps and replace it with direct RecordingStudio capability enablement
 - Continue creating direct grants through `RecordingStudioAccessible.grant_access`; direct `RecordingStudio::Access` creation remains unsupported
 
 ## [0.2.1] - 2026-06-03
@@ -47,6 +55,7 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.1...v0.3.1
 [0.2.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.1.0...v0.2.0
