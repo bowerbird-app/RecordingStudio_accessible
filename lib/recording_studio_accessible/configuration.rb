@@ -38,6 +38,7 @@ module RecordingStudioAccessible
 
   class Configuration
     attr_accessor :warn_on_core_conflict,
+                  :avatar_resolver,
                   :access_management_actor_scope,
                   :access_management_current_actor_resolver,
                   :access_management_actor_label,
@@ -52,6 +53,7 @@ module RecordingStudioAccessible
 
     def initialize
       @warn_on_core_conflict = true
+      @avatar_resolver = method(:default_avatar_resolver)
       @access_management_actor_scope = method(:default_access_management_actor_scope)
       @access_management_current_actor_resolver = method(:default_access_management_current_actor_resolver)
       @access_management_actor_label = method(:default_access_management_actor_label)
@@ -88,6 +90,10 @@ module RecordingStudioAccessible
 
     def actor_label_for(actor)
       resolve_configurable(access_management_actor_label, actor)
+    end
+
+    def avatar_for(access_holder)
+      normalize_avatar(resolve_configurable(avatar_resolver, access_holder))
     end
 
     def current_actor_for(controller: nil)
@@ -155,6 +161,25 @@ module RecordingStudioAccessible
     end
 
     private
+
+    def default_avatar_resolver(_access_holder)
+      nil
+    end
+
+    def normalize_avatar(avatar)
+      return unless avatar.respond_to?(:to_h)
+
+      attributes = avatar.to_h.symbolize_keys
+      normalized = {
+        name: attributes[:name],
+        alt: attributes[:alt],
+        src: attributes[:src] || attributes[:image_url],
+        status: attributes[:status],
+        href: attributes[:href]
+      }.compact
+
+      normalized if normalized.values.any?(&:present?)
+    end
 
     def default_access_management_actor_scope(_controller)
       return [] unless defined?(::User)
