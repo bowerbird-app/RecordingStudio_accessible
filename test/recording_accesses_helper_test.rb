@@ -23,9 +23,11 @@ module FlatPack
 
   module Button
     class Component
-      def initialize(**system_arguments)
-        @text = system_arguments[:text]
-        @system_arguments = system_arguments
+      unless private_instance_methods(false).include?(:initialize)
+        def initialize(**system_arguments)
+          @text = system_arguments[:text]
+          @system_arguments = system_arguments
+        end
       end
     end
   end

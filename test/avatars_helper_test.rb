@@ -34,6 +34,7 @@ module FlatPack
       attr_reader :system_arguments
 
       def initialize(**system_arguments)
+        @text = system_arguments[:text]
         @system_arguments = system_arguments
       end
     end
@@ -157,7 +158,7 @@ class AvatarsHelperTest < Minitest::Test
   def test_renders_access_button_when_resolver_returns_nil
     actor = Actor.new("Unrenderable", nil)
     recording = Recording.new(42, "42")
-    RecordingStudioAccessible.configuration.avatar_resolver = ->(_access_holder) { nil }
+    RecordingStudioAccessible.configuration.avatar_resolver = ->(_access_holder) {}
 
     html = with_access_recordings(recording, [access_recording_for(actor)]) do
       ViewContext.new.recording_studio_accessible_avatars(recording)
@@ -196,7 +197,7 @@ class AvatarsHelperTest < Minitest::Test
     AccessRecording.new(AccessGrant.new(actor))
   end
 
-  def with_access_recordings(expected_recording, access_recordings)
+  def with_access_recordings(expected_recording, access_recordings, &block)
     calls = []
     resolver = lambda do |recording|
       calls << recording
@@ -206,7 +207,7 @@ class AvatarsHelperTest < Minitest::Test
     end
 
     RecordingStudioAccessible.stub(:access_recordings_for, resolver) do
-      yield
+      block.call
     end
   ensure
     assert_equal [expected_recording], calls
