@@ -3,6 +3,7 @@
 module RecordingStudioAccessible
   module AvatarsHelper
     def recording_studio_accessible_avatars(recording, button_style: nil)
+      return "".html_safe unless recording_studio_accessible_flatpack_available?
       return "".html_safe unless recording_studio_accessible_manage_access?(recording)
 
       avatar_items = recording_studio_accessible_avatar_items(recording)
@@ -15,6 +16,12 @@ module RecordingStudioAccessible
     end
 
     private
+
+    def recording_studio_accessible_flatpack_available?
+      defined?(::FlatPack::AvatarGroup::Component) &&
+        defined?(::FlatPack::Button::Component) &&
+        defined?(::FlatPack::Tooltip::Component)
+    end
 
     def recording_studio_accessible_avatar_items(recording)
       recording_studio_accessible_access_holders(recording).filter_map do |access_holder|

@@ -290,7 +290,7 @@ RecordingStudioAccessible.configure do |config|
 end
 ```
 
-Host views can render the compact access UI with:
+Host views with FlatPack available can render the compact access UI with:
 
 ```erb
 <%= recording_studio_accessible_avatars(recording, button_style: :primary) %>

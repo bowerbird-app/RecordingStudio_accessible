@@ -209,6 +209,20 @@ class AvatarsHelperTest < Minitest::Test
     assert_equal "", html
   end
 
+  def test_renders_nothing_when_flatpack_components_are_unavailable
+    recording = Recording.new(42, "42")
+    flat_pack = Object.const_get(:FlatPack)
+    Object.send(:remove_const, :FlatPack)
+
+    html = with_access_recordings(recording, [], expected_calls: []) do
+      ViewContext.new.recording_studio_accessible_avatars(recording)
+    end
+
+    assert_equal "", html
+  ensure
+    Object.const_set(:FlatPack, flat_pack) if defined?(flat_pack) && !Object.const_defined?(:FlatPack, false)
+  end
+
   private
 
   def access_recording_for(actor)
