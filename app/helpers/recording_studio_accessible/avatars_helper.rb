@@ -3,6 +3,8 @@
 module RecordingStudioAccessible
   module AvatarsHelper
     def recording_studio_accessible_avatars(recording, button_style: nil)
+      return "".html_safe unless recording_studio_accessible_manage_access?(recording)
+
       avatar_items = recording_studio_accessible_avatar_items(recording)
 
       return recording_studio_accessible_access_button(recording, button_style: button_style) if avatar_items.blank?
@@ -29,6 +31,18 @@ module RecordingStudioAccessible
       access_recordings.filter_map do |access_recording|
         access_recording.recordable&.actor
       end
+    end
+
+    def recording_studio_accessible_manage_access?(recording)
+      RecordingStudioAccessible.configuration.authorize_access_management?(
+        recording: recording,
+        actor: recording_studio_accessible_current_actor,
+        controller: self
+      )
+    end
+
+    def recording_studio_accessible_current_actor
+      RecordingStudioAccessible.configuration.current_actor_for(controller: self)
     end
 
     def recording_studio_accessible_access_button(recording, button_style:)

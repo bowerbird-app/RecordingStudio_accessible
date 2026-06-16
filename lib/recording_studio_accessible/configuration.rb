@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "hooks"
+require "uri"
 
 module RecordingStudioAccessible
   class MissingActorResolution
@@ -81,6 +82,7 @@ module RecordingStudioAccessible
         key = k.to_s
         setter = "#{key}="
         public_send(setter, cast_boolean(v)) if key == "warn_on_core_conflict" && respond_to?(setter)
+        public_send(setter, v) if key == "avatar_resolver" && v.respond_to?(:call) && respond_to?(setter)
       end
     end
 
@@ -173,12 +175,35 @@ module RecordingStudioAccessible
       normalized = {
         name: attributes[:name],
         alt: attributes[:alt],
-        src: attributes[:src] || attributes[:image_url],
+        src: safe_avatar_image_url(attributes[:src] || attributes[:image_url]),
         status: attributes[:status],
-        href: attributes[:href]
+        href: safe_avatar_href(attributes[:href])
       }.compact
 
       normalized if normalized.values.any?(&:present?)
+    end
+
+    def safe_avatar_image_url(url)
+      safe_avatar_url(url, allow_absolute_http: true)
+    end
+
+    def safe_avatar_href(url)
+      safe_avatar_url(url, allow_absolute_http: false)
+    end
+
+    def safe_avatar_url(url, allow_absolute_http:)
+      value = url.to_s.strip
+      return if value.blank? || value.match?(/[\u0000-\u001f\u007f\\]/)
+      return value if relative_avatar_url?(value)
+
+      uri = URI.parse(value)
+      value if allow_absolute_http && uri.is_a?(URI::HTTP) && uri.host.present?
+    rescue URI::InvalidURIError
+      nil
+    end
+
+    def relative_avatar_url?(url)
+      url.start_with?("/") && !url.start_with?("//")
     end
 
     def default_access_management_actor_scope(_controller)

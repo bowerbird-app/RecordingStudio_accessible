@@ -72,6 +72,10 @@ class AvatarsHelperTest < Minitest::Test
       "/recordings/#{recording.to_param}/accesses"
     end
 
+    def current_user
+      :manager
+    end
+
     private
 
     def render_avatar_group(component)
@@ -100,6 +104,7 @@ class AvatarsHelperTest < Minitest::Test
   def setup
     @original_configuration = RecordingStudioAccessible.instance_variable_get(:@configuration)
     RecordingStudioAccessible.instance_variable_set(:@configuration, RecordingStudioAccessible::Configuration.new)
+    RecordingStudioAccessible.configuration.access_management_authorizer = ->(**) { true }
   end
 
   def teardown
@@ -191,13 +196,26 @@ class AvatarsHelperTest < Minitest::Test
     refute_includes html, actor.name
   end
 
+  def test_renders_nothing_when_current_actor_cannot_manage_access
+    actor = Actor.new("Ada Lovelace", nil)
+    recording = Recording.new(42, "42")
+    RecordingStudioAccessible.configuration.access_management_authorizer = ->(**) { false }
+    RecordingStudioAccessible.configuration.avatar_resolver = ->(access_holder) { { name: access_holder.name } }
+
+    html = with_access_recordings(recording, [access_recording_for(actor)], expected_calls: []) do
+      ViewContext.new.recording_studio_accessible_avatars(recording)
+    end
+
+    assert_equal "", html
+  end
+
   private
 
   def access_recording_for(actor)
     AccessRecording.new(AccessGrant.new(actor))
   end
 
-  def with_access_recordings(expected_recording, access_recordings, &block)
+  def with_access_recordings(expected_recording, access_recordings, expected_calls: [expected_recording], &block)
     calls = []
     resolver = lambda do |recording|
       calls << recording
@@ -210,6 +228,6 @@ class AvatarsHelperTest < Minitest::Test
       block.call
     end
   ensure
-    assert_equal [expected_recording], calls
+    assert_equal expected_calls, calls
   end
 end

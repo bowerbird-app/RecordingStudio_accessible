@@ -31,6 +31,20 @@ class ConfigurationTest < Minitest::Test
     assert_equal false, @configuration.warn_on_core_conflict
   end
 
+  def test_merge_updates_callable_avatar_resolver
+    avatar_resolver = ->(actor) { { name: actor.to_s } }
+
+    @configuration.merge!(avatar_resolver: avatar_resolver)
+
+    assert_equal({ name: "custom_actor" }, @configuration.avatar_for(:custom_actor))
+  end
+
+  def test_merge_ignores_non_callable_avatar_resolver
+    @configuration.merge!(avatar_resolver: "ignored")
+
+    assert_nil @configuration.avatar_for(:custom_actor)
+  end
+
   def test_merge_ignores_unknown_keys
     @configuration.merge!(unknown_key: "ignored")
 
@@ -129,6 +143,33 @@ class ConfigurationTest < Minitest::Test
         src: "https://example.com/avatar.png",
         status: :online
       },
+      @configuration.avatar_for(:custom_actor)
+    )
+  end
+
+  def test_avatar_resolver_drops_unsafe_urls
+    @configuration.avatar_resolver = lambda do |_actor|
+      {
+        name: "Unsafe",
+        image_url: "data:text/html,<script>alert(1)</script>",
+        href: "javascript:alert(1)"
+      }
+    end
+
+    assert_equal({ name: "Unsafe" }, @configuration.avatar_for(:custom_actor))
+  end
+
+  def test_avatar_resolver_keeps_safe_image_and_relative_href_urls
+    @configuration.avatar_resolver = lambda do |_actor|
+      {
+        name: "Safe",
+        image_url: "https://cdn.example.com/avatar.png",
+        href: "/people/1"
+      }
+    end
+
+    assert_equal(
+      { name: "Safe", src: "https://cdn.example.com/avatar.png", href: "/people/1" },
       @configuration.avatar_for(:custom_actor)
     )
   end

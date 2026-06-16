@@ -296,7 +296,7 @@ Host views can render the compact access UI with:
 <%= recording_studio_accessible_avatars(recording, button_style: :primary) %>
 ```
 
-The helper fetches the recording's access holders through Recording Studio Accessible and renders a FlatPack avatar group when configured avatar data is available. Configure `avatar_resolver` to map each access holder object to presentation data; return `nil` when an object should not render as an avatar:
+The helper only renders for actors authorized to manage access for the recording. It fetches the recording's access holders through Recording Studio Accessible and renders a FlatPack avatar group when configured avatar data is available. Configure `avatar_resolver` to map each access holder object to presentation data; return `nil` when an object should not render as an avatar:
 
 ```ruby
 RecordingStudioAccessible.configure do |config|
