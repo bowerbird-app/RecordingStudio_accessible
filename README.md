@@ -290,6 +290,27 @@ RecordingStudioAccessible.configure do |config|
 end
 ```
 
+Host views can render the compact access UI with:
+
+```erb
+<%= recording_studio_accessible_avatars(recording, button_style: :primary) %>
+```
+
+The helper fetches the recording's access holders through Recording Studio Accessible and renders a FlatPack avatar group when configured avatar data is available. Configure `avatar_resolver` to map each access holder object to presentation data; return `nil` when an object should not render as an avatar:
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.avatar_resolver = ->(access_holder) do
+    {
+      name: access_holder.profile_name,
+      image_url: access_holder.profile_avatar_url
+    }
+  end
+end
+```
+
+When no access holders exist, or no holders resolve to avatar data, the helper renders a `"+ Access"` FlatPack button. Pass `button_style:` to customize that fallback button.
+
 The missing-actor handler may return an actor directly, or a `RecordingStudioAccessible::MissingActorResolution` describing whether the controller should grant access, render an error, or redirect into a host-app workflow. Prefer `:invalid` or `:requires_resolution` until your host app has actually verified the recipient and completed any required setup. Returning an actor or `MissingActorResolution.created(...)` continues the grant immediately. If the default mailer is close but not quite right, edit the copied templates under `app/views/recording_studio_accessible/access_granted_mailer/`. If you need a fully custom delivery strategy, replace `config.access_management_access_granted_notifier` entirely.
 
 By default, the mounted engine resolves the acting user from `Current.actor` so it follows the same actor source that RecordingStudio uses. If your host app needs a different source, override `config.access_management_current_actor_resolver`. The built-in resolver only falls back to `controller.current_user` when `Current.actor` is unavailable.

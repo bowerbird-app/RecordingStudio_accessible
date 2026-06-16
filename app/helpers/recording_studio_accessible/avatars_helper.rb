@@ -48,6 +48,8 @@ module RecordingStudioAccessible
     end
 
     def recording_studio_accessible_access_management_path(recording)
+      return unless recording
+
       if respond_to?(:recording_access_management_path)
         recording_access_management_path(recording)
       elsif respond_to?(:recording_studio_accessible) &&

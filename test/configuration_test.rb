@@ -107,6 +107,38 @@ class ConfigurationTest < Minitest::Test
     assert @configuration.authorize_mounted_page?(controller: :controller, actor: :actor, recording: :recording)
   end
 
+  def test_avatar_resolver_defaults_to_nil
+    assert_nil @configuration.avatar_for(:actor)
+  end
+
+  def test_avatar_resolver_normalizes_flatpack_avatar_data
+    @configuration.avatar_resolver = lambda do |actor|
+      {
+        name: "Label: #{actor}",
+        image_url: "https://example.com/avatar.png",
+        alt: "Avatar for #{actor}",
+        status: :online,
+        ignored: "ignored"
+      }
+    end
+
+    assert_equal(
+      {
+        name: "Label: custom_actor",
+        alt: "Avatar for custom_actor",
+        src: "https://example.com/avatar.png",
+        status: :online
+      },
+      @configuration.avatar_for(:custom_actor)
+    )
+  end
+
+  def test_avatar_resolver_ignores_blank_hashes
+    @configuration.avatar_resolver = ->(_actor) { { name: "", image_url: nil } }
+
+    assert_nil @configuration.avatar_for(:custom_actor)
+  end
+
   def test_missing_actor_resolution_normalizes_actor_return_values
     user = Object.new
     @configuration.access_management_missing_actor_handler = lambda do |**|

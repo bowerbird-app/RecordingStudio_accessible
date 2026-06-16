@@ -86,6 +86,15 @@ RecordingStudioAccessible.configure do |config|
   # Optional: customize how actors are labeled in the access management UI.
   # config.access_management_actor_label = ->(actor) { actor.email }
 
+  # Optional: customize avatar data for recording_studio_accessible_avatars.
+  # Return nil when an actor should not be rendered as an avatar.
+  # config.avatar_resolver = ->(access_holder) do
+  #   {
+  #     name: access_holder.profile_name,
+  #     image_url: access_holder.profile_avatar_url
+  #   }
+  # end
+
   # Optional: customize who can manage access for a recording.
   # config.access_management_authorizer = lambda do |recording:, actor:, **|
   #   actor.present? && RecordingStudioAccessible.authorized?(
