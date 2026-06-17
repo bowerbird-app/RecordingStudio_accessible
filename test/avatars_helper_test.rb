@@ -45,7 +45,7 @@ class AvatarsHelperTest < Minitest::Test
   AccessGrant = Struct.new(:actor)
   AccessRecording = Struct.new(:recordable)
   Actor = Struct.new(:name, :avatar_url)
-  Recording = Struct.new(:id, :to_param)
+  Recording = Struct.new(:id, :to_param, :parent_recording)
 
   class ViewContext
     include ActionView::Helpers::TagHelper
@@ -81,10 +81,21 @@ class AvatarsHelperTest < Minitest::Test
     def render_avatar_group(component)
       arguments = component.system_arguments
       item_markup = arguments.fetch(:items).map do |item|
-        %(<span data-avatar-name="#{ERB::Util.html_escape(item[:name])}" data-avatar-src="#{ERB::Util.html_escape(item[:src])}"></span>)
+        avatar_href = item[:href] ? %( data-avatar-href="#{ERB::Util.html_escape(item[:href])}") : ""
+        %(<span data-avatar-name="#{ERB::Util.html_escape(item[:name])}" data-avatar-src="#{ERB::Util.html_escape(item[:src])}"#{avatar_href}></span>)
       end.join
 
-      %(<avatar-group data-max="#{arguments[:max]}" data-size="#{arguments[:size]}" data-overflow-href="#{ERB::Util.html_escape(arguments[:overflow_href])}">#{item_markup}</avatar-group>).html_safe
+        %(<avatar-group data-max="#{arguments[:max]}" data-size="#{arguments[:size]}" data-overlap="#{arguments[:overlap]}" data-show-tooltip="#{arguments[:show_tooltip]}" data-overflow-href="#{ERB::Util.html_escape(arguments[:overflow_href])}">#{item_markup}</avatar-group>).html_safe
+    end
+
+    def render_button(component)
+      arguments = component.system_arguments
+      button_text = arguments[:text] ? ERB::Util.html_escape(arguments[:text]) : ""
+      data_icon = arguments[:icon] ? %( data-icon="#{ERB::Util.html_escape(arguments[:icon])}") : ""
+      data_icon_only = arguments.key?(:icon_only) ? %( data-icon-only="#{arguments[:icon_only]}") : ""
+      aria_label = arguments.dig(:aria, :label) ? %( aria-label="#{ERB::Util.html_escape(arguments.dig(:aria, :label))}") : ""
+
+      %(<button data-style="#{arguments[:style]}" data-size="#{arguments[:size]}" data-url="#{ERB::Util.html_escape(arguments[:url])}"#{data_icon}#{data_icon_only}#{aria_label}>#{button_text}</button>).html_safe
     end
 
     def render_tooltip(component, &block)
@@ -92,12 +103,6 @@ class AvatarsHelperTest < Minitest::Test
       content = block ? block.call : ""
 
       %(<tooltip data-text="#{ERB::Util.html_escape(arguments[:text])}" data-placement="#{arguments[:placement]}">#{content}</tooltip>).html_safe
-    end
-
-    def render_button(component)
-      arguments = component.system_arguments
-
-      %(<button data-style="#{arguments[:style]}" data-size="#{arguments[:size]}" data-url="#{ERB::Util.html_escape(arguments[:url])}">#{ERB::Util.html_escape(arguments[:text])}</button>).html_safe
     end
   end
 
@@ -111,7 +116,7 @@ class AvatarsHelperTest < Minitest::Test
     RecordingStudioAccessible.instance_variable_set(:@configuration, @original_configuration)
   end
 
-  def test_renders_tooltip_wrapped_avatar_group_from_access_holders
+  def test_renders_avatar_group_with_manage_access_button_from_access_holders
     actor = Actor.new("Ada Lovelace", "https://example.com/ada.png")
     recording = Recording.new(42, "42")
     RecordingStudioAccessible.configuration.avatar_resolver = lambda do |access_holder|
@@ -122,11 +127,75 @@ class AvatarsHelperTest < Minitest::Test
       ViewContext.new.recording_studio_accessible_avatars(recording)
     end
 
+    assert_includes html, 'class="flex items-center justify-between gap-2"'
+    assert_includes html, '<avatar-group data-max="3" data-size="sm" data-overlap="sm" data-show-tooltip="false" data-overflow-href="/recordings/42/accesses">'
     assert_includes html, '<tooltip data-text="Manage access" data-placement="top">'
-    assert_includes html, '<avatar-group data-max="5" data-size="sm" data-overflow-href="/recordings/42/accesses">'
+    assert_includes html, 'data-icon="lock-closed"'
+    assert_includes html, 'data-icon-only="true"'
+    assert_includes html, 'aria-label="Manage access"'
+    assert_includes html, 'data-url="/recordings/42/accesses"'
     assert_includes html, 'data-avatar-name="Ada Lovelace"'
     assert_includes html, 'data-avatar-src="https://example.com/ada.png"'
     refute_includes html, "+ Access"
+  end
+
+  def test_custom_avatar_max_is_passed_to_flatpack_avatar_group
+    actor = Actor.new("Ada Lovelace", "https://example.com/ada.png")
+    recording = Recording.new(42, "42")
+    RecordingStudioAccessible.configuration.avatar_resolver = lambda do |access_holder|
+      { name: access_holder.name, image_url: access_holder.avatar_url }
+    end
+
+    html = with_access_recordings(recording, [access_recording_for(actor)]) do
+      ViewContext.new.recording_studio_accessible_avatars(recording, max: 7)
+    end
+
+    assert_includes html, '<avatar-group data-max="7" data-size="sm" data-overlap="sm" data-show-tooltip="false" data-overflow-href="/recordings/42/accesses">'
+  end
+
+  def test_custom_avatar_overlap_is_passed_to_flatpack_avatar_group
+    actor = Actor.new("Ada Lovelace", "https://example.com/ada.png")
+    recording = Recording.new(42, "42")
+    RecordingStudioAccessible.configuration.avatar_resolver = lambda do |access_holder|
+      { name: access_holder.name, image_url: access_holder.avatar_url }
+    end
+
+    html = with_access_recordings(recording, [access_recording_for(actor)]) do
+      ViewContext.new.recording_studio_accessible_avatars(recording, overlap: :lg)
+    end
+
+    assert_includes html, '<avatar-group data-max="3" data-size="sm" data-overlap="lg" data-show-tooltip="false" data-overflow-href="/recordings/42/accesses">'
+  end
+
+  def test_scope_all_includes_inherited_access_holders_without_duplicates
+    direct_actor = Actor.new("Ada Lovelace", "https://example.com/ada.png")
+    inherited_actor = Actor.new("Grace Hopper", "https://example.com/grace.png")
+    duplicate_actor = Actor.new("Katherine Johnson", "https://example.com/katherine.png")
+    parent_recording = Recording.new(7, "7")
+    recording = Recording.new(42, "42", parent_recording)
+
+    RecordingStudioAccessible.configuration.avatar_resolver = lambda do |access_holder|
+      { name: access_holder.name, image_url: access_holder.avatar_url }
+    end
+
+    resolver = lambda do |queried_recording|
+      case queried_recording
+      when recording
+        [access_recording_for(direct_actor), access_recording_for(duplicate_actor)]
+      when parent_recording
+        [access_recording_for(inherited_actor), access_recording_for(duplicate_actor)]
+      else
+        flunk("unexpected recording lookup: #{queried_recording.inspect}")
+      end
+    end
+
+    html = RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for, resolver) do
+      ViewContext.new.recording_studio_accessible_avatars(recording, scope: :all)
+    end
+
+    assert_includes html, 'data-avatar-name="Ada Lovelace"'
+    assert_includes html, 'data-avatar-name="Grace Hopper"'
+    assert_equal 1, html.scan('data-avatar-name="Katherine Johnson"').count
   end
 
   def test_fetches_access_recordings_for_the_requested_recording
@@ -181,6 +250,46 @@ class AvatarsHelperTest < Minitest::Test
     end
 
     assert_includes html, 'data-style="primary"'
+  end
+
+  def test_custom_avatar_size_and_button_size_are_passed_to_flatpack_components
+    actor = Actor.new("Ada Lovelace", "https://example.com/ada.png")
+    recording = Recording.new(42, "42")
+    RecordingStudioAccessible.configuration.avatar_resolver = lambda do |access_holder|
+      { name: access_holder.name, image_url: access_holder.avatar_url }
+    end
+
+    html = with_access_recordings(recording, [access_recording_for(actor)]) do
+      ViewContext.new.recording_studio_accessible_avatars(
+        recording,
+        size: :xs,
+        button_size: :lg,
+        button_style: :primary
+      )
+    end
+
+    assert_includes html, 'data-size="xs"'
+    assert_includes html, 'data-style="primary"'
+    assert_includes html, 'data-size="lg"'
+  end
+
+  def test_avatar_href_points_to_manage_access_page
+    actor = Actor.new("Ada Lovelace", "https://example.com/ada.png")
+    recording = Recording.new(42, "42")
+    RecordingStudioAccessible.configuration.avatar_resolver = lambda do |access_holder|
+      {
+        name: access_holder.name,
+        image_url: access_holder.avatar_url,
+        href: "/users/123"
+      }
+    end
+
+    html = with_access_recordings(recording, [access_recording_for(actor)]) do
+      ViewContext.new.recording_studio_accessible_avatars(recording)
+    end
+
+    assert_includes html, 'data-avatar-href="/recordings/42/accesses"'
+    refute_includes html, 'data-avatar-href="/users/123"'
   end
 
   def test_avatar_names_are_escaped_by_component_rendering

@@ -100,7 +100,14 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
 
   test "granting access deduplicates existing direct grants for the same actor" do
     stale_recording = create_legacy_direct_access_recording(@user, :view, @recording)
-    create_legacy_direct_access_recording(@user, :admin, @recording)
+    other_user = create_user("grant-other-user@example.com")
+    second_recording = create_legacy_direct_access_recording(other_user, :admin, @recording)
+    connection = ActiveRecord::Base.connection
+    connection.execute(<<~SQL.squish)
+      UPDATE recording_studio_accesses
+      SET actor_type = #{connection.quote(@user.class.base_class.name)}, actor_id = #{connection.quote(@user.id)}
+      WHERE id = #{connection.quote(second_recording.recordable_id)}
+    SQL
 
     assert_equal 2, direct_access_recordings_for(@user).count
 

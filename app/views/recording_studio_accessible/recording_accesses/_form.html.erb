@@ -34,8 +34,16 @@
           required: true
         ) %>
       <% else %>
-        <%= render FlatPack::Chip::Component.new(text: @editing_actor_label, style: :default, size: :md) %>
-        <%= render FlatPack::Chip::Component.new(text: @editing_actor_type, style: :default, size: :md) %>
+        <% actor_avatar = RecordingStudioAccessible.configuration.avatar_for(@access_recording.recordable.actor).to_h.symbolize_keys.slice(:src, :alt, :name, :status) %>
+        <% actor_avatar[:name] = @editing_actor_label if actor_avatar[:name].blank? %>
+        <% actor_avatar[:alt] = @editing_actor_label if actor_avatar[:alt].blank? %>
+
+        <% actor_chip = FlatPack::Chip::Component.new(text: @editing_actor_label, style: :default, size: :md) %>
+        <% actor_chip.leading do %>
+          <%= render FlatPack::Avatar::Component.new(**actor_avatar, size: :xs, show_tooltip: false) %>
+        <% end %>
+
+        <%= render actor_chip %>
       <% end %>
 
       <%= render FlatPack::RadioGroup::Component.new(

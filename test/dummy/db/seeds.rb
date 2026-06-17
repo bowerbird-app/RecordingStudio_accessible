@@ -58,14 +58,20 @@ end
 
 def ensure_access_recording(actor:, role:, parent_recording:, root_recording:)
   RecordingStudioAccessible::AccessCreationContext.allow do
-    RecordingStudio::Recording.unscoped.find_by(
-      root_recording_id: root_recording.id,
-      parent_recording_id: parent_recording.id,
-      recordable_type: "RecordingStudio::Access"
-    )&.then do |recording|
-      access = recording.recordable
-      return recording if access&.actor == actor && access.role == role.to_s
-    end
+    actor_type = actor.class.base_class.name
+
+    existing_recording = RecordingStudio::Recording.unscoped
+                                                 .where(
+                                                   root_recording_id: root_recording.id,
+                                                   parent_recording_id: parent_recording.id,
+                                                   recordable_type: "RecordingStudio::Access"
+                                                 )
+                                                 .joins("INNER JOIN recording_studio_accesses ON recording_studio_accesses.id = recording_studio_recordings.recordable_id")
+                                                 .where(recording_studio_accesses: { actor_type: actor_type, actor_id: actor.id })
+                                                 .order(created_at: :asc, id: :asc)
+                                                 .first
+
+    return existing_recording if existing_recording&.recordable&.role == role.to_s
 
     root_recording.record(RecordingStudio::Access, parent_recording: parent_recording) do |access|
       access.actor = actor
@@ -86,6 +92,11 @@ end
 def delete_recording_and_orphaned_access(recording)
   access_id = recording.recordable_type == "RecordingStudio::Access" ? recording.recordable_id : nil
 
+  if ActiveRecord::Base.connection.data_source_exists?("recording_studio_events")
+    connection = ActiveRecord::Base.connection
+    connection.delete("DELETE FROM recording_studio_events WHERE recording_id = #{connection.quote(recording.id)}")
+  end
+
   recording.delete
   delete_orphaned_access(access_id)
 end
@@ -100,7 +111,7 @@ def purge_readonly_page(page)
       delete_recording_and_orphaned_access(access_recording)
     end
 
-    page_recording.delete
+    delete_recording_and_orphaned_access(page_recording)
   end
 
   Card.where(page_id: page.id).delete_all
@@ -148,8 +159,12 @@ def remove_obsolete_demo_content(workspace:, allowed_pages_by_folder_name:)
 end
 
 def sync_access_recordings(parent_recording:, root_recording:, grants:)
-  desired_keys = grants.map { |grant| [ grant.fetch(:actor).class.name, grant.fetch(:actor).id, grant.fetch(:role).to_s ] }
-  seen_keys = {}
+  desired_grants_by_actor = grants.each_with_object({}) do |grant, hash|
+    actor = grant.fetch(:actor)
+    actor_key = [ actor.class.base_class.name, actor.id ]
+    hash[actor_key] = { actor: actor, role: grant.fetch(:role).to_s }
+  end
+  seen_actor_keys = {}
 
   RecordingStudio::Recording.unscoped
                            .where(parent_recording_id: parent_recording.id,
@@ -159,18 +174,19 @@ def sync_access_recordings(parent_recording:, root_recording:, grants:)
                            .order(created_at: :asc, id: :asc)
                            .find_each do |recording|
     access = recording.recordable
-    key = access && [ access.actor_type, access.actor_id, access.role.to_s ]
-    keep = key && access.actor.present? && desired_keys.include?(key) && !seen_keys[key]
+    actor_key = access && [ access.actor_type, access.actor_id ]
+    desired_grant = actor_key && desired_grants_by_actor[actor_key]
+    keep = actor_key && desired_grant && access.actor.present? && access.role.to_s == desired_grant[:role] && !seen_actor_keys[actor_key]
 
     if keep
-      seen_keys[key] = true
+      seen_actor_keys[actor_key] = true
       next
     end
 
     delete_recording_and_orphaned_access(recording)
   end
 
-  grants.each do |grant|
+  desired_grants_by_actor.each_value do |grant|
     ensure_access_recording(actor: grant.fetch(:actor), role: grant.fetch(:role),
                             parent_recording: parent_recording, root_recording: root_recording)
   end
@@ -183,6 +199,15 @@ users = {
   page_owner: upsert_user("page_owner@admin.com"),
   outsider: upsert_user("outsider@admin.com")
 }
+
+additional_users = {}
+
+10.times do |index|
+  user_number = index + 1
+  additional_users[:"access_user_#{user_number}"] = upsert_user("access_user_#{user_number}@admin.com")
+end
+
+users.merge!(additional_users)
 
 workspace = Workspace.find_or_create_by!(name: "Accessible Demo Workspace")
 root_recording = ensure_root_recording(workspace)
@@ -277,9 +302,10 @@ ops_runbook_recording = ensure_child_recording(
 sync_access_recordings(
   parent_recording: root_recording,
   root_recording: root_recording,
-  grants: [
-    { actor: users[:admin], role: :admin }
-  ]
+  grants: (
+    [ { actor: users[:admin], role: :admin } ] +
+    additional_users.values.map { |user| { actor: user, role: :view } }
+  )
 )
 
 sync_access_recordings(
@@ -293,9 +319,7 @@ sync_access_recordings(
 sync_access_recordings(
   parent_recording: operations_recording,
   root_recording: root_recording,
-  grants: [
-    { actor: users[:viewer], role: :view }
-  ]
+  grants: []
 )
 
 [ welcome_pack_recording, accessibility_checklist_recording, ops_runbook_recording ].each do |page_recording|
@@ -306,7 +330,7 @@ sync_access_recordings(
   )
 end
 
-puts "Seeded folder direct access: #{client_onboarding.name} (editor), #{operations.name} (viewer)"
+puts "Seeded folder direct access: #{client_onboarding.name} (editor)"
 
 users.except(:page_owner).each_value do |user|
   puts "Seeded: #{user.email} / #{PASSWORD}"

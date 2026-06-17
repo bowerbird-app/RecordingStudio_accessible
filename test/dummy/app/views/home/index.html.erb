@@ -20,16 +20,7 @@
             <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= @workspace.name %></h3>
             <%= render FlatPack::Badge::Component.new(text: @workspace.class.name, style: :default, size: :sm) %>
             <% if @root_recording && @root_access_management_enabled %>
-              <%= render FlatPack::Button::Component.new(
-                text: "Change access",
-                style: :default,
-                size: :sm,
-                url: recording_studio_accessible.recording_accesses_path(
-                  @root_recording,
-                  back_url: "#{request.path}#workspace-access",
-                  anchor_url: "#{request.path}#workspace-access"
-                )
-              ) %>
+              <%= recording_studio_accessible_avatars(@root_recording, button_style: :default, scope: :all) %>
             <% end %>
           <% end %>
         <% end %>
@@ -47,20 +38,9 @@
         <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= section[:folder].name %></h3>
-            <% folder_direct_access_count = @direct_access_counts_by_recording_id.fetch(section[:folder_recording]&.id, 0) %>
             <%= render FlatPack::Badge::Component.new(text: section[:folder].class.name, style: :default, size: :sm) %>
-            <p class="text-sm text-slate-600"><%= folder_direct_access_count %> access</p>
             <% if section[:folder_recording] && section[:folder_access_management_enabled] %>
-              <%= render FlatPack::Button::Component.new(
-                text: "Change access",
-                style: :default,
-                size: :sm,
-                url: recording_studio_accessible.recording_accesses_path(
-                  section[:folder_recording],
-                  back_url: "#{request.path}#folders-and-pages",
-                  anchor_url: "#{request.path}#folders-and-pages"
-                )
-              ) %>
+              <%= recording_studio_accessible_avatars(section[:folder_recording], button_style: :default, scope: :all) %>
             <% end %>
           <% end %>
         <% end %>
@@ -69,21 +49,10 @@
           <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
             <% card.body(class: "grid gap-3 justify-items-start") do %>
               <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= page_section[:page].title %></h3>
-              <% page_direct_access_count = @direct_access_counts_by_recording_id.fetch(page_section[:page_recording]&.id, 0) %>
               <%= render FlatPack::Badge::Component.new(text: page_section[:page].class.name, style: :default, size: :sm) %>
-              <p class="text-sm text-slate-600"><%= page_direct_access_count %> access</p>
               <p class="text-sm text-slate-600">Pages not allowed to add access</p>
               <% if page_section[:page_recording] && page_section[:page_access_management_enabled] %>
-                <%= render FlatPack::Button::Component.new(
-                  text: "Change access",
-                  style: :default,
-                  size: :sm,
-                  url: recording_studio_accessible.recording_accesses_path(
-                    page_section[:page_recording],
-                    back_url: "#{request.path}#folders-and-pages",
-                    anchor_url: "#{request.path}#folders-and-pages"
-                  )
-                ) %>
+                <%= recording_studio_accessible_avatars(page_section[:page_recording], button_style: :default) %>
               <% end %>
             <% end %>
           <% end %>

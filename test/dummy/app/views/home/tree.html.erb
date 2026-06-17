@@ -1,0 +1,11 @@
+<div class="mx-auto w-full max-w-6xl">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Tree",
+    subtitle: "Recording hierarchy for all recordings in the dummy app (#{@recording_count})",
+    variant: :h1
+  ) %>
+
+  <div class="mt-6">
+    <%= render FlatPack::Tree::Component.new(nodes: @recording_tree_nodes) %>
+  </div>
+</div>

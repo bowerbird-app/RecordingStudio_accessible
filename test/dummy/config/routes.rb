@@ -5,5 +5,6 @@ Rails.application.routes.draw do
 
   mount RecordingStudioAccessible::Engine, at: "/recording_studio_accessible"
 
+  get "tree", to: "home#tree"
   root "home#index"
 end

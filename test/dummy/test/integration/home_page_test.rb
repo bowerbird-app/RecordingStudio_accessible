@@ -45,19 +45,31 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Recording Studio Accessible Demo"
     assert_includes @response.body, "Client onboarding"
     assert_includes @response.body, "Accessibility checklist"
-    assert_includes @response.body, "0 access"
+    refute_includes @response.body, "0 access"
     assert_includes @response.body, "Pages not allowed to add access"
     refute_includes @response.body, "Workspace:"
     refute_includes @response.body, "people with access"
     refute_includes @response.body, "admin@admin.com (admin)"
     refute_includes @response.body, @outsider.email
+    assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@root_recording.id}/accesses"
     assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@folder_recording.id}/accesses"
-    assert_includes @response.body, "back_url=%2F%23folders-and-pages"
-    assert_includes @response.body, "anchor_url=%2F%23folders-and-pages"
     refute_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@page_recording.id}/accesses\""
     refute_includes @response.body, "Recording Studio addon template"
     refute_includes @response.body, "href=\"/recording_studio\""
     refute_includes @response.body, "href=\"/up\""
+  end
+
+  test "admin sees my access link in the top nav" do
+    sign_in @admin
+    workspace = @root_recording.recordable
+
+    get "/"
+
+    assert_response :success
+    assert_includes @response.body, "My access"
+    assert_includes @response.body, "href=\"/recording_studio_accessible/workspaces/#{workspace.id}/actor_access_points"
+    assert_includes @response.body, "actor_type=User"
+    assert_includes @response.body, "actor_id=#{@admin.id}"
   end
 
   test "removed health and recording studio pages are not routable" do
@@ -87,6 +99,8 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_response :success
     refute_includes @response.body, 'href="/recording_studio_accessible/overview"'
     refute_includes @response.body, 'href="/recording_studio_accessible/email_template"'
+    refute_includes @response.body, "My access"
+    refute_includes @response.body, "actor_id=#{@viewer.id}"
   end
 
   test "non-admin users are redirected away from mounted addon docs and previews" do

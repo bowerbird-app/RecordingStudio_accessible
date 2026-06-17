@@ -51,13 +51,25 @@ end
 
 def ensure_access_recording(actor:, role:, parent_recording:, root_recording:)
   RecordingStudioAccessible::AccessCreationContext.allow do
-    access = RecordingStudio::Access.find_or_create_by!(actor: actor, role: role)
+    actor_type = actor.class.base_class.name
 
-    RecordingStudio::Recording.unscoped.find_or_create_by!(
-      root_recording_id: root_recording.id,
-      parent_recording_id: parent_recording.id,
-      recordable: access
-    )
+    existing_recording = RecordingStudio::Recording.unscoped
+                                                 .where(
+                                                   root_recording_id: root_recording.id,
+                                                   parent_recording_id: parent_recording.id,
+                                                   recordable_type: "RecordingStudio::Access"
+                                                 )
+                                                 .joins("INNER JOIN recording_studio_accesses ON recording_studio_accesses.id = recording_studio_recordings.recordable_id")
+                                                 .where(recording_studio_accesses: { actor_type: actor_type, actor_id: actor.id })
+                                                 .order(created_at: :asc, id: :asc)
+                                                 .first
+
+    return existing_recording if existing_recording&.recordable&.role == role.to_s
+
+    root_recording.record(RecordingStudio::Access, parent_recording: parent_recording) do |access|
+      access.actor = actor
+      access.role = role
+    end
   end
 end
 
@@ -89,8 +101,12 @@ def remove_invalid_demo_recordings(root_recording)
 end
 
 def sync_access_recordings(parent_recording:, root_recording:, grants:)
-  desired_keys = grants.map { |grant| [ grant.fetch(:actor).class.name, grant.fetch(:actor).id, grant.fetch(:role).to_s ] }
-  seen_keys = {}
+  desired_grants_by_actor = grants.each_with_object({}) do |grant, hash|
+    actor = grant.fetch(:actor)
+    actor_key = [ actor.class.base_class.name, actor.id ]
+    hash[actor_key] = { actor: actor, role: grant.fetch(:role).to_s }
+  end
+  seen_actor_keys = {}
 
   RecordingStudio::Recording.unscoped
                            .where(parent_recording_id: parent_recording.id,
@@ -100,18 +116,19 @@ def sync_access_recordings(parent_recording:, root_recording:, grants:)
                            .order(created_at: :asc, id: :asc)
                            .find_each do |recording|
     access = recording.recordable
-    key = access && [ access.actor_type, access.actor_id, access.role.to_s ]
-    keep = key && access.actor.present? && desired_keys.include?(key) && !seen_keys[key]
+    actor_key = access && [ access.actor_type, access.actor_id ]
+    desired_grant = actor_key && desired_grants_by_actor[actor_key]
+    keep = actor_key && desired_grant && access.actor.present? && access.role.to_s == desired_grant[:role] && !seen_actor_keys[actor_key]
 
     if keep
-      seen_keys[key] = true
+      seen_actor_keys[actor_key] = true
       next
     end
 
     delete_recording_and_orphaned_access(recording)
   end
 
-  grants.each do |grant|
+  desired_grants_by_actor.each_value do |grant|
     ensure_access_recording(actor: grant.fetch(:actor), role: grant.fetch(:role),
                             parent_recording: parent_recording, root_recording: root_recording)
   end

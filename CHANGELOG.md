@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-17
+
+### Added
+- Added configurable access avatar helper support through `RecordingStudioAccessible.configuration`
+- Added generator support for initializer defaults used by access avatar helper configuration
+
+### Changed
+- Refined access avatar helper rendering to behave consistently with and without FlatPack availability
+- Updated README guidance for configuring and using access avatar helpers
+
+### Fixed
+- Hardened avatar helper guard behavior to avoid runtime issues when FlatPack components are unavailable
+- Expanded regression coverage for avatar helper and configuration behavior
+- Hardened access grant validation to block duplicate active direct access recordings for the same actor under the same parent recording
+- `RecordingStudioAccessible.grant_access` now consistently deduplicates pre-existing duplicate direct grants within the same parent scope before updating role state
+
 ## [0.3.1] - 2026-06-05
 
 ### Changed
@@ -55,7 +71,8 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.1...v0.3.1
 [0.2.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.1.0...v0.2.0

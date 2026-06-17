@@ -20,6 +20,16 @@
 
   <% nav.right do %>
     <% if user_signed_in? %>
+      <% if recording_studio_accessible_my_access_visible? %>
+        <%= render FlatPack::Button::Component.new(
+          text: "My access",
+          style: :ghost,
+          size: :sm,
+          url: recording_studio_accessible_my_access_url,
+          class: "mr-2"
+        ) %>
+      <% end %>
+
       <%= render FlatPack::Avatar::Component.new(
         name: current_user.try(:name).presence || current_user.email,
         size: :sm

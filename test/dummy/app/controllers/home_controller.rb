@@ -11,6 +11,11 @@ class HomeController < ApplicationController
     @direct_access_counts_by_recording_id = build_direct_access_counts_by_recording_id
   end
 
+  def tree
+    @recording_tree_nodes = build_recording_tree_nodes
+    @recording_count = RecordingStudio::Recording.unscoped.count
+  end
+
   private
 
   def load_demo_users
@@ -150,5 +155,38 @@ class HomeController < ApplicationController
 
   def access_management_enabled_for(recording)
     RecordingStudioAccessible::Compatibility.access_parent_allowed?(recording)
+  end
+
+  def build_recording_tree_nodes
+    recordings = RecordingStudio::Recording.unscoped.includes(:recordable).reorder(created_at: :asc, id: :asc)
+    recordings_by_id = recordings.index_by(&:id)
+    recordings_by_parent_id = recordings.group_by(&:parent_recording_id)
+
+    orphaned_recordings = recordings.select do |recording|
+      recording.parent_recording_id.present? && recordings_by_id[recording.parent_recording_id].blank?
+    end
+
+    root_recordings = (Array(recordings_by_parent_id[nil]) + orphaned_recordings).uniq(&:id)
+
+    root_recordings.map do |recording|
+      build_recording_tree_node(recording: recording, recordings_by_parent_id: recordings_by_parent_id)
+    end
+  end
+
+  def build_recording_tree_node(recording:, recordings_by_parent_id:, ancestor_ids: [])
+    return { recording: recording, children: [] } if ancestor_ids.include?(recording.id)
+
+    children = Array(recordings_by_parent_id[recording.id]).map do |child_recording|
+      build_recording_tree_node(
+        recording: child_recording,
+        recordings_by_parent_id: recordings_by_parent_id,
+        ancestor_ids: ancestor_ids + [recording.id]
+      )
+    end
+
+    {
+      recording: recording,
+      children: children
+    }
   end
 end

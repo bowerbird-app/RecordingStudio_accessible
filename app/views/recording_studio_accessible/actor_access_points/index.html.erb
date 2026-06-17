@@ -1,0 +1,29 @@
+<%= render FlatPack::PageNav::Component.new(
+  class: "mb-4",
+  anchor_url: actor_access_points_anchor_url
+) %>
+
+<%= render FlatPack::PageTitle::Component.new(
+  title: "#{@actor_label} access points",
+  subtitle: "Workspace: #{@workspace.name}",
+  variant: :h1
+) %>
+
+<% if @access_rows.any? %>
+  <%= render FlatPack::Table::Component.new(data: @access_rows) do |table| %>
+    <% table.column(title: "Access point") { |row| row[:access_point] } %>
+    <% table.column(title: "Role") { |row| row[:role].to_s.humanize } %>
+    <% table.column(title: "Access recording") { |row| "##{row[:recording_id]}" } %>
+  <% end %>
+<% else %>
+  <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+    <% card.body(class: "grid gap-3 justify-items-start") do %>
+      <%= render FlatPack::SectionTitle::Component.new(
+        title: "No access recordings",
+        subtitle: "#{@actor_type_label} has no direct access recordings in this workspace",
+        anchor_link: true,
+        anchor_id: "no-access-recordings"
+      ) %>
+    <% end %>
+  <% end %>
+<% end %>

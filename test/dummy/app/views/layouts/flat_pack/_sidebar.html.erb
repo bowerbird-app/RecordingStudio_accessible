@@ -14,6 +14,11 @@
         href: "/",
         icon: :home
       ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Tree",
+        href: "/tree",
+        icon: :menu
+      ) %>
       <% if recording_studio_accessible_docs_visible? %>
         <%= render FlatPack::Sidebar::Item::Component.new(
           label: "Overview",
