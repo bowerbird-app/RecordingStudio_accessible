@@ -70,7 +70,7 @@ class RecordingAccessesHelperTest < Minitest::Test
       return "<span>badge</span>".html_safe if component_name == "FlatPack::Badge::Component"
 
       if component_name == "FlatPack::Button::Dropdown::Component"
-        block.call(component) if block
+        block&.call(component)
 
         items_html = component.menu.map do |item|
           text = ERB::Util.html_escape(item.instance_variable_get(:@text).to_s)
