@@ -45,7 +45,7 @@ module FlatPack
       end
 
       def list_classes(depth)
-        base_classes = ["space-y-2"]
+        base_classes = [ "space-y-2" ]
         base_classes << "ms-6 border-s border-slate-200 ps-4" if depth > 1
         classes(*base_classes)
       end

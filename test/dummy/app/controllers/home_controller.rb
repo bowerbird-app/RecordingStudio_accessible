@@ -180,7 +180,7 @@ class HomeController < ApplicationController
       build_recording_tree_node(
         recording: child_recording,
         recordings_by_parent_id: recordings_by_parent_id,
-        ancestor_ids: ancestor_ids + [recording.id]
+        ancestor_ids: ancestor_ids + [ recording.id ]
       )
     end
 
