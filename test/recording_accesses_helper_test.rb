@@ -22,10 +22,31 @@ module FlatPack
   end
 
   module Button
+    module Dropdown
+      class Component
+        attr_reader :menu
+
+        def initialize(**)
+          @menu = []
+        end
+
+        def menu_item(text:, href: nil, **system_arguments)
+          item = Object.new
+          item.instance_variable_set(:@text, text)
+          item.instance_variable_set(:@href, href)
+          item.instance_variable_set(:@system_arguments, system_arguments)
+          @menu << item
+          item
+        end
+      end
+    end
+
     class Component
-      def initialize(**system_arguments)
-        @text = system_arguments[:text]
-        @system_arguments = system_arguments
+      unless private_instance_methods(false).include?(:initialize)
+        def initialize(**system_arguments)
+          @text = system_arguments[:text]
+          @system_arguments = system_arguments
+        end
       end
     end
   end
@@ -35,17 +56,40 @@ class RecordingAccessesHelperTest < Minitest::Test
   class ViewContext
     include ActionView::Helpers::TagHelper
     include ActionView::Helpers::UrlHelper
+    include ActionView::Helpers::FormHelper
     include ActionView::Helpers::OutputSafetyHelper
     include RecordingStudioAccessible::Engine.routes.url_helpers
     include RecordingStudioAccessible::RecordingAccessesHelper
 
     attr_writer :params
 
-    def render(component)
+    def render(component, &block)
       component_name = component.class.name.to_s
 
       return "<span>chip</span>".html_safe if component_name == "FlatPack::Chip::Component"
       return "<span>badge</span>".html_safe if component_name == "FlatPack::Badge::Component"
+
+      if component_name == "FlatPack::Button::Dropdown::Component"
+        block&.call(component)
+
+        items_html = component.menu.map do |item|
+          text = ERB::Util.html_escape(item.instance_variable_get(:@text).to_s)
+          href = item.instance_variable_get(:@href)
+          system_arguments = item.instance_variable_get(:@system_arguments).to_h
+
+          if href.present?
+            escaped_href = ERB::Util.html_escape(href.to_s)
+            %(<a href="#{escaped_href}">#{text}</a>)
+          else
+            form = system_arguments[:form] || system_arguments["form"]
+            type = system_arguments[:type] || system_arguments["type"] || "button"
+            form_attribute = form ? %( form="#{ERB::Util.html_escape(form.to_s)}") : ""
+            %(<button type="#{ERB::Util.html_escape(type.to_s)}"#{form_attribute}>#{text}</button>)
+          end
+        end.join
+
+        return %(<div data-controller="flat-pack--button-dropdown">#{items_html}</div>).html_safe
+      end
 
       if component_name == "FlatPack::Button::Component" || component.instance_variable_defined?(:@text)
         text = component.instance_variable_get(:@text)
@@ -119,6 +163,24 @@ class RecordingAccessesHelperTest < Minitest::Test
     refute_includes html, "<span>badge</span>"
   end
 
+  def test_show_access_actor_type_column_returns_false_for_single_actor_type
+    visible = ViewContext.new.show_access_actor_type_column?(
+      [{ actor_type: "User" }, { actor_type: "User" }],
+      [{ actor_type: "User" }]
+    )
+
+    refute visible
+  end
+
+  def test_show_access_actor_type_column_returns_true_for_multiple_actor_types
+    visible = ViewContext.new.show_access_actor_type_column?(
+      [{ actor_type: "User" }],
+      [{ actor_type: "ServiceAccount" }]
+    )
+
+    assert visible
+  end
+
   def test_access_role_cell_renders_plain_text
     html = ViewContext.new.access_role_cell(direct_role: :admin)
 
@@ -127,7 +189,7 @@ class RecordingAccessesHelperTest < Minitest::Test
     refute_includes html, "<span>badge</span>"
   end
 
-  def test_access_actions_cell_renders_edit_link_and_delete_form_button
+  def test_access_actions_cell_renders_dropdown_with_edit_and_remove_access_menu_items
     recording = Struct.new(:id, :to_param).new(42, "42")
     view_context = ViewContext.new
     view_context.params = { back_url: "/users/7" }
@@ -139,17 +201,30 @@ class RecordingAccessesHelperTest < Minitest::Test
 
     html = view_context.access_actions_cell(recording, id: 7)
 
+    assert_includes html, 'data-controller="flat-pack--button-dropdown"'
     assert_includes html, ">Edit<"
     assert_includes html, expected_edit_href
-    assert_includes html, expected_delete_action
-    assert_includes html, %(<form class="inline" method="post" action="#{expected_delete_action}">)
+    assert_includes html, ">Remove access<"
+    assert_includes html, '<button type="submit" form="remove-access-form-7">Remove access</button>'
+    assert_includes html, %(<form id="remove-access-form-7" class="hidden" action="#{expected_delete_action}" accept-charset="UTF-8" method="post">)
     assert_includes html, 'name="_method" value="delete"'
-    assert_includes html, 'type="submit" value="Delete"'
-    assert_includes html,
-                    'class="cursor-pointer text-[var(--danger-text-color,var(--surface-content-color))] underline-offset-2 hover:underline"'
-    refute_includes html, ">Actions<"
     refute_includes html, "Edit access"
-    refute_includes html, "Delete access"
+    refute_includes html, ">Delete<"
+  end
+
+  def test_inherited_access_actions_cell_renders_manage_access_menu_item_for_source_recording
+    recording = Struct.new(:id, :to_param).new(42, "42")
+    source_recording = Struct.new(:id, :to_param).new(11, "11")
+    view_context = ViewContext.new
+    view_context.params = { back_url: "/users/7" }
+    expected_index_path = "/recordings/42/accesses?anchor_url=%2Fusers%2F7&back_url=%2Fusers%2F7"
+    expected_manage_path = "/recordings/11/accesses?anchor_url=%2Fusers%2F7&back_url=#{CGI.escape(expected_index_path)}"
+
+    html = view_context.inherited_access_actions_cell(recording, source_recording: source_recording)
+
+    assert_includes html, 'data-controller="flat-pack--button-dropdown"'
+    assert_includes html, ">Manage access<"
+    assert_includes html, CGI.escapeHTML(expected_manage_path)
   end
 
   def test_new_recording_access_path_with_back_url_escapes_nested_back_url_once

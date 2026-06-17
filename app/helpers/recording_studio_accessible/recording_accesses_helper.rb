@@ -36,6 +36,15 @@ module RecordingStudioAccessible
       ROLE_OPTIONS
     end
 
+    def show_access_actor_type_column?(direct_rows, inherited_rows = [])
+      actor_types = (Array(direct_rows) + Array(inherited_rows))
+                    .map { |row| row[:actor_type].to_s.strip }
+                    .reject(&:empty?)
+                    .uniq
+
+      actor_types.size > 1
+    end
+
     def access_person_cell(row)
       content_tag(:span, row[:actor_label], class: "font-medium text-[var(--surface-content-color)]")
     end
@@ -56,23 +65,63 @@ module RecordingStudioAccessible
       content_tag(:span, access_role_label(row[:source_role]), class: "text-sm text-[var(--surface-content-color)]")
     end
 
-    def access_actions_cell(recording, row)
-      content_tag(:div, class: "flex items-center gap-3 text-sm") do
-        safe_join([
-                    link_to(
-                      "Edit",
-                      edit_recording_access_path_with_back_url(recording, row[:id]),
-                      class: "text-[var(--link-color,var(--surface-content-color))] underline-offset-2 hover:underline"
-                    ),
-                    button_to(
-                      "Delete",
-                      recording_access_path_with_navigation(recording, row[:id]),
-                      method: :delete,
-                      form_class: "inline",
-                      class: "cursor-pointer text-[var(--danger-text-color,var(--surface-content-color))] underline-offset-2 hover:underline"
-                    )
-                  ])
+    def inherited_access_actions_cell(recording, row)
+      source_recording = row[:source_recording]
+      return content_tag(:span, "-", class: "text-sm text-[var(--surface-content-color)]") unless source_recording
+
+      render FlatPack::Button::Dropdown::Component.new(
+        text: "",
+        style: :ghost,
+        icon: "ellipsis-vertical",
+        show_chevron: false,
+        trigger_attributes: {
+          title: "Access point actions",
+          aria: { label: "Access point actions" }
+        }
+      ) do |dropdown|
+        dropdown.menu_item(
+          text: "Manage access",
+          href: recording_accesses_path(
+            source_recording,
+            **recording_access_navigation_params(back_url: recording_access_index_back_reference(recording))
+          )
+        )
       end
+    end
+
+    def access_actions_cell(recording, row)
+      delete_form_id = "remove-access-form-#{row[:id]}"
+
+      dropdown = render FlatPack::Button::Dropdown::Component.new(
+        text: "",
+        style: :ghost,
+        icon: "ellipsis-vertical",
+        show_chevron: false,
+        trigger_attributes: {
+          title: "Access actions",
+          aria: { label: "Access actions" }
+        }
+      ) do |dropdown|
+        dropdown.menu_item(
+          text: "Edit",
+          href: edit_recording_access_path_with_back_url(recording, row[:id])
+        )
+        dropdown.menu_item(
+          text: "Remove access",
+          destructive: true,
+          form: delete_form_id,
+          type: :submit
+        )
+      end
+
+      delete_form = form_with(
+        url: recording_access_path_with_navigation(recording, row[:id]),
+        method: :delete,
+        local: true,
+        html: { id: delete_form_id, class: "hidden" }
+      ) { "" }
+
+      safe_join([dropdown, delete_form])
     end
 
     private

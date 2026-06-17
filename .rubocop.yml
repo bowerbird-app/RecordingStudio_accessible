@@ -40,14 +40,22 @@ Metrics/ClassLength:
     - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/authorization_service.rb'
 
+Metrics/ModuleLength:
+  Exclude:
+    - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
+    - 'app/helpers/recording_studio_accessible/recording_accesses_helper.rb'
+
 Metrics/MethodLength:
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'app/controllers/recording_studio_accessible/actor_access_points_controller.rb'
     - 'app/controllers/recording_studio_accessible/home_controller.rb'
     - 'app/controllers/recording_studio_accessible/recording_accesses_controller.rb'
     - 'app/helpers/recording_studio_accessible/recording_accesses_helper.rb'
+    - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
     - 'app/mailers/recording_studio_accessible/access_granted_mailer.rb'
+    - 'lib/recording_studio_accessible/access_recording_creation_guard.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/services/**/*'
@@ -56,26 +64,35 @@ Metrics/AbcSize:
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'app/controllers/recording_studio_accessible/actor_access_points_controller.rb'
     - 'app/controllers/recording_studio_accessible/home_controller.rb'
     - 'app/controllers/recording_studio_accessible/recording_accesses_controller.rb'
+    - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
     - 'app/mailers/recording_studio_accessible/access_granted_mailer.rb'
+    - 'lib/recording_studio_accessible/access_recording_creation_guard.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/services/**/*'
 
 Metrics/CyclomaticComplexity:
   Exclude:
+    - 'test/**/*'
     - 'app/controllers/recording_studio_accessible/home_controller.rb'
+    - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
+    - 'lib/recording_studio_accessible/access_recording_creation_guard.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
 
 Metrics/PerceivedComplexity:
   Exclude:
+    - 'test/**/*'
     - 'app/controllers/recording_studio_accessible/home_controller.rb'
+    - 'lib/recording_studio_accessible/access_recording_creation_guard.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
 
 Metrics/ParameterLists:
   Exclude:
+    - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
 
 # Allow empty blocks in tests (common for stubs/mocks)

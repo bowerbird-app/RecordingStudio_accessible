@@ -222,6 +222,7 @@ module RecordingStudioAccessible
           actor_label: RecordingStudioAccessible.configuration.actor_label_for(actor),
           actor_type: actor.class.name.demodulize,
           source_label: recordable_label_for(access_recording.parent_recording&.recordable),
+          source_recording: access_recording.parent_recording,
           source_role: access_recording.recordable.role,
           effective_role: effective_role
         }

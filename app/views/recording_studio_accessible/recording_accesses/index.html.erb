@@ -18,10 +18,14 @@
   ) %>
 </div>
 
+<% show_actor_type_column = show_access_actor_type_column?(@direct_access_rows, @inherited_access_rows) %>
+
 <% if @direct_access_rows.any? %>
   <%= render FlatPack::Table::Component.new(data: @direct_access_rows) do |table| %>
     <% table.column(title: "Who") { |row| access_person_cell(row) } %>
-    <% table.column(title: "Type") { |row| access_actor_type_cell(row) } %>
+    <% if show_actor_type_column %>
+      <% table.column(title: "Type") { |row| access_actor_type_cell(row) } %>
+    <% end %>
     <% table.column(title: "Role") { |row| access_role_cell(row) } %>
     <% table.column(title: "Actions") { |row| access_actions_cell(@recording, row) } %>
   <% end %>
@@ -29,16 +33,10 @@
   <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
     <% card.body(class: "grid gap-3 justify-items-start") do %>
       <%= render FlatPack::SectionTitle::Component.new(
-        title: "No direct grants yet",
-        subtitle: "Use Add access to create the first direct access entry for this recording",
+        title: "No direct access yet",
+        subtitle: "Add someone to give them access.",
         anchor_link: true,
         anchor_id: "no-direct-grants"
-      ) %>
-      <%= render FlatPack::Button::Component.new(
-        text: "Add access",
-        style: :primary,
-        size: :sm,
-        url: new_recording_access_path_with_back_url(@recording)
       ) %>
     <% end %>
   <% end %>
@@ -55,9 +53,12 @@
 
     <%= render FlatPack::Table::Component.new(data: @inherited_access_rows) do |table| %>
       <% table.column(title: "Who") { |row| access_person_cell(row) } %>
-      <% table.column(title: "Type") { |row| access_actor_type_cell(row) } %>
+      <% if show_actor_type_column %>
+        <% table.column(title: "Type") { |row| access_actor_type_cell(row) } %>
+      <% end %>
       <% table.column(title: "Access point") { |row| inherited_access_source_cell(row) } %>
       <% table.column(title: "Role") { |row| inherited_access_source_role_cell(row) } %>
+      <% table.column(title: "Actions") { |row| inherited_access_actions_cell(@recording, row) } %>
     <% end %>
   </div>
 <% end %>

@@ -45,11 +45,18 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, "Direct access entries granted on this recording"
     assert_includes @response.body, "<table"
     assert_includes @response.body, "Who"
-    assert_includes @response.body, "Type"
+    refute_includes @response.body, ">Type<"
     assert_includes @response.body, "Role"
-    assert_includes @response.body, "User"
     assert_includes @response.body, "Edit"
-    assert_includes @response.body, %Q(action="#{recording_studio_accessible.recording_access_path(@root_recording, direct_access_recording_for(@editor).id)})
+    assert_includes @response.body, "flat-pack--button-dropdown"
+    assert_includes @response.body, 'aria-label="Access actions"'
+
+    editor_access_recording_id = direct_access_recording_for(@editor).id
+    expected_remove_action = recording_studio_accessible.recording_access_path(@root_recording, editor_access_recording_id)
+
+    assert_includes @response.body, %Q(form="remove-access-form-#{editor_access_recording_id}")
+    assert_includes @response.body, ">Remove access<"
+    assert_includes @response.body, %Q(<form id="remove-access-form-#{editor_access_recording_id}" class="hidden" action="#{expected_remove_action})
     assert_includes @response.body, %(name="_method" value="delete")
     refute_includes @response.body, "Main navigation"
     refute_includes @response.body, "Sign out"
@@ -66,6 +73,17 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "Client onboarding"
     assert_includes @response.body, "Other people with access"
+    assert_includes @response.body, "Actions"
+    assert_includes @response.body, 'aria-label="Access point actions"'
+    assert_includes @response.body, "Manage access"
+
+    expected_folder_index_path = recording_studio_accessible.recording_accesses_path(@folder_recording, back_url: "/", anchor_url: "/")
+    expected_manage_access_path = recording_studio_accessible.recording_accesses_path(
+      @root_recording,
+      back_url: expected_folder_index_path,
+      anchor_url: "/"
+    )
+    assert_includes @response.body, "href=\"#{CGI.escapeHTML(expected_manage_access_path)}\""
 
     post recording_accesses_path, params: {
       access: {
@@ -250,7 +268,14 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     sign_in @admin
 
     stale_duplicate = grant_access(@new_user, :view, @root_recording)
-    grant_access(@new_user, :edit, @root_recording)
+    source_user = create_user("legacy-duplicate-source@example.com")
+    second_recording = grant_access(source_user, :edit, @root_recording)
+    connection = ActiveRecord::Base.connection
+    connection.execute(<<~SQL.squish)
+      UPDATE recording_studio_accesses
+      SET actor_type = #{connection.quote(@new_user.class.base_class.name)}, actor_id = #{connection.quote(@new_user.id)}
+      WHERE id = #{connection.quote(second_recording.recordable_id)}
+    SQL
 
     assert_equal 2, direct_access_recordings_for(@new_user).count
 

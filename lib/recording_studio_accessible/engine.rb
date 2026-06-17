@@ -1,8 +1,16 @@
 # frozen_string_literal: true
 
+require_relative "../../app/helpers/recording_studio_accessible/avatars_helper"
+
 module RecordingStudioAccessible
   class Engine < ::Rails::Engine
     isolate_namespace RecordingStudioAccessible
+
+    initializer "recording_studio_accessible.view_helpers" do
+      ActiveSupport.on_load(:action_view) do
+        include RecordingStudioAccessible::AvatarsHelper
+      end
+    end
 
     config.to_prepare do
       RecordingStudioAccessible::Compatibility.register_access_capability!

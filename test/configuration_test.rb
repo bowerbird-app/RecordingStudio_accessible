@@ -31,6 +31,20 @@ class ConfigurationTest < Minitest::Test
     assert_equal false, @configuration.warn_on_core_conflict
   end
 
+  def test_merge_updates_callable_avatar_resolver
+    avatar_resolver = ->(actor) { { name: actor.to_s } }
+
+    @configuration.merge!(avatar_resolver: avatar_resolver)
+
+    assert_equal({ name: "custom_actor" }, @configuration.avatar_for(:custom_actor))
+  end
+
+  def test_merge_ignores_non_callable_avatar_resolver
+    @configuration.merge!(avatar_resolver: "ignored")
+
+    assert_nil @configuration.avatar_for(:custom_actor)
+  end
+
   def test_merge_ignores_unknown_keys
     @configuration.merge!(unknown_key: "ignored")
 
@@ -105,6 +119,65 @@ class ConfigurationTest < Minitest::Test
     assert_equal [%i[controller recording actor view manager]], notifier_calls
     assert @configuration.authorize_access_management?(controller: :controller, recording: :recording)
     assert @configuration.authorize_mounted_page?(controller: :controller, actor: :actor, recording: :recording)
+  end
+
+  def test_avatar_resolver_defaults_to_nil
+    assert_nil @configuration.avatar_for(:actor)
+  end
+
+  def test_avatar_resolver_normalizes_flatpack_avatar_data
+    @configuration.avatar_resolver = lambda do |actor|
+      {
+        name: "Label: #{actor}",
+        image_url: "https://example.com/avatar.png",
+        alt: "Avatar for #{actor}",
+        status: :online,
+        ignored: "ignored"
+      }
+    end
+
+    assert_equal(
+      {
+        name: "Label: custom_actor",
+        alt: "Avatar for custom_actor",
+        src: "https://example.com/avatar.png",
+        status: :online
+      },
+      @configuration.avatar_for(:custom_actor)
+    )
+  end
+
+  def test_avatar_resolver_drops_unsafe_urls
+    @configuration.avatar_resolver = lambda do |_actor|
+      {
+        name: "Unsafe",
+        image_url: "data:text/html,<script>alert(1)</script>",
+        href: "javascript:alert(1)"
+      }
+    end
+
+    assert_equal({ name: "Unsafe" }, @configuration.avatar_for(:custom_actor))
+  end
+
+  def test_avatar_resolver_keeps_safe_image_and_relative_href_urls
+    @configuration.avatar_resolver = lambda do |_actor|
+      {
+        name: "Safe",
+        image_url: "https://cdn.example.com/avatar.png",
+        href: "/people/1"
+      }
+    end
+
+    assert_equal(
+      { name: "Safe", src: "https://cdn.example.com/avatar.png", href: "/people/1" },
+      @configuration.avatar_for(:custom_actor)
+    )
+  end
+
+  def test_avatar_resolver_ignores_blank_hashes
+    @configuration.avatar_resolver = ->(_actor) { { name: "", image_url: nil } }
+
+    assert_nil @configuration.avatar_for(:custom_actor)
   end
 
   def test_missing_actor_resolution_normalizes_actor_return_values

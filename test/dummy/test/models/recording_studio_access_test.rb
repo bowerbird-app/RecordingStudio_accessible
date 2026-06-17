@@ -2,6 +2,7 @@ require_relative "../test_helper"
 
 class RecordingStudioAccessTest < ActiveSupport::TestCase
   ACCESS_GRANT_ERROR = "Create access grants through RecordingStudioAccessible.grant_access"
+  DUPLICATE_ACCESS_ERROR = "Only one direct access grant is allowed per actor under the same parent"
 
   test "direct access creation is blocked" do
     user = create_user("direct-access-blocked@example.com")
@@ -56,6 +57,22 @@ class RecordingStudioAccessTest < ActiveSupport::TestCase
 
         assert_includes error.record.errors.full_messages.join, ACCESS_GRANT_ERROR
       end
+    end
+  end
+
+  test "duplicate direct access recordings for the same actor and parent are blocked" do
+    user = create_user("duplicate-access-blocked@example.com")
+    workspace = Workspace.create!(name: "Duplicate Access Recording Blocked Workspace")
+    parent_recording = create_root_recording(workspace)
+
+    create_direct_access_recording(actor: user, role: :view, parent_recording: parent_recording)
+
+    assert_no_difference -> { RecordingStudio::Recording.unscoped.count } do
+      error = assert_raises(ActiveRecord::RecordInvalid) do
+        create_direct_access_recording(actor: user, role: :admin, parent_recording: parent_recording)
+      end
+
+      assert_includes error.record.errors.full_messages.join, DUPLICATE_ACCESS_ERROR
     end
   end
 
