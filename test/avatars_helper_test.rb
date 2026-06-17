@@ -85,7 +85,7 @@ class AvatarsHelperTest < Minitest::Test
         %(<span data-avatar-name="#{ERB::Util.html_escape(item[:name])}" data-avatar-src="#{ERB::Util.html_escape(item[:src])}"#{avatar_href}></span>)
       end.join
 
-        %(<avatar-group data-max="#{arguments[:max]}" data-size="#{arguments[:size]}" data-overlap="#{arguments[:overlap]}" data-show-tooltip="#{arguments[:show_tooltip]}" data-overflow-href="#{ERB::Util.html_escape(arguments[:overflow_href])}">#{item_markup}</avatar-group>).html_safe
+      %(<avatar-group data-max="#{arguments[:max]}" data-size="#{arguments[:size]}" data-overlap="#{arguments[:overlap]}" data-show-tooltip="#{arguments[:show_tooltip]}" data-overflow-href="#{ERB::Util.html_escape(arguments[:overflow_href])}">#{item_markup}</avatar-group>).html_safe
     end
 
     def render_button(component)

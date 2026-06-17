@@ -34,7 +34,7 @@ module RecordingStudioAccessible
       return head :not_found unless actor_id && actor_type
 
       actor_class = actor_type.safe_constantize
-      return head :not_found unless actor_class&.respond_to?(:find_by)
+      return head :not_found unless actor_class.respond_to?(:find_by)
 
       @actor = actor_class.find_by(id: actor_id)
       head :not_found unless @actor

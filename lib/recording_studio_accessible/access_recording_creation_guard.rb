@@ -4,7 +4,7 @@ require "active_support/concern"
 
 module RecordingStudioAccessible
   module AccessRecordingCreationGuard
-    DUPLICATE_ACCESS_RECORDING_ERROR = "Only one direct access grant is allowed per actor under the same parent".freeze
+    DUPLICATE_ACCESS_RECORDING_ERROR = "Only one direct access grant is allowed per actor under the same parent"
 
     extend ActiveSupport::Concern
 
@@ -38,14 +38,14 @@ module RecordingStudioAccessible
       duplicate_scope = duplicate_scope.where(trashed_at: nil) if has_attribute?(:trashed_at)
 
       duplicate_exists = duplicate_scope
-        .where(parent_recording_id: parent_recording_id, recordable_type: "RecordingStudio::Access")
-        .where.not(id: id)
-        .joins(<<~SQL.squish)
-          INNER JOIN recording_studio_accesses
-            ON recording_studio_accesses.id = #{self.class.table_name}.recordable_id
-        SQL
-        .where(recording_studio_accesses: { actor_type: actor_type, actor_id: actor_id })
-        .exists?
+                         .where(parent_recording_id: parent_recording_id, recordable_type: "RecordingStudio::Access")
+                         .where.not(id: id)
+                         .joins(<<~SQL.squish)
+                           INNER JOIN recording_studio_accesses
+                             ON recording_studio_accesses.id = #{self.class.table_name}.recordable_id
+                         SQL
+                         .where(recording_studio_accesses: { actor_type: actor_type, actor_id: actor_id })
+                         .exists?
 
       errors.add(:base, DUPLICATE_ACCESS_RECORDING_ERROR) if duplicate_exists
     end

@@ -2,13 +2,17 @@
 
 module RecordingStudioAccessible
   module AvatarsHelper
-    def recording_studio_accessible_avatars(recording, size: :sm, button_size: :sm, button_style: nil, max: 3, overlap: :sm, scope: :direct)
+    def recording_studio_accessible_avatars(recording, size: :sm, button_size: :sm, button_style: nil, max: 3,
+                                            overlap: :sm, scope: :direct)
       return "".html_safe unless recording_studio_accessible_flatpack_available?
       return "".html_safe unless recording_studio_accessible_manage_access?(recording)
 
       avatar_items = recording_studio_accessible_avatar_items(recording, scope: scope)
 
-      return recording_studio_accessible_access_button(recording, button_size: button_size, button_style: button_style) if avatar_items.blank?
+      if avatar_items.blank?
+        return recording_studio_accessible_access_button(recording, button_size: button_size,
+                                                                    button_style: button_style)
+      end
 
       recording_studio_accessible_avatar_actions(
         recording,
@@ -49,13 +53,15 @@ module RecordingStudioAccessible
     end
 
     def recording_studio_accessible_access_recordings(recording, scope: :direct)
-      return RecordingStudioAccessible.access_recordings_for(recording) unless recording_studio_accessible_all_access_scope?(scope)
+      unless recording_studio_accessible_all_access_scope?(scope)
+        return RecordingStudioAccessible.access_recordings_for(recording)
+      end
 
       recording_studio_accessible_all_access_recordings(recording)
     end
 
     def recording_studio_accessible_all_access_scope?(scope)
-      ["all", "effective"].include?(scope.to_s)
+      %w[all effective].include?(scope.to_s)
     end
 
     def recording_studio_accessible_all_access_recordings(recording)
@@ -71,7 +77,10 @@ module RecordingStudioAccessible
 
       recordings.each_with_object([]) do |current_scope_recording, access_recordings|
         direct_access_recordings = RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(current_scope_recording)
-        direct_access_recordings = direct_access_recordings.order(created_at: :asc, id: :asc) if direct_access_recordings.respond_to?(:order)
+        if direct_access_recordings.respond_to?(:order)
+          direct_access_recordings = direct_access_recordings.order(created_at: :asc,
+                                                                    id: :asc)
+        end
 
         direct_access_recordings.each do |access_recording|
           actor = access_recording.recordable&.actor
@@ -131,22 +140,25 @@ module RecordingStudioAccessible
       end
     end
 
-    def recording_studio_accessible_button(recording, text: nil, button_size:, button_style:, **options)
+    def recording_studio_accessible_button(recording, button_size:, button_style:, text: nil, **)
       render FlatPack::Button::Component.new(
         text: text,
         style: button_style || :default,
         size: button_size,
         url: recording_studio_accessible_access_management_path(recording),
-        **options
+        **
       )
     end
 
-    def recording_studio_accessible_avatar_actions(recording, avatar_items, size:, max:, overlap:, button_size:, button_style:)
+    def recording_studio_accessible_avatar_actions(recording, avatar_items, size:, max:, overlap:, button_size:,
+                                                   button_style:)
       content_tag(:div, class: "flex items-center justify-between gap-2") do
         safe_join(
           [
-            render(recording_studio_accessible_avatar_group(recording, avatar_items, size: size, max: max, overlap: overlap)),
-            recording_studio_accessible_manage_access_button(recording, button_size: button_size, button_style: button_style)
+            render(recording_studio_accessible_avatar_group(recording, avatar_items, size: size, max: max,
+                                                                                     overlap: overlap)),
+            recording_studio_accessible_manage_access_button(recording, button_size: button_size,
+                                                                        button_style: button_style)
           ]
         )
       end
