@@ -13,6 +13,7 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
 
   teardown do
     RecordingStudioAccessible.configuration.access_actor_types = @original_access_actor_types
+    Current.actor = nil if defined?(Current) && Current.respond_to?(:actor=)
   end
 
   test "service creates access grants internally" do
@@ -48,6 +49,61 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal @user, result.value.recordable.actor
     assert_equal "edit", result.value.recordable.role
     assert_equal @recording.id, result.value.parent_recording_id
+  end
+
+  test "service uses current actor fallback for authorization and audit attribution" do
+    Current.actor = @manager_actor
+
+    result = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: @user,
+      role: :edit
+    )
+
+    assert result.success?
+    assert_equal @manager_actor.class.base_class.name, latest_event_for(result.value).actor_type
+    assert_equal @manager_actor.id, latest_event_for(result.value).actor_id
+  end
+
+  test "update service uses current actor fallback for authorization and audit attribution" do
+    access_recording = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: @user,
+      role: :view,
+      manager_actor: @manager_actor
+    ).value
+    Current.actor = @manager_actor
+
+    result = RecordingStudioAccessible::Services::UpdateRecordingAccess.call(
+      recording: @recording,
+      access_recording: access_recording,
+      role: :admin
+    )
+
+    assert result.success?
+    assert_equal @manager_actor.class.base_class.name, latest_event_for(result.value).actor_type
+    assert_equal @manager_actor.id, latest_event_for(result.value).actor_id
+  end
+
+  test "revoke service uses current actor fallback for authorization and audit attribution" do
+    access_recording = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: @user,
+      role: :view,
+      manager_actor: @manager_actor
+    ).value
+    access_recording_id = access_recording.id
+    Current.actor = @manager_actor
+
+    result = RecordingStudioAccessible::Services::RevokeRecordingAccess.call(
+      recording: @recording,
+      access_recording: access_recording
+    )
+
+    assert result.success?
+    deleted_event = RecordingStudio::Event.where(recording_id: access_recording_id, action: "deleted").first
+    assert_equal @manager_actor.class.base_class.name, deleted_event.actor_type
+    assert_equal @manager_actor.id, deleted_event.actor_id
   end
 
   test "service creates access grants under opted in folder recordings" do
@@ -236,5 +292,9 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
 
   def direct_access_recordings_for(user)
     RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(recording: @recording, actor: user)
+  end
+
+  def latest_event_for(recording)
+    RecordingStudio::Event.where(recording_id: recording.id).order(created_at: :desc, id: :desc).first
   end
 end

@@ -372,6 +372,8 @@ module RecordingStudioAccessible
       }
 
       callable.call(**filtered_keyword_arguments(callable, kwargs))
+    rescue StandardError
+      false
     end
 
     def call_mounted_page_authorizer(controller:, actor:, recording:)
@@ -385,6 +387,8 @@ module RecordingStudioAccessible
       }
 
       callable.call(**filtered_keyword_arguments(callable, kwargs))
+    rescue StandardError
+      false
     end
 
     def normalize_access_actor_type(type)

@@ -365,4 +365,16 @@ class ConfigurationTest < Minitest::Test
 
     assert_equal "http://example.com/", access_url
   end
+
+  def test_access_management_authorizer_exceptions_fail_closed
+    @configuration.access_management_authorizer = ->(**) { raise "boom" }
+
+    refute @configuration.authorize_access_management?(recording: :recording, actor: :actor)
+  end
+
+  def test_mounted_page_authorizer_exceptions_fail_closed
+    @configuration.mounted_page_authorizer = ->(**) { raise "boom" }
+
+    refute @configuration.authorize_mounted_page?(controller: :controller, actor: :actor, recording: :recording)
+  end
 end

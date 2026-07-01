@@ -141,6 +141,23 @@ class ThroughAuthorizationTest < ActiveSupport::TestCase
     )
   end
 
+  test "nil role authorization inputs fail closed" do
+    create_direct_access_recording(actor: @through_workspace, role: :edit, parent_recording: @target_recording)
+    allow_user_through_workspace!
+
+    refute RecordingStudioAccessible.authorized?(
+      actor: @through_workspace,
+      recording: @target_recording,
+      role: nil
+    )
+    refute RecordingStudioAccessible.authorized_through?(
+      actor: @user,
+      through: @through_workspace,
+      recording: @target_recording,
+      role: nil
+    )
+  end
+
   test "access recordings for actor remains exact" do
     workspace_access = create_direct_access_recording(
       actor: @through_workspace,
