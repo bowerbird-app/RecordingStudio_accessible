@@ -51,8 +51,7 @@ module RecordingStudioAccessible
                   :access_management_authorizer,
                   :mounted_page_authorizer,
                   :authorize_actor_through
-    attr_reader :hooks
-    attr_reader :access_actor_types
+    attr_reader :hooks, :access_actor_types
 
     def initialize
       @warn_on_core_conflict = true
@@ -68,6 +67,7 @@ module RecordingStudioAccessible
       @access_management_authorizer = method(:default_access_management_authorizer)
       @mounted_page_authorizer = method(:default_mounted_page_authorizer)
       @access_actor_types = nil
+      @warned_blank_access_actor_types = false
       @authorize_actor_through = method(:default_authorize_actor_through)
       @hooks = Hooks.new
     end
@@ -137,10 +137,14 @@ module RecordingStudioAccessible
 
     def access_actor_types=(types)
       @access_actor_types = Array(types).filter_map { |type| normalize_access_actor_type(type) }.presence
+      @warned_blank_access_actor_types = false
     end
 
     def allowed_access_actor_type?(actor)
-      return true if access_actor_types.blank?
+      if access_actor_types.blank?
+        warn_if_access_actor_types_blank!
+        return true
+      end
       return false unless actor
 
       access_actor_types.include?(RecordingStudioAccessible::ActorType.for(actor))
@@ -389,6 +393,21 @@ module RecordingStudioAccessible
       callable.call(**filtered_keyword_arguments(callable, kwargs))
     rescue StandardError
       false
+    end
+
+    def warn_if_access_actor_types_blank!
+      return if @warned_blank_access_actor_types
+
+      message = "[RecordingStudioAccessible] access_actor_types is not configured; access grants may be created " \
+                "for any actor type. Set config.access_actor_types to an explicit allowlist for production apps."
+
+      if defined?(Rails) && Rails.respond_to?(:logger) && Rails.logger
+        Rails.logger.warn(message)
+      else
+        warn(message)
+      end
+
+      @warned_blank_access_actor_types = true
     end
 
     def normalize_access_actor_type(type)

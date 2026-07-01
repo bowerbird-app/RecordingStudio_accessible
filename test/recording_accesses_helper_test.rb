@@ -250,4 +250,45 @@ class RecordingAccessesHelperTest < Minitest::Test
 
     assert_equal "/recordings", view_context.recording_access_index_back_url
   end
+
+  def test_recording_access_index_back_url_rejects_external_urls
+    view_context = ViewContext.new
+    view_context.params = { back_url: "https://evil.example/access" }
+
+    assert_equal "/", view_context.recording_access_index_back_url
+  end
+
+  def test_recording_access_anchor_url_rejects_unsafe_urls_and_falls_back_to_local_back_url
+    view_context = ViewContext.new
+    view_context.params = { back_url: "/users/7", anchor_url: "//evil.example/access" }
+
+    assert_equal "/users/7", view_context.recording_access_anchor_url
+
+    view_context.params = { back_url: "/users/7", anchor_url: "javascript:alert(1)" }
+
+    assert_equal "/users/7", view_context.recording_access_anchor_url
+  end
+
+  def test_recording_access_navigation_paths_do_not_preserve_unsafe_back_urls
+    recording = Struct.new(:id, :to_param).new(42, "42")
+    view_context = ViewContext.new
+    view_context.params = { back_url: "https://evil.example/access", anchor_url: "/#workspace-access" }
+
+    path = view_context.new_recording_access_path_with_back_url(recording)
+
+    assert_includes path, "anchor_url=%2F%23workspace-access"
+    assert_includes path, "back_url="
+    refute_includes path, "evil.example"
+  end
+
+  def test_recording_access_anchor_url_rejects_backslashes_and_control_characters
+    view_context = ViewContext.new
+    view_context.params = { back_url: "/users/7", anchor_url: "/safe\\evil" }
+
+    assert_equal "/users/7", view_context.recording_access_anchor_url
+
+    view_context.params = { back_url: "/users/7", anchor_url: "/safe\npath" }
+
+    assert_equal "/users/7", view_context.recording_access_anchor_url
+  end
 end

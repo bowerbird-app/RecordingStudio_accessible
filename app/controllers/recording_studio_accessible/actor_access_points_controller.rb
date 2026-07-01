@@ -2,9 +2,10 @@
 
 module RecordingStudioAccessible
   class ActorAccessPointsController < ApplicationController
+    include RecordingStudioAccessible::NavigationUrlSafety
+
     ACTOR_TYPE_PATTERN = /\A[A-Z][A-Za-z0-9_:]{0,120}\z/
     UUID_PATTERN = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
-
     layout "recording_studio_accessible/blank"
 
     before_action :load_workspace!
@@ -22,7 +23,7 @@ module RecordingStudioAccessible
     def load_workspace!
       head :not_found and return unless defined?(::Workspace)
 
-      return head :not_found unless valid_id_param?(params[:workspace_id])
+      return head :not_found unless params[:workspace_id].to_s.match?(UUID_PATTERN)
 
       @workspace = ::Workspace.find_by(id: params[:workspace_id])
       head :not_found unless @workspace
@@ -39,12 +40,11 @@ module RecordingStudioAccessible
       actor_id = params[:actor_id].presence
       actor_type = params[:actor_type].presence
       return head :not_found unless actor_id && actor_type
-      return head :not_found unless valid_id_param?(actor_id)
-      return head :not_found unless valid_actor_type_param?(actor_type)
+      return head :not_found unless actor_id.to_s.match?(UUID_PATTERN)
 
       @actor_id = actor_id
       @resolved_actor_type = permitted_actor_type_for(actor_type)
-      return head :not_found unless @resolved_actor_type
+      head :not_found unless @resolved_actor_type
     end
 
     def load_access_rows
@@ -67,7 +67,6 @@ module RecordingStudioAccessible
     def workspace_access_recordings
       scope = RecordingStudio::Recording.unscoped
       scope = scope.where(trashed_at: nil) if RecordingStudio::Recording.column_names.include?("trashed_at")
-
       scope
         .where(root_recording_id: @workspace_root_recording.id, recordable_type: "RecordingStudio::Access")
         .joins(RecordingStudioAccessible::DirectAccessQuery::ACCESS_JOIN_SQL)
@@ -87,36 +86,25 @@ module RecordingStudioAccessible
       head :not_found
     end
 
-    def current_actor
-      RecordingStudioAccessible.configuration.current_actor_for(controller: self)
-    end
+    def current_actor = RecordingStudioAccessible.configuration.current_actor_for(controller: self)
 
     def unauthorized_mounted_page_redirect_path
-      return main_app.root_path if respond_to?(:main_app) && main_app.respond_to?(:root_path)
-
-      "/"
+      (main_app.root_path if respond_to?(:main_app) && main_app.respond_to?(:root_path)) || "/"
     end
 
     def actor_access_points_anchor_url
-      params[:anchor_url].presence || params[:back_url].presence || unauthorized_mounted_page_redirect_path
+      back_url = safe_local_navigation_url(params[:back_url], fallback: unauthorized_mounted_page_redirect_path)
+
+      safe_local_navigation_url(params[:anchor_url], fallback: back_url)
     end
 
     def permitted_actor_type_for(actor_type)
+      return unless valid_actor_type_param?(actor_type)
+
       configured_types = RecordingStudioAccessible.configuration.access_actor_types
-      return actor_type.to_s if configured_types&.include?(actor_type.to_s)
-      return if configured_types.present?
+      return unless configured_types.present?
 
-      actor_class = actor_type.safe_constantize
-      return unless actor_class.respond_to?(:base_class)
-
-      base_class = actor_class.base_class
-      return base_class.polymorphic_name if base_class.respond_to?(:polymorphic_name)
-
-      base_class.name
-    end
-
-    def valid_id_param?(id)
-      id.to_s.match?(UUID_PATTERN)
+      actor_type.to_s if configured_types&.include?(actor_type.to_s)
     end
 
     def valid_actor_type_param?(actor_type)

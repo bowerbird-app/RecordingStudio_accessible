@@ -59,5 +59,23 @@
         <% end %>
       <% end %>
     <% end %>
+
+    <div class="mt-6">
+      <%= render FlatPack::SectionTitle::Component.new(
+        title: "Access through",
+        subtitle: "Demo of one actor using another actor's access grant. The button below lists message groups the current user can see by acting through the Accessible Demo Workspace.",
+        anchor_link: true,
+        anchor_id: "access-through"
+      ) %>
+
+      <div class="mt-4">
+        <%= render FlatPack::Button::Component.new(
+          text: "Message groups",
+          style: :default,
+          size: :md,
+          url: message_groups_path
+        ) %>
+      </div>
+    </div>
   </div>
 </div>

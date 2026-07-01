@@ -101,7 +101,9 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     )
 
     assert result.success?
-    deleted_event = RecordingStudio::Event.where(recording_id: access_recording_id, action: "deleted").first
+    deleted_event = RecordingStudio::Event.where(recording_id: @recording.id, action: "deleted")
+                                          .where("metadata ->> 'access_recording_id' = ?", access_recording_id)
+                                          .first
     assert_equal @manager_actor.class.base_class.name, deleted_event.actor_type
     assert_equal @manager_actor.id, deleted_event.actor_id
   end
@@ -125,7 +127,7 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
   test "service grants access to a configured workspace actor" do
     message_group = Workspace.create!(name: "Shared Message Group")
     message_group_recording = create_root_recording(message_group)
-    RecordingStudioAccessible.configuration.access_actor_types = ["User", "Workspace"]
+    RecordingStudioAccessible.configuration.access_actor_types = [ "User", "Workspace" ]
 
     create_legacy_direct_access_recording(@manager_actor, :admin, message_group_recording)
 
@@ -142,7 +144,7 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
   end
 
   test "service rejects unconfigured actor types when allowlist is set" do
-    RecordingStudioAccessible.configuration.access_actor_types = ["User"]
+    RecordingStudioAccessible.configuration.access_actor_types = [ "User" ]
 
     assert_no_difference -> { RecordingStudio::Access.count } do
       assert_no_difference -> { RecordingStudio::Recording.unscoped.count } do

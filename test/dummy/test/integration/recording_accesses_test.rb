@@ -119,6 +119,21 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, "href=\"/users/#{@admin.id}\""
   end
 
+  test "recording access page rejects unsafe navigation params" do
+    sign_in @admin
+
+    get recording_accesses_path, params: {
+      back_url: "https://evil.example/users/#{@admin.id}",
+      anchor_url: "javascript:alert(1)"
+    }
+
+    assert_response :success
+    assert_includes @response.body, 'aria-label="Close"'
+    assert_includes @response.body, 'href="/"'
+    refute_includes @response.body, "evil.example"
+    refute_includes @response.body, "javascript:alert"
+  end
+
   test "recording access page add access links preserve stable back_url and anchor_url" do
     sign_in @admin
 
@@ -340,6 +355,34 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_includes @response.body, @admin.email
     assert_nil User.find_by(email: "needs-resolution@example.com")
+  end
+
+  test "missing actor resolution rejects external redirect locations" do
+    sign_in @admin
+
+    with_missing_actor_handler(lambda do |email:, **|
+        {
+          status: :requires_resolution,
+          location: "https://evil.example/resolve?email=#{email}",
+          alert: "Resolve #{email} before granting access"
+        }
+      end) do
+      post root_recording_accesses_path, params: {
+        access: {
+          email: "external-resolution@example.com",
+          role: "view"
+        }
+      }
+    end
+
+    assert_response :redirect
+    assert_redirected_to recording_studio_accessible.recording_accesses_path(
+      @root_recording,
+      back_url: "/",
+      anchor_url: "/"
+    )
+    refute_includes @response.location, "evil.example"
+    assert_nil User.find_by(email: "external-resolution@example.com")
   end
 
   private

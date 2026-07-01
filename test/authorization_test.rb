@@ -60,35 +60,27 @@ class AuthorizationTest < Minitest::Test
   end
 
   def test_module_level_authorization_api_delegates_to_authorization_service
+    execute_module_level_authorization_api_delegation
+    verify_module_level_authorization_api_delegation_stubs
+  end
+
+  private
+
+  def execute_module_level_authorization_api_delegation
     RecordingStudioAccessible::Authorization.stub(:authorization_service, AuthorizationServiceStub) do
       assert_equal :edit, RecordingStudioAccessible.role_for(actor: :actor, recording: :recording)
       assert RecordingStudioAccessible.authorized?(actor: :actor, recording: :recording, role: :admin)
-      assert_equal :admin, RecordingStudioAccessible.role_through(
-        actor: :actor,
-        through: :through,
-        recording: :recording,
-        controller: :controller
-      )
-      assert RecordingStudioAccessible.authorized_through?(
-        actor: :actor,
-        through: :through,
-        recording: :recording,
-        role: :admin,
-        controller: :controller
-      )
+      assert_equal :admin, RecordingStudioAccessible.role_through(actor: :actor, through: :through, recording: :recording, controller: :controller)
+      assert RecordingStudioAccessible.authorized_through?(actor: :actor, through: :through, recording: :recording, role: :admin, controller: :controller)
       assert RecordingStudioAccessible::Authorization.allowed?(actor: :actor, recording: :recording, role: :view)
-      assert RecordingStudioAccessible::Authorization.allowed_through?(
-        actor: :actor,
-        through: :through,
-        recording: :recording,
-        role: :view,
-        controller: :controller
-      )
+      assert RecordingStudioAccessible::Authorization.allowed_through?(actor: :actor, through: :through, recording: :recording, role: :view, controller: :controller)
       assert_equal [:recording], RecordingStudioAccessible.root_recordings_for(actor: :actor, minimum_role: :view)
       assert_equal [123], RecordingStudioAccessible.root_recording_ids_for(actor: :actor, minimum_role: :edit)
       assert_equal [:grant], RecordingStudioAccessible.access_recordings_for(:recording)
     end
+  end
 
+  def verify_module_level_authorization_api_delegation_stubs
     assert_equal({ actor: :actor, recording: :recording }, AuthorizationServiceStub.role_call)
     assert_equal({ actor: :actor, recording: :recording, role: :view }, AuthorizationServiceStub.allowed_call)
     assert_equal(

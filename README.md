@@ -8,7 +8,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 
 - child-only `RecordingStudio::Access` recordables for direct grants under opted-in recordings
 - `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, and `authorized_through?` for role lookup and authorization checks
-- a mounted engine page for adding and removing direct access on a recording
+- a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
 - install and migration generators for host apps
 - a dummy Rails app that demonstrates the addon mounted separately from RecordingStudio
 
@@ -39,10 +39,21 @@ bundle install
 bin/rails generate recording_studio:install
 bin/rails generate recording_studio:migrations
 bin/rails generate recording_studio_accessible:install
-bin/rails generate recording_studio_accessible:access_management --link-helper
 bin/rails generate recording_studio_accessible:migrations
 bin/rails db:migrate
 ```
+
+If you want the gem-provided mounted UI for managing direct access, then also run:
+
+```bash
+bin/rails generate recording_studio_accessible:access_management --link-helper
+```
+
+`recording_studio_accessible:install` is the base setup step. It copies the
+initializer and share-email templates, and it can optionally add
+`config/recording_studio_accessible.yml` for simple environment-specific
+settings such as `warn_on_core_conflict`. Proc-based hooks still belong in the
+initializer.
 
 ## Compatibility with RecordingStudio 3.0
 
@@ -222,6 +233,11 @@ set, `RecordingStudioAccessible.grant_access` rejects new grants for actor
 types outside the configured list. Existing access records remain valid for
 compatibility.
 
+The mounted actor access-point page also depends on this allowlist. That route
+fails closed unless `config.access_actor_types` is set to an explicit list of
+permitted polymorphic actor types, so request params cannot probe arbitrary
+application constants.
+
 For example, a host app may grant access to a workspace:
 
 ```ruby
@@ -246,13 +262,25 @@ given parent recording.
 
 ### Managing access through the mounted engine
 
-If you mount `RecordingStudioAccessible::Engine`, the gem exposes a recording-scoped access management page at:
+If you mount `RecordingStudioAccessible::Engine`, the gem exposes recording-
+scoped access management pages at:
 
 ```text
 /recording_studio_accessible/recordings/:recording_id/accesses
 ```
 
-The page uses a blank layout, renders only FlatPack components, and lets authorized users add, update, and remove direct grants for the target recording.
+Those pages use a blank layout, render FlatPack-based UI, and let authorized
+users add, update, and remove direct grants for the target recording.
+
+The mounted engine also exposes workspace-scoped actor access-point pages at:
+
+```text
+/recording_studio_accessible/workspaces/:workspace_id/actor_access_points?actor_type=User&actor_id=...
+```
+
+That page shows the current actor's own access points, or another actor's
+access points when the viewer is allowed to manage access for the workspace
+root recording.
 
 The mounted addon overview, docs, and email-preview pages under `/recording_studio_accessible` are authorized separately from the recording-scoped access-management page. By default they are fail-closed unless the current actor has admin access to the resolved demo root recording. If your host app wants a different policy, override `config.mounted_page_authorizer`.
 
@@ -265,8 +293,8 @@ bin/rails generate recording_studio_accessible:access_management --link-helper
 That generator:
 
 - mounts `RecordingStudioAccessible::Engine` if it is not already mounted
-- creates `config/initializers/recording_studio_accessible.rb` if it does not already exist
-- copies overrideable share-email templates to `app/views/recording_studio_accessible/access_granted_mailer/`
+- creates `config/initializers/recording_studio_accessible.rb` only when it is still missing
+- copies overrideable share-email templates to `app/views/recording_studio_accessible/access_granted_mailer/` only when they are still missing
 - optionally creates a host helper with `recording_access_management_path` and `recording_access_management_link`
 
 By default, the new-access form accepts an email address and resolves it against `User` records. If no existing user matches, Recording Studio Accessible keeps the current "not found" error until your host app decides whether to provision an account or redirect into a host-specific resolution flow. After a successful grant, the default notifier sends `RecordingStudioAccessible::AccessGrantedMailer` using the copied templates above. You can override the lookup step, missing-user behavior, share-email subject, destination URL, or the notifier itself:
@@ -467,6 +495,7 @@ Then sign in with:
 Useful routes:
 
 - `/` - dummy app demo with seeded folders, pages, cards, and access results
+- `/message_groups` - dummy app demo of message groups reached through a workspace actor
 - `/recording_studio_accessible` - addon status/demo page
 - `/recording_studio_accessible/recordings/:recording_id/accesses` - gem-provided page for managing direct recording access
 

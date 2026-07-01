@@ -166,7 +166,7 @@ class ThroughAuthorizationTest < ActiveSupport::TestCase
     )
 
     assert_empty RecordingStudioAccessible.access_recordings_for_actor(recording: @target_recording, actor: @user)
-    assert_equal [workspace_access.id],
+    assert_equal [ workspace_access.id ],
                  RecordingStudioAccessible.access_recordings_for_actor(
                    recording: @target_recording,
                    actor: @through_workspace

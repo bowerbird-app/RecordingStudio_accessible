@@ -3,6 +3,23 @@
 require "securerandom"
 
 RecordingStudioAccessible.configure do |config|
+  config.access_actor_types = [ "User" ]
+
+  config.authorize_actor_through = lambda do |actor:, through:, **|
+    case through
+    when Workspace
+      workspace_root = RecordingStudio.root_recording_for(through)
+
+      RecordingStudioAccessible.authorized?(
+        actor: actor,
+        recording: workspace_root,
+        role: :view
+      )
+    else
+      actor == through
+    end
+  end
+
   config.avatar_resolver = lambda do |access_holder|
     next unless access_holder.is_a?(User)
 

@@ -6,7 +6,10 @@ RecordingStudioAccessible.configure do |config|
   config.warn_on_core_conflict = true
 
   # Optional: restrict which actor types may receive access grants.
-  # Leave blank/nil to preserve existing behaviour.
+  # Leave blank/nil to preserve existing grant behavior; the gem will warn when
+  # grants are evaluated without an explicit allowlist.
+  # Actor access-point lookup requires this allowlist so request params cannot
+  # resolve arbitrary application constants.
   # config.access_actor_types = ["User", "Workspace", "Company", "Team"]
 
   # Optional: allow one actor to use another actor's access grants.

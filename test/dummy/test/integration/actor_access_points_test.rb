@@ -67,8 +67,23 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, 'href="/#workspace-access"'
   end
 
+  test "actor access points page rejects unsafe anchor_url" do
+    sign_in @admin
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: @actor.id,
+      back_url: "/users/#{@actor.id}",
+      anchor_url: "//evil.example/access"
+    }
+
+    assert_response :success
+    assert_includes @response.body, "href=\"/users/#{@actor.id}\""
+    refute_includes @response.body, "evil.example"
+  end
+
   test "configured access actor types constrain actor access point lookup" do
-    RecordingStudioAccessible.configuration.access_actor_types = ["Workspace"]
+    RecordingStudioAccessible.configuration.access_actor_types = [ "Workspace" ]
     sign_in @admin
 
     get actor_access_points_path, params: {
@@ -77,6 +92,19 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :not_found
+  end
+
+  test "blank access actor types fail closed for actor access point lookup" do
+    RecordingStudioAccessible.configuration.access_actor_types = []
+    sign_in @admin
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: @actor.id
+    }
+
+    assert_response :not_found
+    refute_includes @response.body, @actor.email
   end
 
   test "actor access point lookup does not reveal actors without workspace access" do
@@ -146,7 +174,7 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
   end
 
   test "configured access actor types reject unknown constants before lookup" do
-    RecordingStudioAccessible.configuration.access_actor_types = ["User"]
+    RecordingStudioAccessible.configuration.access_actor_types = [ "User" ]
     sign_in @admin
 
     get actor_access_points_path, params: {

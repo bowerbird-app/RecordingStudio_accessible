@@ -44,6 +44,17 @@ def upsert_card(page:, title:, body:, position:)
   card
 end
 
+def upsert_message_root(name:)
+  MessageRoot.find_or_create_by!(name: name)
+end
+
+def upsert_message_group(message_root:, name:, summary:, position:)
+  message_group = message_root.message_groups.find_or_initialize_by(name: name)
+  message_group.assign_attributes(summary: summary, position: position)
+  message_group.save! if message_group.changed?
+  message_group
+end
+
 def ensure_root_recording(recordable)
   RecordingStudio.root_recording_for(recordable)
 end
@@ -211,6 +222,8 @@ users.merge!(additional_users)
 
 workspace = Workspace.find_or_create_by!(name: "Accessible Demo Workspace")
 root_recording = ensure_root_recording(workspace)
+message_root = upsert_message_root(name: "Messages Root")
+message_root_recording = ensure_root_recording(message_root)
 
 remove_invalid_demo_recordings(root_recording)
 
@@ -246,6 +259,13 @@ ops_runbook = upsert_page(
   folder: operations,
   title: "Ops runbook",
   summary: "Read-only operational guidance for the support team.",
+  position: 0
+)
+
+client_launch_thread = upsert_message_group(
+  message_root: message_root,
+  name: "Client launch thread",
+  summary: "A message group visible through workspace access.",
   position: 0
 )
 
@@ -299,6 +319,12 @@ ops_runbook_recording = ensure_child_recording(
   root_recording: root_recording
 )
 
+client_launch_thread_recording = ensure_child_recording(
+  recordable: client_launch_thread,
+  parent_recording: message_root_recording,
+  root_recording: message_root_recording
+)
+
 sync_access_recordings(
   parent_recording: root_recording,
   root_recording: root_recording,
@@ -322,6 +348,14 @@ sync_access_recordings(
   grants: []
 )
 
+sync_access_recordings(
+  parent_recording: client_launch_thread_recording,
+  root_recording: message_root_recording,
+  grants: [
+    { actor: workspace, role: :view }
+  ]
+)
+
 [ welcome_pack_recording, accessibility_checklist_recording, ops_runbook_recording ].each do |page_recording|
   sync_access_recordings(
     parent_recording: page_recording,
@@ -331,6 +365,7 @@ sync_access_recordings(
 end
 
 puts "Seeded folder direct access: #{client_onboarding.name} (editor)"
+puts "Seeded through access: #{client_launch_thread.name} through #{workspace.name}"
 
 users.except(:page_owner).each_value do |user|
   puts "Seeded: #{user.email} / #{PASSWORD}"

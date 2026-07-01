@@ -22,7 +22,6 @@ module RecordingStudioAccessible
         ensure_current_impersonator_accessor!
 
         access_recording = upsert_access_recording!
-
         success(access_recording)
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
@@ -42,7 +41,7 @@ module RecordingStudioAccessible
         return authorization_result unless authorization_result == true
         return failure("Direct access is not enabled for this recording") unless access_enabled?
         return failure("Actor type is not allowed for access") unless allowed_access_actor_type?
-        return failure("Role is invalid") unless valid_role?
+        return failure("Role is invalid") unless RecordingStudio::Access.roles.key?(@role)
 
         true
       end
@@ -96,10 +95,6 @@ module RecordingStudioAccessible
 
       def manager_actor
         @manager_actor ||= effective_manager_actor(manager_actor: @manager_actor, controller: @controller)
-      end
-
-      def valid_role?
-        RecordingStudio::Access.roles.key?(@role)
       end
 
       def access_enabled?

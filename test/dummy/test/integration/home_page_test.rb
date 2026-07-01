@@ -43,6 +43,8 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match %r{<html[^>]*data-theme="rounded"}, @response.body
     assert_includes @response.body, "Recording Studio Accessible Demo"
+    assert_includes @response.body, "Message groups"
+    assert_includes @response.body, "href=\"/message_groups\""
     assert_includes @response.body, "Client onboarding"
     assert_includes @response.body, "Accessibility checklist"
     refute_includes @response.body, "0 access"
