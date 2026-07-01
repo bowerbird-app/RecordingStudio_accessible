@@ -32,6 +32,7 @@ module RecordingStudioAccessible
       actor_id = params[:actor_id].presence
       actor_type = params[:actor_type].presence
       return head :not_found unless actor_id && actor_type
+      return head :not_found unless allowed_actor_type_param?(actor_type)
 
       actor_class = actor_type.safe_constantize
       return head :not_found unless actor_class.respond_to?(:find_by)
@@ -88,6 +89,13 @@ module RecordingStudioAccessible
 
     def actor_access_points_anchor_url
       params[:anchor_url].presence || params[:back_url].presence || unauthorized_mounted_page_redirect_path
+    end
+
+    def allowed_actor_type_param?(actor_type)
+      configured_types = RecordingStudioAccessible.configuration.access_actor_types
+      return true if configured_types.blank?
+
+      configured_types.include?(actor_type.to_s)
     end
 
     def recordable_label_for(recordable)

@@ -218,8 +218,9 @@ end
 ```
 
 When this list is blank or `nil`, existing behavior is preserved. When it is
-set, `RecordingStudioAccessible.grant_access` rejects grants for actor types
-outside the configured list.
+set, `RecordingStudioAccessible.grant_access` rejects new grants for actor
+types outside the configured list. Existing access records remain valid for
+compatibility.
 
 For example, a host app may grant access to a workspace:
 

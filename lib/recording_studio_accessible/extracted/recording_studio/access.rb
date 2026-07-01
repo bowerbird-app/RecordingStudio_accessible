@@ -33,7 +33,7 @@ module RecordingStudio
       actor_name = actor.respond_to?(:name) ? actor.name.to_s.squish.presence : nil
       actor_text =
         if actor_name.present?
-          suffix = actor.class.name.demodulize == "SystemActor" ? "System" : "User"
+          suffix = actor.class.name.demodulize
           "#{actor_name} (#{suffix})"
         else
           "Unknown actor"

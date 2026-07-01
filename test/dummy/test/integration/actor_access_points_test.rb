@@ -2,6 +2,7 @@ require_relative "../test_helper"
 
 class ActorAccessPointsTest < ActionDispatch::IntegrationTest
   setup do
+    @original_access_actor_types = RecordingStudioAccessible.configuration.access_actor_types
     @admin = create_user("admin@admin.com")
     @actor = create_user("actor@admin.com")
 
@@ -33,6 +34,10 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     grant_access(@actor, :admin, @other_folder_recording)
   end
 
+  teardown do
+    RecordingStudioAccessible.configuration.access_actor_types = @original_access_actor_types
+  end
+
   test "admin can view actor access points within a workspace" do
     sign_in @admin
 
@@ -58,6 +63,18 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Edit"
     refute_includes @response.body, "Other folder"
     assert_includes @response.body, 'href="/#workspace-access"'
+  end
+
+  test "configured access actor types constrain actor access point lookup" do
+    RecordingStudioAccessible.configuration.access_actor_types = ["Workspace"]
+    sign_in @admin
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: @actor.id
+    }
+
+    assert_response :not_found
   end
 
   private

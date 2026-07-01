@@ -15,6 +15,8 @@ module RecordingStudioAccessible
     end
 
     def allowed_through?(actor:, through:, recording:, role:, controller: nil)
+      return false unless actor && through && recording
+
       return false unless RecordingStudioAccessible.configuration.authorize_actor_through?(
         actor: actor,
         through: through,
@@ -27,6 +29,8 @@ module RecordingStudioAccessible
     end
 
     def role_through(actor:, through:, recording:, controller: nil)
+      return nil unless actor && through && recording
+
       return nil unless RecordingStudioAccessible.configuration.authorize_actor_through?(
         actor: actor,
         through: through,
