@@ -14,6 +14,29 @@ module RecordingStudioAccessible
       call(actor: actor, recording: recording, role: role).value
     end
 
+    def allowed_through?(actor:, through:, recording:, role:, controller: nil)
+      return false unless RecordingStudioAccessible.configuration.authorize_actor_through?(
+        actor: actor,
+        through: through,
+        recording: recording,
+        role: role,
+        controller: controller
+      )
+
+      allowed?(actor: through, recording: recording, role: role)
+    end
+
+    def role_through(actor:, through:, recording:, controller: nil)
+      return nil unless RecordingStudioAccessible.configuration.authorize_actor_through?(
+        actor: actor,
+        through: through,
+        recording: recording,
+        controller: controller
+      )
+
+      role_for(actor: through, recording: recording)
+    end
+
     def root_recordings_for(actor:, minimum_role: nil)
       return [] unless actor
 

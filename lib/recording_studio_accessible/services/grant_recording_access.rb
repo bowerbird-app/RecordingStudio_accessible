@@ -41,6 +41,7 @@ module RecordingStudioAccessible
         )
         return authorization_result unless authorization_result == true
         return failure("Direct access is not enabled for this recording") unless access_enabled?
+        return failure("Actor type is not allowed for access") unless allowed_access_actor_type?
         return failure("Role is invalid") unless valid_role?
 
         true
@@ -99,6 +100,10 @@ module RecordingStudioAccessible
 
       def access_enabled?
         RecordingStudioAccessible::Compatibility.access_parent_allowed?(@recording)
+      end
+
+      def allowed_access_actor_type?
+        RecordingStudioAccessible.configuration.allowed_access_actor_type?(@actor)
       end
 
       def root_recording

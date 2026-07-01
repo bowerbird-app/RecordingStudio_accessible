@@ -43,6 +43,20 @@ module RecordingStudioAccessible
       Authorization.allowed?(actor: actor, recording: recording, role: role)
     end
 
+    def role_through(actor:, through:, recording:, controller: nil)
+      Authorization.role_through(actor: actor, through: through, recording: recording, controller: controller)
+    end
+
+    def authorized_through?(actor:, through:, recording:, role:, controller: nil)
+      Authorization.allowed_through?(
+        actor: actor,
+        through: through,
+        recording: recording,
+        role: role,
+        controller: controller
+      )
+    end
+
     def grant_access(recording:, actor:, role:, manager_actor: nil)
       Services::GrantRecordingAccess.call(
         recording: recording,
