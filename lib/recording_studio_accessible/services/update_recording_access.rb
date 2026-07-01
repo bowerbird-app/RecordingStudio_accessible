@@ -21,7 +21,7 @@ module RecordingStudioAccessible
 
         authorization_result = authorize_access_management!(
           recording: @recording,
-          manager_actor: @manager_actor,
+          manager_actor: manager_actor,
           controller: @controller
         )
         return authorization_result unless authorization_result == true
@@ -33,7 +33,7 @@ module RecordingStudioAccessible
 
         revised_recording = RecordingStudioAccessible::AccessCreationContext.allow do
           RecordingStudio.root_recording_or_self(@access_recording).revise(@access_recording,
-                                                                           actor: @manager_actor) do |access|
+                                                                           actor: manager_actor) do |access|
             access.role = @role
           end
         end
@@ -50,8 +50,12 @@ module RecordingStudioAccessible
           recording_id: @recording&.id,
           access_recording_id: @access_recording&.id,
           role: @role,
-          manager_actor_gid: global_id_string_for(@manager_actor)
+          manager_actor_gid: global_id_string_for(manager_actor)
         }
+      end
+
+      def manager_actor
+        @manager_actor ||= effective_manager_actor(manager_actor: @manager_actor, controller: @controller)
       end
 
       def valid_role?

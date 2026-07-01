@@ -8,11 +8,15 @@ module RecordingStudioAccessible
       def authorize_access_management!(recording:, manager_actor:, controller: nil)
         return true if RecordingStudioAccessible::AccessManagementPolicy.allowed?(
           recording: recording,
-          actor: manager_actor,
+          actor: effective_manager_actor(manager_actor: manager_actor, controller: controller),
           controller: controller
         )
 
         failure("Not authorized to manage access")
+      end
+
+      def effective_manager_actor(manager_actor:, controller: nil)
+        manager_actor || RecordingStudioAccessible.configuration.current_actor_for(controller: controller)
       end
 
       def valid_access_recording_for_parent?(recording:, access_recording:)

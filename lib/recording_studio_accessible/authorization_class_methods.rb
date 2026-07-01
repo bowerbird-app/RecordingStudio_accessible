@@ -9,13 +9,13 @@ module RecordingStudioAccessible
     end
 
     def allowed?(actor:, recording:, role:)
-      return false unless actor
+      return false unless actor && recording && valid_role?(role)
 
       call(actor: actor, recording: recording, role: role).value
     end
 
     def allowed_through?(actor:, through:, recording:, role:, controller: nil)
-      return false unless actor && through && recording
+      return false unless actor && through && recording && valid_role?(role)
 
       return false unless RecordingStudioAccessible.configuration.authorize_actor_through?(
         actor: actor,
@@ -100,6 +100,10 @@ module RecordingStudioAccessible
       return scope unless RecordingStudio::Recording.column_names.include?("trashed_at")
 
       scope.where(trashed_at: nil)
+    end
+
+    def valid_role?(role)
+      RecordingStudio::Access.roles.key?(role.to_s)
     end
   end
 end

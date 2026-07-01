@@ -39,14 +39,17 @@ module RecordingStudioAccessible
 
       @actor = actor_class.find_by(id: actor_id)
       head :not_found unless @actor
-
-      @actor_label = RecordingStudioAccessible.configuration.actor_label_for(@actor)
-      @actor_type_label = @actor.class.name.demodulize
       @resolved_actor_type = RecordingStudioAccessible::ActorType.for(@actor)
     end
 
     def load_access_rows
-      @access_rows = workspace_access_recordings.map do |access_recording|
+      access_recordings = workspace_access_recordings.to_a
+      return head :not_found if access_recordings.empty?
+
+      @actor_label = RecordingStudioAccessible.configuration.actor_label_for(@actor)
+      @actor_type_label = @actor.class.name.demodulize
+
+      @access_rows = access_recordings.map do |access_recording|
         {
           access_point: recordable_label_for(access_recording.parent_recording&.recordable),
           role: access_recording.recordable.role,

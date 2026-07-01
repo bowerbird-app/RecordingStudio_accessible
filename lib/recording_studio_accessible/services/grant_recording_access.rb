@@ -36,7 +36,7 @@ module RecordingStudioAccessible
 
         authorization_result = authorize_access_management!(
           recording: @recording,
-          manager_actor: @manager_actor,
+          manager_actor: manager_actor,
           controller: @controller
         )
         return authorization_result unless authorization_result == true
@@ -66,7 +66,7 @@ module RecordingStudioAccessible
         deduplicate_access_recordings!(existing_recordings.drop(1))
 
         RecordingStudioAccessible::AccessCreationContext.allow do
-          root_recording.revise(access_recording, actor: @manager_actor) do |access|
+          root_recording.revise(access_recording, actor: manager_actor) do |access|
             access.role = @role
           end
         end
@@ -76,7 +76,7 @@ module RecordingStudioAccessible
         RecordingStudioAccessible::AccessCreationContext.allow do
           root_recording.record(
             RecordingStudio::Access,
-            actor: @manager_actor,
+            actor: manager_actor,
             parent_recording: @recording
           ) do |access|
             access.actor = @actor
@@ -90,8 +90,12 @@ module RecordingStudioAccessible
           recording_id: @recording&.id,
           actor_gid: global_id_string_for(@actor),
           role: @role,
-          manager_actor_gid: global_id_string_for(@manager_actor)
+          manager_actor_gid: global_id_string_for(manager_actor)
         }
+      end
+
+      def manager_actor
+        @manager_actor ||= effective_manager_actor(manager_actor: @manager_actor, controller: @controller)
       end
 
       def valid_role?
@@ -122,7 +126,7 @@ module RecordingStudioAccessible
 
       def deduplicate_access_recordings!(access_recordings)
         access_recordings.each do |access_recording|
-          destroy_access_recording!(access_recording, manager_actor: @manager_actor)
+          destroy_access_recording!(access_recording, manager_actor: manager_actor)
         end
       end
     end
