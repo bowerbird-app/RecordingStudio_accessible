@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RecordingStudio.configure do |config|
-  config.recordable_types = [ "Workspace", "Folder", "Page", "Card" ]
+  config.recordable_types = [ "Workspace", "Folder", "Page", "Card", "MessageRoot", "MessageGroup" ]
   config.actor = -> { Current.actor }
   config.impersonator = -> { Current.respond_to?(:impersonator) ? Current.impersonator : nil }
   config.event_notifications_enabled = true

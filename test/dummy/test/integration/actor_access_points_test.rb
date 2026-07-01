@@ -2,6 +2,8 @@ require_relative "../test_helper"
 
 class ActorAccessPointsTest < ActionDispatch::IntegrationTest
   setup do
+    @original_access_actor_types = RecordingStudioAccessible.configuration.access_actor_types
+    @original_mounted_page_authorizer = RecordingStudioAccessible.configuration.mounted_page_authorizer
     @admin = create_user("admin@admin.com")
     @actor = create_user("actor@admin.com")
 
@@ -33,6 +35,11 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     grant_access(@actor, :admin, @other_folder_recording)
   end
 
+  teardown do
+    RecordingStudioAccessible.configuration.access_actor_types = @original_access_actor_types
+    RecordingStudioAccessible.configuration.mounted_page_authorizer = @original_mounted_page_authorizer
+  end
+
   test "admin can view actor access points within a workspace" do
     sign_in @admin
 
@@ -58,6 +65,124 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Edit"
     refute_includes @response.body, "Other folder"
     assert_includes @response.body, 'href="/#workspace-access"'
+  end
+
+  test "actor access points page rejects unsafe anchor_url" do
+    sign_in @admin
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: @actor.id,
+      back_url: "/users/#{@actor.id}",
+      anchor_url: "//evil.example/access"
+    }
+
+    assert_response :success
+    assert_includes @response.body, "href=\"/users/#{@actor.id}\""
+    refute_includes @response.body, "evil.example"
+  end
+
+  test "configured access actor types constrain actor access point lookup" do
+    RecordingStudioAccessible.configuration.access_actor_types = [ "Workspace" ]
+    sign_in @admin
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: @actor.id
+    }
+
+    assert_response :not_found
+  end
+
+  test "blank access actor types fail closed for actor access point lookup" do
+    RecordingStudioAccessible.configuration.access_actor_types = []
+    sign_in @admin
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: @actor.id
+    }
+
+    assert_response :not_found
+    refute_includes @response.body, @actor.email
+  end
+
+  test "actor access point lookup does not reveal actors without workspace access" do
+    actor_without_workspace_access = create_user("other-actor@admin.com")
+    create_direct_access_recording(
+      actor: actor_without_workspace_access,
+      role: :admin,
+      parent_recording: @other_root_recording
+    )
+    sign_in @admin
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: actor_without_workspace_access.id
+    }
+
+    assert_response :not_found
+    refute_includes @response.body, actor_without_workspace_access.email
+  end
+
+  test "broad mounted page access cannot view another actor access points" do
+    viewer = create_user("viewer@admin.com")
+    RecordingStudioAccessible.configuration.mounted_page_authorizer = ->(**) { true }
+    sign_in viewer
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: @actor.id
+    }
+
+    assert_response :not_found
+    refute_includes @response.body, @actor.email
+  end
+
+  test "current actor can view their own access points" do
+    sign_in @actor
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: @actor.id
+    }
+
+    assert_response :success
+    assert_includes @response.body, "#{@actor.email} access points"
+  end
+
+  test "malformed actor ids fail closed" do
+    sign_in @admin
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: "not-a-uuid"
+    }
+
+    assert_response :not_found
+  end
+
+  test "malformed workspace ids fail closed" do
+    sign_in @admin
+
+    get "/recording_studio_accessible/workspaces/not-a-uuid/actor_access_points", params: {
+      actor_type: "User",
+      actor_id: @actor.id
+    }
+
+    assert_response :not_found
+  end
+
+  test "configured access actor types reject unknown constants before lookup" do
+    RecordingStudioAccessible.configuration.access_actor_types = [ "User" ]
+    sign_in @admin
+
+    get actor_access_points_path, params: {
+      actor_type: "Kernel",
+      actor_id: @actor.id
+    }
+
+    assert_response :not_found
   end
 
   private

@@ -147,6 +147,70 @@ class CompatibilityTest < Minitest::Test
     end
   end
 
+  def test_access_parent_allowed_returns_false_for_blank_recording
+    refute RecordingStudioAccessible::Compatibility.access_parent_allowed?(nil)
+  end
+
+  def test_register_access_capability_registers_when_no_compatible_core_capability_exists
+    registered = []
+
+    RecordingStudio.stub(:registered_capabilities, {}) do
+      RecordingStudio.stub(:register_capability, ->(*args, **kwargs) { registered << [args, kwargs] }) do
+        RecordingStudioAccessible::Compatibility.register_access_capability!
+      end
+    end
+
+    assert_equal [[[:accessible], { source: "recording_studio_accessible", child_recordables: ["RecordingStudio::Access"] }]],
+                 registered
+  end
+
+  def test_register_access_capability_skips_compatible_core_capability
+    registered = []
+    capabilities = {
+      accessible: {
+        source: "recording_studio_core",
+        child_recordables: ["RecordingStudio::Access"]
+      }
+    }
+
+    RecordingStudio.stub(:registered_capabilities, capabilities) do
+      RecordingStudio.stub(:register_capability, ->(*args, **kwargs) { registered << [args, kwargs] }) do
+        RecordingStudioAccessible::Compatibility.register_access_capability!
+      end
+    end
+
+    assert_empty registered
+  end
+
+  def test_warn_if_core_access_present_logs_once_outside_test
+    logger = Class.new do
+      attr_reader :messages
+
+      def initialize
+        @messages = []
+      end
+
+      def info(message)
+        @messages << message
+      end
+    end.new
+    development_env = ActiveSupport::StringInquirer.new("development")
+
+    RecordingStudioAccessible::Compatibility.stub(:core_access_present?, true) do
+      Rails.stub(:env, development_env) do
+        Rails.stub(:logger, logger) do
+          2.times { RecordingStudioAccessible::Compatibility.warn_if_core_access_present! }
+        end
+      end
+    end
+
+    assert_equal 1, logger.messages.size
+    assert_includes logger.messages.first, "RecordingStudio already provides access models"
+  ensure
+    RecordingStudioAccessible::Compatibility.remove_instance_variable(:@warned_core_access) if
+      RecordingStudioAccessible::Compatibility.instance_variable_defined?(:@warned_core_access)
+  end
+
   private
 
   def reset_addon_loaded_access!

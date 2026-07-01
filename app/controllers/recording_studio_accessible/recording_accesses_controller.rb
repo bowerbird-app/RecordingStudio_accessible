@@ -2,6 +2,8 @@
 
 module RecordingStudioAccessible
   class RecordingAccessesController < ApplicationController
+    include RecordingStudioAccessible::NavigationUrlSafety
+
     layout "recording_studio_accessible/blank"
 
     before_action :set_recording
@@ -176,7 +178,7 @@ module RecordingStudioAccessible
         redirect_options = {}
         redirect_options[:notice] = actor_resolution.notice if actor_resolution.notice.present?
         redirect_options[:alert] = actor_resolution.alert if actor_resolution.alert.present?
-        redirect_to actor_resolution.location, **redirect_options
+        redirect_to safe_missing_actor_redirect_location(actor_resolution.location), **redirect_options
       when :invited
         redirect_options = { notice: actor_resolution.notice.presence || "Invitation sent." }
         redirect_to recording_access_index_redirect_path, **redirect_options
@@ -185,6 +187,18 @@ module RecordingStudioAccessible
         flash.now[:alert] = @form_errors.to_sentence
         render :new, status: :unprocessable_entity
       end
+    end
+
+    def safe_missing_actor_redirect_location(location)
+      safe_location = safe_local_navigation_url(location, fallback: recording_access_index_redirect_path)
+      return safe_location if safe_location == location
+
+      Rails.logger.warn(
+        "[RecordingStudioAccessible] Missing-actor handler returned unsafe redirect location; " \
+        "falling back to access management."
+      )
+
+      safe_location
     end
 
     def set_access_recording
@@ -286,8 +300,8 @@ module RecordingStudioAccessible
     end
 
     def recording_access_navigation_params
-      back_url = params[:back_url].presence || host_root_path
-      anchor_url = params[:anchor_url].presence || back_url
+      back_url = safe_local_navigation_url(params[:back_url], fallback: host_root_path)
+      anchor_url = safe_local_navigation_url(params[:anchor_url], fallback: back_url)
 
       {
         back_url: back_url,

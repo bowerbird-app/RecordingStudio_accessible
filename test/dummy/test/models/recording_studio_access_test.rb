@@ -76,6 +76,15 @@ class RecordingStudioAccessTest < ActiveSupport::TestCase
     end
   end
 
+  test "recordable name labels non-user actors by their actor type" do
+    workspace = Workspace.create!(name: "Label Workspace")
+    access = RecordingStudioAccessible::AccessCreationContext.allow do
+      RecordingStudio::Access.create!(actor: workspace, role: :edit)
+    end
+
+    assert_equal "Access: edit — Label Workspace (Workspace)", access.recordable_name
+  end
+
   private
 
   def create_user(email)

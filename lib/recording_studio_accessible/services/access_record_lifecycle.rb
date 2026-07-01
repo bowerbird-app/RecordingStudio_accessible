@@ -8,11 +8,15 @@ module RecordingStudioAccessible
       def authorize_access_management!(recording:, manager_actor:, controller: nil)
         return true if RecordingStudioAccessible::AccessManagementPolicy.allowed?(
           recording: recording,
-          actor: manager_actor,
+          actor: effective_manager_actor(manager_actor: manager_actor, controller: controller),
           controller: controller
         )
 
         failure("Not authorized to manage access")
+      end
+
+      def effective_manager_actor(manager_actor:, controller: nil)
+        manager_actor || RecordingStudioAccessible.configuration.current_actor_for(controller: controller)
       end
 
       def valid_access_recording_for_parent?(recording:, access_recording:)
@@ -24,11 +28,13 @@ module RecordingStudioAccessible
 
       def destroy_access_recording!(access_recording, manager_actor:)
         access_id = access_recording.recordable_id
+        parent_recording = access_recording.parent_recording
 
-        RecordingStudio.root_recording_or_self(access_recording).log_event(
-          access_recording,
+        RecordingStudio.root_recording_or_self(parent_recording || access_recording).log_event(
+          parent_recording || access_recording,
           action: "deleted",
-          actor: manager_actor
+          actor: manager_actor,
+          metadata: { access_recording_id: access_recording.id, access_id: access_id }
         )
         access_recording.destroy!
         RecordingStudio::Access.where(id: access_id).delete_all if orphaned_access_id?(access_id)

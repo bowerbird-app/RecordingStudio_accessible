@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-01
+
+### Added
+- Added `RecordingStudioAccessible.authorized_through?` and `RecordingStudioAccessible.role_through` for explicit through-actor authorization checks
+- Added `config.authorize_actor_through` so host apps can define when one actor may use another actor's direct access grants
+- Added configurable access-actor allowlisting through `config.access_actor_types` to constrain which polymorphic actor types may receive new grants
+- Added navigation URL sanitization for mounted access-management flows to reject unsafe redirect and anchor targets
+
+### Changed
+- `RecordingStudioAccessible.grant_access` now rejects disallowed actor types before creating or revising direct access grants
+- Access lifecycle services now resolve the acting manager through the configured current-actor resolver when `manager_actor` is omitted
+- The mounted workspace actor access-point page now authorizes against access-management policy and the resolved actor instead of relying on the broader mounted-page authorization
+- Updated generator templates, README guidance, and the dummy app to document through-actor access, actor allowlisting, and mounted access-management behavior
+
+### Fixed
+- Hardened mounted actor access-point lookups to validate UUID and actor-type params and fail closed on malformed or unauthorized requests
+- Hardened mounted access-management redirects by filtering unsafe `back_url` and `anchor_url` values
+- Expanded regression coverage for through-actor authorization, actor access-point authorization, and manager-actor attribution during grant flows
+
 ## [0.3.2] - 2026-06-17
 
 ### Added
@@ -71,7 +90,8 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.1...v0.3.1
 [0.2.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.0...v0.2.1

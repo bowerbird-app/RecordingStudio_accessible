@@ -2,14 +2,16 @@
 
 module RecordingStudioAccessible
   module RecordingAccessesHelper
+    include RecordingStudioAccessible::NavigationUrlSafety
+
     ROLE_OPTIONS = [%w[View view], %w[Edit edit], %w[Admin admin]].freeze
 
     def recording_access_index_back_url
-      params[:back_url].presence || host_root_path
+      safe_local_navigation_url(params[:back_url], fallback: host_root_path)
     end
 
     def recording_access_anchor_url
-      params[:anchor_url].presence || recording_access_index_back_url
+      safe_local_navigation_url(params[:anchor_url], fallback: recording_access_index_back_url)
     end
 
     def recording_access_index_path_with_back_url(recording)
@@ -132,7 +134,7 @@ module RecordingStudioAccessible
 
     def recording_access_navigation_params(back_url: params[:back_url].presence)
       navigation_params = { anchor_url: recording_access_anchor_url }
-      navigation_params[:back_url] = back_url if back_url.present?
+      navigation_params[:back_url] = safe_local_navigation_url(back_url, fallback: host_root_path) if back_url.present?
       navigation_params
     end
 

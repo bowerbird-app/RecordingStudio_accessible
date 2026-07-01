@@ -22,7 +22,6 @@ module RecordingStudioAccessible
         ensure_current_impersonator_accessor!
 
         access_recording = upsert_access_recording!
-
         success(access_recording)
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
@@ -36,12 +35,13 @@ module RecordingStudioAccessible
 
         authorization_result = authorize_access_management!(
           recording: @recording,
-          manager_actor: @manager_actor,
+          manager_actor: manager_actor,
           controller: @controller
         )
         return authorization_result unless authorization_result == true
         return failure("Direct access is not enabled for this recording") unless access_enabled?
-        return failure("Role is invalid") unless valid_role?
+        return failure("Actor type is not allowed for access") unless allowed_access_actor_type?
+        return failure("Role is invalid") unless RecordingStudio::Access.roles.key?(@role)
 
         true
       end
@@ -65,7 +65,7 @@ module RecordingStudioAccessible
         deduplicate_access_recordings!(existing_recordings.drop(1))
 
         RecordingStudioAccessible::AccessCreationContext.allow do
-          root_recording.revise(access_recording, actor: @manager_actor) do |access|
+          root_recording.revise(access_recording, actor: manager_actor) do |access|
             access.role = @role
           end
         end
@@ -75,7 +75,7 @@ module RecordingStudioAccessible
         RecordingStudioAccessible::AccessCreationContext.allow do
           root_recording.record(
             RecordingStudio::Access,
-            actor: @manager_actor,
+            actor: manager_actor,
             parent_recording: @recording
           ) do |access|
             access.actor = @actor
@@ -89,16 +89,20 @@ module RecordingStudioAccessible
           recording_id: @recording&.id,
           actor_gid: global_id_string_for(@actor),
           role: @role,
-          manager_actor_gid: global_id_string_for(@manager_actor)
+          manager_actor_gid: global_id_string_for(manager_actor)
         }
       end
 
-      def valid_role?
-        RecordingStudio::Access.roles.key?(@role)
+      def manager_actor
+        @manager_actor ||= effective_manager_actor(manager_actor: @manager_actor, controller: @controller)
       end
 
       def access_enabled?
         RecordingStudioAccessible::Compatibility.access_parent_allowed?(@recording)
+      end
+
+      def allowed_access_actor_type?
+        RecordingStudioAccessible.configuration.allowed_access_actor_type?(@actor)
       end
 
       def root_recording
@@ -117,7 +121,7 @@ module RecordingStudioAccessible
 
       def deduplicate_access_recordings!(access_recordings)
         access_recordings.each do |access_recording|
-          destroy_access_recording!(access_recording, manager_actor: @manager_actor)
+          destroy_access_recording!(access_recording, manager_actor: manager_actor)
         end
       end
     end

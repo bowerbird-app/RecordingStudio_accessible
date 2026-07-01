@@ -12,6 +12,26 @@ module RecordingStudioAccessible
       end
       alias authorized? allowed?
 
+      def allowed_through?(actor:, through:, recording:, role:, controller: nil)
+        authorization_service.allowed_through?(
+          actor: actor,
+          through: through,
+          recording: recording,
+          role: role,
+          controller: controller
+        )
+      end
+      alias authorized_through? allowed_through?
+
+      def role_through(actor:, through:, recording:, controller: nil)
+        authorization_service.role_through(
+          actor: actor,
+          through: through,
+          recording: recording,
+          controller: controller
+        )
+      end
+
       def root_recordings_for(actor:, minimum_role: nil)
         authorization_service.root_recordings_for(actor: actor, minimum_role: minimum_role)
       end

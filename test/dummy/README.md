@@ -7,6 +7,7 @@ This Rails app demonstrates **Recording Studio Accessible** as a separately inst
 - the host app installs `recording_studio_accessible` separately from `recording_studio`
 - the addon mounts its own engine at `/recording_studio_accessible`
 - seeded access data resolves through `RecordingStudioAccessible.role_for` and `RecordingStudioAccessible.authorized?`
+- message groups demonstrate `RecordingStudioAccessible.authorized_through?` with a separate `MessageRoot` root recordable
 - the host app uses folders and pages as recordable demo content
 - the demo initializer auto-creates missing users only to keep the walkthrough short; host apps should usually verify or route missing emails before granting access
 
@@ -36,5 +37,6 @@ All use `Password`.
 ## Useful Routes
 
 - `/` - dummy app demo with seeded folders, pages, cards, and access results
+- `/message_groups` - message groups visible through the seeded workspace actor
 - `/recording_studio_accessible` - addon status/demo page
 - `/users/sign_in` - Devise sign-in page

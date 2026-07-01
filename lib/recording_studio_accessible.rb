@@ -11,6 +11,7 @@ require "recording_studio_accessible/access_creation_guard"
 require "recording_studio_accessible/access_recording_creation_guard"
 require "recording_studio_accessible/access_management_policy"
 require "recording_studio_accessible/actor_type"
+require "recording_studio_accessible/navigation_url_safety"
 require "recording_studio_accessible/authorization_class_methods"
 require "recording_studio_accessible/configuration"
 require "recording_studio_accessible/authorization"
@@ -41,6 +42,20 @@ module RecordingStudioAccessible
 
     def authorized?(actor:, recording:, role:)
       Authorization.allowed?(actor: actor, recording: recording, role: role)
+    end
+
+    def role_through(actor:, through:, recording:, controller: nil)
+      Authorization.role_through(actor: actor, through: through, recording: recording, controller: controller)
+    end
+
+    def authorized_through?(actor:, through:, recording:, role:, controller: nil)
+      Authorization.allowed_through?(
+        actor: actor,
+        through: through,
+        recording: recording,
+        role: role,
+        controller: controller
+      )
     end
 
     def grant_access(recording:, actor:, role:, manager_actor: nil)

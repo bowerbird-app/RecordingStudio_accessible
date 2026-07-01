@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   devise_for :users
+  resources :message_groups, only: [ :index ]
   resources :users, only: [ :show ]
   resources :workspaces, only: [ :show ]
 

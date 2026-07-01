@@ -49,8 +49,9 @@ module RecordingStudioAccessible
                   :access_management_access_granted_subject,
                   :access_management_access_granted_url_resolver,
                   :access_management_authorizer,
-                  :mounted_page_authorizer
-    attr_reader :hooks
+                  :mounted_page_authorizer,
+                  :authorize_actor_through
+    attr_reader :hooks, :access_actor_types
 
     def initialize
       @warn_on_core_conflict = true
@@ -65,6 +66,9 @@ module RecordingStudioAccessible
       @access_management_access_granted_url_resolver = method(:default_access_management_access_granted_url_resolver)
       @access_management_authorizer = method(:default_access_management_authorizer)
       @mounted_page_authorizer = method(:default_mounted_page_authorizer)
+      @access_actor_types = nil
+      @warned_blank_access_actor_types = false
+      @authorize_actor_through = method(:default_authorize_actor_through)
       @hooks = Hooks.new
     end
 
@@ -129,6 +133,38 @@ module RecordingStudioAccessible
 
     def authorize_mounted_page?(controller:, actor: nil, recording: nil)
       call_mounted_page_authorizer(controller: controller, actor: actor, recording: recording)
+    end
+
+    def access_actor_types=(types)
+      @access_actor_types = Array(types).filter_map { |type| normalize_access_actor_type(type) }.presence
+      @warned_blank_access_actor_types = false
+    end
+
+    def allowed_access_actor_type?(actor)
+      if access_actor_types.blank?
+        warn_if_access_actor_types_blank!
+        return true
+      end
+      return false unless actor
+
+      access_actor_types.include?(RecordingStudioAccessible::ActorType.for(actor))
+    end
+
+    def authorize_actor_through?(actor:, through:, recording: nil, role: nil, controller: nil, **kwargs)
+      callable = authorize_actor_through
+      return false unless callable
+
+      arguments = kwargs.merge(
+        actor: actor,
+        through: through,
+        recording: recording,
+        role: role,
+        controller: controller
+      )
+
+      !!callable.call(**filtered_keyword_arguments(callable, arguments))
+    rescue StandardError
+      false
     end
 
     def notify_access_granted(controller:, recording:, actor:, role:, manager_actor:)
@@ -322,6 +358,13 @@ module RecordingStudioAccessible
       RecordingStudioAccessible.authorized?(actor: actor, recording: recording, role: :admin)
     end
 
+    def default_authorize_actor_through(actor:, through:, recording: nil, role: nil, controller: nil)
+      _recording = recording
+      _role = role
+      _controller = controller
+      same_actor?(actor, through)
+    end
+
     def call_access_management_authorizer(recording:, actor:, controller:)
       callable = access_management_authorizer
       return false unless callable
@@ -333,6 +376,8 @@ module RecordingStudioAccessible
       }
 
       callable.call(**filtered_keyword_arguments(callable, kwargs))
+    rescue StandardError
+      false
     end
 
     def call_mounted_page_authorizer(controller:, actor:, recording:)
@@ -346,6 +391,48 @@ module RecordingStudioAccessible
       }
 
       callable.call(**filtered_keyword_arguments(callable, kwargs))
+    rescue StandardError
+      false
+    end
+
+    def warn_if_access_actor_types_blank!
+      return if @warned_blank_access_actor_types
+
+      message = "[RecordingStudioAccessible] access_actor_types is not configured; access grants may be created " \
+                "for any actor type. Set config.access_actor_types to an explicit allowlist for production apps."
+
+      if defined?(Rails) && Rails.respond_to?(:logger) && Rails.logger
+        Rails.logger.warn(message)
+      else
+        warn(message)
+      end
+
+      @warned_blank_access_actor_types = true
+    end
+
+    def normalize_access_actor_type(type)
+      normalized = if type.is_a?(Class)
+                     base_class = type.respond_to?(:base_class) ? type.base_class : type
+                     if base_class.respond_to?(:polymorphic_name)
+                       base_class.polymorphic_name
+                     else
+                       base_class.name
+                     end
+                   else
+                     type.to_s
+                   end
+
+      normalized.to_s.strip.presence
+    end
+
+    def same_actor?(actor, through)
+      return false unless actor && through
+      return true if actor.equal?(through)
+      return false unless actor.respond_to?(:id) && through.respond_to?(:id)
+      return false if actor.id.blank? || through.id.blank?
+
+      RecordingStudioAccessible::ActorType.for(actor) == RecordingStudioAccessible::ActorType.for(through) &&
+        actor.id == through.id
     end
 
     def default_missing_actor_error_for_email(email:)
