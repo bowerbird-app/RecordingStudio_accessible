@@ -7,7 +7,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 ## What the gem provides
 
 - child-only `RecordingStudio::Access` recordables for direct grants under opted-in recordings
-- `RecordingStudioAccessible.role_for` and `RecordingStudioAccessible.authorized?` for role lookup and authorization checks
+- `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, and `authorized_through?` for role lookup and authorization checks
 - a mounted engine page for adding and removing direct access on a recording
 - install and migration generators for host apps
 - a dummy Rails app that demonstrates the addon mounted separately from RecordingStudio
@@ -205,6 +205,33 @@ RecordingStudioAccessible.grant_access(
 )
 ```
 
+`actor` is the polymorphic object receiving access. It can be a user,
+workspace, company, team, system actor, or another configured access actor.
+`manager_actor` remains the actor performing the access-management action.
+
+Host apps may optionally restrict which actor types can receive access grants:
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.access_actor_types = ["User", "Workspace", "Company", "Team"]
+end
+```
+
+When this list is blank or `nil`, existing behavior is preserved. When it is
+set, `RecordingStudioAccessible.grant_access` rejects grants for actor types
+outside the configured list.
+
+For example, a host app may grant access to a workspace:
+
+```ruby
+RecordingStudioAccessible.grant_access(
+  recording: message_group_recording,
+  actor: workspace,
+  role: :edit,
+  manager_actor: current_user
+)
+```
+
 RecordingStudio Accessible treats `RecordingStudio::Access` as an internal
 recordable. Applications should not create access records directly. Use
 `RecordingStudioAccessible.grant_access` or
@@ -339,6 +366,81 @@ RecordingStudioAccessible.authorized?(actor: user, recording: root_recording, ro
 # Equivalent namespaced form:
 RecordingStudioAccessible::Authorization.allowed?(actor: user, recording: root_recording, role: :edit)
 ```
+
+Existing checks remain exact actor checks. For example, this checks whether the
+workspace itself has edit access to the recording:
+
+```ruby
+RecordingStudioAccessible.authorized?(
+  actor: workspace,
+  recording: message_group_recording,
+  role: :edit
+)
+```
+
+It does not check whether a user can use the workspace's access.
+
+### Access through another actor
+
+`RecordingStudio::Access` stores a polymorphic actor. The actor is the access
+subject. In addition to users, host apps may grant access to workspaces,
+companies, teams, system actors, or other configured actor types.
+
+Use `authorized_through?` when one actor should use another actor's access
+grant:
+
+```ruby
+RecordingStudioAccessible.authorized_through?(
+  actor: current_user,
+  through: workspace,
+  recording: message_group_recording,
+  role: :edit
+)
+```
+
+This returns true only when `current_user` is allowed to act through
+`workspace` and `workspace` has edit access to the message group.
+
+Use `role_through` to return the effective role from the through actor:
+
+```ruby
+RecordingStudioAccessible.role_through(
+  actor: current_user,
+  through: workspace,
+  recording: message_group_recording
+)
+# => :edit
+```
+
+Configure through authorization in the host app:
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.authorize_actor_through = lambda do |actor:, through:, recording: nil, role: nil, controller: nil, **|
+    case through
+    when Workspace
+      workspace_root = RecordingStudio.root_recording_for(through)
+
+      RecordingStudioAccessible.authorized?(
+        actor: actor,
+        recording: workspace_root,
+        role: :view
+      )
+    else
+      actor == through
+    end
+  end
+end
+```
+
+By default, actors may only act through themselves. If the hook raises,
+through authorization fails closed.
+
+Existing `authorized?`, `role_for`, `root_recordings_for`, and
+`access_recordings_for_actor` calls remain exact actor checks. They do not
+automatically use workspace, company, or team access. Use
+`authorized_through?` or `role_through` when you explicitly want one actor to
+use another actor's access grant.
 
 ## Dummy app demo
 

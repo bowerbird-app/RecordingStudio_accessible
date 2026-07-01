@@ -5,6 +5,22 @@ RecordingStudioAccessible.configure do |config|
   # the built-in access constants and this addon is running in compatibility mode.
   config.warn_on_core_conflict = true
 
+  # Optional: restrict which actor types may receive access grants.
+  # Leave blank/nil to preserve existing behaviour.
+  # config.access_actor_types = ["User", "Workspace", "Company", "Team"]
+
+  # Optional: allow one actor to use another actor's access grants.
+  # By default, actors may only act through themselves.
+  # config.authorize_actor_through = lambda do |actor:, through:, recording: nil, role: nil, controller: nil, **|
+  #   case through
+  #   when Workspace
+  #     workspace_root = RecordingStudio.root_recording_for(through)
+  #     RecordingStudioAccessible.authorized?(actor: actor, recording: workspace_root, role: :view)
+  #   else
+  #     actor == through
+  #   end
+  # end
+
   # Optional: resolve the submitted email to an actor for new access grants.
   # config.access_management_actor_email_resolver = lambda do |controller:, email:|
   #   User.find_by(email: email.to_s.strip.downcase)
