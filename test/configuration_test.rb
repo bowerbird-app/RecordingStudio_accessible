@@ -61,6 +61,85 @@ class ConfigurationTest < Minitest::Test
     assert_equal 1, result.fetch(:hooks_registered).fetch(:after_service)
   end
 
+  def test_access_actor_types_normalizes_strings_and_classes
+    actor_class = Class.new do
+      def self.base_class
+        self
+      end
+    end
+    actor_class.define_singleton_method(:name) { "Workspace" }
+
+    @configuration.access_actor_types = ["User", actor_class, "", nil]
+
+    assert_equal %w[User Workspace], @configuration.access_actor_types
+  end
+
+  def test_blank_access_actor_types_preserves_existing_actor_grants
+    @configuration.access_actor_types = []
+
+    assert @configuration.allowed_access_actor_type?(Object.new)
+  end
+
+  def test_allowed_access_actor_type_checks_normalized_actor_type_when_configured
+    user = Struct.new(:id) do
+      def self.base_class
+        self
+      end
+    end.new(1)
+    user.class.define_singleton_method(:name) { "User" }
+
+    @configuration.access_actor_types = ["Workspace"]
+
+    refute @configuration.allowed_access_actor_type?(user)
+
+    @configuration.access_actor_types = ["User"]
+
+    assert @configuration.allowed_access_actor_type?(user)
+  end
+
+  def test_default_authorize_actor_through_only_allows_same_actor_identity
+    actor_class = Class.new do
+      def self.base_class
+        self
+      end
+    end
+    actor_class.define_singleton_method(:name) { "User" }
+
+    actor = actor_class.new
+    actor.define_singleton_method(:id) { 1 }
+    same_actor = actor_class.new
+    same_actor.define_singleton_method(:id) { 1 }
+    other_actor = actor_class.new
+    other_actor.define_singleton_method(:id) { 2 }
+
+    assert @configuration.authorize_actor_through?(actor: actor, through: same_actor)
+    refute @configuration.authorize_actor_through?(actor: actor, through: other_actor)
+  end
+
+  def test_configured_authorize_actor_through_receives_context
+    calls = []
+    @configuration.authorize_actor_through = lambda do |actor:, through:, recording:, role:, controller:, **extra|
+      calls << [actor, through, recording, role, controller, extra]
+      true
+    end
+
+    assert @configuration.authorize_actor_through?(
+      actor: :actor,
+      through: :through,
+      recording: :recording,
+      role: :edit,
+      controller: :controller,
+      extra: :value
+    )
+    assert_equal [[:actor, :through, :recording, :edit, :controller, { extra: :value }]], calls
+  end
+
+  def test_authorize_actor_through_fails_closed_when_hook_raises
+    @configuration.authorize_actor_through = ->(**) { raise "boom" }
+
+    refute @configuration.authorize_actor_through?(actor: :actor, through: :through)
+  end
+
   def test_access_management_configuration_is_customizable
     actor_scope = ->(_controller) { [:custom_actor] }
     current_actor_resolver = ->(controller:) { [controller, :current_actor] }

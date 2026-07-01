@@ -2,12 +2,17 @@ require_relative "../test_helper"
 
 class GrantRecordingAccessTest < ActiveSupport::TestCase
   setup do
+    @original_access_actor_types = RecordingStudioAccessible.configuration.access_actor_types
     @manager_actor = create_user("grant-manager@example.com")
     @user = create_user("grant-user@example.com")
     @workspace = Workspace.create!(name: "Grant Recording Access Workspace")
     @recording = create_root_recording(@workspace)
 
     create_legacy_direct_access_recording(@manager_actor, :admin, @recording)
+  end
+
+  teardown do
+    RecordingStudioAccessible.configuration.access_actor_types = @original_access_actor_types
   end
 
   test "service creates access grants internally" do
@@ -59,6 +64,57 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert result.success?
     assert_equal folder_recording.id, result.value.parent_recording_id
     assert_equal @recording.id, RecordingStudio.root_recording_id_for(result.value)
+  end
+
+  test "service grants access to a configured workspace actor" do
+    message_group = Workspace.create!(name: "Shared Message Group")
+    message_group_recording = create_root_recording(message_group)
+    RecordingStudioAccessible.configuration.access_actor_types = ["User", "Workspace"]
+
+    create_legacy_direct_access_recording(@manager_actor, :admin, message_group_recording)
+
+    result = RecordingStudioAccessible.grant_access(
+      recording: message_group_recording,
+      actor: @workspace,
+      role: :edit,
+      manager_actor: @manager_actor
+    )
+
+    assert result.success?
+    assert_equal @workspace, result.value.recordable.actor
+    assert RecordingStudioAccessible.authorized?(actor: @workspace, recording: message_group_recording, role: :edit)
+  end
+
+  test "service rejects unconfigured actor types when allowlist is set" do
+    RecordingStudioAccessible.configuration.access_actor_types = ["User"]
+
+    assert_no_difference -> { RecordingStudio::Access.count } do
+      assert_no_difference -> { RecordingStudio::Recording.unscoped.count } do
+        @result = RecordingStudioAccessible.grant_access(
+          recording: @recording,
+          actor: @workspace,
+          role: :view,
+          manager_actor: @manager_actor
+        )
+      end
+    end
+
+    assert @result.failure?
+    assert_equal "Actor type is not allowed for access", @result.error
+  end
+
+  test "blank access actor allowlist preserves existing grant behavior" do
+    RecordingStudioAccessible.configuration.access_actor_types = []
+
+    result = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: @workspace,
+      role: :view,
+      manager_actor: @manager_actor
+    )
+
+    assert result.success?
+    assert_equal @workspace, result.value.recordable.actor
   end
 
   test "service rejects access grants under recordables that did not opt in" do
