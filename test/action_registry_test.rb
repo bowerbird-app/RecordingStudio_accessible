@@ -77,6 +77,21 @@ class ActionRegistryTest < Minitest::Test
     assert_raises(FrozenError) { metadata.fetch(:label).replace("Changed again") }
   end
 
+  def test_nested_registration_metadata_is_isolated_from_mutation
+    label = { text: +"Subscribed", tags: [+"global"] }
+    RecordingStudioAccessible.register_action(:subscribed, label: label)
+
+    label[:text].replace("Changed")
+    label[:tags].first.replace("changed")
+
+    metadata = RecordingStudioAccessible.action_registration_for(:subscribed)
+    assert_equal({ text: "Subscribed", tags: ["global"] }, metadata.fetch(:label))
+    assert metadata.fetch(:label).frozen?
+    assert metadata.fetch(:label).fetch(:text).frozen?
+    assert metadata.fetch(:label).fetch(:tags).frozen?
+    assert metadata.fetch(:label).fetch(:tags).first.frozen?
+  end
+
   def test_returned_action_registration_is_isolated_from_mutation
     RecordingStudioAccessible.register_action(:subscribed, label: "Subscribed", source: "application")
 
@@ -87,6 +102,17 @@ class ActionRegistryTest < Minitest::Test
     stored_metadata = RecordingStudioAccessible.action_registration_for(:subscribed)
     assert_equal "Subscribed", stored_metadata.fetch(:label)
     assert_equal false, stored_metadata.fetch(:recording_required)
+  end
+
+  def test_returned_nested_action_registration_metadata_is_read_only
+    RecordingStudioAccessible.register_action(:subscribed, label: { text: "Subscribed", tags: ["global"] })
+
+    metadata = RecordingStudioAccessible.action_registration_for(:subscribed)
+
+    assert_raises(FrozenError) { metadata.fetch(:label)[:text] = "Changed" }
+    assert_raises(FrozenError) { metadata.fetch(:label).fetch(:tags) << "changed" }
+    assert_equal({ text: "Subscribed", tags: ["global"] },
+                 RecordingStudioAccessible.action_registration_for(:subscribed).fetch(:label))
   end
 
   def test_registered_actions_snapshot_is_isolated_from_mutation

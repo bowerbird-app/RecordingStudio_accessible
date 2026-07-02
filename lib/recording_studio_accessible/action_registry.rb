@@ -153,6 +153,19 @@ module RecordingStudioAccessible
     end
 
     def immutable_metadata_value(value)
+      case value
+      when Array
+        value.map { |item| immutable_metadata_value(item) }.freeze
+      when Hash
+        value.to_h do |key, item|
+          [immutable_metadata_value(key), immutable_metadata_value(item)]
+        end.freeze
+      else
+        immutable_scalar_metadata_value(value)
+      end
+    end
+
+    def immutable_scalar_metadata_value(value)
       return value unless value.respond_to?(:dup)
 
       value.dup.freeze
