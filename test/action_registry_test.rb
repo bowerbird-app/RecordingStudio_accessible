@@ -50,14 +50,31 @@ class ActionRegistryTest < Minitest::Test
     assert_equal({ subscribed: first }, RecordingStudioAccessible.registered_actions)
   end
 
-  def test_conflicting_duplicate_registration_is_last_write_wins
-    RecordingStudioAccessible.register_action(:publish, label: "Publish", source: "recording_studio_publishable")
+  def test_conflicting_duplicate_registration_uses_latest_metadata_without_weakening_recording_requirement
+    RecordingStudioAccessible.register_action(
+      :publish,
+      label: "Publish",
+      source: "recording_studio_publishable",
+      recording_required: true
+    )
     RecordingStudioAccessible.register_action(:publish, label: "Site publish", source: "application")
 
     metadata = RecordingStudioAccessible.action_registration_for(:publish)
 
     assert_equal "Site publish", metadata.fetch(:label)
     assert_equal "application", metadata.fetch(:source)
+    assert_equal true, metadata.fetch(:recording_required)
+  end
+
+  def test_registration_metadata_is_isolated_from_mutation
+    label = +"Subscribed"
+    RecordingStudioAccessible.register_action(:subscribed, label: label, source: "application")
+
+    label.replace("Changed")
+    metadata = RecordingStudioAccessible.action_registration_for(:subscribed)
+
+    assert_equal "Subscribed", metadata.fetch(:label)
+    assert_raises(FrozenError) { metadata.fetch(:label).replace("Changed again") }
   end
 
   def test_define_action_lists_policy_and_allows_true_result
@@ -87,6 +104,19 @@ class ActionRegistryTest < Minitest::Test
     RecordingStudioAccessible.define_action(:dangerous) { raise "boom" }
 
     refute RecordingStudioAccessible.authorized_action?(actor: :actor, action: :dangerous)
+  end
+
+  def test_action_policy_can_accept_only_needed_keywords
+    policy = ->(actor:) { actor == :actor }
+    RecordingStudioAccessible.define_action(:subscribed, &policy)
+
+    assert RecordingStudioAccessible.authorized_action?(
+      actor: :actor,
+      action: :subscribed,
+      recording: :ignored,
+      context: { ignored: true },
+      controller: :ignored
+    )
   end
 
   def test_recording_required_registration_denies_nil_recording_before_policy
@@ -177,6 +207,29 @@ class ActionRegistryTest < Minitest::Test
     RecordingStudioAccessible.define_check(:raising) { raise "boom" }
 
     refute RecordingStudioAccessible.check(:raising, actor: :actor)
+  end
+
+  def test_check_can_accept_only_needed_keywords
+    RecordingStudioAccessible.define_check(:signed_in) { |actor:| actor == :actor }
+
+    assert RecordingStudioAccessible.check(
+      :signed_in,
+      actor: :actor,
+      recording: :ignored,
+      context: { ignored: true },
+      controller: :ignored
+    )
+  end
+
+  def test_string_action_and_check_names_fail_closed
+    RecordingStudioAccessible.define_action(:subscribed) { true }
+    RecordingStudioAccessible.define_check(:signed_in) { true }
+
+    refute RecordingStudioAccessible.authorized_action?(actor: :actor, action: "subscribed")
+    refute RecordingStudioAccessible.check("signed_in", actor: :actor)
+    refute RecordingStudioAccessible.registered_action?("subscribed")
+    refute RecordingStudioAccessible.action_defined?("subscribed")
+    refute RecordingStudioAccessible.check_defined?("signed_in")
   end
 
   def test_configuration_delegates_to_action_and_check_apis

@@ -458,7 +458,18 @@ raises, or a `recording_required: true` action is checked without a recording.
 Defining a policy for an unregistered action is allowed so host apps can define
 app-local actions without a separate metadata registration. Re-defining an
 action or check intentionally replaces the previous block, which keeps Rails
-development reloads deterministic.
+development reloads deterministic. Action and check names must be symbols; do
+not pass raw params directly as action names.
+
+In Rails apps, define reloadable action policies from a reload-safe hook:
+
+```ruby
+Rails.application.config.to_prepare do
+  RecordingStudioAccessible.define_action(:subscribed) do |actor:, **|
+    actor.present? && actor.respond_to?(:subscribed?) && actor.subscribed?
+  end
+end
+```
 
 Reusable checks can be composed inside action policies:
 

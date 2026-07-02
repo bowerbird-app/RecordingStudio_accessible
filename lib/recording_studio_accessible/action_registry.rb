@@ -12,13 +12,28 @@ module RecordingStudioAccessible
     end
 
     def call(actor:, action:, recording:, context:, controller:)
-      policy.call(
+      arguments = {
         actor: actor,
         action: action,
         recording: recording,
         context: context,
         controller: controller
-      )
+      }
+
+      policy.call(**filtered_keyword_arguments(policy, arguments))
+    end
+
+    private
+
+    def filtered_keyword_arguments(callable, arguments)
+      parameters = callable.parameters
+      return arguments if parameters.any? { |type, _name| type == :keyrest }
+
+      supported_keys = parameters.filter_map do |type, name|
+        name if %i[key keyreq].include?(type)
+      end
+
+      arguments.slice(*supported_keys)
     end
   end
 
@@ -31,19 +46,18 @@ module RecordingStudioAccessible
 
     def register(name, label: nil, description: nil, source: nil, recording_required: false)
       normalized_name = normalize_name!(name)
-      metadata = {
-        name: normalized_name,
-        label: label,
-        description: description,
-        source: source,
-        recording_required: !!recording_required
-      }
-
       @mutex.synchronize do
+        existing = @registrations[normalized_name]
+        metadata = registration_metadata(
+          name: normalized_name,
+          label: label,
+          description: description,
+          source: source,
+          recording_required: existing&.fetch(:recording_required) || recording_required
+        )
         @registrations[normalized_name] = metadata.freeze
+        metadata.dup
       end
-
-      metadata.dup
     end
 
     def define(name, &block)
@@ -133,6 +147,24 @@ module RecordingStudioAccessible
       raise ArgumentError, "action name must be a non-blank symbol" unless valid_name?(name)
 
       name
+    end
+
+    def registration_metadata(name:, label:, description:, source:, recording_required:)
+      {
+        name: name,
+        label: immutable_metadata_value(label),
+        description: immutable_metadata_value(description),
+        source: immutable_metadata_value(source),
+        recording_required: !!recording_required
+      }
+    end
+
+    def immutable_metadata_value(value)
+      return value unless value.respond_to?(:dup)
+
+      value.dup.freeze
+    rescue TypeError
+      value
     end
 
     def valid_name?(name)

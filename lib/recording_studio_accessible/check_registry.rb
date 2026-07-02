@@ -12,12 +12,27 @@ module RecordingStudioAccessible
     end
 
     def call(actor:, recording:, context:, controller:)
-      predicate.call(
+      arguments = {
         actor: actor,
         recording: recording,
         context: context,
         controller: controller
-      )
+      }
+
+      predicate.call(**filtered_keyword_arguments(predicate, arguments))
+    end
+
+    private
+
+    def filtered_keyword_arguments(callable, arguments)
+      parameters = callable.parameters
+      return arguments if parameters.any? { |type, _name| type == :keyrest }
+
+      supported_keys = parameters.filter_map do |type, name|
+        name if %i[key keyreq].include?(type)
+      end
+
+      arguments.slice(*supported_keys)
     end
   end
 
