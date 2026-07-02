@@ -37,6 +37,7 @@ Metrics/ClassLength:
     - 'lib/recording_studio_accessible/hooks.rb'
     - 'app/controllers/recording_studio_accessible/home_controller.rb'
     - 'app/controllers/recording_studio_accessible/recording_accesses_controller.rb'
+    - 'lib/recording_studio_accessible/action_registry.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/authorization_service.rb'
 
@@ -56,6 +57,8 @@ Metrics/MethodLength:
     - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
     - 'app/mailers/recording_studio_accessible/access_granted_mailer.rb'
     - 'lib/recording_studio_accessible/access_recording_creation_guard.rb'
+    - 'lib/recording_studio_accessible/action_registry.rb'
+    - 'lib/recording_studio_accessible/check_registry.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/services/**/*'

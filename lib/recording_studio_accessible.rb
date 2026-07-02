@@ -10,7 +10,10 @@ require "recording_studio_accessible/access_creation_context"
 require "recording_studio_accessible/access_creation_guard"
 require "recording_studio_accessible/access_recording_creation_guard"
 require "recording_studio_accessible/access_management_policy"
+require "recording_studio_accessible/action_registry"
 require "recording_studio_accessible/actor_type"
+require "recording_studio_accessible/check_registry"
+require "recording_studio_accessible/registry_class_methods"
 require "recording_studio_accessible/navigation_url_safety"
 require "recording_studio_accessible/authorization_class_methods"
 require "recording_studio_accessible/configuration"
@@ -27,6 +30,8 @@ require_relative "../app/mailers/recording_studio_accessible/access_granted_mail
 require "recording_studio_accessible/engine"
 
 module RecordingStudioAccessible
+  extend RegistryClassMethods
+
   class << self
     def configuration
       @configuration ||= Configuration.new

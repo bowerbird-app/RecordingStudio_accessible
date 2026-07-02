@@ -409,6 +409,154 @@ RecordingStudioAccessible.authorized?(
 
 It does not check whether a user can use the workspace's access.
 
+### Authorizing named actions
+
+Use ordinary recording access for existing recordings. Use action authorization
+when an addon or host app needs to ask whether an actor may perform a named
+operation, optionally in a recording context:
+
+```ruby
+RecordingStudioAccessible.authorized_action?(
+  actor: current_actor,
+  action: :"recording_studio_messages.create_group",
+  recording: site_messages_recording,
+  context: {
+    messages_key: :site_messages,
+    child_type: "RecordingStudioMessages::MessageGroup"
+  },
+  controller: self
+)
+```
+
+The `recording:` argument is optional because some checks are global app-level
+questions, such as `:signed_in`, `:subscribed`, `:staff`, or `:account_owner`.
+Actions that require a recording context should declare that explicitly:
+
+```ruby
+RecordingStudioAccessible.register_action(
+  :"recording_studio_messages.create_group",
+  label: "Create message group",
+  description: "Allows an actor to start a new message group under a messages container.",
+  source: "recording_studio_messages",
+  recording_required: true
+)
+```
+
+Registration stores metadata only. It does not grant permission. Host apps
+define the action policy separately:
+
+```ruby
+RecordingStudioAccessible.define_action(
+  :"recording_studio_messages.create_group"
+) do |actor:, **|
+  actor.present? && actor.respond_to?(:subscribed?) && actor.subscribed?
+end
+```
+
+Actions fail closed when the action is blank, no policy is defined, a policy
+raises, or a `recording_required: true` action is checked without a recording.
+Defining a policy for an unregistered action is allowed so host apps can define
+app-local actions without a separate metadata registration. Re-defining an
+action or check intentionally replaces the previous block, which keeps Rails
+development reloads deterministic. Action and check names must be symbols; do
+not pass raw params directly as action names.
+
+In Rails apps, define reloadable action policies from a reload-safe hook:
+
+```ruby
+Rails.application.config.to_prepare do
+  RecordingStudioAccessible.define_action(:subscribed) do |actor:, **|
+    actor.present? && actor.respond_to?(:subscribed?) && actor.subscribed?
+  end
+end
+```
+
+Reusable checks can be composed inside action policies:
+
+```ruby
+RecordingStudioAccessible.define_check(:subscribed) do |actor:, **|
+  actor.present? && actor.respond_to?(:subscribed?) && actor.subscribed?
+end
+
+RecordingStudioAccessible.define_action(
+  :"recording_studio_messages.create_group"
+) do |actor:, recording:, context:, controller:, **|
+  RecordingStudioAccessible.check(
+    :subscribed,
+    actor: actor,
+    recording: recording,
+    context: context,
+    controller: controller
+  )
+end
+```
+
+Global checks can be authorized without a recording:
+
+```ruby
+RecordingStudioAccessible.register_action(
+  :subscribed,
+  label: "Subscribed",
+  source: "application"
+)
+
+RecordingStudioAccessible.define_action(:subscribed) do |actor:, **|
+  actor.present? && actor.respond_to?(:subscribed?) && actor.subscribed?
+end
+
+RecordingStudioAccessible.authorized_action?(actor: current_actor, action: :subscribed)
+```
+
+Feature addons should use namespaced action names. Examples:
+
+```ruby
+RecordingStudioAccessible.register_action(
+  :"recording_studio_exportable.export",
+  label: "Export recording",
+  source: "recording_studio_exportable",
+  recording_required: true
+)
+
+RecordingStudioAccessible.define_action(
+  :"recording_studio_exportable.export"
+) do |actor:, recording:, **|
+  RecordingStudioAccessible.authorized?(
+    actor: actor,
+    recording: recording,
+    role: :admin
+  )
+end
+
+RecordingStudioAccessible.register_action(
+  :"recording_studio_publishable.publish",
+  label: "Publish recording",
+  source: "recording_studio_publishable",
+  recording_required: true
+)
+
+RecordingStudioAccessible.register_action(
+  :"recording_studio_duplicatable.duplicate",
+  label: "Duplicate recording",
+  source: "recording_studio_duplicatable",
+  recording_required: true
+)
+```
+
+Registered actions and policies are introspectable:
+
+```ruby
+RecordingStudioAccessible.registered_actions
+RecordingStudioAccessible.registered_action?(:"recording_studio_messages.create_group")
+RecordingStudioAccessible.action_registration_for(:"recording_studio_messages.create_group")
+RecordingStudioAccessible.defined_actions
+RecordingStudioAccessible.action_defined?(:"recording_studio_messages.create_group")
+```
+
+> Do not grant broad access to a shared root just to allow users to create
+> private children. Use an action permission such as
+> `recording_studio_messages.create_group` instead, then grant ordinary access
+> directly on the created child recording.
+
 ### Access through another actor
 
 `RecordingStudio::Access` stores a polymorphic actor. The actor is the access

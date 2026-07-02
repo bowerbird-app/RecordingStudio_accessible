@@ -77,5 +77,36 @@
         ) %>
       </div>
     </div>
+
+    <div class="mt-6">
+      <%= render FlatPack::SectionTitle::Component.new(
+        title: "Access Actions",
+        subtitle: "Demo of the action authorization registry. Registered actions are evaluated against the current actor and workspace root recording. Actions fail closed when the policy returns false.",
+        anchor_link: true,
+        anchor_id: "access-actions"
+      ) %>
+
+      <div class="mt-4">
+        <% if @action_rows.any? %>
+          <%= render FlatPack::Table::Component.new(data: @action_rows) do |table| %>
+            <% table.column(title: "Action") { |row| row[:label] } %>
+            <% table.column(title: "Description") { |row| row[:description] } %>
+            <% table.column(title: "Access") { |row| row[:allowed] ? "Approved" : "Denied" } %>
+            <% table.column(title: "Actions") { |row| link_to("View", access_action_path(row[:action]), class: "text-primary-600 underline text-sm") } %>
+          <% end %>
+        <% else %>
+          <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+            <% card.body(class: "grid gap-3 justify-items-start") do %>
+              <%= render FlatPack::SectionTitle::Component.new(
+                title: "No actions",
+                subtitle: "No actions are registered or the workspace is unavailable.",
+                anchor_link: true,
+                anchor_id: "no-actions"
+              ) %>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
   </div>
 </div>

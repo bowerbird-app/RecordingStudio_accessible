@@ -194,6 +194,67 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_match %r{Admin granted you view access to #{@root_recording.recordable.name}\.\s*Open the shared item: #{shared_item_url_pattern.source}}, @response.body
   end
 
+  test "home page renders access actions section" do
+    sign_in @admin
+
+    get "/"
+
+    assert_response :success
+    assert_includes @response.body, "Access Actions"
+    assert_includes @response.body, "Manage workspace"
+    assert_includes @response.body, "Export data"
+    assert_includes @response.body, "Approved"
+    assert_includes @response.body, "Denied"
+    assert_includes @response.body, "href=\"/access_actions/manage_workspace\""
+    assert_includes @response.body, "href=\"/access_actions/export_data\""
+  end
+
+  test "admin sees approved on action detail page" do
+    sign_in @admin
+
+    get "/access_actions/manage_workspace"
+
+    assert_response :success
+    assert_includes @response.body, "Access approved"
+  end
+
+  test "admin sees denied on export action detail page" do
+    sign_in @admin
+
+    get "/access_actions/export_data"
+
+    assert_response :success
+    assert_includes @response.body, "Access denied"
+  end
+
+  test "unknown action detail page is not found" do
+    sign_in @admin
+
+    get "/access_actions/not_registered"
+
+    assert_response :not_found
+  end
+
+  test "viewer sees denied on action detail page" do
+    sign_in @viewer
+
+    get "/access_actions/manage_workspace"
+
+    assert_response :success
+    assert_includes @response.body, "Access denied"
+    assert_includes @response.body, "You are not authorized"
+  end
+
+  test "viewer sees both actions denied on home page" do
+    sign_in @viewer
+
+    get "/"
+
+    assert_response :success
+    assert_includes @response.body, "Access Actions"
+    assert_equal 2, @response.body.scan("Denied").size
+  end
+
   private
 
   def create_user(email)

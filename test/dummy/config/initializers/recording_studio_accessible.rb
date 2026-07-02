@@ -53,3 +53,47 @@ RecordingStudioAccessible.configure do |config|
     )
   end
 end
+
+# -- Demo: action authorization registry -----------------------------------
+# Two example actions registered to demo the ActionRegistry:
+# - :manage_workspace — allowed for the current demo admin
+# - :export_data — intentionally denied for the current demo admin so the UI
+#   shows one approved action and one denied action
+RecordingStudioAccessible.register_action(
+  :manage_workspace,
+  label: "Manage workspace",
+  description: "Edit workspace name, delete the workspace, or manage billing.",
+  source: "recording_studio_accessible_demo",
+  recording_required: true
+)
+
+RecordingStudioAccessible.register_action(
+  :export_data,
+  label: "Export data",
+  description: "Export all workspace data as a ZIP archive.",
+  source: "recording_studio_accessible_demo",
+  recording_required: true
+)
+
+# Reusable check used by both action policies.
+RecordingStudioAccessible.define_check(:workspace_admin) do |actor:, **|
+  workspace = Workspace.order(:name).first
+  next false unless workspace
+
+  root = RecordingStudio.root_recording_for(workspace)
+  next false unless root
+
+  RecordingStudioAccessible.authorized?(actor: actor, recording: root, role: :admin)
+end
+
+RecordingStudioAccessible.define_check(:demo_exporter) do |actor:, **|
+  actor&.email.to_s.strip.casecmp?("exporter@admin.com")
+end
+
+RecordingStudioAccessible.define_action(:manage_workspace) do |actor:, **|
+  RecordingStudioAccessible.check(:workspace_admin, actor: actor)
+end
+
+RecordingStudioAccessible.define_action(:export_data) do |actor:, recording:, **|
+  recording.present? && RecordingStudioAccessible.check(:demo_exporter, actor: actor)
+end

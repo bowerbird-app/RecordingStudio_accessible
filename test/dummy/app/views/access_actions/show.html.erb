@@ -1,0 +1,33 @@
+<div class="mx-auto w-full max-w-5xl">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: @action_label,
+    subtitle: "Action authorization result for #{current_user.email}",
+    variant: :h1
+  ) %>
+
+  <div class="mt-6">
+    <%= render FlatPack::Card::Component.new(style: @authorized ? :default : :outlined) do |card| %>
+      <% card.body(class: "grid gap-3 justify-items-start") do %>
+        <% if @authorized %>
+          <%= render FlatPack::SectionTitle::Component.new(
+            title: "Access approved",
+            subtitle: "You are authorized to perform this action.",
+            anchor_link: true,
+            anchor_id: "access-approved"
+          ) %>
+        <% else %>
+          <%= render FlatPack::SectionTitle::Component.new(
+            title: "Access denied",
+            subtitle: "You are not authorized to perform this action. Actions fail closed when the policy returns false or when a recording is required but missing.",
+            anchor_link: true,
+            anchor_id: "access-denied"
+          ) %>
+        <% end %>
+      <% end %>
+    <% end %>
+
+    <div class="mt-4">
+      <%= link_to "Back to home", root_path, class: "text-primary-600 underline text-sm" %>
+    </div>
+  </div>
+</div>

@@ -167,6 +167,38 @@ module RecordingStudioAccessible
       false
     end
 
+    def register_action(...)
+      RecordingStudioAccessible.register_action(...)
+    end
+
+    def define_action(...)
+      RecordingStudioAccessible.define_action(...)
+    end
+
+    def authorized_action?(...)
+      RecordingStudioAccessible.authorized_action?(...)
+    end
+
+    def registered_actions
+      RecordingStudioAccessible.registered_actions
+    end
+
+    def defined_actions
+      RecordingStudioAccessible.defined_actions
+    end
+
+    def define_check(...)
+      RecordingStudioAccessible.define_check(...)
+    end
+
+    def check(...)
+      RecordingStudioAccessible.check(...)
+    end
+
+    def defined_checks
+      RecordingStudioAccessible.defined_checks
+    end
+
     def notify_access_granted(controller:, recording:, actor:, role:, manager_actor:)
       resolve_configurable(
         access_management_access_granted_notifier,
