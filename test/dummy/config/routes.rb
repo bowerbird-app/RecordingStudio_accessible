@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   devise_for :users
+  resources :access_actions, only: [ :show ], param: :action_name
   resources :message_groups, only: [ :index ]
   resources :users, only: [ :show ]
   resources :workspaces, only: [ :show ]

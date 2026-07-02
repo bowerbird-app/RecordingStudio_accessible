@@ -9,6 +9,7 @@ class HomeController < ApplicationController
     @workspace_access_rows = build_workspace_access_rows
     @access_rows_by_label = build_access_rows_by_label
     @direct_access_counts_by_recording_id = build_direct_access_counts_by_recording_id
+    @action_rows = build_action_rows
   end
 
   def tree
@@ -119,6 +120,34 @@ class HomeController < ApplicationController
 
       counts[recording.id] = actor_keys.uniq.count
     end
+  end
+
+  def build_action_rows
+    workspace = Workspace.order(:name).first
+    root = workspace ? RecordingStudio.root_recording_for(workspace) : nil
+
+    [
+      {
+        action: :manage_workspace,
+        label: "Manage workspace",
+        description: "Edit workspace name, delete, or manage billing.",
+        allowed: authorized_action_for(:manage_workspace, recording: root)
+      },
+      {
+        action: :export_data,
+        label: "Export data",
+        description: "Export all workspace data as a ZIP archive.",
+        allowed: authorized_action_for(:export_data, recording: root)
+      }
+    ]
+  end
+
+  def authorized_action_for(action, recording:)
+    RecordingStudioAccessible.authorized_action?(
+      actor: current_user,
+      action: action,
+      recording: recording
+    )
   end
 
   def access_row(user:, label:, recording:)

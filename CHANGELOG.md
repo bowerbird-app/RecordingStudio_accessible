@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-02
+
+### Added
+- Added `ActionRegistry` for centralized action authorization: host apps can register named actions with metadata and define authorization policies via `RecordingStudioAccessible.register_action` and `RecordingStudioAccessible.define_action`
+- Added `CheckRegistry` for reusable authorization predicates: host apps can define named checks via `RecordingStudioAccessible.define_check` and evaluate them with `RecordingStudioAccessible.check`
+- Added `RegistryClassMethods` module providing the full registry API surface: `registered_actions`, `registered_action?`, `action_registration_for`, `defined_actions`, `action_policies`, `action_defined?`, `defined_checks`, `check_defined?`
+- Added `authorized_action?` as a first-class query method that delegates through the action registry to evaluate registered action policies
+- Added `Configuration#register_action` and `Configuration#authorized_action?` convenience delegates for host app initializer usage
+- Added comprehensive regression coverage for action registration, definition, authorization, metadata introspection, and deep-frozen immutable registries
+
+### Changed
+- Action definitions are deep-frozen after registration to prevent accidental mutation of policy procs and metadata
+- Registry introspection methods are hardened with exhaustive coverage for edge cases around missing, unregistered, and undefined actions and checks
+
+### Fixed
+- Resolved RuboCop lint issues in registry source files
+
 ## [0.4.0] - 2026-07-01
 
 ### Added
@@ -90,7 +107,8 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.2.1...v0.3.1
