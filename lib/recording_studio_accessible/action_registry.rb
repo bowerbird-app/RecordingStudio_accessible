@@ -64,7 +64,7 @@ module RecordingStudioAccessible
       normalized_name = normalize_name!(name)
       raise ArgumentError, "action policy block is required" unless block
 
-      definition = ActionDefinition.new(name: normalized_name, policy: block)
+      definition = ActionDefinition.new(name: normalized_name, policy: block).freeze
 
       @mutex.synchronize do
         @definitions[normalized_name] = definition
@@ -131,7 +131,7 @@ module RecordingStudioAccessible
     end
 
     def action_policies
-      @mutex.synchronize { @definitions.dup }
+      @mutex.synchronize { @definitions.dup.freeze }
     end
 
     def clear!

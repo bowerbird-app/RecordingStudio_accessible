@@ -77,6 +77,36 @@ class ActionRegistryTest < Minitest::Test
     assert_raises(FrozenError) { metadata.fetch(:label).replace("Changed again") }
   end
 
+  def test_returned_action_registration_is_isolated_from_mutation
+    RecordingStudioAccessible.register_action(:subscribed, label: "Subscribed", source: "application")
+
+    metadata = RecordingStudioAccessible.action_registration_for(:subscribed)
+    metadata[:label] = "Changed"
+    metadata[:recording_required] = true
+
+    stored_metadata = RecordingStudioAccessible.action_registration_for(:subscribed)
+    assert_equal "Subscribed", stored_metadata.fetch(:label)
+    assert_equal false, stored_metadata.fetch(:recording_required)
+  end
+
+  def test_registered_actions_snapshot_is_isolated_from_mutation
+    RecordingStudioAccessible.register_action(:subscribed, label: "Subscribed", source: "application")
+
+    actions = RecordingStudioAccessible.registered_actions
+    actions[:subscribed][:label] = "Changed"
+    actions[:extra] = { name: :extra }
+
+    assert_equal [:subscribed], RecordingStudioAccessible.registered_actions.keys
+    assert_equal "Subscribed", RecordingStudioAccessible.action_registration_for(:subscribed).fetch(:label)
+  end
+
+  def test_register_action_requires_symbol_name
+    assert_raises(ArgumentError) { RecordingStudioAccessible.register_action(nil) }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.register_action("") }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.register_action("subscribed") }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.register_action(:" ") }
+  end
+
   def test_define_action_lists_policy_and_allows_true_result
     RecordingStudioAccessible.define_action(:subscribed) do |actor:, action:, recording:, context:, controller:|
       [actor, action, recording, context, controller] == [:actor, :subscribed, nil, {}, nil]
@@ -86,6 +116,33 @@ class ActionRegistryTest < Minitest::Test
     assert RecordingStudioAccessible.action_policy_defined?(:subscribed)
     assert_equal [:subscribed], RecordingStudioAccessible.defined_actions
     assert RecordingStudioAccessible.authorized_action?(actor: :actor, action: :subscribed)
+  end
+
+  def test_define_action_requires_symbol_name_and_block
+    assert_raises(ArgumentError) { RecordingStudioAccessible.define_action(nil) { true } }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.define_action("") { true } }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.define_action("subscribed") { true } }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.define_action(:" ") { true } }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.define_action(:subscribed) }
+  end
+
+  def test_redefining_action_uses_latest_policy
+    RecordingStudioAccessible.define_action(:zebra) { false }
+    RecordingStudioAccessible.define_action(:alpha) { true }
+    RecordingStudioAccessible.define_action(:zebra) { true }
+
+    assert_equal %i[alpha zebra], RecordingStudioAccessible.defined_actions
+    assert RecordingStudioAccessible.authorized_action?(actor: :actor, action: :zebra)
+  end
+
+  def test_action_policy_introspection_is_read_only
+    RecordingStudioAccessible.define_action(:subscribed) { true }
+
+    policies = RecordingStudioAccessible.action_policies
+
+    assert policies.frozen?
+    assert policies.fetch(:subscribed).frozen?
+    assert_raises(FrozenError) { policies[:other] = policies.fetch(:subscribed) }
   end
 
   def test_authorized_action_returns_boolean_false_for_falsey_policy
@@ -207,6 +264,50 @@ class ActionRegistryTest < Minitest::Test
     RecordingStudioAccessible.define_check(:raising) { raise "boom" }
 
     refute RecordingStudioAccessible.check(:raising, actor: :actor)
+  end
+
+  def test_check_nil_context_is_normalized_to_hash
+    RecordingStudioAccessible.define_check(:signed_in) { |context:, **| context == {} }
+
+    assert RecordingStudioAccessible.check(:signed_in, actor: :actor, context: nil)
+  end
+
+  def test_check_non_hash_context_fails_closed_without_calling_predicate
+    called = false
+    RecordingStudioAccessible.define_check(:signed_in) do
+      called = true
+      true
+    end
+
+    refute RecordingStudioAccessible.check(:signed_in, actor: :actor, context: "invalid")
+    refute called
+  end
+
+  def test_define_check_requires_symbol_name_and_block
+    assert_raises(ArgumentError) { RecordingStudioAccessible.define_check(nil) { true } }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.define_check("") { true } }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.define_check("signed_in") { true } }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.define_check(:" ") { true } }
+    assert_raises(ArgumentError) { RecordingStudioAccessible.define_check(:signed_in) }
+  end
+
+  def test_redefining_check_uses_latest_predicate
+    RecordingStudioAccessible.define_check(:zebra) { false }
+    RecordingStudioAccessible.define_check(:alpha) { true }
+    RecordingStudioAccessible.define_check(:zebra) { true }
+
+    assert_equal %i[alpha zebra], RecordingStudioAccessible.defined_checks
+    assert RecordingStudioAccessible.check(:zebra, actor: :actor)
+  end
+
+  def test_check_introspection_is_read_only
+    RecordingStudioAccessible.define_check(:signed_in) { true }
+
+    checks = RecordingStudioAccessible.check_registry.checks
+
+    assert checks.frozen?
+    assert checks.fetch(:signed_in).frozen?
+    assert_raises(FrozenError) { checks[:other] = checks.fetch(:signed_in) }
   end
 
   def test_check_can_accept_only_needed_keywords

@@ -46,7 +46,7 @@ module RecordingStudioAccessible
       normalized_name = normalize_name!(name)
       raise ArgumentError, "check block is required" unless block
 
-      definition = CheckDefinition.new(name: normalized_name, predicate: block)
+      definition = CheckDefinition.new(name: normalized_name, predicate: block).freeze
 
       @mutex.synchronize do
         @definitions[normalized_name] = definition
@@ -85,7 +85,7 @@ module RecordingStudioAccessible
     end
 
     def checks
-      @mutex.synchronize { @definitions.dup }
+      @mutex.synchronize { @definitions.dup.freeze }
     end
 
     def clear!
