@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "thread"
-
 module RecordingStudioAccessible
   class CheckDefinition
     attr_reader :name, :predicate
@@ -58,7 +56,7 @@ module RecordingStudioAccessible
     def check(name, actor:, recording: nil, context: {}, controller: nil)
       return false unless valid_name?(name)
 
-      normalized_context = context.nil? ? {} : context
+      normalized_context = normalize_context(context)
       return false unless normalized_context.is_a?(Hash)
 
       definition = definition_for(name)
@@ -102,6 +100,10 @@ module RecordingStudioAccessible
 
     def valid_name?(name)
       name.is_a?(Symbol) && !name.to_s.strip.empty?
+    end
+
+    def normalize_context(context)
+      context.nil? ? {} : context
     end
 
     def definition_for(name)

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "thread"
-
 module RecordingStudioAccessible
   class ActionDefinition
     attr_reader :name, :policy
@@ -47,13 +45,12 @@ module RecordingStudioAccessible
     def register(name, label: nil, description: nil, source: nil, recording_required: false)
       normalized_name = normalize_name!(name)
       @mutex.synchronize do
-        existing = @registrations[normalized_name]
         metadata = registration_metadata(
           name: normalized_name,
           label: label,
           description: description,
           source: source,
-          recording_required: existing&.fetch(:recording_required) || recording_required
+          recording_required: recording_required_for(normalized_name, recording_required)
         )
         @registrations[normalized_name] = metadata.freeze
         metadata.dup
@@ -76,19 +73,15 @@ module RecordingStudioAccessible
     def authorized?(actor:, action:, recording: nil, context: {}, controller: nil)
       return false unless valid_name?(action)
 
-      normalized_context = context.nil? ? {} : context
+      normalized_context = normalize_context(context)
       return false unless normalized_context.is_a?(Hash)
 
-      normalized_action = action
-      registration = registration_for(normalized_action)
-      return false if registration && registration[:recording_required] && recording.nil?
-
-      definition = definition_for(normalized_action)
+      definition = authorizable_definition_for(action, recording)
       return false unless definition
 
       !!definition.call(
         actor: actor,
-        action: normalized_action,
+        action: action,
         recording: recording,
         context: normalized_context,
         controller: controller
@@ -155,7 +148,7 @@ module RecordingStudioAccessible
         label: immutable_metadata_value(label),
         description: immutable_metadata_value(description),
         source: immutable_metadata_value(source),
-        recording_required: !!recording_required
+        recording_required: recording_required ? true : false
       }
     end
 
@@ -169,6 +162,25 @@ module RecordingStudioAccessible
 
     def valid_name?(name)
       name.is_a?(Symbol) && !name.to_s.strip.empty?
+    end
+
+    def recording_required_for(name, requested_recording_required)
+      @registrations[name]&.fetch(:recording_required) || requested_recording_required
+    end
+
+    def normalize_context(context)
+      context.nil? ? {} : context
+    end
+
+    def authorizable_definition_for(action, recording)
+      return if recording_required?(action) && recording.nil?
+
+      definition_for(action)
+    end
+
+    def recording_required?(action)
+      registration = registration_for(action)
+      registration && registration[:recording_required]
     end
 
     def definition_for(name)

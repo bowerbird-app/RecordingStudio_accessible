@@ -13,6 +13,7 @@ require "recording_studio_accessible/access_management_policy"
 require "recording_studio_accessible/action_registry"
 require "recording_studio_accessible/actor_type"
 require "recording_studio_accessible/check_registry"
+require "recording_studio_accessible/registry_class_methods"
 require "recording_studio_accessible/navigation_url_safety"
 require "recording_studio_accessible/authorization_class_methods"
 require "recording_studio_accessible/configuration"
@@ -29,6 +30,8 @@ require_relative "../app/mailers/recording_studio_accessible/access_granted_mail
 require "recording_studio_accessible/engine"
 
 module RecordingStudioAccessible
+  extend RegistryClassMethods
+
   class << self
     def configuration
       @configuration ||= Configuration.new
@@ -36,85 +39,6 @@ module RecordingStudioAccessible
 
     def configure
       yield(configuration) if block_given?
-    end
-
-    def action_registry
-      @action_registry ||= ActionRegistry.new
-    end
-
-    def check_registry
-      @check_registry ||= CheckRegistry.new
-    end
-
-    def register_action(action, label: nil, description: nil, source: nil, recording_required: false)
-      action_registry.register(
-        action,
-        label: label,
-        description: description,
-        source: source,
-        recording_required: recording_required
-      )
-    end
-
-    def registered_actions
-      action_registry.registrations
-    end
-
-    def registered_action?(action)
-      action_registry.registered?(action)
-    end
-
-    def action_registration_for(action)
-      action_registry.registration_for(action)
-    end
-
-    def define_action(action, &block)
-      action_registry.define(action, &block)
-    end
-
-    def authorized_action?(actor:, action:, recording: nil, context: {}, controller: nil)
-      action_registry.authorized?(
-        actor: actor,
-        action: action,
-        recording: recording,
-        context: context,
-        controller: controller
-      )
-    end
-
-    def defined_actions
-      action_registry.definitions
-    end
-
-    def action_policies
-      action_registry.action_policies
-    end
-
-    def action_defined?(action)
-      action_registry.defined?(action)
-    end
-    alias action_policy_defined? action_defined?
-
-    def define_check(name, &block)
-      check_registry.define(name, &block)
-    end
-
-    def check(name, actor:, recording: nil, context: {}, controller: nil)
-      check_registry.check(
-        name,
-        actor: actor,
-        recording: recording,
-        context: context,
-        controller: controller
-      )
-    end
-
-    def defined_checks
-      check_registry.definitions
-    end
-
-    def check_defined?(name)
-      check_registry.defined?(name)
     end
 
     def role_for(actor:, recording:)
