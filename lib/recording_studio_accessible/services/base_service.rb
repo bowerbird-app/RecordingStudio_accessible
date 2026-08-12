@@ -115,9 +115,9 @@ module RecordingStudioAccessible
       # @param error [String, StandardError] The error message or exception
       # @param errors [Array] Additional error details
       # @return [Result] A failure result
-      def failure(error, errors: [])
+      def failure(error, errors: [], value: nil)
         error_message = error.is_a?(Exception) ? error.message : error
-        Result.new(success: false, error: error_message, errors: errors)
+        Result.new(success: false, value: value, error: error_message, errors: errors)
       end
 
       # Run before_service hooks
@@ -165,7 +165,7 @@ module RecordingStudioAccessible
       end
 
       def global_id_string_for(record)
-        return unless record.respond_to?(:to_global_id)
+        return unless record.respond_to?(:to_global_id) && record.respond_to?(:id) && record.id.present?
 
         record.to_global_id.to_s
       end

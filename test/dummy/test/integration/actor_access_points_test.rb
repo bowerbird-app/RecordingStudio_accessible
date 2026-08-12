@@ -95,11 +95,26 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
   end
 
   test "blank access actor types fail closed for actor access point lookup" do
-    RecordingStudioAccessible.configuration.access_actor_types = []
+    [ nil, [], [ "", nil ] ].each do |types|
+      RecordingStudioAccessible.configuration.access_actor_types = types
+      sign_in @admin
+
+      get actor_access_points_path, params: {
+        actor_type: "User",
+        actor_id: @actor.id
+      }
+
+      assert_response :not_found
+      refute_includes @response.body, @actor.email
+    end
+  end
+
+  test "all actor types configuration does not broaden actor access point lookup" do
+    RecordingStudioAccessible.configuration.access_actor_types = :all
     sign_in @admin
 
     get actor_access_points_path, params: {
-      actor_type: "User",
+      actor_type: "Kernel",
       actor_id: @actor.id
     }
 

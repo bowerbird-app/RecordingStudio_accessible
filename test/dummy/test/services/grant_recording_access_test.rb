@@ -161,8 +161,24 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal "Actor type is not allowed for access", @result.error
   end
 
-  test "blank access actor allowlist preserves existing grant behavior" do
-    RecordingStudioAccessible.configuration.access_actor_types = []
+  test "missing or blank access actor allowlists reject new grants" do
+    [ nil, [], [ "", nil ] ].each do |types|
+      RecordingStudioAccessible.configuration.access_actor_types = types
+
+      result = RecordingStudioAccessible.grant_access(
+        recording: @recording,
+        actor: @user,
+        role: :view,
+        manager_actor: @manager_actor
+      )
+
+      assert result.failure?
+      assert_equal "Actor type is not allowed for access", result.error
+    end
+  end
+
+  test "explicit all allows persisted actor types" do
+    RecordingStudioAccessible.configuration.access_actor_types = :all
 
     result = RecordingStudioAccessible.grant_access(
       recording: @recording,
@@ -173,6 +189,44 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
 
     assert result.success?
     assert_equal @workspace, result.value.recordable.actor
+  end
+
+  test "STI actors are admitted through their stored base polymorphic type" do
+    actor_class = define_actor_subclass("GrantSpecialUser")
+    special_user = actor_class.create!(
+      email: "grant-special@example.com",
+      password: "Password",
+      password_confirmation: "Password"
+    )
+    RecordingStudioAccessible.configuration.access_actor_types = [ User ]
+
+    result = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: special_user,
+      role: :view,
+      manager_actor: @manager_actor
+    )
+
+    assert result.success?
+    assert_equal "User", result.value.recordable.actor_type
+  ensure
+    remove_actor_subclass("GrantSpecialUser")
+  end
+
+  test "unpersisted actors cannot receive grants even with an assigned ID" do
+    RecordingStudioAccessible.configuration.access_actor_types = :all
+    unpersisted_user = User.new(email: "unpersisted@example.com", password: "Password", password_confirmation: "Password")
+    unpersisted_user.id = SecureRandom.uuid
+
+    result = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: unpersisted_user,
+      role: :view,
+      manager_actor: @manager_actor
+    )
+
+    assert result.failure?
+    assert_equal "Actor type is not allowed for access", result.error
   end
 
   test "service rejects access grants under recordables that did not opt in" do
@@ -263,6 +317,72 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal "edit", result.value.recordable.role
   end
 
+  test "repeated supported grants leave one active recording with the final role" do
+    %i[view edit admin edit].each do |role|
+      result = RecordingStudioAccessible.grant_access(
+        recording: @recording, actor: @user, role: role, manager_actor: @manager_actor
+      )
+
+      assert result.success?
+    end
+
+    grants = direct_access_recordings_for(@user)
+    assert_equal 1, grants.count
+    assert_equal "edit", grants.first.recordable.role
+  end
+
+  test "granting the same actor under different parents retains one grant per parent" do
+    folder = Folder.create!(workspace: @workspace, name: "Grant Parent Folder", summary: "Folder", position: 3)
+    folder_recording = create_child_recording(recordable: folder, parent_recording: @recording)
+
+    root_result = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: @user, role: :view, manager_actor: @manager_actor
+    )
+    folder_result = RecordingStudioAccessible.grant_access(
+      recording: folder_recording, actor: @user, role: :admin, manager_actor: @manager_actor
+    )
+
+    assert root_result.success?
+    assert folder_result.success?
+    assert_equal 1, RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(
+      recording: @recording, actor: @user
+    ).count
+    assert_equal 1, RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(
+      recording: folder_recording, actor: @user
+    ).count
+  end
+
+  test "granting different actors under one parent keeps their grants separate" do
+    other_user = create_user("grant-separate-user@example.com")
+
+    user_result = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: @user, role: :view, manager_actor: @manager_actor
+    )
+    other_result = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: other_user, role: :edit, manager_actor: @manager_actor
+    )
+
+    assert user_result.success?
+    assert other_result.success?
+    assert_equal 1, direct_access_recordings_for(@user).count
+    assert_equal 1, direct_access_recordings_for(other_user).count
+  end
+
+  test "a trashed access recording does not block a replacement grant" do
+    original = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: @user, role: :view, manager_actor: @manager_actor
+    ).value
+    original.update_column(:trashed_at, Time.current)
+
+    result = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: @user, role: :edit, manager_actor: @manager_actor
+    )
+
+    assert result.success?
+    assert_equal 1, direct_access_recordings_for(@user).count
+    assert_equal "edit", result.value.recordable.role
+  end
+
   test "update service can revise an existing direct grant" do
     access_recording = RecordingStudioAccessible.grant_access(
       recording: @recording,
@@ -282,6 +402,33 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal "admin", result.value.recordable.role
   end
 
+  test "stored grants remain authorized and manageable after allowlist changes" do
+    access_recording = create_legacy_direct_access_recording(@user, :view, @recording)
+    RecordingStudioAccessible.configuration.access_actor_types = [ "Workspace" ]
+
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: @user, recording: @recording)
+    assert RecordingStudioAccessible.authorized?(actor: @user, recording: @recording, role: :view)
+
+    update_result = RecordingStudioAccessible::Services::UpdateRecordingAccess.call(
+      recording: @recording,
+      access_recording: access_recording,
+      role: :edit,
+      manager_actor: @manager_actor
+    )
+
+    assert update_result.success?
+    assert_equal "edit", update_result.value.recordable.role
+
+    revoke_result = RecordingStudioAccessible::Services::RevokeRecordingAccess.call(
+      recording: @recording,
+      access_recording: access_recording,
+      manager_actor: @manager_actor
+    )
+
+    assert revoke_result.success?
+    assert_nil RecordingStudio::Recording.unscoped.find_by(id: access_recording.id)
+  end
+
   private
 
   def create_user(email)
@@ -298,5 +445,14 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
 
   def latest_event_for(recording)
     RecordingStudio::Event.where(recording_id: recording.id).order(created_at: :desc, id: :desc).first
+  end
+
+  def define_actor_subclass(name)
+    remove_actor_subclass(name)
+    Object.const_set(name, Class.new(User))
+  end
+
+  def remove_actor_subclass(name)
+    Object.send(:remove_const, name) if Object.const_defined?(name, false)
   end
 end

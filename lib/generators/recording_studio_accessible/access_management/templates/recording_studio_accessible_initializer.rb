@@ -5,12 +5,12 @@ RecordingStudioAccessible.configure do |config|
   # the built-in access constants and this addon is running in compatibility mode.
   config.warn_on_core_conflict = true
 
-  # Optional: restrict which actor types may receive access grants.
-  # Leave blank/nil to preserve existing grant behavior; the gem will warn when
-  # grants are evaluated without an explicit allowlist.
-  # Actor access-point lookup requires this allowlist so request params cannot
-  # resolve arbitrary application constants.
-  # config.access_actor_types = ["User", "Workspace", "Company", "Team"]
+  # New access grants fail closed until their polymorphic actor types are listed.
+  # Add each supported host actor class, for example: ["User", "Workspace"].
+  config.access_actor_types = ["User"]
+  # Set this exact symbol only when arbitrary persisted polymorphic actors are
+  # intentionally supported. :all does not enable actor access-point lookup.
+  # config.access_actor_types = :all
 
   # Optional: allow one actor to use another actor's access grants.
   # By default, actors may only act through themselves.

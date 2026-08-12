@@ -7,10 +7,11 @@ module RecordingStudioAccessible
     class BaseServiceTest < Minitest::Test
       # Test subclass for testing BaseService
       class TestService < BaseService
-        def initialize(should_succeed:, value: nil, error: nil)
+        def initialize(should_succeed:, value: nil, error: nil, failure_value: nil)
           @should_succeed = should_succeed
           @value = value
           @error = error
+          @failure_value = failure_value
         end
 
         private
@@ -19,7 +20,7 @@ module RecordingStudioAccessible
           if @should_succeed
             success(@value)
           else
-            failure(@error)
+            failure(@error, value: @failure_value)
           end
         end
       end
@@ -50,6 +51,13 @@ module RecordingStudioAccessible
         assert result.failure?
         assert_nil result.value
         assert_equal "Something went wrong", result.error
+      end
+
+      def test_failure_result_can_expose_context_value
+        result = TestService.call(should_succeed: false, error: "Partial failure", failure_value: { report: [:repaired] })
+
+        assert result.failure?
+        assert_equal({ report: [:repaired] }, result.value)
       end
 
       def test_on_success_callback

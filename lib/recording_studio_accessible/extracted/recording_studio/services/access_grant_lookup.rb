@@ -27,9 +27,22 @@ module RecordingStudio
           recordings: recordings,
           actor: actor
         ).each_with_object({}) do |access_recording, roles|
-          parent_id = access_recording.parent_recording_id
-          roles[parent_id] ||= access_recording.recordable&.role
+          store_stronger_role(roles, access_recording)
         end
+      end
+
+      def store_stronger_role(roles, access_recording)
+        role = access_recording.recordable&.role
+        return unless RecordingStudio::AccessRoles.value_for(role)
+
+        parent_id = access_recording.parent_recording_id
+        current_role = roles[parent_id]
+        roles[parent_id] = role if stronger_role?(role, current_role)
+      end
+
+      def stronger_role?(role, current_role)
+        current_role.nil? || RecordingStudio::AccessRoles.value_for(role) >
+          RecordingStudio::AccessRoles.value_for(current_role)
       end
     end
   end

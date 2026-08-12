@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Include RecordingStudioRootSwitchable engine views for Tailwind CSS */
+@source "../../vendor/bundle/**/recording_studio_root_switchable/app/views/**/*.erb";
+@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/recording_studio_root_switchable-*/app/views/**/*.erb";
+
+/* Include FlatPack component sources for Tailwind CSS */
+@source "../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}";
+
 /* Include dummy app views for Tailwind CSS */
 @source "../../views/**/*.erb";
 

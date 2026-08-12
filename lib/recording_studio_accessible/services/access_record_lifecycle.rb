@@ -56,11 +56,13 @@ module RecordingStudioAccessible
       end
 
       def ensure_current_impersonator_accessor!
-        return unless defined?(Current)
-        return unless Current.respond_to?(:attribute)
-        return if Current.respond_to?(:impersonator)
+        return unless Object.const_defined?(:Current)
 
-        Current.attribute :impersonator
+        current = Object.const_get(:Current)
+        return unless current.respond_to?(:attribute)
+        return if current.respond_to?(:impersonator)
+
+        current.attribute :impersonator
       end
     end
   end

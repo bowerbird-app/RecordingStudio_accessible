@@ -26,11 +26,12 @@ class ExtractedAccessServicesTest < Minitest::Test
     end
   end
 
-  def test_access_grant_lookup_returns_first_role_by_parent_id
+  def test_access_grant_lookup_returns_strongest_valid_role_by_parent_id
     actor = Actor.new(1)
     parent = Recording.new(id: 10)
     other_parent = Recording.new(id: 20)
     access_recordings = [
+      AccessRecording.new(10, AccessRecordable.new("invalid")),
       AccessRecording.new(10, AccessRecordable.new("edit")),
       AccessRecording.new(10, AccessRecordable.new("admin")),
       AccessRecording.new(20, AccessRecordable.new("view"))
@@ -39,9 +40,22 @@ class ExtractedAccessServicesTest < Minitest::Test
     RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, access_recordings) do
       lookup = RecordingStudio::Services::AccessGrantLookup.new(actor: actor, recordings: [parent, other_parent, nil])
 
-      assert_equal "edit", lookup.role_for(parent)
+      assert_equal "admin", lookup.role_for(parent)
       assert_equal "view", lookup.role_for(other_parent)
       assert_nil lookup.role_for(nil)
+    end
+  end
+
+  def test_access_grant_lookup_returns_no_role_when_a_parent_has_only_invalid_roles
+    actor = Actor.new(1)
+    parent = Recording.new(id: 10)
+    access_recordings = [
+      AccessRecording.new(10, AccessRecordable.new(nil)),
+      AccessRecording.new(10, AccessRecordable.new("invalid"))
+    ]
+
+    RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, access_recordings) do
+      assert_nil RecordingStudio::Services::AccessGrantLookup.new(actor: actor, recordings: [parent]).role_for(parent)
     end
   end
 
@@ -58,7 +72,7 @@ class ExtractedAccessServicesTest < Minitest::Test
     assert_nil RecordingStudio::Services::AccessResolver.new(actor: Actor.new(1), recording: nil).resolve_role
   end
 
-  def test_access_resolver_prefers_direct_role_on_path
+  def test_access_resolver_returns_strongest_valid_role_on_the_path
     root = Recording.new(id: 1)
     child = Recording.new(id: 2, parent_recording: root)
     access_recordings = [
@@ -68,12 +82,39 @@ class ExtractedAccessServicesTest < Minitest::Test
 
     RecordingStudio.stub(:root_recording_or_self, root) do
       RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, access_recordings) do
+        assert_equal "admin", RecordingStudio::Services::AccessResolver.new(actor: Actor.new(1), recording: child).resolve_role
+      end
+    end
+  end
+
+  def test_access_resolver_allows_descendant_role_to_strengthen_ancestor_role
+    root = Recording.new(id: 1)
+    child = Recording.new(id: 2, parent_recording: root)
+    access_recordings = [
+      AccessRecording.new(2, AccessRecordable.new("edit")),
+      AccessRecording.new(1, AccessRecordable.new("view"))
+    ]
+
+    RecordingStudio.stub(:root_recording_or_self, root) do
+      RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, access_recordings) do
+        assert_equal "edit", RecordingStudio::Services::AccessResolver.new(actor: Actor.new(1), recording: child).resolve_role
+      end
+    end
+  end
+
+  def test_access_resolver_uses_direct_role_without_an_ancestor_grant
+    root = Recording.new(id: 1)
+    child = Recording.new(id: 2, parent_recording: root)
+    access_recordings = [AccessRecording.new(2, AccessRecordable.new("view"))]
+
+    RecordingStudio.stub(:root_recording_or_self, root) do
+      RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, access_recordings) do
         assert_equal "view", RecordingStudio::Services::AccessResolver.new(actor: Actor.new(1), recording: child).resolve_role
       end
     end
   end
 
-  def test_access_resolver_falls_back_to_root_role
+  def test_access_resolver_uses_ancestor_role_without_a_direct_grant
     root = Recording.new(id: 1)
     child = Recording.new(id: 2, parent_recording: root)
     access_recordings = [AccessRecording.new(1, AccessRecordable.new("admin"))]
@@ -83,5 +124,48 @@ class ExtractedAccessServicesTest < Minitest::Test
         assert_equal "admin", RecordingStudio::Services::AccessResolver.new(actor: Actor.new(1), recording: child).resolve_role
       end
     end
+  end
+
+  def test_access_resolver_returns_nil_without_a_grant
+    root = Recording.new(id: 1)
+    child = Recording.new(id: 2, parent_recording: root)
+
+    RecordingStudio.stub(:root_recording_or_self, root) do
+      RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, []) do
+        assert_nil RecordingStudio::Services::AccessResolver.new(actor: Actor.new(1), recording: child).resolve_role
+      end
+    end
+  end
+
+  def test_access_resolver_ignores_invalid_roles
+    root = Recording.new(id: 1)
+    child = Recording.new(id: 2, parent_recording: root)
+    access_recordings = [
+      AccessRecording.new(2, AccessRecordable.new("invalid")),
+      AccessRecording.new(1, AccessRecordable.new("edit"))
+    ]
+
+    RecordingStudio.stub(:root_recording_or_self, root) do
+      RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, access_recordings) do
+        assert_equal "edit", RecordingStudio::Services::AccessResolver.new(actor: Actor.new(1), recording: child).resolve_role
+      end
+    end
+  end
+
+  def test_access_resolver_keeps_lookup_batched
+    root = Recording.new(id: 1)
+    child = Recording.new(id: 2, parent_recording: root)
+    calls = 0
+
+    RecordingStudio.stub(:root_recording_or_self, root) do
+      RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, lambda { |**|
+        calls += 1
+        [AccessRecording.new(1, AccessRecordable.new("admin"))]
+      }) do
+        assert_equal "admin", RecordingStudio::Services::AccessResolver.new(actor: Actor.new(1), recording: child).resolve_role
+      end
+    end
+
+    assert_equal 1, calls
   end
 end

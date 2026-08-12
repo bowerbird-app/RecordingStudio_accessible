@@ -222,10 +222,13 @@ users.merge!(additional_users)
 
 workspace = Workspace.find_or_create_by!(name: "Accessible Demo Workspace")
 root_recording = ensure_root_recording(workspace)
+restricted_workspace = Workspace.find_or_create_by!(name: "Restricted Demo Workspace")
+restricted_root_recording = ensure_root_recording(restricted_workspace)
 message_root = upsert_message_root(name: "Messages Root")
 message_root_recording = ensure_root_recording(message_root)
 
 remove_invalid_demo_recordings(root_recording)
+remove_invalid_demo_recordings(restricted_root_recording)
 
 client_onboarding = upsert_folder(
   workspace: workspace,
@@ -239,6 +242,13 @@ operations = upsert_folder(
   name: "Operations",
   summary: "Folder-level view access keeps the demo focused on read-only collaboration.",
   position: 1
+)
+
+restricted_planning = upsert_folder(
+  workspace: restricted_workspace,
+  name: "Private planning",
+  summary: "Restricted workspace content for checking cross-workspace access.",
+  position: 0
 )
 
 welcome_pack = upsert_page(
@@ -262,6 +272,13 @@ ops_runbook = upsert_page(
   position: 0
 )
 
+restricted_brief = upsert_page(
+  folder: restricted_planning,
+  title: "Confidential brief",
+  summary: "Only explicitly granted users can access this workspace content.",
+  position: 0
+)
+
 client_launch_thread = upsert_message_group(
   message_root: message_root,
   name: "Client launch thread",
@@ -277,14 +294,23 @@ remove_obsolete_demo_content(
   }
 )
 
+remove_obsolete_demo_content(
+  workspace: restricted_workspace,
+  allowed_pages_by_folder_name: {
+    restricted_planning.name => [ restricted_brief.title ]
+  }
+)
+
 remove_invalid_demo_recordings(root_recording)
+remove_invalid_demo_recordings(restricted_root_recording)
 
 [
   { page: welcome_pack, title: "Share credentials", body: "Send the starter account details and confirm sign-in.", position: 0 },
   { page: welcome_pack, title: "Confirm first steps", body: "Review the initial tasks for the client workspace.", position: 1 },
   { page: accessibility_checklist, title: "Contrast review", body: "Capture color contrast fixes before sign-off.", position: 0 },
   { page: accessibility_checklist, title: "Keyboard testing", body: "Verify the primary flows without a pointer.", position: 1 },
-  { page: ops_runbook, title: "Escalation path", body: "List the owners for urgent operational issues.", position: 0 }
+  { page: ops_runbook, title: "Escalation path", body: "List the owners for urgent operational issues.", position: 0 },
+  { page: restricted_brief, title: "Release timing", body: "Keep this workspace isolated while checking access controls.", position: 0 }
 ].each do |attributes|
   upsert_card(**attributes)
 end
@@ -299,6 +325,12 @@ operations_recording = ensure_child_recording(
   recordable: operations,
   parent_recording: root_recording,
   root_recording: root_recording
+)
+
+restricted_planning_recording = ensure_child_recording(
+  recordable: restricted_planning,
+  parent_recording: restricted_root_recording,
+  root_recording: restricted_root_recording
 )
 
 accessibility_checklist_recording = ensure_child_recording(
@@ -317,6 +349,12 @@ ops_runbook_recording = ensure_child_recording(
   recordable: ops_runbook,
   parent_recording: operations_recording,
   root_recording: root_recording
+)
+
+restricted_brief_recording = ensure_child_recording(
+  recordable: restricted_brief,
+  parent_recording: restricted_planning_recording,
+  root_recording: restricted_root_recording
 )
 
 client_launch_thread_recording = ensure_child_recording(
@@ -349,6 +387,22 @@ sync_access_recordings(
 )
 
 sync_access_recordings(
+  parent_recording: restricted_root_recording,
+  root_recording: restricted_root_recording,
+  grants: [
+    { actor: users[:admin], role: :admin }
+  ]
+)
+
+sync_access_recordings(
+  parent_recording: restricted_planning_recording,
+  root_recording: restricted_root_recording,
+  grants: [
+    { actor: users[:editor], role: :edit }
+  ]
+)
+
+sync_access_recordings(
   parent_recording: client_launch_thread_recording,
   root_recording: message_root_recording,
   grants: [
@@ -364,6 +418,12 @@ sync_access_recordings(
   )
 end
 
+sync_access_recordings(
+  parent_recording: restricted_brief_recording,
+  root_recording: restricted_root_recording,
+  grants: []
+)
+
 puts "Seeded folder direct access: #{client_onboarding.name} (editor)"
 puts "Seeded through access: #{client_launch_thread.name} through #{workspace.name}"
 
@@ -374,3 +434,4 @@ end
 puts "Seeded without direct page access for pages: #{welcome_pack.title}, #{accessibility_checklist.title}, #{ops_runbook.title}"
 
 puts "Seeded: Workspace '#{workspace.name}' with #{workspace.folders.count} folders"
+puts "Seeded: Workspace '#{restricted_workspace.name}' with #{restricted_workspace.folders.count} folder"

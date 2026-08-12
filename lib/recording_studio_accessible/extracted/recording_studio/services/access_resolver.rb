@@ -14,10 +14,10 @@ module RecordingStudio
       def resolve_role
         return nil unless actor && recording
 
-        direct_role = direct_role_on_path
-        return direct_role if direct_role
-
-        lookup.role_for(path.root_recording)
+        path.lookup_recordings
+            .filter_map { |path_recording| lookup.role_for(path_recording) }
+            .select { |role| RecordingStudio::AccessRoles.value_for(role) }
+            .max_by { |role| RecordingStudio::AccessRoles.value_for(role) }
       end
 
       private
@@ -30,10 +30,6 @@ module RecordingStudio
 
       def lookup
         @lookup ||= AccessGrantLookup.new(actor: actor, recordings: path.lookup_recordings)
-      end
-
-      def direct_role_on_path
-        path.path_recordings.filter_map { |path_recording| lookup.role_for(path_recording) }.first
       end
     end
   end

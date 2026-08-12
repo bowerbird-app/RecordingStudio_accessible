@@ -67,7 +67,6 @@ module RecordingStudioAccessible
       @access_management_authorizer = method(:default_access_management_authorizer)
       @mounted_page_authorizer = method(:default_mounted_page_authorizer)
       @access_actor_types = nil
-      @warned_blank_access_actor_types = false
       @authorize_actor_through = method(:default_authorize_actor_through)
       @hooks = Hooks.new
     end
@@ -136,16 +135,21 @@ module RecordingStudioAccessible
     end
 
     def access_actor_types=(types)
-      @access_actor_types = Array(types).filter_map { |type| normalize_access_actor_type(type) }.presence
-      @warned_blank_access_actor_types = false
+      @access_actor_types = if types == :all
+                              :all
+                            else
+                              Array(types).filter_map { |type| normalize_access_actor_type(type) }.presence
+                            end
+    end
+
+    def all_access_actor_types_allowed?
+      access_actor_types == :all
     end
 
     def allowed_access_actor_type?(actor)
-      if access_actor_types.blank?
-        warn_if_access_actor_types_blank!
-        return true
-      end
-      return false unless actor
+      return false unless valid_access_actor?(actor)
+      return true if all_access_actor_types_allowed?
+      return false if access_actor_types.blank?
 
       access_actor_types.include?(RecordingStudioAccessible::ActorType.for(actor))
     end
@@ -427,19 +431,10 @@ module RecordingStudioAccessible
       false
     end
 
-    def warn_if_access_actor_types_blank!
-      return if @warned_blank_access_actor_types
+    def valid_access_actor?(actor)
+      return false unless actor.respond_to?(:id) && actor.id.present?
 
-      message = "[RecordingStudioAccessible] access_actor_types is not configured; access grants may be created " \
-                "for any actor type. Set config.access_actor_types to an explicit allowlist for production apps."
-
-      if defined?(Rails) && Rails.respond_to?(:logger) && Rails.logger
-        Rails.logger.warn(message)
-      else
-        warn(message)
-      end
-
-      @warned_blank_access_actor_types = true
+      !actor.respond_to?(:persisted?) || actor.persisted?
     end
 
     def normalize_access_actor_type(type)

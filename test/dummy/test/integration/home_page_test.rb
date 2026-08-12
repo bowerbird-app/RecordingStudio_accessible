@@ -37,6 +37,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
 
   test "home page renders the accessible demo and removed pages are absent" do
     sign_in @admin
+    switch_to_root(@root_recording)
 
     get "/"
 
@@ -63,6 +64,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
 
   test "admin sees my access link in the top nav" do
     sign_in @admin
+    switch_to_root(@root_recording)
     workspace = @root_recording.recordable
 
     get "/"
@@ -72,6 +74,80 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "href=\"/recording_studio_accessible/workspaces/#{workspace.id}/actor_access_points"
     assert_includes @response.body, "actor_type=User"
     assert_includes @response.body, "actor_id=#{@admin.id}"
+  end
+
+  test "top nav root switcher lists accessible workspaces but excludes other root types" do
+    alternate_workspace = Workspace.create!(name: "Alternate Workspace")
+    alternate_root_recording = create_root_recording(alternate_workspace)
+    grant_access(@admin, :admin, alternate_root_recording)
+
+    message_root = MessageRoot.create!(name: "Unswitched message root")
+    message_root_recording = create_root_recording(message_root)
+    grant_access(@admin, :admin, message_root_recording)
+
+    sign_in @admin
+
+    get "/"
+
+    assert_response :success
+    assert_includes @response.body, @root_recording.recordable.name
+    assert_includes @response.body, alternate_workspace.name
+    refute_includes @response.body, message_root.name
+    assert_includes @response.body, 'action="/recording_studio_root_switchable/v1/root_switch?scope=workspaces"'
+  end
+
+  test "top nav root switcher persists the selected workspace" do
+    alternate_workspace = Workspace.create!(name: "Selected Workspace")
+    alternate_root_recording = create_root_recording(alternate_workspace)
+    grant_access(@admin, :admin, alternate_root_recording)
+
+    sign_in @admin
+
+    patch "/recording_studio_root_switchable/v1/root_switch?scope=workspaces", params: {
+      root_switch: { root_recording_id: alternate_root_recording.id, return_to: "/" }
+    }
+
+    assert_redirected_to "/"
+    assert RecordingStudio::RootSwitchable::Selection.exists?(
+      actor: @admin,
+      scope_key: "workspaces",
+      root_recording: alternate_root_recording
+    )
+  end
+
+  test "home page renders the selected workspace after a root switch" do
+    selected_workspace = Workspace.create!(name: "Selected Workspace")
+    selected_root_recording = create_root_recording(selected_workspace)
+    selected_folder = Folder.create!(
+      workspace: selected_workspace,
+      name: "Selected folder",
+      summary: "Selected workspace content",
+      position: 0
+    )
+    create_child_recording(recordable: selected_folder, parent_recording: selected_root_recording)
+    selected_page = Page.create!(
+      folder: selected_folder,
+      title: "Selected page",
+      summary: "Selected workspace page",
+      position: 0
+    )
+    create_child_recording(
+      recordable: selected_page,
+      parent_recording: RecordingStudio::Recording.unscoped.find_by!(recordable: selected_folder)
+    )
+    grant_access(@admin, :admin, selected_root_recording)
+
+    sign_in @admin
+
+    patch "/recording_studio_root_switchable/v1/root_switch?scope=workspaces", params: {
+      root_switch: { root_recording_id: selected_root_recording.id, return_to: "/" }
+    }
+    follow_redirect!
+
+    assert_response :success
+    assert_includes @response.body, selected_workspace.name
+    assert_includes @response.body, selected_folder.name
+    assert_includes @response.body, selected_page.title
   end
 
   test "removed health and recording studio pages are not routable" do
@@ -263,5 +339,13 @@ class HomePageTest < ActionDispatch::IntegrationTest
 
   def grant_access(user, role, parent_recording, root_recording = parent_recording)
     create_direct_access_recording(actor: user, role: role, parent_recording: parent_recording)
+  end
+
+  def switch_to_root(root_recording)
+    patch "/recording_studio_root_switchable/v1/root_switch?scope=workspaces", params: {
+      root_switch: { root_recording_id: root_recording.id, return_to: "/" }
+    }
+
+    assert_redirected_to "/"
   end
 end

@@ -56,6 +56,19 @@ class AccessManagementGeneratorTest < Minitest::Test
     end
   end
 
+  def test_copy_initializer_configures_a_safe_actor_allowlist
+    with_temp_app do |dir|
+      generator = build_generator(dir)
+
+      generator.copy_initializer
+
+      initializer = File.read(File.join(dir, "config/initializers/recording_studio_accessible.rb"))
+      assert_includes initializer, 'config.access_actor_types = ["User"]'
+      assert_includes initializer, "config.access_actor_types = :all"
+      refute_includes initializer, "Leave blank/nil to preserve existing grant behavior"
+    end
+  end
+
   def test_copy_initializer_preserves_existing_initializer
     with_temp_app do |dir|
       initializer = File.join(dir, "config/initializers/recording_studio_accessible.rb")

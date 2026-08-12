@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-12
+
+### Changed
+- Breaking: new polymorphic access grants now fail closed when `config.access_actor_types` is blank or `nil`. Configure an explicit allowlist such as `["User", "Workspace"]`, or opt in to arbitrary persisted actor types with the security-sensitive exact symbol `:all`. Existing grants continue to authorize and can still be updated or revoked.
+
+### Fixed
+- Effective hierarchy access resolution now selects the strongest valid role granted on the target recording or an applicable ancestor. Actors with weaker descendant grants and stronger ancestor grants may receive broader authorization results.
+- Same-parent malformed direct-access duplicates now resolve deterministically to their strongest valid role, independent of row order.
+
+### Added
+- Added the dry-run-by-default `recording_studio_accessible:access_grants:integrity` task and lifecycle-backed repair service for inspecting and repairing malformed active duplicate grants without schema or RecordingStudio recording/recordable architecture changes.
+
+### Upgrade Notes
+- Before deploying, configure `config.access_actor_types` with the persisted polymorphic types that may receive new grants. A blank or `nil` value now rejects every new grant; use `:all` only when arbitrary persisted actor types are intentional.
+- Audit authorization flows that treated a weaker direct descendant grant as a restriction. The effective role now uses the strongest valid grant on the target recording or any applicable ancestor.
+- Run `bin/rails recording_studio_accessible:access_grants:integrity` before deployment to report malformed same-parent duplicates. Repair only after reviewing the report with `DRY_RUN=false` and a persisted manager actor GlobalID; no database migration is required.
+
 ## [0.4.1] - 2026-07-02
 
 ### Added
@@ -107,7 +124,8 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.1...v0.3.2
