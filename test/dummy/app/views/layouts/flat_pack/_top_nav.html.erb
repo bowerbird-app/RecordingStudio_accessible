@@ -16,6 +16,9 @@
   <% end %>
 
   <% nav.center do %>
+    <% if user_signed_in? %>
+      <%= recording_studio_root_switch_dropdown(style: :ghost, size: :md) %>
+    <% end %>
   <% end %>
 
   <% nav.right do %>

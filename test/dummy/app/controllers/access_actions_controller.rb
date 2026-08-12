@@ -2,15 +2,12 @@ class AccessActionsController < ApplicationController
   def show
     action_name = registered_action_name!
 
-    workspace = Workspace.order(:name).first
-    root = workspace ? RecordingStudio.root_recording_for(workspace) : nil
-
     @action_label = action_label_for(action_name)
 
     @authorized = RecordingStudioAccessible.authorized_action?(
       actor: current_user,
       action: action_name,
-      recording: root
+      recording: current_workspace_recording
     )
   end
 

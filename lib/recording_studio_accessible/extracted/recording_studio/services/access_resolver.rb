@@ -15,9 +15,9 @@ module RecordingStudio
         return nil unless actor && recording
 
         path.lookup_recordings
-          .filter_map { |path_recording| lookup.role_for(path_recording) }
-          .select { |role| RecordingStudio::AccessRoles.value_for(role) }
-          .max_by { |role| RecordingStudio::AccessRoles.value_for(role) }
+            .filter_map { |path_recording| lookup.role_for(path_recording) }
+            .select { |role| RecordingStudio::AccessRoles.value_for(role) }
+            .max_by { |role| RecordingStudio::AccessRoles.value_for(role) }
       end
 
       private
@@ -31,7 +31,6 @@ module RecordingStudio
       def lookup
         @lookup ||= AccessGrantLookup.new(actor: actor, recordings: path.lookup_recordings)
       end
-
     end
   end
 end

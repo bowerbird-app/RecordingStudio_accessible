@@ -1,7 +1,7 @@
 class HomeController < ApplicationController
   def index
-    @workspace = Workspace.includes(folders: { pages: :cards }).order(:name).first
-    @root_recording = root_recording_for(@workspace)
+    @workspace = current_workspace
+    @root_recording = current_workspace_recording
     @root_access_management_enabled = access_management_enabled_for(@root_recording)
     @demo_sections = build_demo_sections
     @demo_users = load_demo_users
@@ -123,21 +123,18 @@ class HomeController < ApplicationController
   end
 
   def build_action_rows
-    workspace = Workspace.order(:name).first
-    root = workspace ? RecordingStudio.root_recording_for(workspace) : nil
-
     [
       {
         action: :manage_workspace,
         label: "Manage workspace",
         description: "Edit workspace name, delete, or manage billing.",
-        allowed: authorized_action_for(:manage_workspace, recording: root)
+        allowed: authorized_action_for(:manage_workspace, recording: @root_recording)
       },
       {
         action: :export_data,
         label: "Export data",
         description: "Export all workspace data as a ZIP archive.",
-        allowed: authorized_action_for(:export_data, recording: root)
+        allowed: authorized_action_for(:export_data, recording: @root_recording)
       }
     ]
   end

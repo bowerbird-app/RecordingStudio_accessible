@@ -34,6 +34,11 @@ Additional seeded users:
 
 All use `Password`.
 
+## Seeded Workspaces
+
+- `Accessible Demo Workspace` grants the admin root access, viewer access to all `access_user_*` accounts, and editor access to the Client onboarding folder.
+- `Restricted Demo Workspace` grants only the admin root access and editor access to its Private planning folder. The viewer has no access, making it suitable for checking cross-workspace access controls.
+
 ## Useful Routes
 
 - `/` - dummy app demo with seeded folders, pages, cards, and access results

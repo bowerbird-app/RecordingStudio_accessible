@@ -2,6 +2,8 @@
 
 module RecordingStudioAccessible
   module Services
+    # This service coordinates the full repair workflow and its reporting.
+    # rubocop:disable Metrics/ClassLength
     class AccessGrantIntegrity < BaseService
       include AccessRecordLifecycle
 
@@ -15,14 +17,21 @@ module RecordingStudioAccessible
       attr_reader :dry_run, :manager_actor
 
       def perform
-        return failure("A persisted manager actor with a GlobalID is required for repair") if !dry_run && !valid_manager_actor?
+        unless dry_run || valid_manager_actor?
+          return failure("A persisted manager actor with a GlobalID is required for repair")
+        end
 
         ensure_current_impersonator_accessor! unless dry_run
         report = duplicate_groups.map { |group| inspect_or_repair(group) }
         failures = report.select { |entry| entry[:status] == :failed }
 
-        return failure("Some duplicate access grants could not be repaired", errors: failures,
-                                                                       value: { report: report, dry_run: dry_run }) if failures.any?
+        if failures.any?
+          return failure(
+            "Some duplicate access grants could not be repaired",
+            errors: failures,
+            value: { report: report, dry_run: dry_run }
+          )
+        end
 
         success(report: report, dry_run: dry_run)
       end
@@ -79,7 +88,7 @@ module RecordingStudioAccessible
 
       def group_for_parent(parent, group)
         recordings = active_access_recordings_for(parent).includes(:recordable).select do |recording|
-          group_key_for(recording) == [ parent.id, group[:actor_type], group[:actor_id] ]
+          group_key_for(recording) == [parent.id, group[:actor_type], group[:actor_id]]
         end
         return unless recordings.length > 1
 
@@ -98,7 +107,7 @@ module RecordingStudioAccessible
 
       def group_key_for(access_recording)
         access = access_recording.recordable
-        [ access_recording.parent_recording_id, normalized_actor_type_for(access), access.actor_id ]
+        [access_recording.parent_recording_id, normalized_actor_type_for(access), access.actor_id]
       end
 
       def normalized_actor_type_for(access)
@@ -111,7 +120,7 @@ module RecordingStudioAccessible
       def group_from(key, recordings)
         roles = recordings.map { |recording| recording.recordable.role }
         strongest_role = roles.select { |role| RecordingStudio::AccessRoles.value_for(role) }
-                            .max_by { |role| RecordingStudio::AccessRoles.value_for(role) }
+                              .max_by { |role| RecordingStudio::AccessRoles.value_for(role) }
 
         {
           parent_recording_id: key[0],
@@ -149,5 +158,6 @@ module RecordingStudioAccessible
         end
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

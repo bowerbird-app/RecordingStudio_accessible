@@ -10,6 +10,8 @@ class ApplicationController < ActionController::Base
   before_action :authenticate_user!
   before_action :set_current_actor
 
+  include RecordingStudio::RootSwitchable::ControllerSupport
+
   helper_method :recording_studio_accessible_docs_visible?
   helper_method :recording_studio_accessible_my_access_url
   helper_method :recording_studio_accessible_my_access_visible?
@@ -24,15 +26,20 @@ class ApplicationController < ActionController::Base
     Current.actor = current_user
   end
 
+  def current_workspace
+    current_root_recordable if current_root_recordable.is_a?(Workspace)
+  end
+
+  def current_workspace_recording
+    current_root_recording if current_workspace
+  end
+
   def recording_studio_accessible_docs_visible?
     return false unless user_signed_in?
     return false unless defined?(Workspace)
     return false unless defined?(RecordingStudio::Recording)
 
-    workspace = Workspace.order(:name, :id).first
-    return false unless workspace
-
-    root_recording = RecordingStudio.root_recording_for(workspace)
+    root_recording = current_workspace_recording
     return false unless root_recording
 
     RecordingStudioAccessible.configuration.authorize_mounted_page?(
@@ -49,7 +56,7 @@ class ApplicationController < ActionController::Base
   def recording_studio_accessible_my_access_url
     return unless recording_studio_accessible_my_access_visible?
 
-    workspace = Workspace.order(:name, :id).first
+    workspace = current_workspace
     return unless workspace
 
     anchor = request&.fullpath.presence || "/"

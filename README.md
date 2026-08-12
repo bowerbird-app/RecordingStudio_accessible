@@ -85,6 +85,35 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.5.0
+
+Version 0.5.0 changes new-grant handling and effective-role resolution.
+
+1. Configure the polymorphic types that may receive new grants before deploying:
+
+  ```ruby
+  RecordingStudioAccessible.configure do |config|
+    config.access_actor_types = ["User", "Workspace"]
+  end
+  ```
+
+  A blank or `nil` value now rejects every new grant. Use `:all` only when the
+  application intentionally supports arbitrary persisted actor types. Existing
+  grants remain readable, effective, revocable, and updatable.
+
+2. Review authorization flows that assumed a weaker direct grant on a child
+  recording restricted access inherited from an ancestor. Effective access now
+  uses the strongest valid role across the target recording and its applicable
+  ancestors.
+
+3. Inspect pre-existing same-parent duplicate grants before deployment:
+
+  ```bash
+  bin/rails recording_studio_accessible:access_grants:integrity
+  ```
+
+  Review the dry-run output before repair. No database migration is required.
+
 If your app previously created direct grants with `RecordingStudio::Access.create!`
 plus a matching `RecordingStudio::Recording`, or by calling
 `parent_recording.record(RecordingStudio::Access, ...)`, update that code to use
