@@ -4,8 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Breaking: new polymorphic access grants now fail closed when `config.access_actor_types` is blank or `nil`. Configure an explicit allowlist such as `["User", "Workspace"]`, or opt in to arbitrary persisted actor types with the security-sensitive exact symbol `:all`. Existing grants continue to authorize and can still be updated or revoked.
+
 ### Fixed
 - Effective hierarchy access resolution now selects the strongest valid role granted on the target recording or an applicable ancestor. Actors with weaker descendant grants and stronger ancestor grants may receive broader authorization results.
+- Same-parent malformed direct-access duplicates now resolve deterministically to their strongest valid role, independent of row order.
+
+### Added
+- Added the dry-run-by-default `recording_studio_accessible:access_grants:integrity` task and lifecycle-backed repair service for inspecting and repairing malformed active duplicate grants without schema or RecordingStudio recording/recordable architecture changes.
 
 ## [0.4.1] - 2026-07-02
 

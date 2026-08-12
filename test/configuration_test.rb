@@ -118,43 +118,18 @@ class ConfigurationTest < Minitest::Test
     assert_equal ["AccountMember"], @configuration.access_actor_types
   end
 
-  def test_blank_access_actor_types_preserves_existing_actor_grants
-    @configuration.access_actor_types = []
+  def test_nil_empty_and_blank_access_actor_types_reject_new_grants
+    user = actor_named("User", id: 1)
 
-    Rails.stub(:logger, Class.new { def warn(*) = nil }.new) do
-      assert @configuration.allowed_access_actor_type?(Object.new)
+    [nil, [], ["", nil]].each do |types|
+      @configuration.access_actor_types = types
+
+      refute @configuration.allowed_access_actor_type?(user)
     end
-  end
-
-  def test_blank_access_actor_types_warns_once_when_preserving_existing_actor_grants
-    @configuration.access_actor_types = []
-    logger = Class.new do
-      attr_reader :warnings
-
-      def initialize
-        @warnings = []
-      end
-
-      def warn(message)
-        @warnings << message
-      end
-    end.new
-
-    Rails.stub(:logger, logger) do
-      2.times { assert @configuration.allowed_access_actor_type?(Object.new) }
-    end
-
-    assert_equal 1, logger.warnings.size
-    assert_includes logger.warnings.first, "access_actor_types is not configured"
   end
 
   def test_allowed_access_actor_type_checks_normalized_actor_type_when_configured
-    user = Struct.new(:id) do
-      def self.base_class
-        self
-      end
-    end.new(1)
-    user.class.define_singleton_method(:name) { "User" }
+    user = actor_named("User", id: 1)
 
     @configuration.access_actor_types = ["Workspace"]
 
@@ -163,6 +138,37 @@ class ConfigurationTest < Minitest::Test
     @configuration.access_actor_types = ["User"]
 
     assert @configuration.allowed_access_actor_type?(user)
+  end
+
+  def test_all_access_actor_types_is_an_explicit_opt_in
+    user = actor_named("User", id: 1)
+
+    @configuration.access_actor_types = :all
+
+    assert_equal :all, @configuration.access_actor_types
+    assert @configuration.all_access_actor_types_allowed?
+    assert @configuration.allowed_access_actor_type?(user)
+  end
+
+  def test_all_like_strings_do_not_allow_every_actor_type
+    user = actor_named("User", id: 1)
+
+    ["all", "*", true].each do |types|
+      @configuration.access_actor_types = types
+
+      refute @configuration.all_access_actor_types_allowed?
+      refute @configuration.allowed_access_actor_type?(user)
+    end
+  end
+
+  def test_nil_and_unpersisted_actors_are_rejected
+    @configuration.access_actor_types = :all
+    unpersisted_actor = actor_named("User", id: 1)
+    unpersisted_actor.define_singleton_method(:persisted?) { false }
+
+    refute @configuration.allowed_access_actor_type?(nil)
+    refute @configuration.allowed_access_actor_type?(actor_named("User", id: nil))
+    refute @configuration.allowed_access_actor_type?(unpersisted_actor)
   end
 
   def test_default_authorize_actor_through_only_allows_same_actor_identity
@@ -729,5 +735,17 @@ class ConfigurationTest < Minitest::Test
     @configuration.mounted_page_authorizer = ->(**) { raise "boom" }
 
     refute @configuration.authorize_mounted_page?(controller: :controller, actor: :actor, recording: :recording)
+  end
+
+  private
+
+  def actor_named(name, id:)
+    actor_class = Struct.new(:id) do
+      def self.base_class
+        self
+      end
+    end
+    actor_class.define_singleton_method(:name) { name }
+    actor_class.new(id)
   end
 end

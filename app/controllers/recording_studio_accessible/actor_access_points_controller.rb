@@ -102,9 +102,9 @@ module RecordingStudioAccessible
       return unless valid_actor_type_param?(actor_type)
 
       configured_types = RecordingStudioAccessible.configuration.access_actor_types
-      return unless configured_types.present?
+      return unless configured_types.is_a?(Array) && configured_types.present?
 
-      actor_type.to_s if configured_types&.include?(actor_type.to_s)
+      actor_type.to_s if configured_types.include?(actor_type.to_s)
     end
 
     def valid_actor_type_param?(actor_type)

@@ -220,7 +220,8 @@ RecordingStudioAccessible.grant_access(
 workspace, company, team, system actor, or another configured access actor.
 `manager_actor` remains the actor performing the access-management action.
 
-Host apps may optionally restrict which actor types can receive access grants:
+New access grants fail closed until host apps explicitly configure which
+polymorphic actor types may receive them. Use a finite allowlist in production:
 
 ```ruby
 RecordingStudioAccessible.configure do |config|
@@ -228,15 +229,29 @@ RecordingStudioAccessible.configure do |config|
 end
 ```
 
-When this list is blank or `nil`, existing behavior is preserved. When it is
-set, `RecordingStudioAccessible.grant_access` rejects new grants for actor
-types outside the configured list. Existing access records remain valid for
-compatibility.
+Strings and classes are supported; classes are normalized to their base
+polymorphic type, so STI subclasses match their stored base type. Blank lists
+and `nil` reject every new grant. Grant subjects must be persisted records.
 
-The mounted actor access-point page also depends on this allowlist. That route
-fails closed unless `config.access_actor_types` is set to an explicit list of
-permitted polymorphic actor types, so request params cannot probe arbitrary
-application constants.
+Hosts that intentionally support arbitrary persisted polymorphic subjects may
+opt in with the exact symbol `:all`:
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.access_actor_types = :all
+end
+```
+
+This is security-sensitive: `"all"`, `"*"`, and other values do not enable it.
+Prefer an explicit allowlist whenever the valid subject classes are known.
+This setting only admits *new* grants. Existing access records remain readable,
+revocable, and effective for `role_for` and `authorized?` after the allowlist
+is changed or removed.
+
+The mounted actor access-point page also depends on a finite allowlist. It
+fails closed for blank configuration and for `:all`; `:all` never broadens
+request-driven type lookup, so request params cannot probe arbitrary application
+constants.
 
 For example, a host app may grant access to a workspace:
 
@@ -258,7 +273,40 @@ error.
 
 The supported grant path enforces placement, authorization, role validation, and
 deduplication so each actor has at most one direct active access grant under a
-given parent recording.
+given parent recording. The same actor may hold separate direct grants beneath
+different hierarchy nodes. Supported grant APIs update the retained grant and
+remove redundant active same-parent grants during ordinary writes.
+
+### Duplicate grant integrity
+
+Malformed legacy data, direct SQL imports, and callback-skipping imports can
+still leave redundant rows behind. Lookup remains fail-safe: when more than one
+active direct grant exists for the same actor under one parent, authorization
+uses the strongest valid role for that parent. This is defense in depth, not
+support for maintaining duplicate grants.
+
+Inspect a host application's active direct grants without modifying data:
+
+```bash
+bin/rails recording_studio_accessible:access_grants:integrity
+```
+
+The task reports each duplicate group by parent recording, normalized actor
+type/ID, access recording IDs, roles, and the recording it would retain. To
+repair groups, provide an explicit audit actor GlobalID and opt out of dry-run
+mode:
+
+```bash
+DRY_RUN=false MANAGER_ACTOR_GID="gid://your-app/User/123" \
+  bin/rails recording_studio_accessible:access_grants:integrity
+```
+
+Repair locks and re-queries each parent, retains one active recording, promotes
+it to the strongest valid role, and removes redundant recording/recordable pairs
+through the normal lifecycle. Groups containing no valid role are reported and
+left untouched for manual investigation. Each parent group is repaired in its
+own transaction: later failures do not undo groups already repaired, and the
+task prints every attempted group before exiting nonzero for a partial failure.
 
 ### Managing access through the mounted engine
 
