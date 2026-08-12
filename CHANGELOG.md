@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Effective hierarchy access resolution now selects the strongest valid role granted on the target recording or an applicable ancestor. Actors with weaker descendant grants and stronger ancestor grants may receive broader authorization results.
+
 ## [0.4.1] - 2026-07-02
 
 ### Added

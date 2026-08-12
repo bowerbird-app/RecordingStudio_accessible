@@ -16,11 +16,22 @@ class AccessResolverTest < ActiveSupport::TestCase
     @page_recording = create_child_recording(recordable: page, parent_recording: @folder_recording)
   end
 
-  test "returns direct access on the current recording before inherited access" do
-    grant_access(@viewer, :view, @root_recording)
-    grant_access(@viewer, :edit, @folder_recording, @root_recording)
+  test "resolves the strongest direct or inherited role while preserving direct access rows" do
+    child_access = grant_access(@viewer, :view, @folder_recording, @root_recording)
+    assert_equal :view, child_access.recordable.role.to_sym
 
-    assert_equal :edit, RecordingStudioAccessible.role_for(actor: @viewer, recording: @folder_recording)
+    grant_access(@viewer, :admin, @root_recording)
+
+    assert_equal :admin, RecordingStudioAccessible.role_for(actor: @viewer, recording: @folder_recording)
+    assert RecordingStudioAccessible.authorized?(actor: @viewer, recording: @folder_recording, role: :admin)
+  end
+
+  test "does not authorize admin when the strongest role is edit" do
+    grant_access(@editor, :edit, @root_recording)
+    grant_access(@editor, :view, @folder_recording, @root_recording)
+
+    assert_equal :edit, RecordingStudioAccessible.role_for(actor: @editor, recording: @folder_recording)
+    refute RecordingStudioAccessible.authorized?(actor: @editor, recording: @folder_recording, role: :admin)
   end
 
   test "inherits root access on descendant recordings" do

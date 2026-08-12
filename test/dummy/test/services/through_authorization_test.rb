@@ -189,6 +189,21 @@ class ThroughAuthorizationTest < ActiveSupport::TestCase
     )
   end
 
+  test "through authorization resolves the strongest role across the hierarchy" do
+    folder = Folder.create!(workspace: @target_workspace, name: "Shared Folder", summary: "Folder", position: 0)
+    folder_recording = create_child_recording(recordable: folder, parent_recording: @target_recording)
+    create_direct_access_recording(actor: @through_workspace, role: :admin, parent_recording: @target_recording)
+    create_direct_access_recording(actor: @through_workspace, role: :view, parent_recording: folder_recording)
+    allow_user_through_workspace!
+
+    assert_equal :admin, RecordingStudioAccessible.role_through(
+      actor: @user, through: @through_workspace, recording: folder_recording
+    )
+    assert RecordingStudioAccessible.authorized_through?(
+      actor: @user, through: @through_workspace, recording: folder_recording, role: :admin
+    )
+  end
+
   private
 
   def create_user(email)

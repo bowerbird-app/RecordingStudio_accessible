@@ -388,6 +388,13 @@ That separation is intentional:
 
 ### Checking access
 
+Effective access is the strongest role granted to the actor on the target
+recording or any applicable ancestor up to the root. Direct grants are additive
+and do not restrict stronger inherited access.
+
+For example, if the root grants `admin` and a child directly grants `view`, the
+child's direct role remains `view` while its effective role is `admin`.
+
 ```ruby
 RecordingStudioAccessible.role_for(actor: user, recording: root_recording)
 RecordingStudioAccessible.authorized?(actor: user, recording: root_recording, role: :edit)
