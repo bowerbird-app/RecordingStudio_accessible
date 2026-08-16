@@ -57,11 +57,12 @@ initializer.
 
 ## Compatibility with RecordingStudio 3.0
 
-Recording Studio Accessible targets RecordingStudio `3.0.0` and its
-capability-owned child recordable contract. RecordingStudio core no longer ships
-built-in access control, so this addon provides `RecordingStudio::Access`,
-declares it as a child-only recordable, and registers it as metadata for the
-`:accessible` capability.
+Recording Studio Accessible targets RecordingStudio `3.0` (currently tested with
+`3.0.3`) and its capability-owned child recordable contract. RecordingStudio core
+no longer ships built-in access control, so this addon provides
+`RecordingStudio::Access`, declares it as a child-only recordable, and registers
+it as metadata for the `:accessible` capability. RecordingStudio `4.0` is not
+supported yet.
 
 On load, the addon registers:
 
@@ -84,6 +85,18 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.5.1
+
+This is a dependency refresh. There are no access-API changes.
+
+1. Stay on RecordingStudio `~> 3.0`. This gem is tested with `3.0.3`.
+2. If you use the dummy app or copy its companion gems, pin:
+   - `recording_studio` to tag `v3.0.3`
+   - `recording_studio_root_switchable` to tag `v0.3.5`
+   - `flat_pack` to tag `v0.1.129` (this jumps ViewComponent from 3 to 4)
+3. Do not upgrade to RecordingStudio `4.0` with this release. Root switching
+   `0.3.5` still requires RecordingStudio `~> 3.0`.
 
 #### Upgrading to 0.5.0
 
@@ -180,7 +193,7 @@ RecordingStudio.configure do |config|
 end
 ```
 
-RecordingStudio `3.0.0` requires each configured recordable to declare its
+RecordingStudio `3.0` requires each configured recordable to declare its
 hierarchy rules. Domain child recordables still declare their static parents:
 
 ```ruby
@@ -705,7 +718,7 @@ use another actor's access grant.
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of the RecordingStudio dependency.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `3.0.3`, RecordingStudioRootSwitchable `0.3.5`, and FlatPack `0.1.129`.
 
 The dummy app also installs a demo-only override in `test/dummy/config/initializers/recording_studio_accessible.rb`. That initializer creates a `User` automatically when an unknown email is granted access, so the demo can show a successful end-to-end flow without requiring a separate invitation or signup system. That shortcut keeps the demo simple, but it is not the engine default and should not be treated as the recommended production pattern for host apps.
 
