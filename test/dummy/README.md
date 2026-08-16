@@ -20,6 +20,8 @@ bin/dev
 
 `bin/dev` runs `bin/rails db:prepare` before starting Rails and Tailwind, so it will create or migrate the dummy database when needed.
 
+The dummy Tailwind entry file scans FlatPack, RecordingStudio, and this addon's views/components. After changing companion gem pins, run `bin/rails tailwindcss:build` so utility classes from those gems are regenerated.
+
 Then sign in with:
 
 - Email: `admin@admin.com`

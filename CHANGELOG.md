@@ -9,7 +9,9 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Development and dummy-app bundles now track RecordingStudio `3.0.3` and Rails `8.1.3.1`.
 - Dummy app pins FlatPack `v0.1.129` (ViewComponent 4) and RecordingStudioRootSwitchable `v0.3.5` instead of floating GitHub `main` / older tags.
+- Aligned the dummy Tailwind `@source` paths and FlatPack theme tokens with RecordingStudio 3.0.3 so FlatPack 0.1.129 component classes are included in the build.
 - Aligned public gem lockfiles between the engine and dummy app for Devise, PostgreSQL, Tailwind, RuboCop, Turbo, Solid Queue, and related compatible updates. Puma 8, Solid Cable 4, SimpleCov 1, Brakeman 8, image_processing 2, and RecordingStudio 4.0 are intentionally deferred.
+- Added `minitest-mock` for the engine test suite so Minitest 6 (pulled in by Rails 8.1.3.1) still supports the existing `Object#stub` helpers.
 
 ### Upgrade Notes
 - Hosts already on RecordingStudio `~> 3.0` can keep that constraint. This release is tested against `3.0.3`.

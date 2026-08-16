@@ -17,6 +17,7 @@ gem "tailwindcss-rails"
 group :development, :test do
   gem "bootsnap", require: false
   gem "debug"
+  gem "minitest-mock"
   gem "simplecov", require: false
 end
 
