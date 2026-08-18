@@ -28,7 +28,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", "~> 3.0"
+gem "recording_studio", "~> 4.0"
 gem "recording_studio_accessible"
 ```
 
@@ -55,14 +55,14 @@ initializer and share-email templates, and it can optionally add
 settings such as `warn_on_core_conflict`. Proc-based hooks still belong in the
 initializer.
 
-## Compatibility with RecordingStudio 3.0
+## Compatibility with RecordingStudio 4.0
 
-Recording Studio Accessible targets RecordingStudio `3.0` (currently tested with
-`3.0.3`) and its capability-owned child recordable contract. RecordingStudio core
-no longer ships built-in access control, so this addon provides
+Recording Studio Accessible targets RecordingStudio `4.0` (currently tested with
+`4.0.0`) and its capability-owned child recordable contract. RecordingStudio core
+does not ship built-in access control, so this addon provides
 `RecordingStudio::Access`, declares it as a child-only recordable, and registers
-it as metadata for the `:accessible` capability. RecordingStudio `4.0` is not
-supported yet.
+it as metadata for the `:accessible` capability. RecordingStudio `3.x` is no
+longer supported.
 
 On load, the addon registers:
 
@@ -85,6 +85,21 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.6.0
+
+This release moves the addon onto RecordingStudio 4.
+
+1. Upgrade RecordingStudio to `~> 4.0` and this gem to `0.6.0`.
+2. Run `bin/rails generate recording_studio:migrations` and `bin/rails db:migrate`.
+   Resolve any duplicate root recordings before the unique-root index is applied.
+3. Follow [RecordingStudio 4.0 upgrade notes](https://github.com/bowerbird-app/RecordingStudio/blob/v4.0.0/docs/UPGRADING.md):
+   use `Recording.recent` or an explicit `order:` instead of implicit newest-first
+   ordering, and do not update or destroy events through ActiveRecord.
+4. Other addons that depend on this gem can keep `recording_studio_accessible ~> 0.3`.
+   They only need to change `recording_studio` to `~> 4.0` after this release is tagged.
+5. The dummy app no longer includes `recording_studio_root_switchable`. Add that
+   gem back in host apps after it declares RecordingStudio `~> 4.0`.
 
 #### Upgrading to 0.5.1
 
@@ -193,7 +208,7 @@ RecordingStudio.configure do |config|
 end
 ```
 
-RecordingStudio `3.0` requires each configured recordable to declare its
+RecordingStudio `4.0` requires each configured recordable to declare its
 hierarchy rules. Domain child recordables still declare their static parents:
 
 ```ruby
@@ -718,7 +733,7 @@ use another actor's access grant.
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `3.0.3`, RecordingStudioRootSwitchable `0.3.5`, and FlatPack `0.1.129`.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins RecordingStudio `4.0.0` and FlatPack `0.1.129`. Workspace switching is a host-app session control so this addon can ship before `recording_studio_root_switchable` supports RecordingStudio 4.
 
 The dummy app also installs a demo-only override in `test/dummy/config/initializers/recording_studio_accessible.rb`. That initializer creates a `User` automatically when an unknown email is granted access, so the demo can show a successful end-to-end flow without requiring a separate invitation or signup system. That shortcut keeps the demo simple, but it is not the engine default and should not be treated as the recommended production pattern for host apps.
 

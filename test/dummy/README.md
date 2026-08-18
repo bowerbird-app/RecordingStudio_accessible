@@ -1,6 +1,6 @@
 # Dummy App
 
-This Rails app demonstrates **Recording Studio Accessible** as a separately installed addon on top of RecordingStudio. It pins RecordingStudio `v3.0.3`, RecordingStudioRootSwitchable `v0.3.5`, and FlatPack `v0.1.129` so the demo matches the versions this addon is tested with.
+This Rails app demonstrates **Recording Studio Accessible** as a separately installed addon on top of RecordingStudio. It pins RecordingStudio `v4.0.0` and FlatPack `v0.1.129` so the demo matches the versions this addon is tested with. Workspace switching is a host-app session control; `recording_studio_root_switchable` is omitted until that gem supports RecordingStudio 4.
 
 ## What it proves
 

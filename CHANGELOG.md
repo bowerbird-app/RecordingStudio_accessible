@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-18
+
+### Changed
+- Runtime dependency is now RecordingStudio `~> 4.0`. This release is tested with `4.0.0`.
+- Dummy app pins RecordingStudio `v4.0.0` and no longer installs `recording_studio_root_switchable`. Workspace switching in the demo is a host-app session control so this gem can ship before that addon supports 4.0.
+
+### Upgrade Notes
+- Host apps must move to RecordingStudio `~> 4.0` with this gem. Stay on `0.5.x` if you are still on RecordingStudio 3.
+- Run `bin/rails generate recording_studio:migrations` and `bin/rails db:migrate` so the 4.0 harden / unique-root indexes are installed.
+- Other addons can keep `recording_studio_accessible ~> 0.3` and only change their `recording_studio` constraint to `~> 4.0`.
+- Root switching is not bundled with this dummy app. Add `recording_studio_root_switchable` again after that gem declares RecordingStudio `~> 4.0`.
+
 ## [0.5.1] - 2026-08-16
 
 ### Changed
@@ -138,7 +150,8 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.0...v0.4.1

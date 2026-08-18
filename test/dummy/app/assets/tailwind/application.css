@@ -10,11 +10,8 @@
 
 /* Scan companion engine views used by the dummy app. */
 @source "../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
-@source "../../../vendor/bundle/**/bundler/gems/recording_studio_root_switchable-*/app/views/**/*.erb";
 @source "../../../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
-@source "../../../../../vendor/bundle/**/bundler/gems/recording_studio_root_switchable-*/app/views/**/*.erb";
 @source "../../../../../../usr/local/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
-@source "../../../../../../usr/local/bundle/**/bundler/gems/recording_studio_root_switchable-*/app/views/**/*.erb";
 
 /* Dummy app and this engine. */
 @source "../../views/**/*.erb";

@@ -93,26 +93,22 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, @root_recording.recordable.name
     assert_includes @response.body, alternate_workspace.name
     refute_includes @response.body, message_root.name
-    assert_includes @response.body, 'action="/recording_studio_root_switchable/v1/root_switch?scope=workspaces"'
+    assert_includes @response.body, 'action="/current_workspace"'
   end
 
-  test "top nav root switcher persists the selected workspace" do
+  test "top nav workspace switcher persists the selected workspace" do
     alternate_workspace = Workspace.create!(name: "Selected Workspace")
     alternate_root_recording = create_root_recording(alternate_workspace)
     grant_access(@admin, :admin, alternate_root_recording)
 
     sign_in @admin
 
-    patch "/recording_studio_root_switchable/v1/root_switch?scope=workspaces", params: {
-      root_switch: { root_recording_id: alternate_root_recording.id, return_to: "/" }
+    patch current_workspace_path, params: {
+      root_recording_id: alternate_root_recording.id,
+      return_to: "/"
     }
 
     assert_redirected_to "/"
-    assert RecordingStudio::RootSwitchable::Selection.exists?(
-      actor: @admin,
-      scope_key: "workspaces",
-      root_recording: alternate_root_recording
-    )
   end
 
   test "home page renders the selected workspace after a root switch" do
@@ -139,8 +135,9 @@ class HomePageTest < ActionDispatch::IntegrationTest
 
     sign_in @admin
 
-    patch "/recording_studio_root_switchable/v1/root_switch?scope=workspaces", params: {
-      root_switch: { root_recording_id: selected_root_recording.id, return_to: "/" }
+    patch current_workspace_path, params: {
+      root_recording_id: selected_root_recording.id,
+      return_to: "/"
     }
     follow_redirect!
 
@@ -342,8 +339,9 @@ class HomePageTest < ActionDispatch::IntegrationTest
   end
 
   def switch_to_root(root_recording)
-    patch "/recording_studio_root_switchable/v1/root_switch?scope=workspaces", params: {
-      root_switch: { root_recording_id: root_recording.id, return_to: "/" }
+    patch current_workspace_path, params: {
+      root_recording_id: root_recording.id,
+      return_to: "/"
     }
 
     assert_redirected_to "/"

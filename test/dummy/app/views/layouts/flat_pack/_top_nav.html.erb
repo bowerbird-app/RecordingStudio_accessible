@@ -17,7 +17,7 @@
 
   <% nav.center do %>
     <% if user_signed_in? %>
-      <%= recording_studio_root_switch_dropdown(style: :ghost, size: :md) %>
+      <%= render "layouts/flat_pack/workspace_switcher" %>
     <% end %>
   <% end %>
 
