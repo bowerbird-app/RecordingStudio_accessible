@@ -10,8 +10,9 @@ class ApplicationController < ActionController::Base
   before_action :authenticate_user!
   before_action :set_current_actor
 
-  include RecordingStudio::RootSwitchable::ControllerSupport
-
+  helper_method :available_workspace_recordings
+  helper_method :current_workspace
+  helper_method :current_workspace_recording
   helper_method :recording_studio_accessible_docs_visible?
   helper_method :recording_studio_accessible_my_access_url
   helper_method :recording_studio_accessible_my_access_visible?
@@ -26,12 +27,25 @@ class ApplicationController < ActionController::Base
     Current.actor = current_user
   end
 
-  def current_workspace
-    current_root_recordable if current_root_recordable.is_a?(Workspace)
+  def available_workspace_recordings
+    return [] unless current_user
+
+    RecordingStudioAccessible.root_recordings_for(actor: current_user, minimum_role: :view)
+      .select { |recording| recording.recordable.is_a?(Workspace) }
+      .sort_by { |recording| [ recording.recordable.name.to_s.downcase, recording.id.to_s ] }
   end
 
   def current_workspace_recording
-    current_root_recording if current_workspace
+    recordings = available_workspace_recordings
+    return if recordings.empty?
+
+    selected_id = session[:current_workspace_recording_id]
+    recordings.find { |recording| recording.id.to_s == selected_id.to_s } || recordings.first
+  end
+
+  def current_workspace
+    recordable = current_workspace_recording&.recordable
+    recordable if recordable.is_a?(Workspace)
   end
 
   def recording_studio_accessible_docs_visible?

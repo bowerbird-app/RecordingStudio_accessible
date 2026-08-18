@@ -1,0 +1,12 @@
+<% if user_signed_in? && available_workspace_recordings.any? %>
+  <%= form_with url: main_app.current_workspace_path, method: :patch do %>
+    <%= hidden_field_tag :return_to, request.fullpath %>
+    <%= render FlatPack::Select::Component.new(
+      name: "root_recording_id",
+      options: available_workspace_recordings.map { |recording| [recording.recordable.name, recording.id] },
+      value: current_workspace_recording&.id,
+      placeholder: "Workspace",
+      onchange: "this.form.requestSubmit()"
+    ) %>
+  <% end %>
+<% end %>
