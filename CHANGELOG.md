@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-16
+
+### Changed
+- Development and dummy-app bundles now track RecordingStudio `3.0.3` and Rails `8.1.3.1`.
+- Dummy app pins FlatPack `v0.1.129` (ViewComponent 4) and RecordingStudioRootSwitchable `v0.3.5` instead of floating GitHub `main` / older tags.
+- Aligned the dummy Tailwind `@source` paths and FlatPack theme tokens with RecordingStudio 3.0.3 so FlatPack 0.1.129 component classes are included in the build.
+- Aligned public gem lockfiles between the engine and dummy app for Devise, PostgreSQL, Tailwind, RuboCop, Turbo, Solid Queue, and related compatible updates. Puma 8, Solid Cable 4, SimpleCov 1, Brakeman 8, image_processing 2, and RecordingStudio 4.0 are intentionally deferred.
+- Added `minitest-mock` for the engine test suite so Minitest 6 (pulled in by Rails 8.1.3.1) still supports the existing `Object#stub` helpers.
+
+### Upgrade Notes
+- Hosts already on RecordingStudio `~> 3.0` can keep that constraint. This release is tested against `3.0.3`.
+- RecordingStudio `4.0.0` is not supported yet. `recording_studio_root_switchable` 0.3.5 still requires RecordingStudio `~> 3.0`.
+- Dummy-app hosts that copy this Gemfile should pin FlatPack to a release tag. `v0.1.129` is a ViewComponent 4 upgrade from the previous `0.1.33` lock.
+
 ## [0.5.0] - 2026-08-12
 
 ### Changed
@@ -124,7 +138,8 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.3.2...v0.4.0

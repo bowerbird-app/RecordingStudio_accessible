@@ -42,7 +42,7 @@ module FlatPack
     end
 
     class Component
-      unless private_instance_methods(false).include?(:initialize)
+      unless private_method_defined?(:initialize, false)
         def initialize(**system_arguments)
           @text = system_arguments[:text]
           @system_arguments = system_arguments

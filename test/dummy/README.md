@@ -1,6 +1,6 @@
 # Dummy App
 
-This Rails app demonstrates **Recording Studio Accessible** as a separately installed addon on top of RecordingStudio.
+This Rails app demonstrates **Recording Studio Accessible** as a separately installed addon on top of RecordingStudio. It pins RecordingStudio `v3.0.3`, RecordingStudioRootSwitchable `v0.3.5`, and FlatPack `v0.1.129` so the demo matches the versions this addon is tested with.
 
 ## What it proves
 
@@ -19,6 +19,8 @@ bin/dev
 ```
 
 `bin/dev` runs `bin/rails db:prepare` before starting Rails and Tailwind, so it will create or migrate the dummy database when needed.
+
+The dummy Tailwind entry file scans FlatPack, RecordingStudio, and this addon's views/components. After changing companion gem pins, run `bin/rails tailwindcss:build` so utility classes from those gems are regenerated.
 
 Then sign in with:
 
