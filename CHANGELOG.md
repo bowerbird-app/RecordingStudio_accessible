@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - **Breaking dependency floor:** requires RecordingStudio `~> 4.1` (tested against `4.1.0`).
 - Dummy app pins RecordingStudio `v4.1.0` and RecordingStudioRootSwitchable `v0.4.0`.
 - Dummy `MessageRoot` is now a shared root without `:accessible`; `MessageGroup` remains the accessible host type under it.
+- Dummy Tailwind now scans Bundler gem paths (including rbenv installs) and pins Turbo so FlatPack layout, buttons, and sidebar controllers load.
 
 ### Upgrade Notes
 - Upgrade RecordingStudio to `4.1.0` or newer before installing Accessible `0.6.0`.
