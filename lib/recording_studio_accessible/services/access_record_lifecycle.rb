@@ -60,9 +60,26 @@ module RecordingStudioAccessible
 
         current = Object.const_get(:Current)
         return unless current.respond_to?(:attribute)
-        return if current.respond_to?(:impersonator)
 
-        current.attribute :impersonator
+        current.attribute :impersonator unless impersonator_accessor_defined?(current)
+        clear_stale_current_attributes_instance!(current)
+      end
+
+      def impersonator_accessor_defined?(current)
+        return true if current.method_defined?(:impersonator)
+        return false if current.is_a?(Module)
+
+        current.respond_to?(:impersonator)
+      end
+
+      # CurrentAttributes stores instances by class name. Replacing the Current
+      # constant can leave a stale same-named instance without new attributes.
+      def clear_stale_current_attributes_instance!(current)
+        return unless current.respond_to?(:instance)
+        return if current.instance.is_a?(current)
+        return unless current.respond_to?(:clear_all)
+
+        current.clear_all
       end
 
       def reject_shared_root_target!(recording)

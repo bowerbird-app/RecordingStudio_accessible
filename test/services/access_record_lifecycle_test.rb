@@ -103,6 +103,7 @@ module RecordingStudioAccessible
             def attribute(name)
               (@attributes ||= []) << name
               define_singleton_method(name) { nil }
+              define_method(name) { nil }
             end
           end
         end
@@ -111,6 +112,7 @@ module RecordingStudioAccessible
         @harness.send(:ensure_current_impersonator_accessor!)
 
         assert_includes current_class.attributes, :impersonator
+        assert current_class.method_defined?(:impersonator)
       ensure
         if Object.const_defined?(:Current, false) && Object.const_get(:Current) == current_class
           Object.send(:remove_const, :Current)

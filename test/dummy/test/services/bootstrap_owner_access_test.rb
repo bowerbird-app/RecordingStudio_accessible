@@ -133,20 +133,24 @@ class BootstrapOwnerAccessTest < ActiveSupport::TestCase
     empty_root = create_root_recording(empty_workspace)
     other_owner = create_user("bootstrap-racer@example.com")
 
-    results = []
-    errors = []
+    results = Queue.new
+    errors = Queue.new
     barrier = Queue.new
 
     threads = [
       Thread.new do
-        barrier.pop
-        results << RecordingStudioAccessible.bootstrap_owner_access!(recording: empty_root, actor: @owner)
+        ActiveRecord::Base.connection_pool.with_connection do
+          barrier.pop
+          results << RecordingStudioAccessible.bootstrap_owner_access!(recording: empty_root, actor: @owner)
+        end
       rescue StandardError => e
         errors << e
       end,
       Thread.new do
-        barrier.pop
-        results << RecordingStudioAccessible.bootstrap_owner_access!(recording: empty_root, actor: other_owner)
+        ActiveRecord::Base.connection_pool.with_connection do
+          barrier.pop
+          results << RecordingStudioAccessible.bootstrap_owner_access!(recording: empty_root, actor: other_owner)
+        end
       rescue StandardError => e
         errors << e
       end
@@ -155,10 +159,11 @@ class BootstrapOwnerAccessTest < ActiveSupport::TestCase
     2.times { barrier << true }
     threads.each(&:join)
 
-    assert_empty errors
-    assert_equal 2, results.size
-    assert_equal 1, results.count(&:success?)
-    assert_equal 1, results.count(&:failure?)
+    assert_empty Array.new(errors.size) { errors.pop }
+    collected = Array.new(results.size) { results.pop }
+    assert_equal 2, collected.size
+    assert_equal 1, collected.count(&:success?)
+    assert_equal 1, collected.count(&:failure?)
     assert_equal 1, RecordingStudioAccessible.access_recordings_for(empty_root).count
     assert_equal "admin", RecordingStudioAccessible.access_recordings_for(empty_root).first.recordable.role
   end
