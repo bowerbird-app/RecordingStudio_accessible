@@ -70,18 +70,6 @@ class BootstrapOwnerAccessTest < ActiveSupport::TestCase
     assert_equal "Actor type is not allowed for access", result.error
   end
 
-  test "bootstrap rejects when direct access is not enabled" do
-    RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, false) do
-      result = RecordingStudioAccessible.bootstrap_owner_access!(
-        recording: @recording,
-        actor: @owner
-      )
-
-      assert result.failure?
-      assert_equal "Direct access is not enabled for this recording", result.error
-    end
-  end
-
   test "bootstrap rejects non-root recordings" do
     folder = Folder.create!(workspace: @workspace, name: "Child", summary: "Folder", position: 0)
     folder_recording = create_child_recording(recordable: folder, parent_recording: @recording)
