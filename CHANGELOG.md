@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - New grants and updates on shared roots fail with: "Grant access on objects below a shared root, not on the shared root itself." Revoke legacy shared-root grants if needed.
 - `root_recordings_for` / `root_recording_ids_for` no longer return shared roots. Use descendant grants or product-specific listing when you need shared-root context.
 
+## [0.5.1] - 2026-08-16
 
 ### Changed
 - Development and dummy-app bundles now track RecordingStudio `3.0.3` and Rails `8.1.3.1`.
