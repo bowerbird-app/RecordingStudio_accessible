@@ -4,7 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.5.1] - 2026-08-16
+## [0.6.0] - 2026-08-20
+
+### Added
+- Shared-root access rules for RecordingStudio core 4.1: refuse new or updated direct grants on shared roots, keep revoke available for legacy grants, and hide mounted access management on shared roots.
+- `RecordingStudioAccessible::SharedRootAccess` helper and `Compatibility.access_management_allowed?` for shared-root-aware access-management checks.
+- `root_recordings_for` and `root_recording_ids_for` now exclude shared roots from actor-owned bucket lists while descendant authorization continues to work.
+
+### Changed
+- **Breaking dependency floor:** requires RecordingStudio `~> 4.1` (tested against `4.1.0`).
+- Dummy app pins RecordingStudio `v4.1.0` and RecordingStudioRootSwitchable `v0.4.0`.
+- Dummy `MessageRoot` is now a shared root without `:accessible`; `MessageGroup` remains the accessible host type under it.
+
+### Upgrade Notes
+- Upgrade RecordingStudio to `4.1.0` or newer before installing Accessible `0.6.0`.
+- Declare shared roots with `shared: true` on root recordables, but do **not** enable `:accessible` on shared root types. Enable `:accessible` on domain children beneath the shared root instead.
+- New grants and updates on shared roots fail with: "Grant access on objects below a shared root, not on the shared root itself." Revoke legacy shared-root grants if needed.
+- `root_recordings_for` / `root_recording_ids_for` no longer return shared roots. Use descendant grants or product-specific listing when you need shared-root context.
+
 
 ### Changed
 - Development and dummy-app bundles now track RecordingStudio `3.0.3` and Rails `8.1.3.1`.

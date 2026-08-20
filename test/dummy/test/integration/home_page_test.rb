@@ -83,7 +83,17 @@ class HomePageTest < ActionDispatch::IntegrationTest
 
     message_root = MessageRoot.create!(name: "Unswitched message root")
     message_root_recording = create_root_recording(message_root)
-    grant_access(@admin, :admin, message_root_recording)
+    message_group = MessageGroup.create!(
+      message_root: message_root,
+      name: "Switcher-hidden group",
+      summary: "Access under shared root should not surface the shared root in the switcher",
+      position: 0
+    )
+    message_group_recording = create_child_recording(
+      recordable: message_group,
+      parent_recording: message_root_recording
+    )
+    grant_access(@admin, :admin, message_group_recording)
 
     sign_in @admin
 

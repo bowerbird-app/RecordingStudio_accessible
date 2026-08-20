@@ -50,12 +50,12 @@ module RecordingStudioAccessible
                        GrantRecordingAccess.call(recording: recording, actor: actor, role: :view).error
         end
 
-        RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, false) do
+        RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, false) do
           assert_equal "Direct access is not enabled for this recording",
                        GrantRecordingAccess.call(recording: recording, actor: actor, role: :view).error
         end
 
-        RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, true) do
+        RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
           RecordingStudioAccessible.configuration.access_actor_types = [String]
           assert_equal "Actor type is not allowed for access",
                        GrantRecordingAccess.call(recording: recording, actor: actor, role: :view).error
@@ -164,13 +164,15 @@ module RecordingStudioAccessible
         recording = Recording.new(id: 1)
         access_recording = Recording.new(id: 2, parent_recording_id: 999, recordable_type: "RecordingStudio::Access")
 
-        assert_equal "Access recording is invalid",
-                     UpdateRecordingAccess.call(recording: recording, access_recording: access_recording, role: :view,
-                                                manager_actor: :manager).error
-        service = UpdateRecordingAccess.new(recording: recording, access_recording: valid_access_recording(recording),
-                                            role: :owner, manager_actor: :manager)
-        service.stub(:valid_access_recording_for_parent?, true) do
-          assert_equal "Role is invalid", service.send(:perform).error
+        RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+          assert_equal "Access recording is invalid",
+                       UpdateRecordingAccess.call(recording: recording, access_recording: access_recording, role: :view,
+                                                  manager_actor: :manager).error
+          service = UpdateRecordingAccess.new(recording: recording, access_recording: valid_access_recording(recording),
+                                              role: :owner, manager_actor: :manager)
+          service.stub(:valid_access_recording_for_parent?, true) do
+            assert_equal "Role is invalid", service.send(:perform).error
+          end
         end
       end
 
@@ -181,12 +183,14 @@ module RecordingStudioAccessible
         service = UpdateRecordingAccess.new(recording: recording, access_recording: access_recording, role: :admin,
                                             manager_actor: :manager)
 
-        service.stub(:valid_access_recording_for_parent?, true) do
-          RecordingStudio.stub(:root_recording_or_self, root) do
-            result = service.send(:perform)
+        RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+          service.stub(:valid_access_recording_for_parent?, true) do
+            RecordingStudio.stub(:root_recording_or_self, root) do
+              result = service.send(:perform)
 
-            assert result.success?
-            assert_equal :updated_recording, result.value
+              assert result.success?
+              assert_equal :updated_recording, result.value
+            end
           end
         end
       end

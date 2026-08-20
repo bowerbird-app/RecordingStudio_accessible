@@ -50,9 +50,7 @@ module RecordingStudioAccessible
     def root_recording_ids_for(actor:, minimum_role: nil)
       return [] unless actor
 
-      root_access_recordings_for(actor: actor, minimum_role: minimum_role)
-        .distinct
-        .pluck(:root_recording_id)
+      root_recordings_relation_for(actor: actor, minimum_role: minimum_role).pluck(:id)
     end
 
     def access_recordings_for(recording)
@@ -69,7 +67,19 @@ module RecordingStudioAccessible
       root_access_recordings = root_access_recordings_for(actor: actor, minimum_role: minimum_role)
       return RecordingStudio::Recording.none unless root_access_recordings.exists?
 
-      RecordingStudio::Recording.unscoped.where(id: root_access_recordings.select(:root_recording_id)).distinct
+      relation = RecordingStudio::Recording.unscoped
+                                           .where(id: root_access_recordings.select(:root_recording_id))
+                                           .distinct
+      exclude_shared_roots(relation)
+    end
+
+    def exclude_shared_roots(relation)
+      return relation unless defined?(::RecordingStudio) && RecordingStudio.respond_to?(:shared_root_types)
+
+      shared_root_types = RecordingStudio.shared_root_types
+      return relation if shared_root_types.empty?
+
+      relation.where.not(recordable_type: shared_root_types)
     end
 
     def root_access_recordings_for(actor:, minimum_role:)

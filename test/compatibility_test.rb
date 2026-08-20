@@ -151,6 +151,24 @@ class CompatibilityTest < Minitest::Test
     refute RecordingStudioAccessible::Compatibility.access_parent_allowed?(nil)
   end
 
+  def test_access_management_allowed_rejects_shared_roots
+    recording = Object.new
+
+    RecordingStudioAccessible::SharedRootAccess.stub(:target?, true) do
+      refute RecordingStudioAccessible::Compatibility.access_management_allowed?(recording)
+    end
+  end
+
+  def test_access_management_allowed_delegates_to_access_parent_allowed_for_non_shared_roots
+    recording = Object.new
+
+    RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+      RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, true) do
+        assert RecordingStudioAccessible::Compatibility.access_management_allowed?(recording)
+      end
+    end
+  end
+
   def test_register_access_capability_registers_when_no_compatible_core_capability_exists
     registered = []
 

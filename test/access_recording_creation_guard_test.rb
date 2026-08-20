@@ -8,7 +8,7 @@ class AccessRecordingCreationGuardTest < Minitest::Test
   end
   Access = Struct.new(:actor, :actor_type, :actor_id)
   Association = Struct.new(:target)
-  ParentRecording = Struct.new(:id)
+  ParentRecording = Struct.new(:id, :recordable_type, keyword_init: true)
 
   class Errors
     attr_reader :added
@@ -64,7 +64,7 @@ class AccessRecordingCreationGuardTest < Minitest::Test
 
     attr_accessor :id, :parent_recording, :parent_recording_id, :recordable, :recordable_type, :errors
 
-    def initialize(recordable_type: "RecordingStudio::Access", recordable: nil, parent_recording: ParentRecording.new(1))
+    def initialize(recordable_type: "RecordingStudio::Access", recordable: nil, parent_recording: ParentRecording.new(id: 1, recordable_type: "Workspace"))
       @id = 100
       @recordable_type = recordable_type
       @recordable = recordable
@@ -93,8 +93,10 @@ class AccessRecordingCreationGuardTest < Minitest::Test
   def test_prevents_direct_access_recording_creation_without_access_context
     recording = Recording.new
 
-    RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, true) do
-      recording.send(:prevent_unsupported_access_recording_creation)
+    RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+      RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, true) do
+        recording.send(:prevent_unsupported_access_recording_creation)
+      end
     end
 
     assert_includes recording.errors.added,
@@ -104,20 +106,35 @@ class AccessRecordingCreationGuardTest < Minitest::Test
   def test_allows_access_recording_creation_inside_access_context
     recording = Recording.new
 
-    RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, true) do
-      RecordingStudioAccessible::AccessCreationContext.allow do
-        recording.send(:prevent_unsupported_access_recording_creation)
+    RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+      RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, true) do
+        RecordingStudioAccessible::AccessCreationContext.allow do
+          recording.send(:prevent_unsupported_access_recording_creation)
+        end
       end
     end
 
     assert_empty recording.errors.added
   end
 
+  def test_rejects_access_recording_when_parent_is_shared_root
+    recording = Recording.new(parent_recording: ParentRecording.new(id: 1, recordable_type: "MessageRoot"))
+
+    RecordingStudioAccessible::SharedRootAccess.stub(:target?, true) do
+      recording.send(:prevent_unsupported_access_recording_creation)
+    end
+
+    assert_includes recording.errors.added,
+                    [:parent_recording, RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE]
+  end
+
   def test_rejects_access_recording_when_parent_disallows_access_children
     recording = Recording.new
 
-    RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, false) do
-      recording.send(:prevent_unsupported_access_recording_creation)
+    RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+      RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, false) do
+        recording.send(:prevent_unsupported_access_recording_creation)
+      end
     end
 
     assert_includes recording.errors.added,

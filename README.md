@@ -28,7 +28,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", "~> 3.0"
+gem "recording_studio", "~> 4.1"
 gem "recording_studio_accessible"
 ```
 
@@ -55,14 +55,13 @@ initializer and share-email templates, and it can optionally add
 settings such as `warn_on_core_conflict`. Proc-based hooks still belong in the
 initializer.
 
-## Compatibility with RecordingStudio 3.0
+## Compatibility with RecordingStudio 4.1
 
-Recording Studio Accessible targets RecordingStudio `3.0` (currently tested with
-`3.0.3`) and its capability-owned child recordable contract. RecordingStudio core
+Recording Studio Accessible targets RecordingStudio `4.1` (currently tested with
+`4.1.0`) and its capability-owned child recordable contract. RecordingStudio core
 no longer ships built-in access control, so this addon provides
 `RecordingStudio::Access`, declares it as a child-only recordable, and registers
-it as metadata for the `:accessible` capability. RecordingStudio `4.0` is not
-supported yet.
+it as metadata for the `:accessible` capability.
 
 On load, the addon registers:
 
@@ -85,6 +84,32 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.6.0
+
+This release requires RecordingStudio `4.1.0` and adds shared-root access rules.
+
+1. Upgrade RecordingStudio to `~> 4.1` (tag `v4.1.0` or newer).
+2. If you use shared roots, declare them with `shared: true` on root recordables and enable `:accessible` on domain children beneath the shared root — not on the shared root itself:
+
+  ```ruby
+  class MessagesRoot < ApplicationRecord
+    recording_studio_recordable label: "Messages", root: true, shared: true
+  end
+
+  class MessageGroup < ApplicationRecord
+    recording_studio_recordable label: "Message group",
+                                root: false,
+                                allowed_parent_types: ["MessagesRoot"]
+    RecordingStudio.enable_capability(:accessible, on: self)
+  end
+  ```
+
+3. New grants and updates on shared roots are rejected. Revoke legacy shared-root grants if you still have them.
+4. `root_recordings_for` and `root_recording_ids_for` exclude shared roots from actor-owned bucket lists. Descendant authorization is unchanged.
+5. If you use the dummy app or copy its companion gems, pin:
+   - `recording_studio` to tag `v4.1.0`
+   - `recording_studio_root_switchable` to tag `v0.4.0`
 
 #### Upgrading to 0.5.1
 
@@ -193,7 +218,7 @@ RecordingStudio.configure do |config|
 end
 ```
 
-RecordingStudio `3.0` requires each configured recordable to declare its
+RecordingStudio `4.1` requires each configured recordable to declare its
 hierarchy rules. Domain child recordables still declare their static parents:
 
 ```ruby
@@ -226,7 +251,34 @@ derives effective parent allowances for `RecordingStudio::Access` from that
 capability state. Without that enablement, the mounted access-management UI and
 grant service reject direct access placements for the recordable.
 
-Useful RecordingStudio 3 introspection helpers:
+### Shared roots
+
+RecordingStudio 4.1 adds type-level shared roots for domain forests such as
+messages. Shared roots remain real tree roots for writes and queries, but they
+are not actor-owned buckets.
+
+Do **not** enable `:accessible` on a shared root type. Grant access on domain
+children beneath the shared root instead:
+
+```ruby
+class MessagesRoot < ApplicationRecord
+  recording_studio_recordable label: "Messages", root: true, shared: true
+end
+
+class MessageGroup < ApplicationRecord
+  recording_studio_recordable label: "Message group",
+                              root: false,
+                              allowed_parent_types: ["MessagesRoot"]
+  RecordingStudio.enable_capability(:accessible, on: self)
+end
+```
+
+Accessible rejects new and updated direct grants on shared roots. Legacy grants
+can still be revoked. Mounted access management returns `404` for shared roots.
+`root_recordings_for` and `root_recording_ids_for` exclude shared roots from
+actor-owned bucket lists while descendant authorization continues to work.
+
+Useful RecordingStudio 4 introspection helpers:
 
 ```ruby
 RecordingStudio.capability_child_recordables_for(:accessible)
@@ -718,7 +770,7 @@ use another actor's access grant.
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `3.0.3`, RecordingStudioRootSwitchable `0.3.5`, and FlatPack `0.1.129`.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `4.1.0`, RecordingStudioRootSwitchable `v0.4.0`, and FlatPack `0.1.129`.
 
 The dummy app also installs a demo-only override in `test/dummy/config/initializers/recording_studio_accessible.rb`. That initializer creates a `User` automatically when an unknown email is granted access, so the demo can show a successful end-to-end flow without requiring a separate invitation or signup system. That shortcut keeps the demo simple, but it is not the engine default and should not be treated as the recommended production pattern for host apps.
 

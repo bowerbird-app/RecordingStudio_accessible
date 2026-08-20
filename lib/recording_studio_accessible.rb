@@ -6,6 +6,7 @@ require "recording_studio_accessible/version"
 require "recording_studio_accessible/hooks"
 require "recording_studio_accessible/compatibility"
 RecordingStudioAccessible::Compatibility.register_access_capability!
+require "recording_studio_accessible/shared_root_access"
 require "recording_studio_accessible/access_creation_context"
 require "recording_studio_accessible/access_creation_guard"
 require "recording_studio_accessible/access_recording_creation_guard"
