@@ -22,6 +22,12 @@ All notable changes to this project will be documented in this file.
 - Dummy `access_actor_types` include `Workspace` so seed through-actor grants
   stay on the supported grant path.
 
+### Fixed
+- `ensure_current_impersonator_accessor!` now uses `method_defined?` and clears
+  stale same-named `CurrentAttributes` instances after `Current` is replaced,
+  so grant/bootstrap/integrity writes do not call a missing `impersonator`
+  method.
+
 ### Upgrade Notes
 - Replace demo ENV authorizer patterns and host-facing
   `AccessCreationContext.allow` first-owner setup with
