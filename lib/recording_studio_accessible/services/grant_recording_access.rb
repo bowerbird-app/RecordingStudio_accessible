@@ -33,13 +33,12 @@ module RecordingStudioAccessible
         return failure("Recording is required") unless @recording
         return failure("Actor is required") unless @actor
 
-        authorization_result = authorize_access_management!(
-          recording: @recording,
+        access_validation = validate_access_management_target!(
+          @recording,
           manager_actor: manager_actor,
           controller: @controller
         )
-        return authorization_result unless authorization_result == true
-        return failure("Direct access is not enabled for this recording") unless access_enabled?
+        return access_validation unless access_validation == true
         return failure("Actor type is not allowed for access") unless allowed_access_actor_type?
         return failure("Role is invalid") unless RecordingStudio::Access.roles.key?(@role)
 
@@ -95,10 +94,6 @@ module RecordingStudioAccessible
 
       def manager_actor
         @manager_actor ||= effective_manager_actor(manager_actor: @manager_actor, controller: @controller)
-      end
-
-      def access_enabled?
-        RecordingStudioAccessible::Compatibility.access_parent_allowed?(@recording)
       end
 
       def allowed_access_actor_type?

@@ -66,10 +66,22 @@ module RecordingStudioAccessible
 
     def access_placement_enabled?
       return false if parent_recording.blank?
+
+      if shared_root_parent?(parent_recording)
+        errors.add(:parent_recording, RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE)
+        return false
+      end
+
       return true if RecordingStudioAccessible::Compatibility.access_parent_allowed?(parent_recording)
 
       errors.add(:parent_recording, "does not allow RecordingStudio::Access children")
       false
+    end
+
+    def shared_root_parent?(parent_recording)
+      return false unless parent_recording.respond_to?(:recordable_type)
+
+      RecordingStudioAccessible::SharedRootAccess.target?(parent_recording)
     end
   end
 end

@@ -64,6 +64,31 @@ module RecordingStudioAccessible
 
         current.attribute :impersonator
       end
+
+      def reject_shared_root_target!(recording)
+        return true unless RecordingStudioAccessible::SharedRootAccess.target?(recording)
+
+        failure(RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE)
+      end
+
+      def validate_access_management_target!(recording, manager_actor:, controller: nil)
+        authorization_result = authorize_access_management!(
+          recording: recording,
+          manager_actor: manager_actor,
+          controller: controller
+        )
+        return authorization_result unless authorization_result == true
+
+        shared_root_result = reject_shared_root_target!(recording)
+        return shared_root_result unless shared_root_result == true
+        return failure("Direct access is not enabled for this recording") unless access_management_allowed?(recording)
+
+        true
+      end
+
+      def access_management_allowed?(recording)
+        RecordingStudioAccessible::Compatibility.access_management_allowed?(recording)
+      end
     end
   end
 end

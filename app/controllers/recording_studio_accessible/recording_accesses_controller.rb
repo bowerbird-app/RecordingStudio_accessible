@@ -101,7 +101,7 @@ module RecordingStudioAccessible
     end
 
     def ensure_access_children_enabled!
-      return if RecordingStudioAccessible::Compatibility.access_parent_allowed?(@recording)
+      return if RecordingStudioAccessible::Compatibility.access_management_allowed?(@recording)
 
       head :not_found
     end

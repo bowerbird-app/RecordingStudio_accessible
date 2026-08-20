@@ -93,6 +93,12 @@ module RecordingStudioAccessible
         false
       end
 
+      def access_management_allowed?(recording)
+        return false if SharedRootAccess.target?(recording)
+
+        access_parent_allowed?(recording)
+      end
+
       def warn_if_core_access_present!
         return unless core_access_present?
         return unless RecordingStudioAccessible.configuration.warn_on_core_conflict

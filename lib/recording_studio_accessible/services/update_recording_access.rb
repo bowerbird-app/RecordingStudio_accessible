@@ -16,18 +16,8 @@ module RecordingStudioAccessible
       private
 
       def perform
-        return failure("Recording is required") unless @recording
-        return failure("Access recording is required") unless @access_recording
-
-        authorization_result = authorize_access_management!(
-          recording: @recording,
-          manager_actor: manager_actor,
-          controller: @controller
-        )
-        return authorization_result unless authorization_result == true
-        return failure("Access recording is invalid") unless valid_access_recording_for_parent?(recording: @recording,
-                                                                                                access_recording: @access_recording)
-        return failure("Role is invalid") unless valid_role?
+        validation_result = validate_update_request
+        return validation_result unless validation_result == true
 
         ensure_current_impersonator_accessor!
 
@@ -43,6 +33,23 @@ module RecordingStudioAccessible
         failure(e.message, errors: e.record.errors.full_messages)
       rescue StandardError => e
         failure(e)
+      end
+
+      def validate_update_request
+        return failure("Recording is required") unless @recording
+        return failure("Access recording is required") unless @access_recording
+
+        access_validation = validate_access_management_target!(
+          @recording,
+          manager_actor: manager_actor,
+          controller: @controller
+        )
+        return access_validation unless access_validation == true
+        return failure("Access recording is invalid") unless valid_access_recording_for_parent?(recording: @recording,
+                                                                                                access_recording: @access_recording)
+        return failure("Role is invalid") unless valid_role?
+
+        true
       end
 
       def service_args

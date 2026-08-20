@@ -1,4 +1,5 @@
 @import "tailwindcss" source(none);
+@import "../builds/tailwind/gem_sources.css";
 
 /* Scan FlatPack components so utility classes defined in Ruby constants are generated. */
 @source "../../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.rb";
@@ -7,14 +8,22 @@
 @source "../../../../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.erb";
 @source "../../../../../../usr/local/bundle/**/bundler/gems/flatpack-*/app/components/**/*.rb";
 @source "../../../../../../usr/local/bundle/**/bundler/gems/flatpack-*/app/components/**/*.erb";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/components/**/*.rb";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/components/**/*.erb";
 
 /* Scan companion engine views used by the dummy app. */
 @source "../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
 @source "../../../vendor/bundle/**/bundler/gems/recording_studio_root_switchable-*/app/views/**/*.erb";
+@source "../../../vendor/bundle/**/bundler/gems/RecordingStudio_root_switchable*/app/views/**/*.erb";
 @source "../../../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
 @source "../../../../../vendor/bundle/**/bundler/gems/recording_studio_root_switchable-*/app/views/**/*.erb";
+@source "../../../../../vendor/bundle/**/bundler/gems/RecordingStudio_root_switchable*/app/views/**/*.erb";
 @source "../../../../../../usr/local/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
 @source "../../../../../../usr/local/bundle/**/bundler/gems/recording_studio_root_switchable-*/app/views/**/*.erb";
+@source "../../../../../../usr/local/bundle/**/bundler/gems/RecordingStudio_root_switchable*/app/views/**/*.erb";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/recording_studio_root_switchable-*/app/views/**/*.erb";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/RecordingStudio_root_switchable*/app/views/**/*.erb";
 
 /* Dummy app and this engine. */
 @source "../../views/**/*.erb";
