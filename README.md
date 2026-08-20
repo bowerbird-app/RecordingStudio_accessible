@@ -377,7 +377,8 @@ Bootstrap is for owned buckets such as Workspace (`shared: false`). Shared
 forests (for example Messages-style shared roots) never get a first-owner grant
 through this API. Intended callers are host apps and
 `recording_studio_users` create-first-root flows — not automatic wiring inside
-`root_recording_for`.
+`root_recording_for`. Treat bootstrap as a trusted host/setup call: anyone who
+can invoke it on an empty owned root becomes that root's first admin.
 
 Do not use ENV authorizer overrides or `AccessCreationContext.allow` as the
 product path for first-owner setup.

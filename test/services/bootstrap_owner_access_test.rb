@@ -137,6 +137,25 @@ module RecordingStudioAccessible
         end
       end
 
+      def test_perform_fails_when_only_holder_is_self_but_not_admin
+        recording = Recording.new(id: 1, recordable_type: "Workspace")
+        actor = Actor.new(id: 1)
+        access = Struct.new(:actor, :role).new(actor, "view")
+        existing = Struct.new(:recordable).new(access)
+        service = BootstrapOwnerAccess.new(recording: recording, actor: actor)
+
+        service.stub(:validate_request, true) do
+          service.stub(:ensure_current_impersonator_accessor!, nil) do
+            service.stub(:active_direct_access_holders, [existing]) do
+              result = service.send(:perform)
+
+              assert result.failure?
+              assert_equal BootstrapOwnerAccess::ALREADY_BOOTSTRAPPED_MESSAGE, result.error
+            end
+          end
+        end
+      end
+
       def test_public_facade_delegates_to_service
         called = nil
         BootstrapOwnerAccess.stub(:call, lambda { |**kwargs|

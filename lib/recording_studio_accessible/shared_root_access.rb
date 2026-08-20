@@ -15,8 +15,6 @@ module RecordingStudioAccessible
       return false unless recording.respond_to?(:recordable_type)
 
       RecordingStudio.shared_root_type?(recording.recordable_type)
-    rescue StandardError
-      false
     end
   end
 end
