@@ -3,7 +3,7 @@
 require "securerandom"
 
 RecordingStudioAccessible.configure do |config|
-  config.access_actor_types = [ "User" ]
+  config.access_actor_types = [ "User", "Workspace" ]
 
   config.authorize_actor_through = lambda do |actor:, through:, **|
     case through

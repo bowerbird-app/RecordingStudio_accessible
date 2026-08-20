@@ -85,6 +85,31 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.6.1
+
+This release adds `RecordingStudioAccessible.bootstrap_owner_access!` for the
+first admin on an empty owned root.
+
+1. Replace demo/production workarounds that used
+   `ENV["RECORDING_STUDIO_ACCESSIBLE_BOOTSTRAP_ADMIN"]`, temporary
+   `access_management_authorizer` overrides, or host-facing
+   `AccessCreationContext.allow` for first-owner setup.
+2. After creating and persisting an owned root (for example a Workspace with
+   `shared: false`), call:
+
+  ```ruby
+  root = RecordingStudio.root_recording_for(workspace)
+  result = RecordingStudioAccessible.bootstrap_owner_access!(
+    recording: root,
+    actor: user
+  )
+  raise result.error if result.failure?
+  ```
+
+3. Use `grant_access` for every subsequent invite or membership change.
+4. Do not call bootstrap on shared roots. Shared forests keep grants on
+   descendants beneath the shared root.
+
 #### Upgrading to 0.6.0
 
 This release requires RecordingStudio `4.1.0` and adds shared-root access rules.
@@ -314,6 +339,49 @@ RecordingStudioAccessible.grant_access(
 workspace, company, team, system actor, or another configured access actor.
 `manager_actor` remains the actor performing the access-management action.
 
+### Bootstrapping the first owner on an empty root
+
+A brand-new owned root has zero access grants, so the default access-management
+authorizer (which requires an existing `:admin`) cannot authorize the creator's
+first grant. Use `bootstrap_owner_access!` for that one-shot setup:
+
+```ruby
+workspace = Workspace.create!(name: "Acme")
+root = RecordingStudio.root_recording_for(workspace)
+
+result = RecordingStudioAccessible.bootstrap_owner_access!(
+  recording: root,
+  actor: user
+)
+raise result.error if result.failure?
+# result.value => the Access recording (same shape as grant_access success)
+```
+
+| Situation | API |
+| --- | --- |
+| Empty owned root, first admin | `bootstrap_owner_access!` |
+| Invites, membership, role changes after that | `grant_access` / mounted access UI / Users membership |
+
+Bootstrap succeeds only when the recording is a persisted owned root with
+`:accessible` enabled, the actor type is allowlisted, and there are zero active
+direct Access children (or the only grant is already this actor as `:admin`,
+which is treated as an idempotent success). It always creates role `:admin`.
+
+Shared roots are rejected with the same message as grant_access:
+
+```text
+Grant access on objects below a shared root, not on the shared root itself.
+```
+
+Bootstrap is for owned buckets such as Workspace (`shared: false`). Shared
+forests (for example Messages-style shared roots) never get a first-owner grant
+through this API. Intended callers are host apps and
+`recording_studio_users` create-first-root flows — not automatic wiring inside
+`root_recording_for`.
+
+Do not use ENV authorizer overrides or `AccessCreationContext.allow` as the
+product path for first-owner setup.
+
 New access grants fail closed until host apps explicitly configure which
 polymorphic actor types may receive them. Use a finite allowlist in production:
 
@@ -360,8 +428,9 @@ RecordingStudioAccessible.grant_access(
 
 RecordingStudio Accessible treats `RecordingStudio::Access` as an internal
 recordable. Applications should not create access records directly. Use
-`RecordingStudioAccessible.grant_access` or
-`RecordingStudioAccessible::Services::GrantRecordingAccess`.
+`RecordingStudioAccessible.bootstrap_owner_access!` for the first owner on an
+empty owned root, then `RecordingStudioAccessible.grant_access` or
+`RecordingStudioAccessible::Services::GrantRecordingAccess` thereafter.
 When this addon is loaded, direct access grant creation raises a validation
 error.
 
