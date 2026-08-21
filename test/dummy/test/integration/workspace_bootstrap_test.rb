@@ -42,6 +42,25 @@ class WorkspaceBootstrapTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Give this workspace a name first."
   end
 
+  test "failed bootstrap does not leave an orphaned workspace" do
+    sign_in @owner
+    original_access_actor_types = RecordingStudioAccessible.configuration.access_actor_types
+    RecordingStudioAccessible.configuration.access_actor_types = [ "Workspace" ]
+
+    assert_no_difference -> { Workspace.count } do
+      assert_no_difference -> { RecordingStudio::Recording.unscoped.count } do
+        post workspaces_path, params: { workspace: { name: "Orphan Studio" } }
+      end
+    end
+
+    assert_redirected_to root_path
+    follow_redirect!
+    assert_includes @response.body, "Couldn’t make you the first owner"
+    refute Workspace.exists?(name: "Orphan Studio")
+  ensure
+    RecordingStudioAccessible.configuration.access_actor_types = original_access_actor_types
+  end
+
   private
 
   def create_user(email)

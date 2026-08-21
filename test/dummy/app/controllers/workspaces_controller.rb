@@ -10,15 +10,22 @@ class WorkspacesController < ApplicationController
       return
     end
 
-    workspace = Workspace.create!(name: name)
-    root = RecordingStudio.root_recording_for(workspace)
-    result = RecordingStudioAccessible.bootstrap_owner_access!(
-      recording: root,
-      actor: current_user
-    )
+    workspace = nil
+    root = nil
+    result = nil
 
-    unless result.success?
-      redirect_to root_path, alert: "Couldn’t make you the first owner. #{result.error}"
+    ActiveRecord::Base.transaction do
+      workspace = Workspace.create!(name: name)
+      root = RecordingStudio.root_recording_for(workspace)
+      result = RecordingStudioAccessible.bootstrap_owner_access!(
+        recording: root,
+        actor: current_user
+      )
+      raise ActiveRecord::Rollback unless result.success?
+    end
+
+    unless result&.success?
+      redirect_to root_path, alert: "Couldn’t make you the first owner. #{result&.error}"
       return
     end
 

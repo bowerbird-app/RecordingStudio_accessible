@@ -132,6 +132,9 @@ class BootstrapOwnerAccessTest < ActiveSupport::TestCase
     empty_workspace = Workspace.create!(name: "Race Bootstrap Workspace")
     empty_root = create_root_recording(empty_workspace)
     other_owner = create_user("bootstrap-racer@example.com")
+    empty_root_id = empty_root.id
+    owner_id = @owner.id
+    other_owner_id = other_owner.id
 
     results = Queue.new
     errors = Queue.new
@@ -141,7 +144,10 @@ class BootstrapOwnerAccessTest < ActiveSupport::TestCase
       Thread.new do
         ActiveRecord::Base.connection_pool.with_connection do
           barrier.pop
-          results << RecordingStudioAccessible.bootstrap_owner_access!(recording: empty_root, actor: @owner)
+          results << RecordingStudioAccessible.bootstrap_owner_access!(
+            recording: RecordingStudio::Recording.unscoped.find(empty_root_id),
+            actor: User.find(owner_id)
+          )
         end
       rescue StandardError => e
         errors << e
@@ -149,7 +155,10 @@ class BootstrapOwnerAccessTest < ActiveSupport::TestCase
       Thread.new do
         ActiveRecord::Base.connection_pool.with_connection do
           barrier.pop
-          results << RecordingStudioAccessible.bootstrap_owner_access!(recording: empty_root, actor: other_owner)
+          results << RecordingStudioAccessible.bootstrap_owner_access!(
+            recording: RecordingStudio::Recording.unscoped.find(empty_root_id),
+            actor: User.find(other_owner_id)
+          )
         end
       rescue StandardError => e
         errors << e
