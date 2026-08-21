@@ -82,17 +82,30 @@ module RecordingStudioAccessible
         end
       end
 
-      def test_allows_shared_forest_accessible_child_shape
-        recording = Recording.new(id: 2, recordable_type: "MessageGroup")
-        actor = Actor.new(id: 1)
+      def test_profile_shaped_shared_forest_child_is_not_rejected_as_non_root
+        refute BootstrapOwnerAccess.const_defined?(:NON_ROOT_MESSAGE)
+        assert_includes BootstrapOwnerAccess.included_modules, AccessGrantWriter
 
-        RecordingStudio.stub(:root_recording?, false) do
-          RecordingStudio.stub(:shared_root_tree?, true) do
-            RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
-              RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
-                service = BootstrapOwnerAccess.new(recording: recording, actor: actor)
+        # 0.6.1 reproduction: Profile under People (same shape as dummy
+        # MessageGroup under MessageRoot). root_recording? false, shared_root?
+        # false, then NON_ROOT_MESSAGE before shared-root denial.
+        %w[Profile MessageGroup].each do |recordable_type|
+          recording = Recording.new(id: 2, recordable_type: recordable_type)
+          actor = Actor.new(id: 1)
+          service = BootstrapOwnerAccess.new(recording: recording, actor: actor)
 
-                assert_equal true, service.send(:validate_request)
+          RecordingStudio.stub(:root_recording?, false) do
+            RecordingStudio.stub(:shared_root?, false) do
+              RecordingStudio.stub(:shared_root_tree?, true) do
+                RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+                  RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+                    result = service.send(:validate_request)
+
+                    refute_equal "Recording must be a root recording",
+                                 result.respond_to?(:error) ? result.error : nil
+                    assert_equal true, result
+                  end
+                end
               end
             end
           end

@@ -42,6 +42,10 @@ module RecordingStudioAccessible
         presence_result = validate_presence_and_persistence!
         return presence_result unless presence_result == true
 
+        # 0.6.1 required root_recording? here ("Recording must be a root
+        # recording"), so a Profile under shared People never reached
+        # shared-root denial or a grant. Shared-root rejection stays first;
+        # owned roots and shared-forest children are allowed next.
         target_result = validate_bootstrap_target!
         return target_result unless target_result == true
         return failure("Actor type is not allowed for access") unless allowed_access_actor_type?

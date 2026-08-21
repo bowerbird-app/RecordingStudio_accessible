@@ -26,6 +26,9 @@ All notable changes to this project will be documented in this file.
 - Call `bootstrap_owner_access!` on an empty owned root **or** on an empty
   accessible child under a shared root. Shared roots themselves stay rejected
   with the same message as `grant_access`.
+- 0.6.1 returned `"Recording must be a root recording"` (`NON_ROOT_MESSAGE`)
+  for a Profile under shared People (and dummy MessageGroup under MessageRoot).
+  0.7.0 succeeds on that shape; the method still returns a result object.
 - Do not bootstrap a Folder or Page under an owned Workspace just because it is
   empty.
 - After a successful bootstrap, continue using `grant_access` for invites.

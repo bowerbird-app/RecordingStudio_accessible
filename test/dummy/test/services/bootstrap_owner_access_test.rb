@@ -66,6 +66,37 @@ class BootstrapOwnerAccessTest < ActiveSupport::TestCase
     assert RecordingStudioAccessible.authorized?(actor: @owner, recording: @message_group_recording, role: :admin)
   end
 
+  test "bootstrap no longer fails as non-root on MessageGroup under shared MessageRoot" do
+    klass = RecordingStudioAccessible::Services::BootstrapOwnerAccess
+    refute klass.const_defined?(:NON_ROOT_MESSAGE)
+
+    # Same shape as recording_studio_users Profile under shared People, which
+    # 0.6.1 rejected with "Recording must be a root recording" before it could
+    # hit shared-root denial.
+    refute RecordingStudio.root_recording?(@message_group_recording)
+    refute RecordingStudio.shared_root?(@message_group_recording)
+    assert RecordingStudio.shared_root?(@message_root_recording)
+    assert RecordingStudio.shared_root_tree?(@message_group_recording)
+    assert_equal @message_root_recording.id, @message_group_recording.parent_recording_id
+    assert_equal "MessageRoot", @message_group_recording.parent_recording.recordable_type
+    assert RecordingStudio.shared_root_type?(MessageRoot)
+    assert RecordingStudioAccessible::Compatibility.access_management_allowed?(@message_group_recording)
+
+    result = nil
+    assert_nothing_raised do
+      result = RecordingStudioAccessible.bootstrap_owner_access!(
+        recording: @message_group_recording,
+        actor: @owner
+      )
+    end
+
+    refute_equal "Recording must be a root recording", result.error
+    assert result.success?, result.error
+    assert_equal "admin", result.value.recordable.role
+    assert_equal @owner, result.value.recordable.actor
+    assert_equal @message_group_recording.id, result.value.parent_recording_id
+  end
+
   test "bootstrap is idempotent when the only holder is already this actor as admin" do
     first = RecordingStudioAccessible.bootstrap_owner_access!(recording: @recording, actor: @owner)
     assert first.success?

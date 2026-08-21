@@ -110,6 +110,11 @@ this addon is loaded, including compatibility mode. Host applications should use
    Hosts such as `recording_studio_users` can call the same method on a Profile
    under a shared People root. Dummy class names stay `MessageRoot` /
    `MessageGroup`; README examples may say `MessagesRoot` for the same pattern.
+
+   0.6.1 returned `result.error == "Recording must be a root recording"`
+   (`NON_ROOT_MESSAGE`) for that child because `root_recording?` was false and
+   `shared_root?` was false, so validation never reached shared-root denial.
+   The method still does not raise; check `result.success?`.
 4. Use `grant_access` for every later invite or membership change.
 5. Do not add an `access_management_authorizer` mutex, ENV bootstrap, or
    `AccessCreationContext.allow` workaround. Bootstrap is the first-owner API.
