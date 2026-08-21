@@ -76,12 +76,13 @@ module RecordingStudioAccessible
       )
     end
 
-    # Grant the first :admin on an empty owned root recording.
+    # Grant the first :admin on an empty owned root, or on an empty
+    # accessible child under a shared root.
     #
-    # Use this when creating a new root (for example a Workspace) so the
-    # creator becomes admin without weakening grant_access authorization.
-    # Shared roots are rejected. After a successful bootstrap, use
-    # grant_access for further invites.
+    # Use this when creating a new Workspace (`shared: false`) or a new
+    # accessible child such as a Profile / MessageGroup under a shared
+    # forest. Shared roots themselves are rejected. After a successful
+    # bootstrap, use grant_access for further invites.
     def bootstrap_owner_access!(recording:, actor:)
       Services::BootstrapOwnerAccess.call(
         recording: recording,

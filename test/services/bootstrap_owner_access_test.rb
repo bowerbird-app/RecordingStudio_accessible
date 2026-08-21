@@ -48,13 +48,17 @@ module RecordingStudioAccessible
                      BootstrapOwnerAccess.call(recording: recording, actor: Actor.new(id: 1, persisted: false)).error
       end
 
-      def test_rejects_non_root_shared_root_and_disallowed_targets
+      def test_rejects_owned_root_children_shared_roots_and_disallowed_targets
         recording = Recording.new(id: 1, recordable_type: "Workspace")
         actor = Actor.new(id: 1)
 
         RecordingStudio.stub(:root_recording?, false) do
-          assert_equal BootstrapOwnerAccess::NON_ROOT_MESSAGE,
-                       BootstrapOwnerAccess.call(recording: recording, actor: actor).error
+          RecordingStudio.stub(:shared_root_tree?, false) do
+            RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+              assert_equal BootstrapOwnerAccess::UNSUPPORTED_RECORDING_MESSAGE,
+                           BootstrapOwnerAccess.call(recording: recording, actor: actor).error
+            end
+          end
         end
 
         RecordingStudio.stub(:root_recording?, true) do
@@ -73,6 +77,39 @@ module RecordingStudioAccessible
               RecordingStudioAccessible.configuration.access_actor_types = [String]
               assert_equal "Actor type is not allowed for access",
                            BootstrapOwnerAccess.call(recording: recording, actor: actor).error
+            end
+          end
+        end
+      end
+
+      def test_allows_shared_forest_accessible_child_shape
+        recording = Recording.new(id: 2, recordable_type: "MessageGroup")
+        actor = Actor.new(id: 1)
+
+        RecordingStudio.stub(:root_recording?, false) do
+          RecordingStudio.stub(:shared_root_tree?, true) do
+            RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+              RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+                service = BootstrapOwnerAccess.new(recording: recording, actor: actor)
+
+                assert_equal true, service.send(:validate_request)
+              end
+            end
+          end
+        end
+      end
+
+      def test_rejects_shared_forest_child_without_accessible
+        recording = Recording.new(id: 2, recordable_type: "MessageGroup")
+        actor = Actor.new(id: 1)
+
+        RecordingStudio.stub(:root_recording?, false) do
+          RecordingStudio.stub(:shared_root_tree?, true) do
+            RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+              RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, false) do
+                assert_equal "Direct access is not enabled for this recording",
+                             BootstrapOwnerAccess.call(recording: recording, actor: actor).error
+              end
             end
           end
         end

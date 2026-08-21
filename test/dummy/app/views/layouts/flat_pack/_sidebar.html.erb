@@ -15,6 +15,11 @@
         icon: :home
       ) %>
       <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Message groups",
+        href: "/message_groups",
+        icon: :mail
+      ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
         label: "Tree",
         href: "/tree",
         icon: :menu

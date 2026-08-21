@@ -28,7 +28,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", "~> 4.1"
+gem "recording_studio", "~> 4.2"
 gem "recording_studio_accessible"
 ```
 
@@ -55,10 +55,10 @@ initializer and share-email templates, and it can optionally add
 settings such as `warn_on_core_conflict`. Proc-based hooks still belong in the
 initializer.
 
-## Compatibility with RecordingStudio 4.1
+## Compatibility with RecordingStudio 4.2
 
-Recording Studio Accessible targets RecordingStudio `4.1` (currently tested with
-`4.1.0`) and its capability-owned child recordable contract. RecordingStudio core
+Recording Studio Accessible targets RecordingStudio `4.2` (currently tested with
+`4.2.0`) and its capability-owned child recordable contract. RecordingStudio core
 no longer ships built-in access control, so this addon provides
 `RecordingStudio::Access`, declares it as a child-only recordable, and registers
 it as metadata for the `:accessible` capability.
@@ -84,6 +84,39 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.7.0
+
+`bootstrap_owner_access!` now covers two empty first-owner shapes:
+
+- an owned root (`shared: false`), such as a Workspace
+- an accessible child under a shared root, such as a Profile or a MessageGroup
+
+1. Upgrade RecordingStudio to `~> 4.2` (tag `v4.2.0`).
+2. Keep calling bootstrap on a new empty owned root. That path is unchanged.
+3. For shared forests, create the accessible child first, then bootstrap on
+   **that child** — never on the shared root itself:
+
+  ```ruby
+  group = MessageGroup.create!(message_root: message_root, name: "Launch", summary: "…")
+  recording = RecordingStudio::Recording.unscoped.find_by!(recordable: group)
+  result = RecordingStudioAccessible.bootstrap_owner_access!(
+    recording: recording,
+    actor: user
+  )
+  raise result.error if result.failure?
+  ```
+
+   Hosts such as `recording_studio_users` can call the same method on a Profile
+   under a shared People root. Dummy class names stay `MessageRoot` /
+   `MessageGroup`; README examples may say `MessagesRoot` for the same pattern.
+4. Use `grant_access` for every later invite or membership change.
+5. Do not add an `access_management_authorizer` mutex, ENV bootstrap, or
+   `AccessCreationContext.allow` workaround. Bootstrap is the first-owner API.
+6. If you use the dummy app or copy its companion gems, pin:
+   - `recording_studio` to tag `v4.2.0`
+   - `recording_studio_root_switchable` to tag `v0.5.0`
+   - `flat_pack` to tag `v0.1.133`
 
 #### Upgrading to 0.6.1
 
@@ -282,8 +315,11 @@ RecordingStudio 4.1 adds type-level shared roots for domain forests such as
 messages. Shared roots remain real tree roots for writes and queries, but they
 are not actor-owned buckets.
 
-Do **not** enable `:accessible` on a shared root type. Grant access on domain
-children beneath the shared root instead:
+Do **not** enable `:accessible` on a shared root type. Enable it on domain
+children beneath the shared root, then bootstrap the first owner on that child.
+
+README examples use `MessagesRoot` as the shared-forest type name. The dummy
+app class is `MessageRoot` — same pattern, keep dummy names as they are.
 
 ```ruby
 class MessagesRoot < ApplicationRecord
@@ -339,11 +375,12 @@ RecordingStudioAccessible.grant_access(
 workspace, company, team, system actor, or another configured access actor.
 `manager_actor` remains the actor performing the access-management action.
 
-### Bootstrapping the first owner on an empty root
+### Bootstrapping the first owner
 
-A brand-new owned root has zero access grants, so the default access-management
-authorizer (which requires an existing `:admin`) cannot authorize the creator's
-first grant. Use `bootstrap_owner_access!` for that one-shot setup:
+A brand-new owned root or a brand-new accessible child under a shared root has
+zero access grants, so the default access-management authorizer (which requires
+an existing `:admin`) cannot authorize the creator's first grant. Use
+`bootstrap_owner_access!` for that one-shot setup:
 
 ```ruby
 workspace = Workspace.create!(name: "Acme")
@@ -355,17 +392,38 @@ result = RecordingStudioAccessible.bootstrap_owner_access!(
 )
 raise result.error if result.failure?
 # result.value => the Access recording (same shape as grant_access success)
+
+group_recording = RecordingStudio::Recording.unscoped.find_by!(recordable: message_group)
+result = RecordingStudioAccessible.bootstrap_owner_access!(
+  recording: group_recording,
+  actor: user
+)
+raise result.error if result.failure?
 ```
 
 | Situation | API |
 | --- | --- |
 | Empty owned root, first admin | `bootstrap_owner_access!` |
+| Empty accessible child under a shared root, first admin | `bootstrap_owner_access!` |
 | Invites, membership, role changes after that | `grant_access` / mounted access UI / Users membership |
 
-Bootstrap succeeds only when the recording is a persisted owned root with
-`:accessible` enabled, the actor type is allowlisted, and there are zero active
+Bootstrap succeeds when the recording is persisted, `:accessible` is enabled on
+its recordable type, the actor type is allowlisted, and there are zero active
 direct Access children (or the only grant is already this actor as `:admin`,
 which is treated as an idempotent success). It always creates role `:admin`.
+
+Allowed recording shapes:
+
+- an owned root (`shared: false`), such as Workspace
+- a non-root descendant whose root type is `shared: true`, such as MessageGroup
+  under dummy `MessageRoot` (README examples may say `MessagesRoot`)
+
+Still rejected:
+
+- the shared root itself
+- owned-root children such as a Folder or Page under Workspace
+- recordings without `:accessible`
+- non-allowlisted or unpersisted actors and recordings
 
 Shared roots are rejected with the same message as grant_access:
 
@@ -373,15 +431,14 @@ Shared roots are rejected with the same message as grant_access:
 Grant access on objects below a shared root, not on the shared root itself.
 ```
 
-Bootstrap is for owned buckets such as Workspace (`shared: false`). Shared
-forests (for example Messages-style shared roots) never get a first-owner grant
-through this API. Intended callers are host apps and
-`recording_studio_users` create-first-root flows — not automatic wiring inside
+Intended callers are host apps and `recording_studio_users` create-first-root
+or create-first-profile flows — not automatic wiring inside
 `root_recording_for`. Treat bootstrap as a trusted host/setup call: anyone who
-can invoke it on an empty owned root becomes that root's first admin.
+can invoke it on an allowed empty recording becomes that recording's first
+admin.
 
-Do not use ENV authorizer overrides or `AccessCreationContext.allow` as the
-product path for first-owner setup.
+Do not use ENV authorizer overrides, `access_management_authorizer` mutexes, or
+`AccessCreationContext.allow` as the product path for first-owner setup.
 
 New access grants fail closed until host apps explicitly configure which
 polymorphic actor types may receive them. Use a finite allowlist in production:
@@ -430,7 +487,8 @@ RecordingStudioAccessible.grant_access(
 RecordingStudio Accessible treats `RecordingStudio::Access` as an internal
 recordable. Applications should not create access records directly. Use
 `RecordingStudioAccessible.bootstrap_owner_access!` for the first owner on an
-empty owned root, then `RecordingStudioAccessible.grant_access` or
+empty owned root or empty accessible child under a shared root, then
+`RecordingStudioAccessible.grant_access` or
 `RecordingStudioAccessible::Services::GrantRecordingAccess` thereafter.
 When this addon is loaded, direct access grant creation raises a validation
 error.
@@ -840,7 +898,7 @@ use another actor's access grant.
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `4.1.0`, RecordingStudioRootSwitchable `v0.4.0`, and FlatPack `0.1.129`.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `4.2.0`, RecordingStudioRootSwitchable `v0.5.0`, and FlatPack `0.1.133`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`).
 
 The dummy app also installs a demo-only override in `test/dummy/config/initializers/recording_studio_accessible.rb`. That initializer creates a `User` automatically when an unknown email is granted access, so the demo can show a successful end-to-end flow without requiring a separate invitation or signup system. That shortcut keeps the demo simple, but it is not the engine default and should not be treated as the recommended production pattern for host apps.
 
@@ -861,16 +919,17 @@ Then sign in with:
 
 Useful routes:
 
-- `/` - dummy app demo with seeded folders, pages, cards, and access results
-- `/message_groups` - dummy app demo of message groups reached through a workspace actor
+- `/` - dummy app demo with seeded folders, pages, cards, message groups, and access results
+- `/message_groups` - dummy app demo of message groups under shared `MessageRoot`, first owner via bootstrap
 - `/recording_studio_accessible` - addon status/demo page
 - `/recording_studio_accessible/recordings/:recording_id/accesses` - gem-provided page for managing direct recording access
 
 The demo seeds:
 
-- one workspace root recording
+- one workspace root recording, first owner via `bootstrap_owner_access!`
 - folders and pages as recordable demo content
 - cards attached to seeded pages
+- a shared `MessageRoot` with an accessible `MessageGroup`; first owner via bootstrap, later workspace grant via `grant_access`
 - multiple users with root, folder, page, and no-access states
 
 That makes it obvious that the access feature is appearing because this addon is installed alongside RecordingStudio.

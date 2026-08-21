@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-21
+
+### Added
+- `bootstrap_owner_access!` now also grants the first `:admin` on an empty
+  accessible child under a shared root (for example a MessageGroup under dummy
+  `MessageRoot`, or a Profile under a shared People root).
+
+### Changed
+- **Breaking dependency floor:** requires RecordingStudio `~> 4.2` (tested
+  against `4.2.0`).
+- Dummy app pins RecordingStudio `v4.2.0`, RecordingStudioRootSwitchable
+  `v0.5.0`, and FlatPack `v0.1.133`.
+- Dummy seeds bootstrap the first MessageGroup owner, then use `grant_access`
+  for later members (including the through-workspace grant).
+- Dummy home lists seeded message groups under the shared messages root.
+
+### Upgrade Notes
+- Upgrade RecordingStudio to `4.2.0` or newer before installing Accessible
+  `0.7.0`.
+- Call `bootstrap_owner_access!` on an empty owned root **or** on an empty
+  accessible child under a shared root. Shared roots themselves stay rejected
+  with the same message as `grant_access`.
+- Do not bootstrap a Folder or Page under an owned Workspace just because it is
+  empty.
+- After a successful bootstrap, continue using `grant_access` for invites.
+  Do not add an `access_management_authorizer` mutex, ENV bootstrap, or
+  `AccessCreationContext.allow` workaround.
+- Dummy companion pins: RecordingStudio `v4.2.0`, Root Switchable `v0.5.0`,
+  FlatPack `v0.1.133`.
+
 ## [0.6.1] - 2026-08-20
 
 ### Added
@@ -192,7 +222,10 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.6.1...v0.7.0
+[0.6.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.4.0...v0.4.1

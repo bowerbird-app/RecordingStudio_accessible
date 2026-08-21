@@ -89,15 +89,38 @@
 
     <div class="mt-6">
       <%= render FlatPack::SectionTitle::Component.new(
-        title: "Access through",
-        subtitle: "Demo of one actor using another actor's access grant. The button below lists message groups the current user can see by acting through the Accessible Demo Workspace.",
+        title: "Message groups",
+        subtitle: "Groups under the shared messages root. The first owner is set with bootstrap; later people join through the demo workspace.",
         anchor_link: true,
         anchor_id: "access-through"
       ) %>
 
       <div class="mt-4">
+        <% if @message_groups.any? %>
+          <%= render FlatPack::Table::Component.new(data: @message_groups) do |table| %>
+            <% table.column(title: "Message group") { |row| row[:name] } %>
+            <% table.column(title: "Root") { |row| row[:root] } %>
+            <% table.column(title: "Direct access") { |row| row[:direct_access] ? "Yes" : "No" } %>
+            <% table.column(title: "Through access") { |row| row[:through_access] ? "Yes" : "No" } %>
+            <% table.column(title: "Effective role") { |row| row[:role].to_s.humanize } %>
+          <% end %>
+        <% else %>
+          <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+            <% card.body(class: "grid gap-3 justify-items-start") do %>
+              <%= render FlatPack::SectionTitle::Component.new(
+                title: "No message groups yet",
+                subtitle: "Nothing in this shared inbox for you. Ask someone to add you, or open the full list.",
+                anchor_link: true,
+                anchor_id: "no-home-message-groups"
+              ) %>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+
+      <div class="mt-4">
         <%= render FlatPack::Button::Component.new(
-          text: "Message groups",
+          text: "Open message groups",
           style: :default,
           size: :md,
           url: message_groups_path

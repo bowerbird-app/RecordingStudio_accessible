@@ -33,6 +33,20 @@ class HomePageTest < ActionDispatch::IntegrationTest
     grant_access(@admin, :admin, @root_recording)
     grant_access(@editor, :edit, @root_recording)
     grant_access(@viewer, :view, @root_recording)
+
+    message_root = MessageRoot.create!(name: "Home Messages Root #{SecureRandom.hex(4)}")
+    message_root_recording = create_root_recording(message_root)
+    @home_message_group = MessageGroup.create!(
+      message_root: message_root,
+      name: "Client launch thread #{SecureRandom.hex(4)}",
+      summary: "A message group visible on the home demo.",
+      position: 0
+    )
+    home_message_group_recording = create_child_recording(
+      recordable: @home_message_group,
+      parent_recording: message_root_recording
+    )
+    grant_access(@admin, :admin, home_message_group_recording)
   end
 
   test "home page renders the accessible demo and removed pages are absent" do
@@ -46,6 +60,8 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Recording Studio Accessible Demo"
     assert_includes @response.body, "Message groups"
     assert_includes @response.body, "href=\"/message_groups\""
+    assert_includes @response.body, @home_message_group.name
+    assert_includes @response.body, "Open message groups"
     assert_includes @response.body, "Client onboarding"
     assert_includes @response.body, "Accessibility checklist"
     refute_includes @response.body, "0 access"
@@ -216,6 +232,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Methods"
     assert_includes @response.body, "Access APIs provided by this gem"
     assert_includes @response.body, "href=\"/recording_studio_accessible/methods\""
+    assert_includes @response.body, "RecordingStudioAccessible.bootstrap_owner_access!"
     assert_includes @response.body, "RecordingStudioAccessible.grant_access"
     assert_includes @response.body, "RecordingStudioAccessible.authorized?"
     assert_includes @response.body, "RecordingStudioAccessible.role_for"

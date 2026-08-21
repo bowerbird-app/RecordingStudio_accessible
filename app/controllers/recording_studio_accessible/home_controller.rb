@@ -18,6 +18,15 @@ module RecordingStudioAccessible
     def access_methods
       @method_sections = [
         {
+          title: "Bootstrap the first owner with RecordingStudioAccessible.bootstrap_owner_access!",
+          code: <<~'RUBY'.strip
+            RecordingStudioAccessible.bootstrap_owner_access!(
+              recording: recording,
+              actor: user
+            )
+          RUBY
+        },
+        {
           title: "Grant access with RecordingStudioAccessible.grant_access",
           code: <<~'RUBY'.strip
             RecordingStudioAccessible.grant_access(
