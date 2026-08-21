@@ -25,6 +25,33 @@
           <% end %>
         <% end %>
       <% end %>
+
+      <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+        <% card.body(class: "grid gap-3 justify-items-start") do %>
+          <%= render FlatPack::SectionTitle::Component.new(
+            title: "Start a workspace",
+            subtitle: "Creates an empty owned root and makes you the first admin.",
+            anchor_link: true,
+            anchor_id: "start-a-workspace"
+          ) %>
+          <%= form_with url: workspaces_path, scope: :workspace, method: :post do %>
+            <div class="space-y-3">
+              <%= render FlatPack::TextInput::Component.new(
+                name: "workspace[name]",
+                label: "Workspace name",
+                placeholder: "Acme studio",
+                required: true
+              ) %>
+              <%= render FlatPack::Button::Component.new(
+                text: "Make me the first owner",
+                style: :primary,
+                size: :md,
+                type: "submit"
+              ) %>
+            </div>
+          <% end %>
+        <% end %>
+      <% end %>
     <% end %>
 
     <%= render FlatPack::SectionTitle::Component.new(

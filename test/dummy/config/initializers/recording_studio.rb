@@ -3,7 +3,7 @@
 RecordingStudio.configure do |config|
   config.recordable_types = [ "Workspace", "Folder", "Page", "Card", "MessageRoot", "MessageGroup" ]
   config.actor = -> { Current.actor }
-  config.impersonator = -> { Current.respond_to?(:impersonator) ? Current.impersonator : nil }
+  config.impersonator = -> { Current.method_defined?(:impersonator) ? Current.impersonator : nil }
   config.event_notifications_enabled = true
   config.idempotency_mode = :return_existing
   config.include_children = false if config.respond_to?(:include_children=)

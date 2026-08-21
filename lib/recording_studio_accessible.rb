@@ -23,8 +23,10 @@ require "recording_studio_accessible/direct_access_query"
 require "recording_studio_accessible/services/base_service"
 require "recording_studio_accessible/authorization_service"
 require "recording_studio_accessible/services/access_record_lifecycle"
+require "recording_studio_accessible/services/access_grant_writer"
 require "recording_studio_accessible/services/access_grant_integrity"
 require "recording_studio_accessible/services/grant_recording_access"
+require "recording_studio_accessible/services/bootstrap_owner_access"
 require "recording_studio_accessible/services/update_recording_access"
 require "recording_studio_accessible/services/revoke_recording_access"
 require_relative "../app/mailers/recording_studio_accessible/access_granted_mailer"
@@ -71,6 +73,19 @@ module RecordingStudioAccessible
         actor: actor,
         role: role,
         manager_actor: manager_actor
+      )
+    end
+
+    # Grant the first :admin on an empty owned root recording.
+    #
+    # Use this when creating a new root (for example a Workspace) so the
+    # creator becomes admin without weakening grant_access authorization.
+    # Shared roots are rejected. After a successful bootstrap, use
+    # grant_access for further invites.
+    def bootstrap_owner_access!(recording:, actor:)
+      Services::BootstrapOwnerAccess.call(
+        recording: recording,
+        actor: actor
       )
     end
 

@@ -10,7 +10,11 @@ module RecordingStudioAccessible
       return false unless defined?(::RecordingStudio)
       return false if recording.blank?
 
-      RecordingStudio.shared_root?(recording)
+      return true if RecordingStudio.shared_root?(recording)
+      return false unless RecordingStudio.respond_to?(:shared_root_type?)
+      return false unless recording.respond_to?(:recordable_type)
+
+      RecordingStudio.shared_root_type?(recording.recordable_type)
     end
   end
 end

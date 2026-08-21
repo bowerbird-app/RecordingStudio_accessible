@@ -67,23 +67,47 @@ def ensure_child_recording(recordable:, parent_recording:, root_recording:)
   ) || root_recording.record(recordable, parent_recording: parent_recording)
 end
 
-def ensure_access_recording(actor:, role:, parent_recording:, root_recording:)
+def ensure_bootstrap_owner!(actor:, root_recording:)
+  result = RecordingStudioAccessible.bootstrap_owner_access!(
+    recording: root_recording,
+    actor: actor
+  )
+  raise result.error if result.failure?
+
+  result.value
+end
+
+def ensure_access_recording(actor:, role:, parent_recording:, manager_actor:)
+  result = RecordingStudioAccessible.grant_access(
+    recording: parent_recording,
+    actor: actor,
+    role: role,
+    manager_actor: manager_actor
+  )
+  raise result.error if result.failure?
+
+  result.value
+end
+
+# Seed-only path for grants under shared-root trees where bootstrap_owner_access!
+# does not apply (non-root / shared forest). Owned roots must use bootstrap.
+def ensure_shared_forest_seed_access!(actor:, role:, parent_recording:, root_recording:)
+  actor_type = actor.class.base_class.name
+
+  existing_recording = RecordingStudio::Recording.unscoped
+                                               .where(
+                                                 root_recording_id: root_recording.id,
+                                                 parent_recording_id: parent_recording.id,
+                                                 recordable_type: "RecordingStudio::Access"
+                                               )
+                                               .joins("INNER JOIN recording_studio_accesses ON recording_studio_accesses.id = recording_studio_recordings.recordable_id")
+                                               .where(recording_studio_accesses: { actor_type: actor_type, actor_id: actor.id })
+                                               .order(created_at: :asc, id: :asc)
+                                               .first
+
+  return existing_recording if existing_recording&.recordable&.role == role.to_s
+
   RecordingStudioAccessible::AccessCreationContext.allow do
-    actor_type = actor.class.base_class.name
-
-    existing_recording = RecordingStudio::Recording.unscoped
-                                                 .where(
-                                                   root_recording_id: root_recording.id,
-                                                   parent_recording_id: parent_recording.id,
-                                                   recordable_type: "RecordingStudio::Access"
-                                                 )
-                                                 .joins("INNER JOIN recording_studio_accesses ON recording_studio_accesses.id = recording_studio_recordings.recordable_id")
-                                                 .where(recording_studio_accesses: { actor_type: actor_type, actor_id: actor.id })
-                                                 .order(created_at: :asc, id: :asc)
-                                                 .first
-
-    return existing_recording if existing_recording&.recordable&.role == role.to_s
-
     root_recording.record(RecordingStudio::Access, parent_recording: parent_recording) do |access|
       access.actor = actor
       access.role = role
@@ -169,7 +193,7 @@ def remove_obsolete_demo_content(workspace:, allowed_pages_by_folder_name:)
   end
 end
 
-def sync_access_recordings(parent_recording:, root_recording:, grants:)
+def sync_access_recordings(parent_recording:, root_recording:, grants:, manager_actor:)
   desired_grants_by_actor = grants.each_with_object({}) do |grant, hash|
     actor = grant.fetch(:actor)
     actor_key = [ actor.class.base_class.name, actor.id ]
@@ -198,8 +222,53 @@ def sync_access_recordings(parent_recording:, root_recording:, grants:)
   end
 
   desired_grants_by_actor.each_value do |grant|
-    ensure_access_recording(actor: grant.fetch(:actor), role: grant.fetch(:role),
-                            parent_recording: parent_recording, root_recording: root_recording)
+    ensure_access_recording(
+      actor: grant.fetch(:actor),
+      role: grant.fetch(:role),
+      parent_recording: parent_recording,
+      manager_actor: manager_actor
+    )
+  end
+end
+
+def sync_owned_root_access!(root_recording:, owner:, additional_grants: [])
+  desired_grants = [ { actor: owner, role: :admin } ] + additional_grants
+  desired_grants_by_actor = desired_grants.each_with_object({}) do |grant, hash|
+    actor = grant.fetch(:actor)
+    actor_key = [ actor.class.base_class.name, actor.id ]
+    hash[actor_key] = { actor: actor, role: grant.fetch(:role).to_s }
+  end
+  seen_actor_keys = {}
+
+  RecordingStudio::Recording.unscoped
+                           .where(parent_recording_id: root_recording.id,
+                                  root_recording_id: root_recording.id,
+                                  recordable_type: "RecordingStudio::Access",
+                                  trashed_at: nil)
+                           .order(created_at: :asc, id: :asc)
+                           .find_each do |recording|
+    access = recording.recordable
+    actor_key = access && [ access.actor_type, access.actor_id ]
+    desired_grant = actor_key && desired_grants_by_actor[actor_key]
+    keep = actor_key && desired_grant && access.actor.present? && access.role.to_s == desired_grant[:role] && !seen_actor_keys[actor_key]
+
+    if keep
+      seen_actor_keys[actor_key] = true
+      next
+    end
+
+    delete_recording_and_orphaned_access(recording)
+  end
+
+  ensure_bootstrap_owner!(actor: owner, root_recording: root_recording)
+
+  additional_grants.each do |grant|
+    ensure_access_recording(
+      actor: grant.fetch(:actor),
+      role: grant.fetch(:role),
+      parent_recording: root_recording,
+      manager_actor: owner
+    )
   end
 end
 
@@ -363,18 +432,16 @@ client_launch_thread_recording = ensure_child_recording(
   root_recording: message_root_recording
 )
 
-sync_access_recordings(
-  parent_recording: root_recording,
+sync_owned_root_access!(
   root_recording: root_recording,
-  grants: (
-    [ { actor: users[:admin], role: :admin } ] +
-    additional_users.values.map { |user| { actor: user, role: :view } }
-  )
+  owner: users[:admin],
+  additional_grants: additional_users.values.map { |user| { actor: user, role: :view } }
 )
 
 sync_access_recordings(
   parent_recording: client_onboarding_recording,
   root_recording: root_recording,
+  manager_actor: users[:admin],
   grants: [
     { actor: users[:editor], role: :edit }
   ]
@@ -383,37 +450,68 @@ sync_access_recordings(
 sync_access_recordings(
   parent_recording: operations_recording,
   root_recording: root_recording,
+  manager_actor: users[:admin],
   grants: []
 )
 
-sync_access_recordings(
-  parent_recording: restricted_root_recording,
+sync_owned_root_access!(
   root_recording: restricted_root_recording,
-  grants: [
-    { actor: users[:admin], role: :admin }
-  ]
+  owner: users[:admin]
 )
 
 sync_access_recordings(
   parent_recording: restricted_planning_recording,
   root_recording: restricted_root_recording,
+  manager_actor: users[:admin],
   grants: [
     { actor: users[:editor], role: :edit }
   ]
 )
 
-sync_access_recordings(
-  parent_recording: client_launch_thread_recording,
-  root_recording: message_root_recording,
-  grants: [
-    { actor: workspace, role: :view }
-  ]
-)
+# Through-access demo under a shared root. bootstrap_owner_access! is owned-root
+# only, so this seed grant stays on the shared-forest seed helper.
+desired_shared_grants = [ { actor: workspace, role: :view } ]
+desired_shared_by_actor = desired_shared_grants.each_with_object({}) do |grant, hash|
+  actor = grant.fetch(:actor)
+  actor_key = [ actor.class.base_class.name, actor.id ]
+  hash[actor_key] = { actor: actor, role: grant.fetch(:role).to_s }
+end
+seen_shared_actor_keys = {}
+
+RecordingStudio::Recording.unscoped
+                         .where(parent_recording_id: client_launch_thread_recording.id,
+                                root_recording_id: message_root_recording.id,
+                                recordable_type: "RecordingStudio::Access",
+                                trashed_at: nil)
+                         .order(created_at: :asc, id: :asc)
+                         .find_each do |recording|
+  access = recording.recordable
+  actor_key = access && [ access.actor_type, access.actor_id ]
+  desired_grant = actor_key && desired_shared_by_actor[actor_key]
+  keep = actor_key && desired_grant && access.actor.present? && access.role.to_s == desired_grant[:role] && !seen_shared_actor_keys[actor_key]
+
+  if keep
+    seen_shared_actor_keys[actor_key] = true
+    next
+  end
+
+  delete_recording_and_orphaned_access(recording)
+end
+
+desired_shared_grants.each do |grant|
+  ensure_shared_forest_seed_access!(
+    actor: grant.fetch(:actor),
+    role: grant.fetch(:role),
+    parent_recording: client_launch_thread_recording,
+    root_recording: message_root_recording
+  )
+end
 
 [ welcome_pack_recording, accessibility_checklist_recording, ops_runbook_recording ].each do |page_recording|
   sync_access_recordings(
     parent_recording: page_recording,
     root_recording: root_recording,
+    manager_actor: users[:admin],
     grants: []
   )
 end
@@ -421,6 +519,7 @@ end
 sync_access_recordings(
   parent_recording: restricted_brief_recording,
   root_recording: restricted_root_recording,
+  manager_actor: users[:admin],
   grants: []
 )
 

@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-08-20
+
+### Added
+- `RecordingStudioAccessible.bootstrap_owner_access!` and
+  `Services::BootstrapOwnerAccess` for the first `:admin` grant on an empty
+  owned root recording, using the same Access write path as `grant_access`.
+- Shared grant writer (`Services::AccessGrantWriter`) shared by grant and
+  bootstrap so bootstrap cannot invent a parallel Access creation path.
+- `SharedRootAccess.target?` also consults `RecordingStudio.shared_root_type?`
+  when available, so shared-root grant surfaces fail closed consistently.
+
+### Changed
+- Dummy seeds bootstrap owned demo roots with `bootstrap_owner_access!` and
+  create further demo grants through `grant_access` instead of
+  `AccessCreationContext.allow`.
+- Dummy `access_actor_types` include `Workspace` so seed through-actor grants
+  stay on the supported grant path.
+
+### Fixed
+- `ensure_current_impersonator_accessor!` now uses `method_defined?` and clears
+  stale same-named `CurrentAttributes` instances after `Current` is replaced,
+  so grant/bootstrap/integrity writes do not call a missing `impersonator`
+  method.
+
+### Upgrade Notes
+- Replace demo ENV authorizer patterns and host-facing
+  `AccessCreationContext.allow` first-owner setup with
+  `RecordingStudioAccessible.bootstrap_owner_access!(recording:, actor:)`.
+- Call bootstrap only on owned roots (`shared: false`). Shared roots remain
+  rejected; put grants on descendants beneath the shared root.
+- After a successful bootstrap, continue using `grant_access` for invites and
+  membership. The default `access_management_authorizer` is unchanged.
+- Intended consumers: host apps and `recording_studio_users` create-first-root.
+  Root Switchable should select the bootstrapped root afterward.
+
 ## [0.6.0] - 2026-08-20
 
 ### Added

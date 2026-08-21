@@ -4,7 +4,7 @@ Rails.application.routes.draw do
   resources :access_actions, only: [ :show ], param: :action_name
   resources :message_groups, only: [ :index ]
   resources :users, only: [ :show ]
-  resources :workspaces, only: [ :show ]
+  resources :workspaces, only: [ :show, :create ]
 
   mount RecordingStudioAccessible::Engine, at: "/recording_studio_accessible"
 
