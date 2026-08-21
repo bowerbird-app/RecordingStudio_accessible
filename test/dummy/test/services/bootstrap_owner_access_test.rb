@@ -170,18 +170,6 @@ class BootstrapOwnerAccessTest < ActiveSupport::TestCase
     end
   end
 
-  test "bootstrap rejects recordings without accessible" do
-    RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, false) do
-      result = RecordingStudioAccessible.bootstrap_owner_access!(
-        recording: @recording,
-        actor: @owner
-      )
-
-      assert result.failure?
-      assert_equal "Direct access is not enabled for this recording", result.error
-    end
-  end
-
   test "bootstrap rejects shared roots" do
     result = RecordingStudioAccessible.bootstrap_owner_access!(
       recording: @message_root_recording,

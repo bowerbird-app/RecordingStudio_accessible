@@ -99,6 +99,19 @@ module RecordingStudioAccessible
         end
       end
 
+      def test_shared_forest_child_via_root_when_recording_is_not_the_root
+        recording = Recording.new(id: 2, recordable_type: "MessageGroup")
+        actor = Actor.new(id: 1)
+        root = Recording.new(id: 1, recordable_type: "MessageRoot")
+        service = BootstrapOwnerAccess.new(recording: recording, actor: actor)
+
+        RecordingStudio.stub(:root_recording_or_self, root) do
+          RecordingStudioAccessible::SharedRootAccess.stub(:target?, true) do
+            assert service.send(:shared_forest_child_via_root?)
+          end
+        end
+      end
+
       def test_rejects_shared_forest_child_without_accessible
         recording = Recording.new(id: 2, recordable_type: "MessageGroup")
         actor = Actor.new(id: 1)

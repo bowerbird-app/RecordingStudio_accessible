@@ -145,7 +145,7 @@ module RecordingStudioAccessible
         text: text,
         style: button_style || :default,
         size: button_size,
-        url: recording_studio_accessible_access_management_path(recording),
+        href: recording_studio_accessible_access_management_path(recording),
         **
       )
     end

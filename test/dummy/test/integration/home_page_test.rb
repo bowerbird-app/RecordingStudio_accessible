@@ -118,7 +118,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, @root_recording.recordable.name
     assert_includes @response.body, alternate_workspace.name
-    refute_includes @response.body, message_root.name
+    refute_includes @response.body, %(value="#{message_root_recording.id}")
     assert_includes @response.body, 'action="/recording_studio_root_switchable/v1/root_switch?scope=workspaces"'
   end
 

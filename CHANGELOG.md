@@ -32,7 +32,9 @@ All notable changes to this project will be documented in this file.
   Do not add an `access_management_authorizer` mutex, ENV bootstrap, or
   `AccessCreationContext.allow` workaround.
 - Dummy companion pins: RecordingStudio `v4.2.0`, Root Switchable `v0.5.0`,
-  FlatPack `v0.1.133`.
+  FlatPack `v0.1.133`. FlatPack 0.1.133 buttons use `href:` (not `url:`),
+  sidebar items use `text:` (not `label:`), and PageNav close uses
+  `anchor_href:`.
 
 ## [0.6.1] - 2026-08-20
 
