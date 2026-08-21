@@ -22,7 +22,20 @@ class MessageGroupsTest < ActionDispatch::IntegrationTest
     )
 
     create_direct_access_recording(actor: @admin, role: :admin, parent_recording: @workspace_root_recording)
-    create_direct_access_recording(actor: @workspace, role: :view, parent_recording: @message_group_recording)
+
+    bootstrap = RecordingStudioAccessible.bootstrap_owner_access!(
+      recording: @message_group_recording,
+      actor: @admin
+    )
+    raise bootstrap.error if bootstrap.failure?
+
+    later = RecordingStudioAccessible.grant_access(
+      recording: @message_group_recording,
+      actor: @workspace,
+      role: :view,
+      manager_actor: @admin
+    )
+    raise later.error if later.failure?
   end
 
   test "workspace member can see message groups through workspace access" do
@@ -32,6 +45,7 @@ class MessageGroupsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "Message groups"
     assert_includes @response.body, "href=\"/message_groups\""
+    assert_includes @response.body, @message_group.name
 
     get "/message_groups"
 
@@ -42,9 +56,8 @@ class MessageGroupsTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, @message_root.name
     assert_includes @response.body, "Direct access"
     assert_includes @response.body, "Through access"
-    assert_includes @response.body, "No"
     assert_includes @response.body, "Yes"
-    assert_includes @response.body, "View"
+    assert_includes @response.body, "Admin"
   end
 
   test "outsider cannot see message groups through workspace access" do

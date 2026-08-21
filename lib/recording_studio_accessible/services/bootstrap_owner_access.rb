@@ -2,14 +2,16 @@
 
 module RecordingStudioAccessible
   module Services
-    # First :admin on an empty owned root via the same write path as grant_access.
+    # First :admin on an empty owned root, or on an empty accessible child under
+    # a shared root, via the same write path as grant_access.
     class BootstrapOwnerAccess < BaseService
       include AccessRecordLifecycle
       include AccessGrantWriter
 
       ALREADY_BOOTSTRAPPED_MESSAGE =
         "Access already exists; use grant_access with a manager_actor"
-      NON_ROOT_MESSAGE = "Recording must be a root recording"
+      UNSUPPORTED_RECORDING_MESSAGE =
+        "Bootstrap is only allowed on an empty owned root or an empty accessible child under a shared root"
       RECORDING_NOT_PERSISTED_MESSAGE = "Recording must be persisted"
       ACTOR_NOT_PERSISTED_MESSAGE = "Actor must be persisted"
 
@@ -39,8 +41,11 @@ module RecordingStudioAccessible
       def validate_request
         presence_result = validate_presence_and_persistence!
         return presence_result unless presence_result == true
-        return failure(NON_ROOT_MESSAGE) unless root_recording_target?
 
+        # 0.6.1 required root_recording? here ("Recording must be a root
+        # recording"), so a Profile under shared People never reached
+        # shared-root denial or a grant. Shared-root rejection stays first;
+        # owned roots and shared-forest children are allowed next.
         target_result = validate_bootstrap_target!
         return target_result unless target_result == true
         return failure("Actor type is not allowed for access") unless allowed_access_actor_type?
@@ -60,9 +65,39 @@ module RecordingStudioAccessible
       def validate_bootstrap_target!
         shared_root_result = reject_shared_root_target!(@recording)
         return shared_root_result unless shared_root_result == true
+        return failure(UNSUPPORTED_RECORDING_MESSAGE) unless bootstrap_recording_shape?
         return failure("Direct access is not enabled for this recording") unless access_management_allowed?(@recording)
 
         true
+      end
+
+      def bootstrap_recording_shape?
+        owned_root_target? || shared_forest_accessible_child?
+      end
+
+      def owned_root_target?
+        root_recording_target? && !RecordingStudioAccessible::SharedRootAccess.target?(@recording)
+      end
+
+      def shared_forest_accessible_child?
+        return false if root_recording_target?
+        return false unless defined?(::RecordingStudio)
+
+        if RecordingStudio.respond_to?(:shared_root_tree?)
+          RecordingStudio.shared_root_tree?(@recording)
+        else
+          shared_forest_child_via_root?
+        end
+      rescue StandardError
+        false
+      end
+
+      def shared_forest_child_via_root?
+        root = RecordingStudio.root_recording_or_self(@recording)
+        return false if root.blank?
+        return false if root.id == @recording.id
+
+        RecordingStudioAccessible::SharedRootAccess.target?(root)
       end
 
       def bootstrap_access_recording!

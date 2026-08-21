@@ -10,6 +10,8 @@ class HomeController < ApplicationController
     @access_rows_by_label = build_access_rows_by_label
     @direct_access_counts_by_recording_id = build_direct_access_counts_by_recording_id
     @action_rows = build_action_rows
+    @message_groups = visible_message_group_rows_for(current_user)
+    @through_workspace = demo_through_workspace
   end
 
   def tree

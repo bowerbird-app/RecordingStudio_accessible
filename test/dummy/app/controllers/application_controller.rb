@@ -15,6 +15,7 @@ class ApplicationController < ActionController::Base
   helper_method :recording_studio_accessible_docs_visible?
   helper_method :recording_studio_accessible_my_access_url
   helper_method :recording_studio_accessible_my_access_visible?
+  helper_method :demo_through_workspace
 
   private
 
@@ -32,6 +33,55 @@ class ApplicationController < ActionController::Base
 
   def current_workspace_recording
     current_root_recording if current_workspace
+  end
+
+  def demo_through_workspace
+    Workspace.find_by(name: "Accessible Demo Workspace")
+  end
+
+  def visible_message_group_rows_for(actor)
+    through_workspace = demo_through_workspace
+
+    MessageGroup.includes(:message_root).order(:position, :name).filter_map do |message_group|
+      recording = RecordingStudio::Recording.unscoped.find_by(recordable: message_group)
+      next unless recording
+
+      direct_access = RecordingStudioAccessible.authorized?(
+        actor: actor,
+        recording: recording,
+        role: :view
+      )
+      through_access = through_workspace.present? && RecordingStudioAccessible.authorized_through?(
+        actor: actor,
+        through: through_workspace,
+        recording: recording,
+        role: :view,
+        controller: self
+      )
+      next unless direct_access || through_access
+
+      {
+        name: message_group.name,
+        summary: message_group.summary,
+        root: message_group.message_root.name,
+        direct_access: direct_access,
+        through_access: through_access,
+        role: message_group_effective_role(actor, through_workspace, recording, direct_access, through_access)
+      }
+    end
+  end
+
+  def message_group_effective_role(actor, through_workspace, recording, direct_access, through_access)
+    if direct_access
+      RecordingStudioAccessible.role_for(actor: actor, recording: recording)
+    elsif through_access
+      RecordingStudioAccessible.role_through(
+        actor: actor,
+        through: through_workspace,
+        recording: recording,
+        controller: self
+      )
+    end
   end
 
   def recording_studio_accessible_docs_visible?

@@ -95,7 +95,7 @@ class AvatarsHelperTest < Minitest::Test
       data_icon_only = arguments.key?(:icon_only) ? %( data-icon-only="#{arguments[:icon_only]}") : ""
       aria_label = arguments.dig(:aria, :label) ? %( aria-label="#{ERB::Util.html_escape(arguments.dig(:aria, :label))}") : ""
 
-      %(<button data-style="#{arguments[:style]}" data-size="#{arguments[:size]}" data-url="#{ERB::Util.html_escape(arguments[:url])}"#{data_icon}#{data_icon_only}#{aria_label}>#{button_text}</button>).html_safe
+      %(<button data-style="#{arguments[:style]}" data-size="#{arguments[:size]}" data-href="#{ERB::Util.html_escape(arguments[:href])}"#{data_icon}#{data_icon_only}#{aria_label}>#{button_text}</button>).html_safe
     end
 
     def render_tooltip(component, &block)
@@ -133,7 +133,7 @@ class AvatarsHelperTest < Minitest::Test
     assert_includes html, 'data-icon="lock-closed"'
     assert_includes html, 'data-icon-only="true"'
     assert_includes html, 'aria-label="Manage access"'
-    assert_includes html, 'data-url="/recordings/42/accesses"'
+    assert_includes html, 'data-href="/recordings/42/accesses"'
     assert_includes html, 'data-avatar-name="Ada Lovelace"'
     assert_includes html, 'data-avatar-src="https://example.com/ada.png"'
     refute_includes html, "+ Access"
@@ -225,7 +225,7 @@ class AvatarsHelperTest < Minitest::Test
 
     assert_includes html, ">+ Access</button>"
     assert_includes html, 'data-style="default"'
-    assert_includes html, 'data-url="/recordings/42/accesses"'
+    assert_includes html, 'data-href="/recordings/42/accesses"'
     refute_includes html, "avatar-group"
   end
 

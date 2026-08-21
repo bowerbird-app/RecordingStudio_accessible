@@ -48,13 +48,17 @@ module RecordingStudioAccessible
                      BootstrapOwnerAccess.call(recording: recording, actor: Actor.new(id: 1, persisted: false)).error
       end
 
-      def test_rejects_non_root_shared_root_and_disallowed_targets
+      def test_rejects_owned_root_children_shared_roots_and_disallowed_targets
         recording = Recording.new(id: 1, recordable_type: "Workspace")
         actor = Actor.new(id: 1)
 
         RecordingStudio.stub(:root_recording?, false) do
-          assert_equal BootstrapOwnerAccess::NON_ROOT_MESSAGE,
-                       BootstrapOwnerAccess.call(recording: recording, actor: actor).error
+          RecordingStudio.stub(:shared_root_tree?, false) do
+            RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+              assert_equal BootstrapOwnerAccess::UNSUPPORTED_RECORDING_MESSAGE,
+                           BootstrapOwnerAccess.call(recording: recording, actor: actor).error
+            end
+          end
         end
 
         RecordingStudio.stub(:root_recording?, true) do
@@ -73,6 +77,65 @@ module RecordingStudioAccessible
               RecordingStudioAccessible.configuration.access_actor_types = [String]
               assert_equal "Actor type is not allowed for access",
                            BootstrapOwnerAccess.call(recording: recording, actor: actor).error
+            end
+          end
+        end
+      end
+
+      def test_profile_shaped_shared_forest_child_is_not_rejected_as_non_root
+        refute BootstrapOwnerAccess.const_defined?(:NON_ROOT_MESSAGE)
+        assert_includes BootstrapOwnerAccess.included_modules, AccessGrantWriter
+
+        # 0.6.1 reproduction: Profile under People (same shape as dummy
+        # MessageGroup under MessageRoot). root_recording? false, shared_root?
+        # false, then NON_ROOT_MESSAGE before shared-root denial.
+        %w[Profile MessageGroup].each do |recordable_type|
+          recording = Recording.new(id: 2, recordable_type: recordable_type)
+          actor = Actor.new(id: 1)
+          service = BootstrapOwnerAccess.new(recording: recording, actor: actor)
+
+          RecordingStudio.stub(:root_recording?, false) do
+            RecordingStudio.stub(:shared_root?, false) do
+              RecordingStudio.stub(:shared_root_tree?, true) do
+                RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+                  RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+                    result = service.send(:validate_request)
+
+                    refute_equal "Recording must be a root recording",
+                                 result.respond_to?(:error) ? result.error : nil
+                    assert_equal true, result
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+
+      def test_shared_forest_child_via_root_when_recording_is_not_the_root
+        recording = Recording.new(id: 2, recordable_type: "MessageGroup")
+        actor = Actor.new(id: 1)
+        root = Recording.new(id: 1, recordable_type: "MessageRoot")
+        service = BootstrapOwnerAccess.new(recording: recording, actor: actor)
+
+        RecordingStudio.stub(:root_recording_or_self, root) do
+          RecordingStudioAccessible::SharedRootAccess.stub(:target?, true) do
+            assert service.send(:shared_forest_child_via_root?)
+          end
+        end
+      end
+
+      def test_rejects_shared_forest_child_without_accessible
+        recording = Recording.new(id: 2, recordable_type: "MessageGroup")
+        actor = Actor.new(id: 1)
+
+        RecordingStudio.stub(:root_recording?, false) do
+          RecordingStudio.stub(:shared_root_tree?, true) do
+            RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+              RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, false) do
+                assert_equal "Direct access is not enabled for this recording",
+                             BootstrapOwnerAccess.call(recording: recording, actor: actor).error
+              end
             end
           end
         end

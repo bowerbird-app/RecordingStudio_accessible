@@ -1,6 +1,6 @@
 <%= render FlatPack::PageNav::Component.new(
   class: "mb-4",
-  anchor_url: recording_access_anchor_url
+  anchor_href: recording_access_anchor_url
 ) %>
 
 <%= render FlatPack::PageTitle::Component.new(
@@ -14,7 +14,7 @@
     text: "Add access",
     style: :primary,
     size: :md,
-    url: new_recording_access_path_with_back_url(@recording)
+    href: new_recording_access_path_with_back_url(@recording)
   ) %>
 </div>
 

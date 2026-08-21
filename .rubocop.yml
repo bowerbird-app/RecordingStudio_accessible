@@ -40,6 +40,7 @@ Metrics/ClassLength:
     - 'lib/recording_studio_accessible/action_registry.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/authorization_service.rb'
+    - 'lib/recording_studio_accessible/services/bootstrap_owner_access.rb'
 
 Metrics/ModuleLength:
   Exclude:
