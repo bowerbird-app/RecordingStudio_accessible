@@ -239,13 +239,9 @@ def sync_access_recordings(parent_recording:, root_recording:, grants:, manager_
 end
 
 def sync_owned_root_access!(root_recording:, owner:, additional_grants: [])
-  desired_grants = [ { actor: owner, role: :admin } ] + additional_grants
-  desired_grants_by_actor = desired_grants.each_with_object({}) do |grant, hash|
-    actor = grant.fetch(:actor)
-    actor_key = [ actor.class.base_class.name, actor.id ]
-    hash[actor_key] = { actor: actor, role: grant.fetch(:role).to_s }
-  end
-  seen_actor_keys = {}
+  # Keep only the owner admin so bootstrap stays idempotent, then re-apply
+  # later members through grant_access (same shape as shared-forest seeds).
+  owner_type = owner.class.base_class.name
 
   RecordingStudio::Recording.unscoped
                            .where(parent_recording_id: root_recording.id,
@@ -255,14 +251,12 @@ def sync_owned_root_access!(root_recording:, owner:, additional_grants: [])
                            .order(created_at: :asc, id: :asc)
                            .find_each do |recording|
     access = recording.recordable
-    actor_key = access && [ access.actor_type, access.actor_id ]
-    desired_grant = actor_key && desired_grants_by_actor[actor_key]
-    keep = actor_key && desired_grant && access.actor.present? && access.role.to_s == desired_grant[:role] && !seen_actor_keys[actor_key]
+    keep = access &&
+           access.actor_type == owner_type &&
+           access.actor_id == owner.id &&
+           access.role.to_s == "admin"
 
-    if keep
-      seen_actor_keys[actor_key] = true
-      next
-    end
+    next if keep
 
     delete_recording_and_orphaned_access(recording)
   end

@@ -6,6 +6,7 @@ class SharedForestSeedWiringTest < ActiveSupport::TestCase
 
     assert_includes seeds, "bootstrap_owner_access!"
     assert_includes seeds, "sync_shared_forest_access!"
+    assert_includes seeds, "sync_owned_root_access!"
     assert_includes seeds, "ensure_bootstrap_owner!"
     refute_includes seeds, "AccessCreationContext.allow"
     refute_includes seeds, "ensure_shared_forest_seed_access!"
