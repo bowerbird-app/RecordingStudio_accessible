@@ -118,6 +118,16 @@ class DirectAccessQueryTest < Minitest::Test
     end
   end
 
+  def test_access_recordings_depending_on_returns_none_when_the_column_is_unavailable
+    none_scope = Object.new
+
+    RecordingStudioAccessible::DependentAccess.stub(:column_available?, false) do
+      RecordingStudio::Recording.stub(:none, none_scope) do
+        assert_same none_scope, RecordingStudioAccessible::DirectAccessQuery.access_recordings_depending_on("manager-id")
+      end
+    end
+  end
+
   def test_access_recordings_depending_on_filters_by_manager_recording_id
     relation = RelationSpy.new
 

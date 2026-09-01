@@ -78,11 +78,9 @@ class CompatibilityTest < Minitest::Test
         validations << [callback, options]
       end
 
-      def self.after_update(*)
-      end
+      def self.after_update(*) = nil
 
-      def self.after_destroy(*)
-      end
+      def self.after_destroy(*) = nil
 
       def self.validations
         @validations ||= []

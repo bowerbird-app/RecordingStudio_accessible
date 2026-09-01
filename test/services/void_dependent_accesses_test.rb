@@ -5,6 +5,14 @@ require "test_helper"
 module RecordingStudioAccessible
   module Services
     class VoidDependentAccessesTest < Minitest::Test
+      def setup
+        ensure_recording_class!
+      end
+
+      def teardown
+        RecordingStudio.send(:remove_const, :Recording) if @created_recording_class
+      end
+
       def test_returns_success_with_empty_list_without_a_manager_id
         result = VoidDependentAccesses.call(manager_access_recording_id: nil)
 
@@ -58,6 +66,43 @@ module RecordingStudioAccessible
             end
           end
         end
+      end
+
+      def test_returns_failure_when_voiding_raises
+        service = VoidDependentAccesses.new(manager_access_recording_id: "manager-id")
+
+        RecordingStudio::Recording.stub(:transaction, ->(*) { raise "boom" }) do
+          result = service.send(:perform)
+
+          assert result.failure?
+          assert_equal "boom", result.error
+        end
+      end
+
+      def test_job_delegates_to_the_void_service
+        called = nil
+
+        VoidDependentAccesses.stub(:call, lambda { |**kwargs|
+          called = kwargs
+          :ok
+        }) do
+          RecordingStudioAccessible::VoidDependentAccessesJob.perform_now("manager-id")
+        end
+
+        assert_equal({ manager_access_recording_id: "manager-id" }, called)
+      end
+
+      private
+
+      def ensure_recording_class!
+        return if RecordingStudio.const_defined?(:Recording, false)
+
+        @created_recording_class = true
+        RecordingStudio.const_set(:Recording, Class.new do
+          def self.transaction
+            yield
+          end
+        end)
       end
     end
   end

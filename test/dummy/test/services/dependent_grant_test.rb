@@ -169,6 +169,7 @@ class DependentGrantTest < ActiveSupport::TestCase
 
   test "authorized and role_for fail closed when the manager is destroyed even if void lagged" do
     manager_grant, = grant_dependent_pair(manager_role: :edit, dependent_role: :view)
+    RecordingStudio::Event.where(recording_id: manager_grant.id).delete_all
     manager_grant.delete
 
     assert_nil RecordingStudioAccessible.role_for(actor: @actor, recording: @recording)
