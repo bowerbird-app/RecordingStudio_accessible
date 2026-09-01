@@ -7,6 +7,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 ## What the gem provides
 
 - child-only `RecordingStudio::Access` recordables for direct grants under opted-in recordings
+- optional dependent grants: one Access recording can be capped by and die with another Access recording on the same root
 - `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, and `authorized_through?` for role lookup and authorization checks
 - a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
 - install and migration generators for host apps
@@ -84,6 +85,38 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.8.0
+
+Dependent grants let one Access recording be capped by another Access recording
+on the same root. Authorize fail-closes if that manager grant is gone, trashed,
+or weaker than the dependent — even when a background void job has not run.
+
+1. Install Accessible `0.8.0` and run:
+
+   ```bash
+   bin/rails generate recording_studio_accessible:migrations
+   bin/rails db:migrate
+   ```
+
+2. Existing independent grants do not change. `manager_actor` is still who
+   performed the grant.
+3. To declare a dependency, pass the manager Access recording:
+
+   ```ruby
+   result = RecordingStudioAccessible.grant_access(
+     recording: recording,
+     actor: actor,
+     role: :view,
+     manager_actor: current_actor,
+     depends_on: manager_access_recording
+   )
+   raise result.error if result.failure?
+   ```
+
+4. The dependent role cannot exceed the manager grant's role. The manager must
+   be an active Access recording on the same root. Do not invent a second ACL
+   or OAuth-specific grant helper — keep using `grant_access` / `authorized?`.
 
 #### Upgrading to 0.7.0
 
@@ -379,6 +412,23 @@ RecordingStudioAccessible.grant_access(
 `actor` is the polymorphic object receiving access. It can be a user,
 workspace, company, team, system actor, or another configured access actor.
 `manager_actor` remains the actor performing the access-management action.
+
+A grant may also depend on another Access recording on the same root. The
+dependent role cannot exceed that manager grant's role, and
+`authorized?` / `role_for` fail closed if the manager Access is later
+trashed, destroyed, or downgraded:
+
+```ruby
+result = RecordingStudioAccessible.grant_access(
+  recording: recording,
+  actor: other_actor,
+  role: :view,
+  manager_actor: current_actor,
+  depends_on: manager_access_recording
+)
+```
+
+Independent grants omit `depends_on` and keep the previous behavior.
 
 ### Bootstrapping the first owner
 

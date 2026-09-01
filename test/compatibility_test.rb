@@ -78,6 +78,10 @@ class CompatibilityTest < Minitest::Test
         validations << [callback, options]
       end
 
+      def self.after_update(*) = nil
+
+      def self.after_destroy(*) = nil
+
       def self.validations
         @validations ||= []
       end
@@ -100,6 +104,7 @@ class CompatibilityTest < Minitest::Test
     assert_includes access_class.included_modules, RecordingStudioAccessible::AccessCreationGuard
     assert_includes access_class.validations, [:prevent_unsupported_direct_creation, { on: :create }]
     assert_includes recording_class.included_modules, RecordingStudioAccessible::AccessRecordingCreationGuard
+    assert_includes recording_class.included_modules, RecordingStudioAccessible::AccessRecordingDependentLifecycle
     assert_includes recording_class.validations, [:prevent_unsupported_access_recording_creation, { on: :create }]
   end
 

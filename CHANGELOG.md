@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-01
+
+### Added
+- Dependent Access grants: `grant_access` can pass `depends_on:` with another
+  Access recording on the same root. The dependent role cannot exceed that
+  manager grant's role.
+- `authorized?` and `role_for` re-check the manager invariant at authorize
+  time and fail closed if the manager Access is missing, trashed, off-root,
+  or weaker than the dependent — even if a void job has not run yet.
+- `VoidDependentAccesses` / `VoidDependentAccessesJob` void dependent grants
+  when a manager Access is revised, trashed, or destroyed.
+- `depends_on_recording_id` on `recording_studio_accesses` stores the manager
+  Access recording id (stable across `revise`).
+
+### Upgrade Notes
+- Run `bin/rails generate recording_studio_accessible:migrations` then
+  `bin/rails db:migrate` to add `depends_on_recording_id`.
+- Independent grants are unchanged. To cap a grant by another Access recording:
+
+  ```ruby
+  result = RecordingStudioAccessible.grant_access(
+    recording: recording,
+    actor: actor,
+    role: :view,
+    manager_actor: current_actor,
+    depends_on: manager_access_recording
+  )
+  ```
+
+- `manager_actor` is still who performed the grant. `depends_on` is the Access
+  recording this grant is capped by and dies with. Do not add a second ACL.
+
 ## [0.7.0] - 2026-08-21
 
 ### Added
@@ -227,7 +259,8 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.5.1...v0.6.0

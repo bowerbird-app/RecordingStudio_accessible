@@ -35,6 +35,7 @@ Metrics/ClassLength:
   Exclude:
     - 'test/**/*'
     - 'lib/recording_studio_accessible/hooks.rb'
+    - 'lib/recording_studio_accessible/dependent_access.rb'
     - 'app/controllers/recording_studio_accessible/home_controller.rb'
     - 'app/controllers/recording_studio_accessible/recording_accesses_controller.rb'
     - 'lib/recording_studio_accessible/action_registry.rb'
@@ -46,6 +47,7 @@ Metrics/ModuleLength:
   Exclude:
     - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
     - 'app/helpers/recording_studio_accessible/recording_accesses_helper.rb'
+    - 'lib/recording_studio_accessible/dependent_access.rb'
 
 Metrics/MethodLength:
   Exclude:
@@ -62,6 +64,7 @@ Metrics/MethodLength:
     - 'lib/recording_studio_accessible/check_registry.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
+    - 'lib/recording_studio_accessible/dependent_access.rb'
     - 'lib/recording_studio_accessible/services/**/*'
 
 Metrics/AbcSize:
@@ -75,6 +78,7 @@ Metrics/AbcSize:
     - 'app/mailers/recording_studio_accessible/access_granted_mailer.rb'
     - 'lib/recording_studio_accessible/access_recording_creation_guard.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
+    - 'lib/recording_studio_accessible/dependent_access.rb'
     - 'lib/recording_studio_accessible/services/**/*'
 
 Metrics/CyclomaticComplexity:
@@ -85,6 +89,7 @@ Metrics/CyclomaticComplexity:
     - 'lib/recording_studio_accessible/access_recording_creation_guard.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
+    - 'lib/recording_studio_accessible/dependent_access.rb'
 
 Metrics/PerceivedComplexity:
   Exclude:
@@ -93,11 +98,13 @@ Metrics/PerceivedComplexity:
     - 'lib/recording_studio_accessible/access_recording_creation_guard.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
+    - 'lib/recording_studio_accessible/dependent_access.rb'
 
 Metrics/ParameterLists:
   Exclude:
     - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
     - 'lib/recording_studio_accessible/configuration.rb'
+    - 'lib/recording_studio_accessible/services/grant_recording_access.rb'
 
 # Allow empty blocks in tests (common for stubs/mocks)
 Lint/EmptyBlock:
