@@ -9,7 +9,9 @@ module RecordingStudioAccessible
   # Authorize-time checks own the invariant and fail closed. Voiding a
   # dependent grant when the manager dies or is downgraded is necessary but
   # not sufficient — `authorized?` / `role_for` must not honor a dependent
-  # grant whose manager is missing, trashed, off-root, or weaker.
+  # grant whose manager is missing, trashed, off-root, or weaker. Moving the
+  # manager Access recording voids dependents in place; same-root authorize
+  # still succeeds until that void job runs.
   module DependentAccess
     MISSING_COLUMN_MESSAGE = "Dependent grants require the depends_on_recording_id column"
     MISSING_MANAGER_MESSAGE = "Manager access grant is missing or inactive"

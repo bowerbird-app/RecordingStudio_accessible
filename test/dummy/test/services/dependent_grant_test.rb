@@ -187,6 +187,7 @@ class DependentGrantTest < ActiveSupport::TestCase
 
   test "void job removes a dependent grant after the manager is revoked" do
     manager_grant, dependent_grant = grant_dependent_pair(manager_role: :edit, dependent_role: :view)
+    independent_grant = grant_independent
 
     perform_enqueued_jobs do
       result = RecordingStudioAccessible::Services::RevokeRecordingAccess.call(
@@ -199,6 +200,74 @@ class DependentGrantTest < ActiveSupport::TestCase
 
     assert_nil RecordingStudio::Recording.unscoped.find_by(id: dependent_grant.id)
     assert_nil RecordingStudioAccessible.role_for(actor: @actor, recording: @recording)
+    assert_equal independent_grant.id, independent_grant.reload.id
+    assert_equal @recording.id, independent_grant.parent_recording_id
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: @other_actor, recording: @recording)
+  end
+
+  test "void job removes a dependent grant after the manager is trashed" do
+    manager_grant, dependent_grant = grant_dependent_pair(manager_role: :edit, dependent_role: :view)
+    independent_grant = grant_independent
+
+    perform_enqueued_jobs do
+      manager_grant.update!(trashed_at: Time.current)
+    end
+
+    assert_nil RecordingStudio::Recording.unscoped.find_by(id: dependent_grant.id)
+    assert_nil RecordingStudioAccessible.role_for(actor: @actor, recording: @recording)
+    assert_equal independent_grant.id, independent_grant.reload.id
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: @other_actor, recording: @recording)
+  end
+
+  test "void job removes a dependent grant after the manager role is weakened via revise" do
+    manager_grant, dependent_grant = grant_dependent_pair(manager_role: :admin, dependent_role: :edit)
+    independent_grant = grant_independent
+    dependent_id = dependent_grant.id
+    dependent_parent_id = dependent_grant.parent_recording_id
+
+    perform_enqueued_jobs do
+      result = RecordingStudioAccessible::Services::UpdateRecordingAccess.call(
+        recording: @recording,
+        access_recording: manager_grant,
+        role: :view,
+        manager_actor: @admin
+      )
+      assert result.success?
+    end
+
+    assert_nil RecordingStudio::Recording.unscoped.find_by(id: dependent_id)
+    assert_nil RecordingStudioAccessible.role_for(actor: @actor, recording: @recording)
+    assert_equal "view", manager_grant.reload.recordable.role
+    assert_equal dependent_parent_id, @recording.id
+    assert_equal independent_grant.id, independent_grant.reload.id
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: @other_actor, recording: @recording)
+  end
+
+  test "void job voids dependents in place when the manager Access is moved" do
+    manager_grant, dependent_grant = grant_dependent_pair(manager_role: :edit, dependent_role: :view)
+    independent_grant = grant_independent
+    folder = Folder.create!(workspace: @workspace, name: "Move Destination", summary: "Folder", position: 2)
+    folder_recording = create_child_recording(recordable: folder, parent_recording: @recording)
+    dependent_id = dependent_grant.id
+    original_parent_id = dependent_grant.parent_recording_id
+
+    manager_grant.update!(parent_recording: folder_recording)
+
+    leftover = RecordingStudio::Recording.unscoped.find_by(id: dependent_id)
+    if leftover
+      assert_equal original_parent_id, leftover.parent_recording_id
+      refute_equal folder_recording.id, leftover.parent_recording_id
+    end
+
+    perform_enqueued_jobs
+
+    assert_nil RecordingStudio::Recording.unscoped.find_by(id: dependent_id)
+    assert_nil RecordingStudio::Recording.unscoped.find_by(id: dependent_id, parent_recording_id: folder_recording.id)
+    assert_equal folder_recording.id, manager_grant.reload.parent_recording_id
+    assert_equal original_parent_id, independent_grant.reload.parent_recording_id
+    assert RecordingStudioAccessible.authorized?(actor: @other_actor, recording: @recording, role: :view)
+    assert_nil RecordingStudioAccessible.role_for(actor: @actor, recording: @recording)
+    refute RecordingStudioAccessible.authorized?(actor: @actor, recording: @recording, role: :view)
   end
 
   test "void job is not required for fail-closed authorize after a lagged manager downgrade" do
@@ -293,6 +362,15 @@ class DependentGrantTest < ActiveSupport::TestCase
 
   def create_user(email)
     User.find_by(email: email) || User.create!(email: email, password: "Password", password_confirmation: "Password")
+  end
+
+  def grant_independent
+    RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: @other_actor,
+      role: :view,
+      manager_actor: @admin
+    ).value
   end
 
   def grant_dependent_pair(manager_role:, dependent_role:)
