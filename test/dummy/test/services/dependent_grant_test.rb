@@ -264,6 +264,31 @@ class DependentGrantTest < ActiveSupport::TestCase
     assert_equal "view", dependent_grant.reload.recordable.role
   end
 
+  test "updating a dependent grant keeps depends_on and still fail-closes if the manager is trashed" do
+    manager_grant, dependent_grant = grant_dependent_pair(manager_role: :edit, dependent_role: :edit)
+
+    result = RecordingStudioAccessible::Services::UpdateRecordingAccess.call(
+      recording: @recording,
+      access_recording: dependent_grant,
+      role: :view,
+      manager_actor: @admin
+    )
+
+    assert result.success?
+    revised = result.value
+    assert_equal manager_grant.id, revised.recordable.depends_on_recording_id
+    assert_equal "view", revised.recordable.role
+    assert_not_equal dependent_grant.recordable_id, revised.recordable_id
+    assert RecordingStudioAccessible.authorized?(actor: @actor, recording: @recording, role: :view)
+    refute RecordingStudioAccessible.authorized?(actor: @actor, recording: @recording, role: :edit)
+
+    manager_grant.update_column(:trashed_at, Time.current)
+
+    refute RecordingStudioAccessible.authorized?(actor: @actor, recording: @recording, role: :view)
+    assert_nil RecordingStudioAccessible.role_for(actor: @actor, recording: @recording)
+    assert_equal manager_grant.id, revised.reload.recordable.depends_on_recording_id
+  end
+
   private
 
   def create_user(email)
