@@ -29,6 +29,7 @@ module RecordingStudioAccessible
         RecordingStudioAccessible::AccessCreationContext.allow do
           root_recording.revise(access_recording, actor: manager_actor) do |access|
             access.role = @role
+            assign_depends_on(access)
           end
         end
       end
@@ -42,8 +43,16 @@ module RecordingStudioAccessible
           ) do |access|
             access.actor = @actor
             access.role = @role
+            assign_depends_on(access)
           end
         end
+      end
+
+      def assign_depends_on(access)
+        return unless @depends_on
+        return unless access.respond_to?(:depends_on_recording_id=)
+
+        access.depends_on_recording_id = @depends_on.id
       end
 
       def root_recording

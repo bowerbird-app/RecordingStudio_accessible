@@ -110,6 +110,29 @@ class DirectAccessQueryTest < Minitest::Test
     assert_includes relation.wheres, [{ recording_studio_accesses: { actor_type: "DirectAccessQueryTest::Actor", actor_id: 456 } }]
   end
 
+  def test_access_recordings_depending_on_returns_none_without_recording_id
+    none_scope = Object.new
+
+    RecordingStudio::Recording.stub(:none, none_scope) do
+      assert_same none_scope, RecordingStudioAccessible::DirectAccessQuery.access_recordings_depending_on(nil)
+    end
+  end
+
+  def test_access_recordings_depending_on_filters_by_manager_recording_id
+    relation = RelationSpy.new
+
+    RecordingStudioAccessible::DependentAccess.stub(:column_available?, true) do
+      RecordingStudio::Recording.stub(:unscoped, relation) do
+        RecordingStudio::Recording.stub(:column_names, []) do
+          assert_same relation, RecordingStudioAccessible::DirectAccessQuery.access_recordings_depending_on("manager-id")
+        end
+      end
+    end
+
+    assert_includes relation.wheres, [{ recordable_type: "RecordingStudio::Access" }]
+    assert_includes relation.wheres, [{ recording_studio_accesses: { depends_on_recording_id: "manager-id" } }]
+  end
+
   private
 
   def ensure_recording_class!

@@ -34,6 +34,7 @@ module RecordingStudio
       def store_stronger_role(roles, access_recording)
         role = access_recording.recordable&.role
         return unless RecordingStudio::AccessRoles.value_for(role)
+        return unless RecordingStudioAccessible::DependentAccess.effective?(access_recording)
 
         parent_id = access_recording.parent_recording_id
         current_role = roles[parent_id]

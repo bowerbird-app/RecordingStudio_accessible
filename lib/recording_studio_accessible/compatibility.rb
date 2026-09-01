@@ -67,6 +67,7 @@ module RecordingStudioAccessible
       def ensure_creation_guards!
         include_guard("RecordingStudio::Access", RecordingStudioAccessible::AccessCreationGuard)
         include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AccessRecordingCreationGuard)
+        include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AccessRecordingDependentLifecycle)
       end
 
       def ensure_access_recordable_declaration!

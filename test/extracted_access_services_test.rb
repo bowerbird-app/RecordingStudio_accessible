@@ -168,4 +168,18 @@ class ExtractedAccessServicesTest < Minitest::Test
 
     assert_equal 1, calls
   end
+
+  def test_access_grant_lookup_skips_grants_that_are_not_effective_dependents
+    actor = Actor.new(1)
+    parent = Recording.new(id: 10)
+    access_recordings = [AccessRecording.new(10, AccessRecordable.new("admin"))]
+
+    RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, access_recordings) do
+      RecordingStudioAccessible::DependentAccess.stub(:effective?, false) do
+        lookup = RecordingStudio::Services::AccessGrantLookup.new(actor: actor, recordings: [parent])
+
+        assert_nil lookup.role_for(parent)
+      end
+    end
+  end
 end

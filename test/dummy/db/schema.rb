@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_12_022601) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_01_000010) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -70,8 +70,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_12_022601) do
     t.string "actor_type", null: false
     t.datetime "created_at", null: false
     t.integer "role", default: 0, null: false
+    t.uuid "depends_on_recording_id"
     t.index ["actor_type", "actor_id", "role"], name: "index_recording_studio_accesses_on_actor_and_role"
     t.index ["actor_type", "actor_id"], name: "index_recording_studio_accesses_on_actor"
+    t.index ["depends_on_recording_id"], name: "index_recording_studio_accesses_on_depends_on_recording_id"
   end
 
   create_table "recording_studio_device_sessions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

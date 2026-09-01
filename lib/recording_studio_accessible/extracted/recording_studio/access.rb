@@ -21,6 +21,12 @@ module RecordingStudio
 
     enum :role, { view: 0, edit: 1, admin: 2 }
 
+    def dependent?
+      return false unless self.class.column_names.include?("depends_on_recording_id")
+
+      depends_on_recording_id.present?
+    end
+
     def self.recordable_type_label
       "Access"
     end

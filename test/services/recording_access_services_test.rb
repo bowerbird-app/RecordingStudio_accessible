@@ -76,7 +76,7 @@ module RecordingStudioAccessible
           assert_equal :created_recording, service.send(:create_access_recording)
         end
 
-        assert_equal [[RecordingStudio::Access, :manager, recording, actor, "edit"]], root.record_calls
+        assert_equal [[RecordingStudio::Access, :manager, recording, actor, "edit", nil]], root.record_calls
       end
 
       def test_grant_access_updates_existing_access_recording_and_deduplicates_extras
@@ -95,7 +95,7 @@ module RecordingStudioAccessible
         end
 
         assert_equal :manager, duplicate.root_id
-        assert_equal [[existing, :manager, "admin"]], root.revise_calls
+        assert_equal [[existing, :manager, "admin", nil]], root.revise_calls
       end
 
       def test_grant_perform_returns_success_for_valid_request
@@ -149,6 +149,45 @@ module RecordingStudioAccessible
         end
 
         assert recording.locked
+      end
+
+      def test_grant_access_rejects_invalid_dependent_manager
+        recording = Recording.new(id: 1)
+        actor = Actor.new(1)
+        manager = Recording.new(id: 9)
+        service = GrantRecordingAccess.new(
+          recording: recording, actor: actor, role: :edit, manager_actor: :manager, depends_on: manager
+        )
+
+        RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+          service.stub(:existing_access_recordings, []) do
+            RecordingStudioAccessible::DependentAccess.stub(
+              :grant_error,
+              RecordingStudioAccessible::DependentAccess::NOT_ACCESS_SAME_ROOT_MESSAGE
+            ) do
+              result = service.send(:perform)
+
+              assert result.failure?
+              assert_equal RecordingStudioAccessible::DependentAccess::NOT_ACCESS_SAME_ROOT_MESSAGE, result.error
+            end
+          end
+        end
+      end
+
+      def test_grant_access_assigns_depends_on_when_creating
+        recording = Recording.new(id: 1)
+        actor = Actor.new(1)
+        manager = Recording.new(id: 9)
+        root = RootRecorder.new(:created_recording)
+        service = GrantRecordingAccess.new(
+          recording: recording, actor: actor, role: :view, manager_actor: :manager, depends_on: manager
+        )
+
+        RecordingStudio.stub(:root_recording_or_self, root) do
+          assert_equal :created_recording, service.send(:create_access_recording)
+        end
+
+        assert_equal [[RecordingStudio::Access, :manager, recording, actor, "view", 9]], root.record_calls
       end
 
       def test_update_access_validates_inputs
@@ -228,7 +267,7 @@ module RecordingStudioAccessible
       private
 
       class RootRecorder
-        AccessDouble = Struct.new(:actor, :role)
+        AccessDouble = Struct.new(:actor, :role, :depends_on_recording_id)
 
         attr_reader :record_calls, :revise_calls
 
@@ -241,14 +280,15 @@ module RecordingStudioAccessible
         def record(recordable_class, actor:, parent_recording:)
           access = AccessDouble.new
           yield access
-          @record_calls << [recordable_class, actor, parent_recording, access.actor, access.role]
+          @record_calls << [recordable_class, actor, parent_recording, access.actor, access.role,
+                            access.depends_on_recording_id]
           @return_value
         end
 
         def revise(access_recording, actor:)
           access = AccessDouble.new
           yield access
-          @revise_calls << [access_recording, actor, access.role]
+          @revise_calls << [access_recording, actor, access.role, access.depends_on_recording_id]
           @return_value
         end
       end

@@ -10,6 +10,8 @@ require "recording_studio_accessible/shared_root_access"
 require "recording_studio_accessible/access_creation_context"
 require "recording_studio_accessible/access_creation_guard"
 require "recording_studio_accessible/access_recording_creation_guard"
+require "recording_studio_accessible/access_recording_dependent_lifecycle"
+require "recording_studio_accessible/dependent_access"
 require "recording_studio_accessible/access_management_policy"
 require "recording_studio_accessible/action_registry"
 require "recording_studio_accessible/actor_type"
@@ -29,6 +31,8 @@ require "recording_studio_accessible/services/grant_recording_access"
 require "recording_studio_accessible/services/bootstrap_owner_access"
 require "recording_studio_accessible/services/update_recording_access"
 require "recording_studio_accessible/services/revoke_recording_access"
+require "recording_studio_accessible/services/void_dependent_accesses"
+require_relative "../app/jobs/recording_studio_accessible/void_dependent_accesses_job"
 require_relative "../app/mailers/recording_studio_accessible/access_granted_mailer"
 
 require "recording_studio_accessible/engine"
@@ -67,12 +71,13 @@ module RecordingStudioAccessible
       )
     end
 
-    def grant_access(recording:, actor:, role:, manager_actor: nil)
+    def grant_access(recording:, actor:, role:, manager_actor: nil, depends_on: nil)
       Services::GrantRecordingAccess.call(
         recording: recording,
         actor: actor,
         role: role,
-        manager_actor: manager_actor
+        manager_actor: manager_actor,
+        depends_on: depends_on
       )
     end
 

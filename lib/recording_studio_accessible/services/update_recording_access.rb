@@ -49,7 +49,25 @@ module RecordingStudioAccessible
                                                                                                 access_recording: @access_recording)
         return failure("Role is invalid") unless valid_role?
 
+        dependency_result = validate_dependent_grant
+        return dependency_result unless dependency_result == true
+
         true
+      end
+
+      def validate_dependent_grant
+        manager = RecordingStudioAccessible::DependentAccess.manager_recording_for(@access_recording)
+        return true if manager.nil?
+
+        error = RecordingStudioAccessible::DependentAccess.grant_error(
+          target_recording: @recording,
+          role: @role,
+          depends_on: manager,
+          dependent_recording: @access_recording
+        )
+        return true unless error
+
+        failure(error)
       end
 
       def service_args

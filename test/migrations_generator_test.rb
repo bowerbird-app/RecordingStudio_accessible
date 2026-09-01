@@ -52,7 +52,7 @@ class MigrationsGeneratorTest < Minitest::Test
     with_temp_app do |dir|
       generator = build_generator(dir)
       messages = []
-      numbers = %w[20260101000000 20260101000001]
+      numbers = %w[20260101000000 20260101000001 20260101000002]
       generator.stub(:say, ->(message, color = nil) { messages << [message, color] }) do
         generator.stub(:next_migration_number, -> { numbers.shift }) do
           RecordingStudioAccessible::Compatibility.stub(:core_access_present?, false) do
@@ -64,6 +64,7 @@ class MigrationsGeneratorTest < Minitest::Test
       copied = Dir.glob(File.join(dir, "db/migrate/*.rb")).map { |path| File.basename(path) }
       assert_includes copied, "20260101000000_create_recording_studio_accesses.rb"
       assert_includes copied, "20260101000001_add_indexes_for_access_container_lookup.rb"
+      assert_includes copied, "20260101000002_add_depends_on_recording_id_to_recording_studio_accesses.rb"
       assert_includes messages, ["Run 'bin/rails db:migrate' to apply the migrations.", :green]
     end
   end

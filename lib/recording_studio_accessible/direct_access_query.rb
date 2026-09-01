@@ -36,6 +36,16 @@ module RecordingStudioAccessible
           .order(created_at: :desc, id: :desc)
       end
 
+      def access_recordings_depending_on(recording_id)
+        return RecordingStudio::Recording.none if recording_id.blank?
+        return RecordingStudio::Recording.none unless RecordingStudioAccessible::DependentAccess.column_available?
+
+        active_recordings_scope
+          .where(recordable_type: "RecordingStudio::Access")
+          .joins(ACCESS_JOIN_SQL)
+          .where(recording_studio_accesses: { depends_on_recording_id: recording_id })
+      end
+
       private
 
       def active_recordings_scope
