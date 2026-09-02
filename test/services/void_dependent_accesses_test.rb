@@ -68,6 +68,32 @@ module RecordingStudioAccessible
         end
       end
 
+      def test_voids_dependents_when_manager_moved_even_if_still_effective
+        dependent = Object.new
+        dependent.define_singleton_method(:id) { 7 }
+        service = VoidDependentAccesses.new(manager_access_recording_id: "manager-id", moved: true)
+        destroyed = []
+
+        relation = Object.new
+        relation.define_singleton_method(:find_each) { |&block| [dependent].each(&block) }
+
+        RecordingStudio::Recording.stub(:transaction, ->(&block) { block.call }) do
+          RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_depending_on, relation) do
+            RecordingStudioAccessible::DependentAccess.stub(:effective?, true) do
+              service.stub(:destroy_access_recording!, lambda { |access_recording, manager_actor:|
+                destroyed << [access_recording, manager_actor]
+              }) do
+                result = service.send(:perform)
+
+                assert result.success?
+                assert_equal [7], result.value
+                assert_equal [[dependent, nil]], destroyed
+              end
+            end
+          end
+        end
+      end
+
       def test_returns_failure_when_voiding_raises
         service = VoidDependentAccesses.new(manager_access_recording_id: "manager-id")
 
@@ -90,6 +116,19 @@ module RecordingStudioAccessible
         end
 
         assert_equal({ manager_access_recording_id: "manager-id" }, called)
+      end
+
+      def test_job_passes_moved_to_the_void_service
+        called = nil
+
+        VoidDependentAccesses.stub(:call, lambda { |**kwargs|
+          called = kwargs
+          :ok
+        }) do
+          RecordingStudioAccessible::VoidDependentAccessesJob.perform_now("manager-id", moved: true)
+        end
+
+        assert_equal({ manager_access_recording_id: "manager-id", moved: true }, called)
       end
 
       private

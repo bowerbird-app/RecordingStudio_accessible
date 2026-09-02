@@ -9,11 +9,16 @@ class AccessRecordingDependentLifecycleTest < Minitest::Test
 
     include RecordingStudioAccessible::AccessRecordingDependentLifecycle
 
-    attr_accessor :id, :recordable_type
+    attr_accessor :id, :recordable_type, :moved_attributes
 
     def initialize(id:, recordable_type:)
       @id = id
       @recordable_type = recordable_type
+      @moved_attributes = []
+    end
+
+    def saved_change_to_attribute?(attribute)
+      Array(moved_attributes).include?(attribute.to_sym)
     end
   end
 
@@ -65,6 +70,24 @@ class AccessRecordingDependentLifecycleTest < Minitest::Test
     end
 
     refute enqueued
+  end
+
+  def test_enqueues_void_job_with_moved_when_parent_or_root_changes
+    %i[parent_recording_id root_recording_id].each do |attribute|
+      recording = FakeRecording.new(id: "manager-id", recordable_type: "RecordingStudio::Access")
+      recording.moved_attributes = [attribute]
+      enqueued = nil
+
+      RecordingStudioAccessible::DependentAccess.stub(:column_available?, true) do
+        RecordingStudioAccessible::VoidDependentAccessesJob.stub(:perform_later, lambda { |id, **kwargs|
+          enqueued = [id, kwargs]
+        }) do
+          recording.send(:recording_studio_accessible_enqueue_void_dependents)
+        end
+      end
+
+      assert_equal ["manager-id", { moved: true }], enqueued, "expected moved: true for #{attribute}"
+    end
   end
 
   def test_swallows_enqueue_errors

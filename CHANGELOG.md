@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-01
+
+### Added
+- Dependent grants now void when the manager Access recording is moved.
+  Dependents stay at the old node and are destroyed; they do not follow the
+  manager to the new parent. Moveable's `move_to!` updates
+  `parent_recording_id` (and `root_recording_id` on a cross-root transfer);
+  Accessible hooks that Recording lifecycle instead of adding a second ACL.
+
+### Changed
+- `VoidDependentAccesses` / `VoidDependentAccessesJob` accept `moved: true`
+  so a manager move voids dependents even when they would still look
+  same-root/role-capped until the grant is gone.
+
+### Upgrade Notes
+- Install Accessible `0.9.0`. No new migration.
+- Independent grants are unchanged: they are not voided or relocated when a
+  manager Access moves.
+- Role-weaken via revise already voided dependents in 0.8.0 (it is not a
+  silent clamp to the lower role). Trash and destroy still void dependents.
+- `authorized?` still fail-closes off-root/weaker immediately. Void on move
+  is the reconnect floor so the dependent is gone, not a stale sibling at
+  the old node.
+
 ## [0.8.0] - 2026-09-01
 
 ### Added
@@ -259,7 +283,8 @@ All notable changes to this project will be documented in this file.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.6.0...v0.6.1

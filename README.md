@@ -7,7 +7,8 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 ## What the gem provides
 
 - child-only `RecordingStudio::Access` recordables for direct grants under opted-in recordings
-- optional dependent grants: one Access recording can be capped by and die with another Access recording on the same root
+- optional dependent grants: one Access recording can be capped by and die with another Access recording on the same root. Dependents void in place when the manager Access is revised weaker, trashed, destroyed, or moved — they do not follow a move
+- `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, and `authorized_through?` for role lookup and authorization checks
 - `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, and `authorized_through?` for role lookup and authorization checks
 - a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
 - install and migration generators for host apps
@@ -85,6 +86,24 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.9.0
+
+Moving a manager Access recording now voids its dependents. Dependents stay at
+the old node and are destroyed; they do not follow the move. Independent
+grants are unchanged.
+
+`authorized?` still fail-closes immediately if the manager is missing, trashed,
+off-root, or weaker. Void is the reconnect floor after a manager move: the
+dependent grant is gone rather than left as a stale sibling at the old node.
+
+Role-weaken via `UpdateRecordingAccess` (revise) already voided dependents in
+0.8.0. 0.9.0 keeps that behavior.
+
+1. Install Accessible `0.9.0`. No new migration.
+2. Independent grants do not change.
+3. Do not add a second ACL. Accessible hooks the Recording parent/root change
+   that Moveable's `move_to!` already persists.
 
 #### Upgrading to 0.8.0
 
@@ -416,7 +435,10 @@ workspace, company, team, system actor, or another configured access actor.
 A grant may also depend on another Access recording on the same root. The
 dependent role cannot exceed that manager grant's role, and
 `authorized?` / `role_for` fail closed if the manager Access is later
-trashed, destroyed, or downgraded:
+trashed, destroyed, off-root, or downgraded. A background void job then
+destroys the dependent grant in place. If the manager Access recording is
+moved, dependents stay at the old node and are voided — they do not follow
+the move. Independent grants are not voided or relocated.
 
 ```ruby
 result = RecordingStudioAccessible.grant_access(
