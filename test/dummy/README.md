@@ -36,6 +36,9 @@ Additional seeded users:
 
 All use `Password`.
 
+Cursor Cloud Agents start this dummy from the repo `.cursor/` hooks. Sign-in
+is the same as above. See [Cursor skills in Cloud Agents](../../docs/cursor-skills.md).
+
 ## Seeded Workspaces
 
 - `Accessible Demo Workspace` grants the admin root access, viewer access to all `access_user_*` accounts, and editor access to the Client onboarding folder.

@@ -87,6 +87,15 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.9.1
+
+Cloud Agent boot files now live in this repo. Product access behavior is
+unchanged. No host or schema changes.
+
+1. Install Accessible `0.9.1`. No new migration.
+2. Rebuild the Cloud Agent environment with Draft off so Build fetches the
+   skill pack.
+
 #### Upgrading to 0.9.0
 
 Moving a manager Access recording now voids its dependents. Dependents stay at
@@ -1010,6 +1019,15 @@ The demo seeds:
 - multiple users with root, folder, page, and no-access states
 
 That makes it obvious that the access feature is appearing because this addon is installed alongside RecordingStudio.
+
+## Cloud Agent boot
+
+Cloud Agent Builds run `.cursor/install.sh`, then `.cursor/fetch-skills.sh`.
+The install hook provisions a cold image. On a warm snapshot it skips apt,
+ruby-build, db:prepare, and tailwind when Ruby, bundle, and Postgres are
+already usable. Fetch-skills always runs last. `.cursor/start.sh` starts
+PostgreSQL on each boot. Rebuild with Draft off to load a new pack. See
+[Cursor skills in Cloud Agents](docs/cursor-skills.md).
 
 ## Running tests
 
