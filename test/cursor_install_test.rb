@@ -102,9 +102,7 @@ class CursorInstallTest < Minitest::Test
     parsed["stdout"] = File.read(parsed.fetch("SANDBOX_STDOUT"))
     parsed["log"] = File.read(parsed.fetch("SANDBOX_LOG"))
     sandbox_dir = parsed["SANDBOX_DIR"]
-    if sandbox_dir && File.directory?(sandbox_dir)
-      FileUtils.remove_entry(sandbox_dir)
-    end
+    FileUtils.remove_entry(sandbox_dir) if sandbox_dir && File.directory?(sandbox_dir)
     parsed
   end
 end
