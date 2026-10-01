@@ -33,32 +33,32 @@
     <%= render FlatPack::Table::Component.new(data: people_rows) do |table| %>
       <% table.column(title: "Who") do |row| %>
         <% if row[:kind] == :invitation %>
-          <%= pending_invitation_person_cell(row) %>
+          <% pending_invitation_person_cell(row) %>
         <% else %>
-          <%= access_person_cell(row) %>
+          <% access_person_cell(row) %>
         <% end %>
       <% end %>
       <% if show_actor_type_column %>
         <% table.column(title: "Type") do |row| %>
           <% if row[:kind] == :invitation %>
-            <%= content_tag(:span, "", class: "text-sm text-[var(--surface-content-color)]") %>
+            <% content_tag(:span, "", class: "text-sm text-[var(--surface-content-color)]") %>
           <% else %>
-            <%= access_actor_type_cell(row) %>
+            <% access_actor_type_cell(row) %>
           <% end %>
         <% end %>
       <% end %>
       <% table.column(title: "Role") do |row| %>
         <% if row[:kind] == :invitation %>
-          <%= pending_invitation_role_cell(row) %>
+          <% pending_invitation_role_cell(row) %>
         <% else %>
-          <%= access_role_cell(row) %>
+          <% access_role_cell(row) %>
         <% end %>
       <% end %>
       <% table.column(title: "Actions") do |row| %>
         <% if row[:kind] == :invitation %>
-          <%= pending_invitation_actions_cell(@recording, row) %>
+          <% pending_invitation_actions_cell(@recording, row) %>
         <% else %>
-          <%= access_actions_cell(@recording, row) %>
+          <% access_actions_cell(@recording, row) %>
         <% end %>
       <% end %>
     <% end %>

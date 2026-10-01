@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-10-01
+
+### Fixed
+- Manage access "People with access" rows render inside the table columns. Grant and invitation cells were written into the row before the cells, so the browser lifted them out of the table.
+
+### Changed
+- The dummy Tailwind entry no longer redeclares FlatPack color or radius tokens. `data-theme="rounded"` is the theme that shows.
+
+### Upgrade Notes
+- Install Accessible `0.10.1`. No migration.
+- Hosts that copied the old dummy Tailwind token block (`--color-primary`, `--radius-md`, and the related `--color-fp-*` names) into their own stylesheet should remove it so `data-theme="rounded"` can apply.
+
 ## [0.10.0] - 2026-10-01
 
 ### Added
@@ -322,7 +334,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.8.0...v0.9.0

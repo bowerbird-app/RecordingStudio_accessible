@@ -55,6 +55,17 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     editor_access_recording_id = direct_access_recording_for(@editor).id
     expected_remove_action = recording_studio_accessible.recording_access_path(@root_recording, editor_access_recording_id)
 
+    expected_roles = { @admin => "Admin", @editor => "Edit", @viewer => "View" }
+    expected_roles.each do |person, role|
+      row = people_access_row(person.email)
+      assert_equal 3, row.css("td").size
+      assert_includes row.css("td")[0].text, person.email
+      assert_includes row.css("td")[1].text, role
+    end
+
+    remove_form = Nokogiri::HTML(@response.body).at_css(%(form[id="remove-access-form-#{editor_access_recording_id}"]))
+    assert_equal "td", remove_form.parent.name
+
     assert_includes @response.body, %Q(form="remove-access-form-#{editor_access_recording_id}")
     assert_includes @response.body, ">Remove access<"
     assert_includes @response.body, %Q(<form id="remove-access-form-#{editor_access_recording_id}" class="hidden" action="#{expected_remove_action})
@@ -278,6 +289,10 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Invitation sent."
     assert_includes @response.body, "missing@example.com"
     assert_includes @response.body, "Pending invitation"
+    invitation_row = people_access_row("missing@example.com")
+    assert_includes invitation_row.css("td")[0].text, "missing@example.com"
+    assert_includes invitation_row.css("td")[0].text, "Pending invitation"
+    assert_includes invitation_row.css("td")[1].text, "View"
     assert_includes @response.body, "Resend"
     assert_includes @response.body, "Cancel invitation"
     refute_includes @response.body, "Access granted to missing@example.com"
@@ -503,5 +518,10 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
 
   def direct_access_recording_for(user)
     direct_access_recordings_for(user).first
+  end
+
+  def people_access_row(email)
+    Nokogiri::HTML(@response.body).css("tr").find { |row| row.text.include?(email) } ||
+      flunk("expected a people-with-access row for #{email}")
   end
 end
