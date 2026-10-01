@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-01
+
+### Added
+- Pending access invitations. `AccessInvitation` stores intent for an email that does not yet belong to an actor. `RecordingStudio::Access` remains the only authorization record.
+- `RecordingStudioAccessible.invite_access`, `accept_access_invitation`, and `revoke_access_invitation`.
+- `AccessInvitationMailer`, plus engine routes to show, accept, resend, and cancel an invitation.
+
+### Changed
+- An unknown email in the mounted access-management flow now creates a pending invitation. The default missing-actor handler used to return a not-found error for that email.
+- `invite_access` returns success only after the configured invitation notifier hands the message off. A failed notification leaves the invitation row in place and returns an error. A later invite or resend can retry delivery. A failed resend does not replace a token that was already delivered. The new token, role, manager, expiry, and last sent time are stored only after the replacement handoff succeeds.
+- Invitations do not authorize anyone until accepted. `authorized?` and `role_for` ignore them.
+
+### Upgrade Notes
+- Install Accessible `0.10.0`, then run:
+
+```bash
+bin/rails generate recording_studio_accessible:migrations
+bin/rails db:migrate
+```
+
+- To keep the previous unknown-email behavior, return `MissingActorResolution.invalid(...)` from the missing-actor handler.
+- A custom `access_invitation_notifier` reports success with a truthy handoff, such as the delivered mail. Return `false`, `nil`, or an object whose `success?` is false to report failure. A raised error is also failure. The default notifier fails when it cannot build an acceptance URL, and it does not send that mail.
+
 ## [0.9.1] - 2026-09-02
 
 Cloud Agent Builds for this gem now match Billing 0.9.13. Boot files are
@@ -299,7 +322,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.7.0...v0.8.0

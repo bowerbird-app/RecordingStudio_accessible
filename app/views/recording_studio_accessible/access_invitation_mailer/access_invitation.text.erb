@@ -1,0 +1,6 @@
+Hello <%= @email %>,
+
+<%= @manager_actor_display_name %> invited you to <%= @role.humanize.downcase %> access<%= @recording_label.present? ? " to #{@recording_label}" : "" %>.
+<% if @acceptance_url.present? %>
+Accept the invitation: <%= @acceptance_url %>
+<% end %>

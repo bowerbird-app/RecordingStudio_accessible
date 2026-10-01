@@ -1,0 +1,7 @@
+<p>Hello <%= @email %>,</p>
+
+<p><%= @manager_actor_display_name %> invited you to <strong><%= @role.humanize.downcase %></strong> access<%= @recording_label.present? ? " to #{@recording_label}" : "" %>.</p>
+
+<% if @acceptance_url.present? %>
+  <p><a href="<%= @acceptance_url %>">Accept the invitation</a></p>
+<% end %>

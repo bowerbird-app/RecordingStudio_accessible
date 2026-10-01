@@ -20,15 +20,49 @@
 
 <% show_actor_type_column = show_access_actor_type_column?(@direct_access_rows, @inherited_access_rows) %>
 
-<% if @direct_access_rows.any? %>
-  <%= render FlatPack::Table::Component.new(data: @direct_access_rows) do |table| %>
-    <% table.column(title: "Who") { |row| access_person_cell(row) } %>
-    <% if show_actor_type_column %>
-      <% table.column(title: "Type") { |row| access_actor_type_cell(row) } %>
+<% people_rows = people_with_access_rows(@direct_access_rows, @pending_invitation_rows) %>
+
+<% if people_rows.any? %>
+  <div class="grid gap-4">
+    <%= render FlatPack::SectionTitle::Component.new(
+      title: "People with access",
+      anchor_link: true,
+      anchor_id: "people-with-access"
+    ) %>
+
+    <%= render FlatPack::Table::Component.new(data: people_rows) do |table| %>
+      <% table.column(title: "Who") do |row| %>
+        <% if row[:kind] == :invitation %>
+          <%= pending_invitation_person_cell(row) %>
+        <% else %>
+          <%= access_person_cell(row) %>
+        <% end %>
+      <% end %>
+      <% if show_actor_type_column %>
+        <% table.column(title: "Type") do |row| %>
+          <% if row[:kind] == :invitation %>
+            <%= content_tag(:span, "", class: "text-sm text-[var(--surface-content-color)]") %>
+          <% else %>
+            <%= access_actor_type_cell(row) %>
+          <% end %>
+        <% end %>
+      <% end %>
+      <% table.column(title: "Role") do |row| %>
+        <% if row[:kind] == :invitation %>
+          <%= pending_invitation_role_cell(row) %>
+        <% else %>
+          <%= access_role_cell(row) %>
+        <% end %>
+      <% end %>
+      <% table.column(title: "Actions") do |row| %>
+        <% if row[:kind] == :invitation %>
+          <%= pending_invitation_actions_cell(@recording, row) %>
+        <% else %>
+          <%= access_actions_cell(@recording, row) %>
+        <% end %>
+      <% end %>
     <% end %>
-    <% table.column(title: "Role") { |row| access_role_cell(row) } %>
-    <% table.column(title: "Actions") { |row| access_actions_cell(@recording, row) } %>
-  <% end %>
+  </div>
 <% else %>
   <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
     <% card.body(class: "grid gap-3 justify-items-start") do %>

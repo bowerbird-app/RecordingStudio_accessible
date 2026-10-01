@@ -88,6 +88,11 @@ module RecordingStudioAccessible
     def user_invites
       @invite_status_rows = [
         {
+          title: "unresolved",
+          badge_style: :default,
+          body: "The default when no actor matches the email. The access page stores an invitation and sends it."
+        },
+        {
           title: "found",
           badge_style: :default,
           body: "An existing actor was resolved from the submitted email, so the access grant can continue immediately."
@@ -100,7 +105,7 @@ module RecordingStudioAccessible
         {
           title: "invited",
           badge_style: :default,
-          body: "Use this when another invite flow sent the invitation and you want the manager sent back to the access list with a notice."
+          body: "Use this when another invite flow sent the invitation. The addon stores nothing and sends the manager back to the access list with a notice."
         },
         {
           title: "requires_resolution",

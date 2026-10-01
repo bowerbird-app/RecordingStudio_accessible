@@ -41,7 +41,8 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Add access"
     assert_includes @response.body, @admin.email
     assert_includes @response.body, "Integration Workspace"
-    refute_includes @response.body, "People with access"
+    assert_includes @response.body, "People with access"
+    refute_includes @response.body, "No direct access yet"
     refute_includes @response.body, "Direct access entries granted on this recording"
     assert_includes @response.body, "<table"
     assert_includes @response.body, "Who"
@@ -72,6 +73,8 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes @response.body, "Client onboarding"
+    assert_includes @response.body, "No direct access yet"
+    refute_includes @response.body, "People with access"
     assert_includes @response.body, "Other people with access"
     assert_includes @response.body, "Actions"
     assert_includes @response.body, 'aria-label="Access point actions"'
@@ -253,30 +256,80 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_nil RecordingStudio::Access.find_by(id: access_record_id)
   end
 
-  test "admin can add access for a new email in the dummy app" do
+  test "admin can invite an unknown email without creating a user or access grant" do
     sign_in @admin
 
-    post root_recording_accesses_path, params: {
-      access: {
-        email: "missing@example.com",
-        role: "view"
-      }
-    }
+    assert_no_difference -> { User.count } do
+      assert_no_difference -> { RecordingStudio::Access.count } do
+        assert_difference -> { RecordingStudioAccessible::AccessInvitation.count }, 1 do
+          post root_recording_accesses_path, params: {
+            access: {
+              email: "missing@example.com",
+              role: "view"
+            }
+          }
+        end
+      end
+    end
 
     assert_response :redirect
+    assert_equal "Invitation sent.", flash[:notice]
     follow_redirect!
+    assert_includes @response.body, "Invitation sent."
     assert_includes @response.body, "missing@example.com"
-    assert_includes @response.body, "Access granted to missing@example.com"
+    assert_includes @response.body, "Pending invitation"
+    assert_includes @response.body, "Resend"
+    assert_includes @response.body, "Cancel invitation"
+    refute_includes @response.body, "Access granted to missing@example.com"
 
-    missing_user = User.find_by(email: "missing@example.com")
-    refute_nil missing_user
-    assert_equal "view", direct_access_recording_for(missing_user).recordable.role
+    assert_nil User.find_by(email: "missing@example.com")
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "missing@example.com")
+    assert_nil invitation.accepted_at
+    assert_nil invitation.revoked_at
+    assert_equal "view", invitation.role
 
     delivery = ActionMailer::Base.deliveries.last
     refute_nil delivery
-    assert_equal [ "missing@example.com" ], delivery.to
-    assert_equal "You were given access to Integration Workspace", delivery.subject
-    assert_includes delivery.body.encoded, "Open the shared item"
+    assert_equal ["missing@example.com"], delivery.to
+    assert_equal "You were invited to Integration Workspace", delivery.subject
+    assert_includes delivery.body.encoded, "Accept the invitation"
+    assert_match %r{access_invitations/[A-Za-z0-9_-]{20,}}, delivery.body.encoded
+    refute_includes delivery.body.encoded, "You were given access"
+    refute_includes delivery.subject.to_s, "You were given access"
+  end
+
+  test "failed invitation delivery stays visible and resend can succeed" do
+    sign_in @admin
+    configuration = RecordingStudioAccessible.configuration
+    previous = configuration.access_invitation_notifier
+    configuration.access_invitation_notifier = ->(**) { false }
+
+    assert_difference -> { RecordingStudioAccessible::AccessInvitation.count }, 1 do
+      post root_recording_accesses_path, params: {
+        access: { email: "undelivered@example.com", role: "view" }
+      }
+    end
+
+    assert_response :unprocessable_entity
+    assert_equal "Invitation could not be sent.", flash[:alert]
+    assert_nil flash[:notice]
+    assert_includes @response.body, "Invitation could not be sent."
+    refute_includes @response.body, "Invitation sent."
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "undelivered@example.com")
+
+    configuration.access_invitation_notifier = previous
+    assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
+      post "#{root_recording_accesses_path.sub(%r{/accesses\z}, "")}/access_invitations/#{invitation.id}/resend"
+    end
+
+    assert_response :redirect
+    assert_equal "Invitation sent.", flash[:notice]
+    follow_redirect!
+    assert_includes @response.body, "Invitation sent."
+    assert_includes @response.body, "Pending invitation"
+    assert_equal invitation.id, RecordingStudioAccessible::AccessInvitation.find_by!(email: "undelivered@example.com").id
+  ensure
+    configuration.access_invitation_notifier = previous
   end
 
   test "granting access deduplicates pre-existing direct grants for the same actor" do
@@ -314,17 +367,19 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
   test "admin can still surface a configured missing-user error" do
     sign_in @admin
 
-    with_missing_actor_handler(lambda do |email:, **|
-        RecordingStudioAccessible::MissingActorResolution.invalid(
-          error: "Resolve #{email} before granting access"
-        )
-      end) do
-      post root_recording_accesses_path, params: {
-        access: {
-          email: "invited@example.com",
-          role: "view"
+    assert_no_difference -> { RecordingStudioAccessible::AccessInvitation.count } do
+      with_missing_actor_handler(lambda do |email:, **|
+          RecordingStudioAccessible::MissingActorResolution.invalid(
+            error: "Resolve #{email} before granting access"
+          )
+        end) do
+        post root_recording_accesses_path, params: {
+          access: {
+            email: "invited@example.com",
+            role: "view"
+          }
         }
-      }
+      end
     end
 
     assert_response :unprocessable_entity
@@ -335,19 +390,21 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
   test "admin can be redirected into a host-app resolution flow" do
     sign_in @admin
 
-    with_missing_actor_handler(lambda do |controller:, email:, **|
-        {
-          status: :requires_resolution,
-          location: controller.main_app.user_path(@admin),
-          alert: "Resolve #{email} before granting access"
+    assert_no_difference -> { RecordingStudioAccessible::AccessInvitation.count } do
+      with_missing_actor_handler(lambda do |controller:, email:, **|
+          {
+            status: :requires_resolution,
+            location: controller.main_app.user_path(@admin),
+            alert: "Resolve #{email} before granting access"
+          }
+        end) do
+        post root_recording_accesses_path, params: {
+          access: {
+            email: "needs-resolution@example.com",
+            role: "view"
+          }
         }
-      end) do
-      post root_recording_accesses_path, params: {
-        access: {
-          email: "needs-resolution@example.com",
-          role: "view"
-        }
-      }
+      end
     end
 
     assert_response :redirect
@@ -357,22 +414,50 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_nil User.find_by(email: "needs-resolution@example.com")
   end
 
+  test "custom invited missing-actor handler stores nothing" do
+    sign_in @admin
+
+    assert_no_difference -> { RecordingStudioAccessible::AccessInvitation.count } do
+      assert_no_difference -> { User.count } do
+        assert_no_difference -> { RecordingStudio::Access.count } do
+          with_missing_actor_handler(lambda do |**|
+            RecordingStudioAccessible::MissingActorResolution.invited(notice: "Sent from the host app.")
+          end) do
+            post root_recording_accesses_path, params: {
+              access: {
+                email: "handed-off@example.com",
+                role: "view"
+              }
+            }
+          end
+        end
+      end
+    end
+
+    assert_response :redirect
+    assert_equal "Sent from the host app.", flash[:notice]
+    assert_nil User.find_by(email: "handed-off@example.com")
+    assert_empty ActionMailer::Base.deliveries
+  end
+
   test "missing actor resolution rejects external redirect locations" do
     sign_in @admin
 
-    with_missing_actor_handler(lambda do |email:, **|
-        {
-          status: :requires_resolution,
-          location: "https://evil.example/resolve?email=#{email}",
-          alert: "Resolve #{email} before granting access"
+    assert_no_difference -> { RecordingStudioAccessible::AccessInvitation.count } do
+      with_missing_actor_handler(lambda do |email:, **|
+          {
+            status: :requires_resolution,
+            location: "https://evil.example/resolve?email=#{email}",
+            alert: "Resolve #{email} before granting access"
+          }
+        end) do
+        post root_recording_accesses_path, params: {
+          access: {
+            email: "external-resolution@example.com",
+            role: "view"
+          }
         }
-      end) do
-      post root_recording_accesses_path, params: {
-        access: {
-          email: "external-resolution@example.com",
-          role: "view"
-        }
-      }
+      end
     end
 
     assert_response :redirect
