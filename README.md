@@ -101,7 +101,7 @@ bin/rails generate recording_studio_accessible:migrations
 bin/rails db:migrate
 ```
 
-`invite_access` uses the notice `Invitation sent.` only after the configured notifier hands the invitation off. If delivery fails, the invitation row stays and the call returns `Invitation could not be sent.` Invite again, or resend from the access page, to retry.
+`invite_access` uses the notice `Invitation sent.` only after the configured notifier hands the invitation off. If delivery fails, the invitation row stays and the call returns `Invitation could not be sent.` Invite again, or resend from the access page, to retry. A failed resend leaves the previously delivered token in place. The replacement token, role, manager, expiry, and last sent time are stored only after that later handoff succeeds.
 
 #### Upgrading to 0.9.1
 
@@ -789,7 +789,9 @@ invite_access
 
 Account lookup stays in the host resolver. Pending intent stays on `AccessInvitation`. Authorization stays on `RecordingStudio::Access`, written only by `grant_access`.
 
-`invite_access` stores the invitation, then calls `deliver_access_invitation`. The notice `Invitation sent.` is returned only when that handoff succeeds. A failed handoff leaves the row in place and returns `Invitation could not be sent.`
+`invite_access` returns `Invitation sent.` only after `deliver_access_invitation` reports a successful handoff. A failed handoff returns `Invitation could not be sent.`
+
+The first invitation is stored before delivery. That row stays if the first handoff fails, so a later invite can retry. A resend keeps the existing token, role, manager, expiry, and last sent time when delivery fails. Those fields are replaced together only after the replacement handoff succeeds.
 
 A custom `access_invitation_notifier` signals that outcome directly. Return a truthy value, such as the delivered mail, for success. Return `false`, `nil`, or an object whose `success?` is false for failure. A raised error is failure too. The default notifier returns failure when it cannot build an acceptance URL, and it does not send that mail.
 

@@ -39,13 +39,6 @@ module RecordingStudioAccessible
         unclosed.where(recording_id: recording.id).order(:email).map { |invitation| PendingInvitation.from(invitation) }
       end
 
-      def replace_unclosed!(recording:, email:, role:, manager_actor:, raw_token:)
-        recording.transaction do
-          recording.lock!
-          upsert_unclosed!(recording, email, unclosed_attributes(role, manager_actor, raw_token))
-        end
-      end
-
       def stamp_unclosed!(recording:, email:, actor:)
         invitation = unclosed.find_by(recording_id: recording.id, email: email)
         return unless invitation
@@ -57,30 +50,7 @@ module RecordingStudioAccessible
         end
       end
 
-      private
-
-      def upsert_unclosed!(recording, email, attributes)
-        existing = unclosed.find_by(recording_id: recording.id, email: email)
-        return refresh_unclosed!(existing, attributes) if existing
-
-        create!(attributes.merge(recording: recording, email: email))
-      end
-
-      def refresh_unclosed!(invitation, attributes)
-        invitation.update!(attributes)
-        invitation
-      end
-
-      def unclosed_attributes(role, manager_actor, raw_token)
-        now = Time.current
-        {
-          role: role.to_s,
-          manager_actor: manager_actor,
-          token_digest: Digest::SHA256.hexdigest(raw_token),
-          expires_at: now + RecordingStudioAccessible.configuration.access_invitation_ttl,
-          last_sent_at: now
-        }
-      end
+      include Writes
     end
 
     def accepted?

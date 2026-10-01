@@ -7,6 +7,7 @@ module RecordingStudioAccessible
     class InviteAccess < BaseService
       include AccessRecordLifecycle
       include InviteKnownActor
+      include InviteUnclosed
 
       def initialize(recording:, email:, role:, manager_actor: nil, controller: nil)
         @recording = recording
@@ -68,36 +69,6 @@ module RecordingStudioAccessible
 
       def grantable_role?
         defined?(::RecordingStudio::Access) && ::RecordingStudio::Access.roles.key?(@role.to_s)
-      end
-
-      def invite_unknown(manager)
-        invitation, raw_token = write_unclosed_invitation(manager)
-        return failure("Invitation could not be sent.") unless deliver_invitation(manager, raw_token)
-
-        pending = AccessInvitation::PendingInvitation.from(invitation)
-        success(AccessInvitation::Outcome.invited(pending: pending))
-      rescue ActiveRecord::RecordNotUnique
-        failure("Invitation could not be saved")
-      end
-
-      def write_unclosed_invitation(manager)
-        attempts = 0
-        begin
-          attempts += 1
-          raw_token = fresh_invitation_token
-          invitation = AccessInvitation.replace_unclosed!(
-            recording: @recording,
-            email: @email,
-            role: @role,
-            manager_actor: manager,
-            raw_token: raw_token
-          )
-          [invitation, raw_token]
-        rescue ActiveRecord::RecordNotUnique
-          retry if attempts < 2
-
-          raise
-        end
       end
 
       def deliver_invitation(manager, raw_token)

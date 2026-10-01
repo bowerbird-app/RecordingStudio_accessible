@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - An unknown email in the mounted access-management flow now creates a pending invitation. The default missing-actor handler used to return a not-found error for that email.
-- `invite_access` returns success only after the configured invitation notifier hands the message off. A failed notification leaves the invitation row in place and returns an error. A later invite or resend can retry delivery.
+- `invite_access` returns success only after the configured invitation notifier hands the message off. A failed notification leaves the invitation row in place and returns an error. A later invite or resend can retry delivery. A failed resend does not replace a token that was already delivered. The new token, role, manager, expiry, and last sent time are stored only after the replacement handoff succeeds.
 - Invitations do not authorize anyone until accepted. `authorized?` and `role_for` ignore them.
 
 ### Upgrade Notes
