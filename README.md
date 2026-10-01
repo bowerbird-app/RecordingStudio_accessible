@@ -653,7 +653,13 @@ That generator:
 - copies overrideable share-email templates to `app/views/recording_studio_accessible/access_granted_mailer/` only when they are still missing
 - optionally creates a host helper with `recording_access_management_path` and `recording_access_management_link`
 
-By default, the new-access form accepts an email address and resolves it against `User` records. If no existing user matches, Recording Studio Accessible keeps the current "not found" error until your host app decides whether to provision an account or redirect into a host-specific resolution flow. After a successful grant, the default notifier sends `RecordingStudioAccessible::AccessGrantedMailer` using the copied templates above. You can override the lookup step, missing-user behavior, share-email subject, destination URL, or the notifier itself:
+`AccessInvitation` records pending intent for an email address. `RecordingStudio::Access` records authorization for a persisted actor. `authorized?` and `role_for` read access grants only.
+
+`invite_access` calls `grant_access` when the email already belongs to an actor. Otherwise it stores one open `AccessInvitation` for that recording and email. After the invited person authenticates, `accept_access_invitation` calls `grant_access` and stamps the invitation accepted. `revoke_access_invitation` withdraws a pending invitation and leaves any access grant alone.
+
+By default, the new-access form resolves the email with `access_management_actor_email_resolver`. A matching actor is granted immediately. An unknown email returns `MissingActorResolution.unresolved`, and the access controller calls `invite_access`. A host handler that returns `:invited` has already finished its own hand-off. The addon stores nothing in that case.
+
+After a successful grant, the default notifier sends `RecordingStudioAccessible::AccessGrantedMailer` using the copied templates above. Invitation mail uses `AccessInvitationMailer` and the acceptance URL. You can override the lookup step, missing-user behavior, invitation delivery, share-email subject, destination URL, or the notifier itself:
 
 ```ruby
 RecordingStudioAccessible.configure do |config|
@@ -677,6 +683,16 @@ RecordingStudioAccessible.configure do |config|
       alert: "Review #{normalized_email} before granting access",
       status: :requires_resolution
     )
+  end
+  config.access_invitation_ttl = 14.days
+  config.access_invitation_actor_matcher = lambda do |actor:, email:|
+    actor.respond_to?(:email) && actor.email.to_s.strip.downcase == email
+  end
+  config.access_invitation_url_resolver = lambda do |raw_token:, **|
+    "https://example.com/invitations/#{raw_token}"
+  end
+  config.access_invitation_sign_in_url_resolver = lambda do |controller:, token:, **|
+    controller.main_app.new_user_session_path(return_to: token)
   end
   config.access_management_access_granted_subject = lambda do |recording:, **|
     "A recording was shared with you: #{RecordingStudio::Labels.title_for(recording.recordable)}"
@@ -723,24 +739,39 @@ end
 
 When no access holders exist, or no holders resolve to avatar data, the helper renders a `"+ Access"` FlatPack button. Pass `button_style:` to customize that fallback button.
 
-The missing-actor handler may return an actor directly, or a `RecordingStudioAccessible::MissingActorResolution` describing whether the controller should grant access, render an error, or redirect into a host-app workflow. Prefer `:invalid` or `:requires_resolution` until your host app has actually verified the recipient and completed any required setup. Returning an actor or `MissingActorResolution.created(...)` continues the grant immediately. If the default mailer is close but not quite right, edit the copied templates under `app/views/recording_studio_accessible/access_granted_mailer/`. If you need a fully custom delivery strategy, replace `config.access_management_access_granted_notifier` entirely.
+The missing-actor handler may return an actor, or a `RecordingStudioAccessible::MissingActorResolution`. An actor or `MissingActorResolution.created(...)` grants immediately. `:unresolved` asks the controller to call `invite_access`. `:invited` means the host already handled the invitation, and the addon stores nothing. `:invalid` and `:redirect` keep their previous behavior. Edit the copied templates under `app/views/recording_studio_accessible/access_granted_mailer/` when the grant mail is close. Replace `config.access_management_access_granted_notifier` when delivery has to change.
 
 By default, the mounted engine resolves the acting user from `Current.actor` so it follows the same actor source that RecordingStudio uses. If your host app needs a different source, override `config.access_management_current_actor_resolver`. The built-in resolver only falls back to `controller.current_user` when `Current.actor` is unavailable.
 
-The create flow works like this:
+The mounted create flow works like this:
 
-1. The controller submits the entered email to `config.access_management_actor_email_resolver`.
-2. If that resolver returns an actor, the engine grants access to that actor immediately.
-3. If no actor is found, the controller calls `config.access_management_missing_actor_handler`.
-4. If that handler returns `MissingActorResolution.created(...)` or an actor, the engine grants access using that actor immediately.
-5. If the grant succeeds, the controller calls `config.access_management_access_granted_notifier`.
-6. The built-in notifier delivers `RecordingStudioAccessible::AccessGrantedMailer` with the configured subject and URL.
+1. The controller asks `access_management_actor_email_resolver` for an actor.
+2. A resolved actor is granted with `GrantRecordingAccess`, and the access-granted notifier runs.
+3. No actor means the controller calls `access_management_missing_actor_handler`.
+4. An actor or `:created` from that handler is granted the same way.
+5. `:unresolved` (the default for an unknown email) calls `invite_access`, which stores one open invitation and sends `AccessInvitationMailer`.
+6. `:invited`, `:invalid`, and `:redirect` stay on their existing branches. `:invited` does not store an invitation.
 
-That separation is intentional:
+`invite_access` does not call the missing-actor handler. Use it when the caller already wants a grant or a pending invitation:
 
-- account lookup and optional account provisioning live in host-app configuration
-- granting access lives in the engine service layer
-- post-grant share notification lives in the notifier/mailer layer
+```text
+invite_access
+    |
+    +-- actor exists --> grant_access
+    |
+    +-- actor missing --> AccessInvitation
+                              |
+                              v
+                         actor signs up / authenticates
+                              |
+                              v
+                    accept_access_invitation
+                              |
+                              v
+                         grant_access
+```
+
+Account lookup stays in the host resolver. Pending intent stays on `AccessInvitation`. Authorization stays on `RecordingStudio::Access`, written only by `grant_access`.
 
 ### Checking access
 
@@ -986,7 +1017,7 @@ use another actor's access grant.
 
 The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `4.2.0`, RecordingStudioRootSwitchable `v0.5.0`, and FlatPack `0.1.133`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`).
 
-The dummy app also installs a demo-only override in `test/dummy/config/initializers/recording_studio_accessible.rb`. That initializer creates a `User` automatically when an unknown email is granted access, so the demo can show a successful end-to-end flow without requiring a separate invitation or signup system. That shortcut keeps the demo simple, but it is not the engine default and should not be treated as the recommended production pattern for host apps.
+The dummy app configures actor types, through-authorization, and avatars in `test/dummy/config/initializers/recording_studio_accessible.rb`. It leaves an unknown email as an invitation until the signup page creates the user and accepts.
 
 Run it with:
 
@@ -1008,7 +1039,8 @@ Useful routes:
 - `/` - dummy app demo with seeded folders, pages, cards, message groups, and access results
 - `/message_groups` - dummy app demo of message groups under shared `MessageRoot`, first owner via bootstrap
 - `/recording_studio_accessible` - addon status/demo page
-- `/recording_studio_accessible/recordings/:recording_id/accesses` - gem-provided page for managing direct recording access
+- `/recording_studio_accessible/recordings/:recording_id/accesses` - gem-provided page for managing direct recording access and pending invitations
+- `/invitation_signups/:token/new` - dummy signup page that creates the invited user and accepts the invitation
 
 The demo seeds:
 

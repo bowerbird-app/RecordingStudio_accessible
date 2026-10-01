@@ -91,6 +91,73 @@ module RecordingStudioAccessible
       end
     end
 
+    def people_with_access_rows(direct_rows, pending_rows)
+      rows = Array(direct_rows).map { |row| row.merge(kind: :grant) }
+      Array(pending_rows).each do |invitation|
+        rows << {
+          kind: :invitation,
+          id: invitation.id,
+          email: invitation.email,
+          role: invitation.role,
+          expired: invitation.expired
+        }
+      end
+      rows
+    end
+
+    def pending_invitation_person_cell(row)
+      parts = [
+        content_tag(:span, row[:email], class: "font-medium text-[var(--surface-content-color)]"),
+        content_tag(:span, "Pending invitation", class: "text-sm text-[var(--surface-content-color)]")
+      ]
+      parts << content_tag(:span, "Expired", class: "text-sm text-[var(--surface-content-color)]") if row[:expired]
+      safe_join(parts, " ")
+    end
+
+    def pending_invitation_role_cell(row)
+      content_tag(:span, access_role_label(row[:role]), class: "text-sm text-[var(--surface-content-color)]")
+    end
+
+    def pending_invitation_actions_cell(recording, row)
+      resend_form_id = "resend-invitation-form-#{row[:id]}"
+      cancel_form_id = "cancel-invitation-form-#{row[:id]}"
+
+      dropdown = render FlatPack::Button::Dropdown::Component.new(
+        text: "",
+        style: :ghost,
+        icon: "ellipsis-vertical",
+        show_chevron: false,
+        trigger_attributes: {
+          title: "Invitation actions",
+          aria: { label: "Invitation actions" }
+        }
+      ) do |dropdown|
+        dropdown.menu_item(text: "Resend", form: resend_form_id, type: :submit)
+        dropdown.menu_item(
+          text: "Cancel invitation",
+          destructive: true,
+          form: cancel_form_id,
+          type: :submit
+        )
+      end
+
+      resend_form = form_with(
+        url: resend_recording_access_invitation_path(recording, row[:id], **recording_access_navigation_params),
+        method: :post,
+        local: true,
+        html: { id: resend_form_id, class: "hidden" }
+      ) { "" }
+
+      cancel_form = form_with(
+        url: recording_access_invitation_path(recording, row[:id], **recording_access_navigation_params),
+        method: :delete,
+        local: true,
+        html: { id: cancel_form_id, class: "hidden" }
+      ) { "" }
+
+      safe_join([dropdown, resend_form, cancel_form])
+    end
+
     def access_actions_cell(recording, row)
       delete_form_id = "remove-access-form-#{row[:id]}"
 

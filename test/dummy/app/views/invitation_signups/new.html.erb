@@ -1,0 +1,41 @@
+<div class="mx-auto w-full max-w-md">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Accept invitation",
+    subtitle: @invitation.email,
+    variant: :h1
+  ) %>
+
+  <div class="mt-6 grid gap-4">
+    <p class="text-base leading-7 text-[var(--surface-content-color)]">Role <%= @invitation.role.to_s.humanize %></p>
+    <p class="text-base leading-7 text-[var(--surface-content-color)]">State <%= @invitation.state %></p>
+
+    <% if @existing_user %>
+      <p class="text-base leading-7 text-[var(--surface-content-color)]">
+        An account for <%= @invitation.email %> already exists. Sign in to accept this invitation.
+      </p>
+      <%= render FlatPack::Button::Component.new(
+        text: "Sign in",
+        style: :primary,
+        size: :md,
+        href: new_user_session_path
+      ) %>
+    <% elsif @invitation.acceptable? %>
+      <%= form_with url: create_invitation_signup_path(params[:token]), scope: :invitation_signup, method: :post do %>
+        <div class="space-y-4">
+          <%= render FlatPack::PasswordInput::Component.new(
+            name: "invitation_signup[password]",
+            label: "Password",
+            required: true
+          ) %>
+
+          <%= render FlatPack::Button::Component.new(
+            text: "Create account and accept",
+            style: :primary,
+            size: :md,
+            type: "submit"
+          ) %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

@@ -18,8 +18,8 @@
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <%= render FlatPack::Badge::Component.new(text: "Default", style: :default, size: :sm) %>
             <p class="text-base leading-7 text-[var(--surface-content-color)]">
-              If you do nothing, the addon keeps the current validation error and the form shows
-              <strong>User with email ... was not found</strong>.
+              If you do nothing, an unknown email returns unresolved. The access page stores an
+              AccessInvitation and sends the invitation. It does not create a user.
             </p>
           <% end %>
         <% end %>
@@ -28,9 +28,7 @@
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <%= render FlatPack::Badge::Component.new(text: "Dummy app", style: :info, size: :sm) %>
             <p class="text-base leading-7 text-[var(--surface-content-color)]">
-              This dummy app overrides that default in its initializer. It normalizes the email,
-              rejects blank input, creates the user when needed, and returns <strong>:created</strong>
-              so the grant finishes in the same request.
+              This dummy app leaves the invitation in place until the signup page creates the user and accepts.
             </p>
           <% end %>
         <% end %>

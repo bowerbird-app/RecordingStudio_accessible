@@ -19,6 +19,10 @@ module RecordingStudioAccessible
       new(status: :invited, notice: notice)
     end
 
+    def self.unresolved(notice: nil)
+      new(status: :unresolved, notice: notice)
+    end
+
     def self.invalid(error:)
       new(status: :invalid, error: error)
     end
@@ -48,6 +52,12 @@ module RecordingStudioAccessible
                   :access_management_access_granted_notifier,
                   :access_management_access_granted_subject,
                   :access_management_access_granted_url_resolver,
+                  :access_invitation_ttl,
+                  :access_invitation_actor_matcher,
+                  :access_invitation_notifier,
+                  :access_invitation_subject,
+                  :access_invitation_url_resolver,
+                  :access_invitation_sign_in_url_resolver,
                   :access_management_authorizer,
                   :mounted_page_authorizer,
                   :authorize_actor_through
@@ -64,6 +74,14 @@ module RecordingStudioAccessible
       @access_management_access_granted_notifier = method(:default_access_management_access_granted_notifier)
       @access_management_access_granted_subject = method(:default_access_management_access_granted_subject)
       @access_management_access_granted_url_resolver = method(:default_access_management_access_granted_url_resolver)
+      @access_invitation_ttl = 14.days
+      @access_invitation_actor_matcher = lambda do |actor:, email:|
+        actor.respond_to?(:email) && actor.email.to_s.strip.downcase == email
+      end
+      @access_invitation_notifier = method(:default_access_invitation_notifier)
+      @access_invitation_subject = method(:default_access_invitation_subject)
+      @access_invitation_url_resolver = method(:default_access_invitation_url_resolver)
+      @access_invitation_sign_in_url_resolver = nil
       @access_management_authorizer = method(:default_access_management_authorizer)
       @mounted_page_authorizer = method(:default_mounted_page_authorizer)
       @access_actor_types = nil
@@ -234,6 +252,66 @@ module RecordingStudioAccessible
       )
     end
 
+    def access_invitation_actor_matches?(actor:, email:)
+      resolve_configurable(access_invitation_actor_matcher, actor: actor, email: email) ? true : false
+    rescue StandardError
+      false
+    end
+
+    def access_invitation_url_for(controller:, raw_token:, email:, role:, recording:, manager_actor:)
+      resolve_configurable(
+        access_invitation_url_resolver,
+        controller: controller,
+        raw_token: raw_token,
+        email: email,
+        role: role,
+        recording: recording,
+        manager_actor: manager_actor
+      )
+    rescue StandardError
+      nil
+    end
+
+    def access_invitation_subject_for(controller:, recording:, email:, role:, manager_actor:)
+      resolve_configurable(
+        access_invitation_subject,
+        controller: controller,
+        recording: recording,
+        email: email,
+        role: role,
+        manager_actor: manager_actor
+      )
+    rescue StandardError
+      "You were invited"
+    end
+
+    def deliver_access_invitation(controller:, recording:, email:, role:, manager_actor:, raw_token:)
+      resolve_configurable(
+        access_invitation_notifier,
+        controller: controller,
+        recording: recording,
+        email: email,
+        role: role,
+        manager_actor: manager_actor,
+        raw_token: raw_token
+      )
+    rescue StandardError
+      nil
+    end
+
+    def access_invitation_sign_in_url_for(controller:, token:, email:)
+      return if access_invitation_sign_in_url_resolver.nil?
+
+      resolve_configurable(
+        access_invitation_sign_in_url_resolver,
+        controller: controller,
+        token: token,
+        email: email
+      )
+    rescue StandardError
+      nil
+    end
+
     private
 
     def default_avatar_resolver(_access_holder)
@@ -312,7 +390,7 @@ module RecordingStudioAccessible
     end
 
     def default_access_management_actor_email_resolver(controller:, email:)
-      return nil unless controller
+      _controller = controller
       return nil unless defined?(::User)
       return nil unless ::User.respond_to?(:column_names)
       return nil unless ::User.column_names.include?("email")
@@ -340,9 +418,9 @@ module RecordingStudioAccessible
         return MissingActorResolution.invalid(error: default_missing_actor_error_for_email(email: email))
       end
 
-      MissingActorResolution.invalid(error: default_missing_actor_error_for_email(email: normalized_email))
+      MissingActorResolution.unresolved
     rescue StandardError
-      MissingActorResolution.invalid(error: default_missing_actor_error_for_email(email: normalized_email))
+      MissingActorResolution.invalid(error: default_missing_actor_error_for_email(email: email))
     end
 
     def default_access_management_access_granted_notifier(controller:, recording:, actor:, role:, manager_actor:)
@@ -479,15 +557,95 @@ module RecordingStudioAccessible
       _actor = actor
       _role = role
       _manager_actor = manager_actor
-      recording_label = if defined?(::RecordingStudio::Labels) && recording.respond_to?(:recordable)
-                          ::RecordingStudio::Labels.title_for(recording.recordable)
-                        end
-
+      recording_label = recording_notification_label(recording)
       return "You were given access" if recording_label.blank?
 
       "You were given access to #{recording_label}"
     rescue StandardError
       "You were given access"
+    end
+
+    def default_access_invitation_subject(recording:, controller: nil, email: nil, role: nil, manager_actor: nil)
+      _controller = controller
+      _email = email
+      _role = role
+      _manager_actor = manager_actor
+      recording_label = recording_notification_label(recording)
+      return "You were invited" if recording_label.blank?
+
+      "You were invited to #{recording_label}"
+    rescue StandardError
+      "You were invited"
+    end
+
+    def default_access_invitation_notifier(controller:, recording:, email:, role:, manager_actor:, raw_token:)
+      return unless defined?(RecordingStudioAccessible::AccessInvitationMailer)
+
+      mail = RecordingStudioAccessible::AccessInvitationMailer.with(
+        email: email,
+        recording: recording,
+        role: role,
+        manager_actor: manager_actor,
+        acceptance_url: access_invitation_url_for(
+          controller: controller,
+          raw_token: raw_token,
+          email: email,
+          role: role,
+          recording: recording,
+          manager_actor: manager_actor
+        ),
+        subject: access_invitation_subject_for(
+          controller: controller,
+          recording: recording,
+          email: email,
+          role: role,
+          manager_actor: manager_actor
+        )
+      ).access_invitation
+
+      deliver_notification(mail)
+    rescue StandardError
+      nil
+    end
+
+    def default_access_invitation_url_resolver(controller:, raw_token:, email: nil, role: nil, recording: nil,
+                                               manager_actor: nil)
+      _email = email
+      _role = role
+      _recording = recording
+      _manager_actor = manager_actor
+      options = access_invitation_url_options(controller)
+      return if options.blank?
+
+      RecordingStudioAccessible::Engine.routes.url_helpers.access_invitation_url(token: raw_token, **options)
+    rescue StandardError
+      nil
+    end
+
+    def recording_notification_label(recording)
+      return if recording.blank?
+      return unless defined?(::RecordingStudio::Labels) && recording.respond_to?(:recordable)
+
+      ::RecordingStudio::Labels.title_for(recording.recordable).presence
+    end
+
+    def access_invitation_url_options(controller)
+      request = controller.request if controller.respond_to?(:request)
+      return mailer_url_options unless request
+
+      options = { host: request.host, protocol: request.protocol }
+      options[:port] = request.port if request.respond_to?(:port) && request.port.present?
+      script_name = request.script_name if request.respond_to?(:script_name)
+      options[:script_name] = script_name if script_name.present?
+      options
+    rescue StandardError
+      mailer_url_options
+    end
+
+    def mailer_url_options
+      ActionMailer::Base.default_url_options.to_h.symbolize_keys
+    rescue StandardError
+      {}
     end
 
     def normalize_missing_actor_resolution(result, email:)
@@ -510,7 +668,7 @@ module RecordingStudioAccessible
                                                status: status)
       end
 
-      if attributes[:actor].present? || attributes[:error].present? || status == :invited
+      if attributes[:actor].present? || attributes[:error].present? || %i[invited unresolved].include?(status)
         return MissingActorResolution.new(**attributes)
       end
 

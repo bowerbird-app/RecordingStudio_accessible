@@ -20,32 +20,13 @@ module RecordingStudioAccessible
 
     def create
       actor_resolution = selected_actor_resolution
-      return handle_missing_actor_resolution(actor_resolution) unless actor_resolution.actor
 
-      result = RecordingStudioAccessible::Services::GrantRecordingAccess.call(
-        recording: @recording,
-        actor: actor_resolution.actor,
-        role: access_params[:role],
-        manager_actor: current_actor,
-        controller: self
-      )
-
-      if result.success?
-        RecordingStudioAccessible.configuration.notify_access_granted(
-          controller: self,
-          recording: @recording,
-          actor: actor_resolution.actor,
-          role: access_params[:role],
-          manager_actor: current_actor
-        )
-
-        redirect_options = {}
-        redirect_options[:notice] = actor_resolution.notice if actor_resolution.notice.present?
-        redirect_to recording_access_index_redirect_path, **redirect_options
+      if actor_resolution.actor
+        create_access_for_resolved_actor(actor_resolution)
+      elsif actor_resolution.status == :unresolved
+        create_access_invitation
       else
-        @form_errors = result.errors.presence || Array(result.error)
-        flash.now[:alert] = @form_errors.to_sentence
-        render :new, status: :unprocessable_entity
+        handle_missing_actor_resolution(actor_resolution)
       end
     end
 
@@ -109,6 +90,7 @@ module RecordingStudioAccessible
     def prepare_index_page_state
       @direct_access_rows = build_direct_access_rows
       @inherited_access_rows = build_inherited_access_rows
+      @pending_invitation_rows = RecordingStudioAccessible::AccessInvitation.pending_rows_for(@recording)
       prepare_shared_page_state
     end
 
@@ -170,6 +152,54 @@ module RecordingStudioAccessible
       else
         "User with email #{email} was not found"
       end
+    end
+
+    def create_access_for_resolved_actor(actor_resolution)
+      result = RecordingStudioAccessible::Services::GrantRecordingAccess.call(
+        recording: @recording,
+        actor: actor_resolution.actor,
+        role: access_params[:role],
+        manager_actor: current_actor,
+        controller: self
+      )
+
+      if result.success?
+        RecordingStudioAccessible.configuration.notify_access_granted(
+          controller: self,
+          recording: @recording,
+          actor: actor_resolution.actor,
+          role: access_params[:role],
+          manager_actor: current_actor
+        )
+
+        redirect_options = {}
+        redirect_options[:notice] = actor_resolution.notice if actor_resolution.notice.present?
+        redirect_to recording_access_index_redirect_path, **redirect_options
+      else
+        render_access_form_failure(:new, result)
+      end
+    end
+
+    def create_access_invitation
+      result = RecordingStudioAccessible.invite_access(
+        recording: @recording,
+        email: access_params[:email],
+        role: access_params[:role],
+        manager_actor: current_actor,
+        controller: self
+      )
+
+      if result.success?
+        redirect_to recording_access_index_redirect_path, notice: result.value.notice
+      else
+        render_access_form_failure(:new, result)
+      end
+    end
+
+    def render_access_form_failure(template, result)
+      @form_errors = result.errors.presence || Array(result.error)
+      flash.now[:alert] = @form_errors.to_sentence
+      render template, status: :unprocessable_entity
     end
 
     def handle_missing_actor_resolution(actor_resolution)

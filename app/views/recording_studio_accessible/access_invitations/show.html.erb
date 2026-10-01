@@ -1,0 +1,27 @@
+<%= render FlatPack::PageTitle::Component.new(
+  title: @recording_label.presence || "Invitation",
+  subtitle: @invitation.email,
+  variant: :h1
+) %>
+
+<div class="mt-6 grid gap-3">
+  <p class="text-base leading-7 text-[var(--surface-content-color)]">Email <%= @invitation.email %></p>
+  <p class="text-base leading-7 text-[var(--surface-content-color)]">Role <%= @invitation.role.to_s.humanize %></p>
+  <p class="text-base leading-7 text-[var(--surface-content-color)]">Recording <%= @recording_label %></p>
+  <p class="text-base leading-7 text-[var(--surface-content-color)]">State <%= @invitation_state %></p>
+
+  <% if @current_actor.blank? %>
+    <p class="text-base leading-7 text-[var(--surface-content-color)]">
+      Sign in with <%= @invitation.email %> to accept this invitation.
+    </p>
+  <% elsif @invitation.acceptable? %>
+    <%= form_with url: accept_access_invitation_path(params[:token]), method: :post do %>
+      <%= render FlatPack::Button::Component.new(
+        text: "Accept invitation",
+        style: :primary,
+        size: :md,
+        type: "submit"
+      ) %>
+    <% end %>
+  <% end %>
+</div>

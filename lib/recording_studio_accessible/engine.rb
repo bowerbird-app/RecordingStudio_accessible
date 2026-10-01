@@ -58,5 +58,12 @@ module RecordingStudioAccessible
                 after: "recording_studio_accessible.register_access_types" do
       RecordingStudioAccessible::Hooks.run(:after_initialize, self)
     end
+
+    initializer "recording_studio_accessible.filter_parameters" do |app|
+      next unless app.config.respond_to?(:filter_parameters)
+
+      parameters = app.config.filter_parameters
+      parameters << :token if parameters.respond_to?(:<<)
+    end
   end
 end
