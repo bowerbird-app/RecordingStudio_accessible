@@ -87,6 +87,14 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.10.1
+
+Manage access shows each person inside the table columns. No migration.
+
+1. Install Accessible `0.10.1`.
+
+If a host copied the old dummy Tailwind token block (`--color-primary`, `--radius-md`, and the `--color-fp-*` names) into its own stylesheet, remove that block so `data-theme="rounded"` can apply.
+
 #### Upgrading to 0.10.0
 
 Pending access invitations are stored on `AccessInvitation`. `RecordingStudio::Access` is still the only authorization record. `authorized?` and `role_for` ignore an invitation until it is accepted.
@@ -1037,7 +1045,7 @@ use another actor's access grant.
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `4.2.0`, RecordingStudioRootSwitchable `v0.5.0`, and FlatPack `0.1.133`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`).
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `4.2.0`, RecordingStudioRootSwitchable `v0.5.0`, and FlatPack `0.1.133`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens.
 
 The dummy app configures actor types, through-authorization, and avatars in `test/dummy/config/initializers/recording_studio_accessible.rb`. It leaves an unknown email as an invitation until the signup page creates the user and accepts.
 
