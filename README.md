@@ -87,6 +87,22 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.10.0
+
+Pending access invitations are stored on `AccessInvitation`. `RecordingStudio::Access` is still the only authorization record. `authorized?` and `role_for` ignore an invitation until it is accepted.
+
+Previously, an unknown email using the default missing-actor handler returned a not-found error. After this release, that email in the mounted access-management flow creates a pending invitation. To keep the previous behavior, return `MissingActorResolution.invalid(...)` from the missing-actor handler.
+
+1. Install Accessible `0.10.0`.
+2. Copy the migration and run it.
+
+```bash
+bin/rails generate recording_studio_accessible:migrations
+bin/rails db:migrate
+```
+
+`invite_access` uses the notice `Invitation sent.` only after the configured notifier hands the invitation off. If delivery fails, the invitation row stays and the call returns `Invitation could not be sent.` Invite again, or resend from the access page, to retry.
+
 #### Upgrading to 0.9.1
 
 Cloud Agent boot files now live in this repo. Product access behavior is
@@ -655,7 +671,7 @@ That generator:
 
 `AccessInvitation` records pending intent for an email address. `RecordingStudio::Access` records authorization for a persisted actor. `authorized?` and `role_for` read access grants only.
 
-`invite_access` calls `grant_access` when the email already belongs to an actor. Otherwise it stores one open `AccessInvitation` for that recording and email. After the invited person authenticates, `accept_access_invitation` calls `grant_access` and stamps the invitation accepted. `revoke_access_invitation` withdraws a pending invitation and leaves any access grant alone.
+`invite_access` calls `grant_access` when the email already belongs to an actor. Otherwise it stores one unclosed `AccessInvitation` for that recording and email. Unclosed means not accepted and not revoked. An expired invitation stays in that slot, and a later invite refreshes the same row instead of inserting another one. After the invited person authenticates, `accept_access_invitation` calls `grant_access` and stamps the invitation accepted. `revoke_access_invitation` withdraws a pending invitation and leaves any access grant alone.
 
 By default, the new-access form resolves the email with `access_management_actor_email_resolver`. A matching actor is granted immediately. An unknown email returns `MissingActorResolution.unresolved`, and the access controller calls `invite_access`. A host handler that returns `:invited` has already finished its own hand-off. The addon stores nothing in that case.
 
@@ -749,7 +765,7 @@ The mounted create flow works like this:
 2. A resolved actor is granted with `GrantRecordingAccess`, and the access-granted notifier runs.
 3. No actor means the controller calls `access_management_missing_actor_handler`.
 4. An actor or `:created` from that handler is granted the same way.
-5. `:unresolved` (the default for an unknown email) calls `invite_access`, which stores one open invitation and sends `AccessInvitationMailer`.
+5. `:unresolved` (the default for an unknown email) calls `invite_access`, which stores one unclosed invitation and asks the invitation notifier to hand it off.
 6. `:invited`, `:invalid`, and `:redirect` stay on their existing branches. `:invited` does not store an invitation.
 
 `invite_access` does not call the missing-actor handler. Use it when the caller already wants a grant or a pending invitation:
@@ -772,6 +788,10 @@ invite_access
 ```
 
 Account lookup stays in the host resolver. Pending intent stays on `AccessInvitation`. Authorization stays on `RecordingStudio::Access`, written only by `grant_access`.
+
+`invite_access` stores the invitation, then calls `deliver_access_invitation`. The notice `Invitation sent.` is returned only when that handoff succeeds. A failed handoff leaves the row in place and returns `Invitation could not be sent.`
+
+A custom `access_invitation_notifier` signals that outcome directly. Return a truthy value, such as the delivered mail, for success. Return `false`, `nil`, or an object whose `success?` is false for failure. A raised error is failure too. The default notifier returns failure when it cannot build an acceptance URL, and it does not send that mail.
 
 ### Checking access
 
