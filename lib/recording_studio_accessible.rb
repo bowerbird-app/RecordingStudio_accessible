@@ -31,6 +31,10 @@ require "recording_studio_accessible/services/grant_recording_access"
 require "recording_studio_accessible/services/bootstrap_owner_access"
 require "recording_studio_accessible/services/update_recording_access"
 require "recording_studio_accessible/services/revoke_recording_access"
+require "recording_studio_accessible/services/invite_known_actor"
+require "recording_studio_accessible/services/invite_access"
+require "recording_studio_accessible/services/accept_access_invitation"
+require "recording_studio_accessible/services/revoke_access_invitation"
 require "recording_studio_accessible/services/void_dependent_accesses"
 require_relative "../app/jobs/recording_studio_accessible/void_dependent_accesses_job"
 require_relative "../app/mailers/recording_studio_accessible/access_granted_mailer"
@@ -83,7 +87,7 @@ module RecordingStudioAccessible
     end
 
     def invite_access(recording:, email:, role:, manager_actor: nil, controller: nil)
-      AccessInvitation.invite(
+      Services::InviteAccess.call(
         recording: recording,
         email: email,
         role: role,
@@ -93,11 +97,11 @@ module RecordingStudioAccessible
     end
 
     def accept_access_invitation(invitation:, actor:, controller: nil)
-      AccessInvitation.accept(invitation: invitation, actor: actor, controller: controller)
+      Services::AcceptAccessInvitation.call(invitation: invitation, actor: actor, controller: controller)
     end
 
     def revoke_access_invitation(invitation:, manager_actor:)
-      AccessInvitation.revoke(invitation: invitation, manager_actor: manager_actor)
+      Services::RevokeAccessInvitation.call(invitation: invitation, manager_actor: manager_actor)
     end
 
     # Grant the first :admin on an empty owned root, or on an empty

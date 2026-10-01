@@ -286,17 +286,19 @@ module RecordingStudioAccessible
     end
 
     def deliver_access_invitation(controller:, recording:, email:, role:, manager_actor:, raw_token:)
-      resolve_configurable(
-        access_invitation_notifier,
-        controller: controller,
-        recording: recording,
-        email: email,
-        role: role,
-        manager_actor: manager_actor,
-        raw_token: raw_token
+      invitation_delivery_succeeded?(
+        resolve_configurable(
+          access_invitation_notifier,
+          controller: controller,
+          recording: recording,
+          email: email,
+          role: role,
+          manager_actor: manager_actor,
+          raw_token: raw_token
+        )
       )
     rescue StandardError
-      nil
+      false
     end
 
     def access_invitation_sign_in_url_for(controller:, token:, email:)
@@ -579,21 +581,24 @@ module RecordingStudioAccessible
     end
 
     def default_access_invitation_notifier(controller:, recording:, email:, role:, manager_actor:, raw_token:)
-      return unless defined?(RecordingStudioAccessible::AccessInvitationMailer)
+      return false unless defined?(RecordingStudioAccessible::AccessInvitationMailer)
+
+      acceptance_url = access_invitation_url_for(
+        controller: controller,
+        raw_token: raw_token,
+        email: email,
+        role: role,
+        recording: recording,
+        manager_actor: manager_actor
+      )
+      return false if acceptance_url.blank?
 
       mail = RecordingStudioAccessible::AccessInvitationMailer.with(
         email: email,
         recording: recording,
         role: role,
         manager_actor: manager_actor,
-        acceptance_url: access_invitation_url_for(
-          controller: controller,
-          raw_token: raw_token,
-          email: email,
-          role: role,
-          recording: recording,
-          manager_actor: manager_actor
-        ),
+        acceptance_url: acceptance_url,
         subject: access_invitation_subject_for(
           controller: controller,
           recording: recording,
@@ -603,9 +608,9 @@ module RecordingStudioAccessible
         )
       ).access_invitation
 
-      deliver_notification(mail)
+      deliver_notification(mail).present?
     rescue StandardError
-      nil
+      false
     end
 
     def default_access_invitation_url_resolver(controller:, raw_token:, email: nil, role: nil, recording: nil,
@@ -736,6 +741,13 @@ module RecordingStudioAccessible
         role: role,
         manager_actor: manager_actor
       )
+    end
+
+    def invitation_delivery_succeeded?(result)
+      return false if result.nil? || result == false
+      return result.success? if result.respond_to?(:success?)
+
+      true
     end
 
     def deliver_notification(mail)

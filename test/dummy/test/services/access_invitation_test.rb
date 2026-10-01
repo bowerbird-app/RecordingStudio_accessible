@@ -28,6 +28,101 @@ class AccessInvitationTest < ActiveSupport::TestCase
     assert_equal "You were given access to Invitation Workspace", ActionMailer::Base.deliveries.last.subject
   end
 
+  test "default invitation delivery hands off the acceptance mail" do
+    result = invite_email("delivered@example.com")
+
+    assert result.success?
+    assert result.value.invited?
+    assert_equal "Invitation sent.", result.value.notice
+    delivery = ActionMailer::Base.deliveries.last
+    refute_nil delivery
+    assert_equal ["delivered@example.com"], delivery.to
+    assert_includes delivery.body.encoded, "Accept the invitation"
+    assert_match %r{access_invitations/[A-Za-z0-9_-]{20,}}, delivery.body.encoded
+  end
+
+  test "notifier failure keeps the invitation and does not report that it was sent" do
+    configuration = RecordingStudioAccessible.configuration
+    previous = configuration.access_invitation_notifier
+    configuration.access_invitation_notifier = ->(**) { false }
+
+    result = invite_email("notifier-false@example.com")
+
+    assert result.failure?
+    assert_equal "Invitation could not be sent.", result.error
+    refute_equal "Invitation sent.", result.value&.notice
+    assert_equal 1, RecordingStudioAccessible::AccessInvitation.where(email: "notifier-false@example.com").count
+    assert_empty ActionMailer::Base.deliveries
+  ensure
+    configuration.access_invitation_notifier = previous
+  end
+
+  test "a raised notifier keeps the invitation and reports delivery failure" do
+    configuration = RecordingStudioAccessible.configuration
+    previous = configuration.access_invitation_notifier
+    configuration.access_invitation_notifier = ->(**) { raise "smtp down" }
+
+    result = invite_email("notifier-raise@example.com")
+
+    assert result.failure?
+    assert_equal "Invitation could not be sent.", result.error
+    assert_equal 1, RecordingStudioAccessible::AccessInvitation.where(email: "notifier-raise@example.com").count
+    assert_empty ActionMailer::Base.deliveries
+  ensure
+    configuration.access_invitation_notifier = previous
+  end
+
+  test "a notifier result with success false is delivery failure" do
+    configuration = RecordingStudioAccessible.configuration
+    previous = configuration.access_invitation_notifier
+    configuration.access_invitation_notifier = lambda { |**|
+      RecordingStudioAccessible::Services::BaseService::Result.new(success: false, error: "mailbox rejected")
+    }
+
+    result = invite_email("notifier-result@example.com")
+
+    assert result.failure?
+    assert_equal "Invitation could not be sent.", result.error
+    assert_equal 1, RecordingStudioAccessible::AccessInvitation.where(email: "notifier-result@example.com").count
+  ensure
+    configuration.access_invitation_notifier = previous
+  end
+
+  test "a missing acceptance url keeps the invitation and reports delivery failure" do
+    previous_options = ActionMailer::Base.default_url_options.dup
+    ActionMailer::Base.default_url_options = {}
+
+    result = invite_email("no-url@example.com")
+
+    assert result.failure?
+    assert_equal "Invitation could not be sent.", result.error
+    assert_equal 1, RecordingStudioAccessible::AccessInvitation.where(email: "no-url@example.com").count
+    assert_empty ActionMailer::Base.deliveries
+  ensure
+    ActionMailer::Base.default_url_options = previous_options
+  end
+
+  test "resend delivers an invitation that previously failed to send" do
+    configuration = RecordingStudioAccessible.configuration
+    previous = configuration.access_invitation_notifier
+    configuration.access_invitation_notifier = ->(**) { false }
+    failed = invite_email("retry-delivery@example.com")
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "retry-delivery@example.com")
+    configuration.access_invitation_notifier = previous
+
+    retried = invite_email("retry-delivery@example.com", role: :edit)
+
+    assert failed.failure?
+    assert_equal "Invitation could not be sent.", failed.error
+    assert retried.success?
+    assert_equal "Invitation sent.", retried.value.notice
+    assert_equal invitation.id, retried.value.pending.id
+    assert_equal "edit", invitation.reload.role
+    assert_equal 1, RecordingStudioAccessible::AccessInvitation.where(email: "retry-delivery@example.com").count
+    refute_nil ActionMailer::Base.deliveries.last
+    assert_includes ActionMailer::Base.deliveries.last.body.encoded, "Accept the invitation"
+  end
+
   test "unknown email creates an invitation and no access grant and no user" do
     assert_no_difference -> { User.count } do
       assert_no_difference -> { RecordingStudio::Access.count } do
@@ -42,29 +137,29 @@ class AccessInvitationTest < ActiveSupport::TestCase
     assert_equal "view", @result.value.pending.role
     assert_equal false, @result.value.pending.expired
     assert_nil User.find_by(email: "unknown@example.com")
-    invitation = open_invitation("unknown@example.com")
+    invitation = unclosed_invitation("unknown@example.com")
     assert_equal invitation.id, @result.value.pending.id
     assert_nil invitation.accepted_at
     assert_in_delta 14.days.from_now, invitation.expires_at, 5
   end
 
-  test "email normalization keeps one open row" do
+  test "email normalization keeps one unclosed row" do
     first = invite_email(" Person@Example.com ")
     second = invite_email("person@example.com")
 
     assert first.success?
     assert second.success?
-    assert_equal 1, RecordingStudioAccessible::AccessInvitation.open.where(email: "person@example.com").count
-    invitation = open_invitation("person@example.com")
+    assert_equal 1, RecordingStudioAccessible::AccessInvitation.unclosed.where(email: "person@example.com").count
+    invitation = unclosed_invitation("person@example.com")
     assert_equal "person@example.com", invitation.email
     assert_equal first.value.pending.id, invitation.id
     assert_equal second.value.pending.id, invitation.id
   end
 
-  test "reinvite updates the same open row and rotates the digest" do
+  test "reinvite updates the same unclosed row and rotates the digest" do
     invite_email("rotate@example.com")
     old_token = token_from_last_delivery
-    invitation = open_invitation("rotate@example.com")
+    invitation = unclosed_invitation("rotate@example.com")
     assert_equal invitation, RecordingStudioAccessible::AccessInvitation.locate(old_token)
 
     ActionMailer::Base.deliveries.clear
@@ -72,9 +167,9 @@ class AccessInvitationTest < ActiveSupport::TestCase
     new_token = token_from_last_delivery
 
     assert again.success?
-    assert_equal invitation.id, open_invitation("rotate@example.com").id
-    assert_equal "edit", open_invitation("rotate@example.com").role
-    assert_equal 1, RecordingStudioAccessible::AccessInvitation.open.count
+    assert_equal invitation.id, unclosed_invitation("rotate@example.com").id
+    assert_equal "edit", unclosed_invitation("rotate@example.com").role
+    assert_equal 1, RecordingStudioAccessible::AccessInvitation.unclosed.count
     assert_nil RecordingStudioAccessible::AccessInvitation.locate(old_token)
     assert_equal invitation, RecordingStudioAccessible::AccessInvitation.locate(new_token)
     refute_equal old_token, new_token
@@ -89,7 +184,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
 
     assert root_result.success?
     assert folder_result.success?
-    rows = RecordingStudioAccessible::AccessInvitation.open.where(email: "shared@example.com")
+    rows = RecordingStudioAccessible::AccessInvitation.unclosed.where(email: "shared@example.com")
     assert_equal 2, rows.count
     assert_equal [@recording.id, folder_recording.id].sort, rows.map(&:recording_id).sort
   end
@@ -104,7 +199,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
 
   test "accept creates access through grant" do
     invite_email("accept@example.com")
-    invitation = open_invitation("accept@example.com")
+    invitation = unclosed_invitation("accept@example.com")
     user = create_user("accept@example.com")
 
     assert_difference -> { RecordingStudio::Access.count }, 1 do
@@ -124,7 +219,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
 
   test "mismatched email is rejected and no access row appears" do
     invite_email("invited@example.com")
-    invitation = open_invitation("invited@example.com")
+    invitation = unclosed_invitation("invited@example.com")
     other = create_user("other@example.com")
 
     assert_no_difference -> { RecordingStudio::Access.count } do
@@ -137,9 +232,26 @@ class AccessInvitationTest < ActiveSupport::TestCase
     refute RecordingStudioAccessible.authorized?(actor: other, recording: @recording, role: :view)
   end
 
+  test "expired invitation stays unclosed so resend refreshes that row" do
+    invite_email("slot@example.com")
+    invitation = unclosed_invitation("slot@example.com")
+    invitation.update!(expires_at: 1.minute.ago)
+
+    assert invitation.expired?
+    assert_equal invitation, RecordingStudioAccessible::AccessInvitation.unclosed.find_by!(email: "slot@example.com")
+
+    again = invite_email("slot@example.com", role: :edit)
+
+    assert again.success?
+    assert_equal invitation.id, unclosed_invitation("slot@example.com").id
+    assert_equal "edit", unclosed_invitation("slot@example.com").role
+    assert_equal 1, RecordingStudioAccessible::AccessInvitation.unclosed.where(email: "slot@example.com").count
+    refute unclosed_invitation("slot@example.com").expired?
+  end
+
   test "expired invitation is rejected" do
     invite_email("expired@example.com")
-    invitation = open_invitation("expired@example.com")
+    invitation = unclosed_invitation("expired@example.com")
     invitation.update!(expires_at: 1.minute.ago)
     user = create_user("expired@example.com")
 
@@ -155,7 +267,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
 
   test "revoked invitation is rejected" do
     invite_email("revoked-accept@example.com")
-    invitation = open_invitation("revoked-accept@example.com")
+    invitation = unclosed_invitation("revoked-accept@example.com")
     user = create_user("revoked-accept@example.com")
     revoke = RecordingStudioAccessible.revoke_access_invitation(invitation: invitation, manager_actor: @manager)
     assert revoke.success?
@@ -170,7 +282,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
 
   test "accepted invitation cannot grant again after the access grant is revoked" do
     invite_email("reuse@example.com")
-    invitation = open_invitation("reuse@example.com")
+    invitation = unclosed_invitation("reuse@example.com")
     user = create_user("reuse@example.com")
     accepted = RecordingStudioAccessible.accept_access_invitation(invitation: invitation, actor: user)
     assert accepted.success?
@@ -214,7 +326,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
 
   test "accept fails when the inviting manager no longer has admin" do
     invite_email("late@example.com")
-    invitation = open_invitation("late@example.com")
+    invitation = unclosed_invitation("late@example.com")
     other_admin = create_user("other-admin@example.com")
     grant = RecordingStudioAccessible.grant_access(
       recording: @recording,
@@ -286,7 +398,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
 
   test "revoke works and a second revoke succeeds" do
     invite_email("revoke@example.com")
-    invitation = open_invitation("revoke@example.com")
+    invitation = unclosed_invitation("revoke@example.com")
 
     first = RecordingStudioAccessible.revoke_access_invitation(invitation: invitation, manager_actor: @manager)
     revoked_at = invitation.reload.revoked_at
@@ -302,7 +414,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
     assert_equal revoked_at, invitation.reload.revoked_at
   end
 
-  test "resend refresh keeps one open row" do
+  test "resend refresh keeps one unclosed row" do
     first = invite_email("refresh@example.com", role: :view)
     second = invite_email("refresh@example.com", role: :edit)
 
@@ -328,7 +440,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
     assert result.success?
     assert result.value.invited?
     refute called
-    assert open_invitation("handler@example.com")
+    assert unclosed_invitation("handler@example.com")
   ensure
     RecordingStudioAccessible.configuration.access_management_missing_actor_handler = previous
   end
@@ -339,7 +451,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
     missing_revoke = RecordingStudioAccessible.revoke_access_invitation(invitation: nil, manager_actor: @manager)
     invite_email("unsigned@example.com")
     unsigned = RecordingStudioAccessible.accept_access_invitation(
-      invitation: open_invitation("unsigned@example.com"),
+      invitation: unclosed_invitation("unsigned@example.com"),
       actor: nil
     )
 
@@ -366,8 +478,8 @@ class AccessInvitationTest < ActiveSupport::TestCase
     )
   end
 
-  def open_invitation(email, recording: @recording)
-    RecordingStudioAccessible::AccessInvitation.open.find_by!(
+  def unclosed_invitation(email, recording: @recording)
+    RecordingStudioAccessible::AccessInvitation.unclosed.find_by!(
       recording_id: recording.id,
       email: email.to_s.strip.downcase
     )

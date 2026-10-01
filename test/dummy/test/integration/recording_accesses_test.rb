@@ -298,6 +298,40 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     refute_includes delivery.subject.to_s, "You were given access"
   end
 
+  test "failed invitation delivery stays visible and resend can succeed" do
+    sign_in @admin
+    configuration = RecordingStudioAccessible.configuration
+    previous = configuration.access_invitation_notifier
+    configuration.access_invitation_notifier = ->(**) { false }
+
+    assert_difference -> { RecordingStudioAccessible::AccessInvitation.count }, 1 do
+      post root_recording_accesses_path, params: {
+        access: { email: "undelivered@example.com", role: "view" }
+      }
+    end
+
+    assert_response :unprocessable_entity
+    assert_equal "Invitation could not be sent.", flash[:alert]
+    assert_nil flash[:notice]
+    assert_includes @response.body, "Invitation could not be sent."
+    refute_includes @response.body, "Invitation sent."
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "undelivered@example.com")
+
+    configuration.access_invitation_notifier = previous
+    assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
+      post "#{root_recording_accesses_path.sub(%r{/accesses\z}, "")}/access_invitations/#{invitation.id}/resend"
+    end
+
+    assert_response :redirect
+    assert_equal "Invitation sent.", flash[:notice]
+    follow_redirect!
+    assert_includes @response.body, "Invitation sent."
+    assert_includes @response.body, "Pending invitation"
+    assert_equal invitation.id, RecordingStudioAccessible::AccessInvitation.find_by!(email: "undelivered@example.com").id
+  ensure
+    configuration.access_invitation_notifier = previous
+  end
+
   test "granting access deduplicates pre-existing direct grants for the same actor" do
     sign_in @admin
 

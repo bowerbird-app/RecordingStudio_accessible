@@ -42,7 +42,6 @@ Metrics/ClassLength:
     - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/authorization_service.rb'
     - 'lib/recording_studio_accessible/services/bootstrap_owner_access.rb'
-    - 'app/models/recording_studio_accessible/access_invitation.rb'
 
 Metrics/ModuleLength:
   Exclude:

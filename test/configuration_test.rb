@@ -761,7 +761,58 @@ class ConfigurationTest < Minitest::Test
     refute @configuration.authorize_mounted_page?(controller: :controller, actor: :actor, recording: :recording)
   end
 
+  def test_invitation_delivery_is_true_when_the_notifier_returns_a_truthy_handoff
+    @configuration.access_invitation_notifier = ->(**) { :sent }
+
+    assert_equal true, deliver_invitation
+  end
+
+  def test_invitation_delivery_is_true_when_the_notifier_result_succeeds
+    @configuration.access_invitation_notifier = lambda { |**|
+      RecordingStudioAccessible::Services::BaseService::Result.new(success: true, value: :sent)
+    }
+
+    assert_equal true, deliver_invitation
+  end
+
+  def test_invitation_delivery_is_false_when_the_notifier_returns_false
+    @configuration.access_invitation_notifier = ->(**) { false }
+
+    assert_equal false, deliver_invitation
+  end
+
+  def test_invitation_delivery_is_false_when_the_notifier_result_fails
+    @configuration.access_invitation_notifier = lambda { |**|
+      RecordingStudioAccessible::Services::BaseService::Result.new(success: false, error: "mailbox rejected")
+    }
+
+    assert_equal false, deliver_invitation
+  end
+
+  def test_invitation_delivery_is_false_when_the_notifier_raises
+    @configuration.access_invitation_notifier = ->(**) { raise "smtp down" }
+
+    assert_equal false, deliver_invitation
+  end
+
+  def test_default_invitation_notifier_fails_when_the_acceptance_url_is_blank
+    @configuration.access_invitation_url_resolver = ->(**) { "" }
+
+    assert_equal false, deliver_invitation
+  end
+
   private
+
+  def deliver_invitation
+    @configuration.deliver_access_invitation(
+      controller: nil,
+      recording: nil,
+      email: "person@example.com",
+      role: "view",
+      manager_actor: nil,
+      raw_token: "a" * 32
+    )
+  end
 
   def actor_named(name, id:)
     actor_class = Struct.new(:id) do
