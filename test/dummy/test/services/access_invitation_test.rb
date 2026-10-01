@@ -102,6 +102,64 @@ class AccessInvitationTest < ActiveSupport::TestCase
     ActionMailer::Base.default_url_options = previous_options
   end
 
+  test "failed resend keeps the delivered token until a later resend succeeds" do
+    configuration = RecordingStudioAccessible.configuration
+    previous = configuration.access_invitation_notifier
+    invited = invite_email("person@example.com")
+    token_a = token_from_last_delivery
+    invitation = RecordingStudioAccessible::AccessInvitation.locate(token_a)
+    assert invited.success?
+    assert_equal invitation, RecordingStudioAccessible::AccessInvitation.locate(token_a)
+    snapshot = {
+      token_digest: invitation.token_digest,
+      expires_at: invitation.expires_at,
+      last_sent_at: invitation.last_sent_at,
+      role: invitation.role,
+      manager_actor_id: invitation.manager_actor_id
+    }
+    replacement_manager = create_user("resend-manager@example.com")
+    granted = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: replacement_manager,
+      role: :admin,
+      manager_actor: @manager
+    )
+    assert granted.success?, granted.error
+
+    configuration.access_invitation_notifier = ->(**) { false }
+    failed = invite_email("person@example.com", role: :edit, manager: replacement_manager)
+
+    assert failed.failure?
+    assert_equal "Invitation could not be sent.", failed.error
+    invitation.reload
+    assert_equal invitation, RecordingStudioAccessible::AccessInvitation.locate(token_a)
+    assert_equal snapshot[:token_digest], invitation.token_digest
+    assert_equal snapshot[:expires_at], invitation.expires_at
+    assert_equal snapshot[:last_sent_at], invitation.last_sent_at
+    assert_equal snapshot[:role], invitation.role
+    assert_equal snapshot[:manager_actor_id], invitation.manager_actor_id
+    assert_equal "view", invitation.role
+
+    configuration.access_invitation_notifier = previous
+    ActionMailer::Base.deliveries.clear
+    resent = invite_email("person@example.com", role: :edit, manager: replacement_manager)
+    token_b = token_from_last_delivery
+
+    assert resent.success?
+    assert_equal "Invitation sent.", resent.value.notice
+    refute_equal token_a, token_b
+    assert_nil RecordingStudioAccessible::AccessInvitation.locate(token_a)
+    assert_equal invitation, RecordingStudioAccessible::AccessInvitation.locate(token_b)
+    invitation.reload
+    assert_equal "edit", invitation.role
+    assert_equal replacement_manager.id, invitation.manager_actor_id
+    assert_operator invitation.expires_at, :>, snapshot[:expires_at]
+    assert_operator invitation.last_sent_at, :>, snapshot[:last_sent_at]
+    assert_equal 1, RecordingStudioAccessible::AccessInvitation.unclosed.where(email: "person@example.com").count
+  ensure
+    configuration.access_invitation_notifier = previous
+  end
+
   test "resend delivers an invitation that previously failed to send" do
     configuration = RecordingStudioAccessible.configuration
     previous = configuration.access_invitation_notifier
