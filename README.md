@@ -91,7 +91,7 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 Direct grants can use role names declared on that recordable. The default list is still `view`, `edit`, and `admin`. Existing `authorized?` checks keep that hierarchy.
 
-`recording_studio_accesses.role` becomes a string. The migration maps `0` to `view`, `1` to `edit`, and `2` to `admin`.
+`recording_studio_accesses.role` becomes a string. The migration checks that every stored role is `0`, `1`, or `2`, then maps those to `view`, `edit`, and `admin`. Rollback is allowed only while every role is still `view`, `edit`, or `admin`. Once a custom role name is stored, rolling this migration back is blocked so those grants are not rewritten.
 
 1. Install Accessible `0.11.0`.
 2. Copy the migration and run it.
