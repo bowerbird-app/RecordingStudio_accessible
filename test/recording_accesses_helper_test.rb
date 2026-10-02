@@ -284,6 +284,7 @@ class RecordingAccessesHelperTest < Minitest::Test
   def test_access_role_options_use_the_recording_context
     context_class = Class.new do
       extend RecordingStudioAccessible::RoleDeclaration
+
       accessible_roles :view, :download
     end
     recording = Struct.new(:recordable).new(context_class.new)
