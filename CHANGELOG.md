@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Development and dummy companion pin for RecordingStudio moved from git tag `v4.2.0` to `v4.2.2` (gem version `4.2.1`).
+
 ## [0.11.0] - 2026-10-02
 
 ### Added
