@@ -105,6 +105,51 @@ class ContextRolesTest < ActiveSupport::TestCase
     )
   end
 
+  test "authorized_for_role matches one exact name on the access path" do
+    create_direct_access_recording(actor: @actor, role: :download, parent_recording: @folder_recording)
+    page = Page.create!(folder: @folder_recording.recordable, title: "Spec", summary: "Notes", position: 0)
+    page_recording = create_child_recording(recordable: page, parent_recording: @folder_recording)
+    editor = create_user("context-roles-exact-editor@example.com")
+    create_direct_access_recording(actor: editor, role: :edit, parent_recording: @root_recording)
+
+    assert RecordingStudioAccessible.authorized_for_role?(
+      actor: @actor, recording: @folder_recording, role: :download
+    )
+    assert RecordingStudioAccessible.authorized_for_role?(
+      actor: @actor, recording: page_recording, role: :download
+    )
+    refute RecordingStudioAccessible.authorized_for_role?(
+      actor: @actor, recording: page_recording, role: :edit
+    )
+    refute RecordingStudioAccessible.authorized?(
+      actor: @actor, recording: page_recording, role: :download
+    )
+    refute RecordingStudioAccessible.authorized_for_role?(
+      actor: editor, recording: @folder_recording, role: :download
+    )
+    assert RecordingStudioAccessible.authorized_for_role?(
+      actor: editor, recording: @folder_recording, role: :edit
+    )
+    assert RecordingStudioAccessible.authorized_for_any_role?(
+      actor: editor, recording: @folder_recording, roles: %i[download edit admin]
+    )
+    refute RecordingStudioAccessible.authorized_for_role?(
+      actor: nil, recording: @folder_recording, role: :download
+    )
+    refute RecordingStudioAccessible.authorized_for_role?(
+      actor: @actor, recording: nil, role: :download
+    )
+    refute RecordingStudioAccessible.authorized_for_role?(
+      actor: @actor, recording: @folder_recording, role: nil
+    )
+    refute RecordingStudioAccessible.authorized_for_role?(
+      actor: @actor, recording: @folder_recording, role: ""
+    )
+    refute RecordingStudioAccessible.authorized_for_role?(
+      actor: @actor, recording: @folder_recording, role: " "
+    )
+  end
+
   test "dependent grants keep the ranked cap and reject unranked roles" do
     editor = RecordingStudioAccessible.grant_access(
       recording: @root_recording, actor: create_user("context-roles-editor-manager@example.com"),

@@ -103,6 +103,8 @@ bin/rails db:migrate
 
 No model needs `accessible_roles` unless that context grants something other than `view`, `edit`, and `admin`. `bootstrap_owner_access!` still grants `admin`, so a context that omits `admin` cannot use it.
 
+`authorized?` stays the ranked check. Use `authorized_for_role?` for one exact name, and `authorized_for_any_role?` when several names satisfy one capability. A dependent grant still needs `view`, `edit`, or `admin` on both the dependent and the manager.
+
 #### Upgrading to 0.10.1
 
 Manage access shows each person inside the table columns. No migration.
@@ -868,7 +870,31 @@ The declaration needs one or more unique names. Blank names are rejected. The or
 
 Only those names can be granted, updated, or invited on that recording. A normal workspace still accepts `view`, `edit`, and `admin`, and rejects `download`. A library item accepts `view` and `download`, and rejects `edit`.
 
-Ancestor grants are not rewritten to the target list. A parent `edit` grant stays `edit`. It can still authorize a child when the caller includes `:edit` in the role set.
+Ancestor grants are not rewritten to the target list. A parent `edit` grant stays `edit`.
+
+`authorized?` is the ranked check. It uses `view < edit < admin` and ignores a name outside that list.
+
+```ruby
+RecordingStudioAccessible.authorized?(
+  actor: current_user,
+  recording: recording,
+  role: :edit
+)
+```
+
+`authorized?(role: :download)` is false. `download` has no rank.
+
+`authorized_for_role?` asks whether that exact name is on the recording or an ancestor. It matches `download` and `edit` the same way. An inherited `edit` grant does not satisfy `role: :download`.
+
+```ruby
+RecordingStudioAccessible.authorized_for_role?(
+  actor: current_user,
+  recording: recording,
+  role: :download
+)
+```
+
+`authorized_for_any_role?` is true when any listed name is on that path. You choose the names that satisfy one capability. Accessible does not treat `download` as `edit` because they sit in the same position in two lists.
 
 ```ruby
 RecordingStudioAccessible.authorized_for_any_role?(
@@ -878,9 +904,9 @@ RecordingStudioAccessible.authorized_for_any_role?(
 )
 ```
 
-That call walks the same access path as `authorized?`. It returns true when the actor has any listed role on the recording or an ancestor. One name is enough. `roles: [:download]` checks that name only.
+A download check that should also allow editors passes `[:download, :edit, :admin]`. An API check that should not allow downloaders passes `[:api, :admin]`.
 
-The caller decides which names satisfy a capability. Accessible does not treat `download` as `edit` because they sit in the same position in two different lists. A download check that should also allow editors passes `[:download, :edit, :admin]`. An API check that should not allow downloaders passes `[:api, :admin]`. The same tree can answer those differently.
+Dependent grants still compare only `view`, `edit`, and `admin`. If the dependent role or the manager role is outside that ranking, the grant fails with "Dependent access requires a ranked role". Direct grants and the two exact-name checks still accept the declared name.
 
 `roles_for(recording)` returns the declared names. `role_valid_for?(recording, role)` is the direct-grant check. Manage access renders those names, humanized. A library item shows View and Download.
 

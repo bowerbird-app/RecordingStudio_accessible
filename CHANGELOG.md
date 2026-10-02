@@ -9,12 +9,14 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `accessible_roles` declares the direct role names for one recordable class. A class with no declaration still uses `view`, `edit`, and `admin`.
 - `RecordingStudioAccessible.authorized_for_any_role?` walks the existing access path and returns true when the actor has any listed role.
+- `RecordingStudioAccessible.authorized_for_role?` matches one exact role name on that same path.
 - `RecordingStudioAccessible.roles_for` and `role_valid_for?` read the role names for a recording.
 
 ### Changed
 - `recording_studio_accesses.role` stores the role name as a string. Existing integer values `0`, `1`, and `2` migrate to `view`, `edit`, and `admin`.
 - Grant, update, and invitation writes accept a role only when the target context declares it. Authorization matching does not reject an ancestor role for being outside the target context's list.
 - Manage access role choices come from the target context. Labels are the humanized role names.
+- A dependent grant whose role, or whose manager role, is outside `view`, `edit`, and `admin` fails with "Dependent access requires a ranked role". Ranked dependent grants stay on the existing cap.
 
 ### Upgrade Notes
 - Install Accessible `0.11.0`, then run:
@@ -27,6 +29,7 @@ bin/rails db:migrate
 - No model changes are required. Existing `authorized?` checks keep the `view < edit < admin` hierarchy.
 - `RecordingStudio::AccessRoles::ORDER` is unchanged and is not a host setting.
 - A context that omits `admin` cannot use `bootstrap_owner_access!`, because that command still grants `admin`.
+- Dependent grants still require a ranked role on both sides. Custom names stay on independent grants and on `authorized_for_role?` / `authorized_for_any_role?`.
 
 ## [0.10.1] - 2026-10-01
 

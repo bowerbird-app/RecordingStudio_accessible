@@ -72,6 +72,10 @@ module RecordingStudioAccessible
       RecordingStudio::Services::AccessResolver.new(actor: actor, recording: recording).any_role?(roles)
     end
 
+    def authorized_for_role?(actor:, recording:, role:)
+      authorized_for_any_role?(actor: actor, recording: recording, roles: [role])
+    end
+
     def roles_for(recording)
       Roles.names_for(recording)
     end
