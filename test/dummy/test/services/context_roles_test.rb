@@ -105,6 +105,48 @@ class ContextRolesTest < ActiveSupport::TestCase
     )
   end
 
+  test "dependent grants keep the ranked cap and reject unranked roles" do
+    editor = RecordingStudioAccessible.grant_access(
+      recording: @root_recording, actor: create_user("context-roles-editor-manager@example.com"),
+      role: :edit, manager_actor: @admin
+    ).value
+    allowed = RecordingStudioAccessible.grant_access(
+      recording: @root_recording, actor: create_user("context-roles-capped-view@example.com"),
+      role: :view, manager_actor: @admin, depends_on: editor
+    )
+    assert allowed.success?, allowed.error
+    assert_equal "view", allowed.value.recordable.role
+
+    viewer = RecordingStudioAccessible.grant_access(
+      recording: @root_recording, actor: create_user("context-roles-view-manager@example.com"),
+      role: :view, manager_actor: @admin
+    ).value
+    exceeds = RecordingStudioAccessible.grant_access(
+      recording: @root_recording, actor: create_user("context-roles-capped-edit@example.com"),
+      role: :edit, manager_actor: @admin, depends_on: viewer
+    )
+    assert exceeds.failure?
+    assert_equal RecordingStudioAccessible::DependentAccess::ROLE_EXCEEDS_MESSAGE, exceeds.error
+
+    unranked_dependent = RecordingStudioAccessible.grant_access(
+      recording: @folder_recording, actor: create_user("context-roles-capped-download@example.com"),
+      role: :download, manager_actor: @admin, depends_on: editor
+    )
+    assert unranked_dependent.failure?
+    assert_equal RecordingStudioAccessible::DependentAccess::UNRANKED_ROLE_MESSAGE, unranked_dependent.error
+
+    download_manager = RecordingStudioAccessible.grant_access(
+      recording: @folder_recording, actor: create_user("context-roles-download-manager@example.com"),
+      role: :download, manager_actor: @admin
+    ).value
+    unranked_manager = RecordingStudioAccessible.grant_access(
+      recording: @folder_recording, actor: create_user("context-roles-view-under-download@example.com"),
+      role: :view, manager_actor: @admin, depends_on: download_manager
+    )
+    assert unranked_manager.failure?
+    assert_equal RecordingStudioAccessible::DependentAccess::UNRANKED_ROLE_MESSAGE, unranked_manager.error
+  end
+
   test "invitations and updates use the target context roles" do
     invited = RecordingStudioAccessible.invite_access(
       recording: @folder_recording, email: "download-invite@example.com", role: :download, manager_actor: @admin
