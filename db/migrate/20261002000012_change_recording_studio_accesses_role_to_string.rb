@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# Access used to store view, edit, and admin as integers 0, 1, and 2.
-# A context can now grant any declared role name, so the column stores that name.
 class ChangeRecordingStudioAccessesRoleToString < ActiveRecord::Migration[8.1]
   def up
     change_column_default :recording_studio_accesses, :role, nil

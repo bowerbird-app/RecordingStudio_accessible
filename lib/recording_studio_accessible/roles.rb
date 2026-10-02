@@ -3,7 +3,6 @@
 require "recording_studio_accessible/role_set"
 
 module RecordingStudioAccessible
-  # Direct-grant names for the target recording. Ancestor grants stay out of this check.
   module Roles
     module_function
 
