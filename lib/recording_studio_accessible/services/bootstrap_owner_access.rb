@@ -49,6 +49,7 @@ module RecordingStudioAccessible
         target_result = validate_bootstrap_target!
         return target_result unless target_result == true
         return failure("Actor type is not allowed for access") unless allowed_access_actor_type?
+        return failure("Role is invalid") unless RecordingStudioAccessible.role_valid_for?(@recording, @role)
 
         true
       end

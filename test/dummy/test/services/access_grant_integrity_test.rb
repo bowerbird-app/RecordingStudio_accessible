@@ -226,7 +226,7 @@ class AccessGrantIntegrityTest < ActiveSupport::TestCase
   end
 
   def stored_role(role)
-    RecordingStudio::Access.roles.fetch(role.to_s, role)
+    role.to_s
   end
 
   def active_grants_for(actor, parent)

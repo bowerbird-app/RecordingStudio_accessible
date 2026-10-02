@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-02
+
+### Added
+- `accessible_roles` declares the direct role names for one recordable class. A class with no declaration still uses `view`, `edit`, and `admin`.
+- `RecordingStudioAccessible.authorized_for_any_role?` walks the existing access path and returns true when the actor has any listed role.
+- `RecordingStudioAccessible.authorized_for_role?` matches one exact role name on that same path.
+- `RecordingStudioAccessible.roles_for` and `role_valid_for?` read the role names for a recording.
+
+### Changed
+- `recording_studio_accesses.role` stores the role name as a string. The migration converts `0`, `1`, and `2` to `view`, `edit`, and `admin` only after it checks that no other integer is stored.
+- Grant, update, and invitation writes accept a role only when the target context declares it. Authorization matching does not reject an ancestor role for being outside the target context's list.
+- Manage access role choices come from the target context. Labels are the humanized role names.
+- A dependent grant whose role, or whose manager role, is outside `view`, `edit`, and `admin` fails with "Dependent access requires a ranked role". Ranked dependent grants stay on the existing cap.
+
+### Upgrade Notes
+- Install Accessible `0.11.0`, then run:
+
+```bash
+bin/rails generate recording_studio_accessible:migrations
+bin/rails db:migrate
+```
+
+- No model changes are required. Existing `authorized?` checks keep the `view < edit < admin` hierarchy.
+- `RecordingStudio::AccessRoles::ORDER` is unchanged and is not a host setting.
+- A context that omits `admin` cannot use `bootstrap_owner_access!`, because that command still grants `admin`.
+- Dependent grants still require a ranked role on both sides. Custom names stay on independent grants and on `authorized_for_role?` / `authorized_for_any_role?`.
+- Rollback of the role-column migration is allowed only while every role is `view`, `edit`, or `admin`. A custom role name stops the rollback so it is not rewritten.
+
 ## [0.10.1] - 2026-10-01
 
 ### Fixed
@@ -334,7 +362,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.9.0...v0.9.1

@@ -210,6 +210,70 @@ class DependentAccessTest < Minitest::Test
     end
   end
 
+  def test_grant_error_rejects_an_unranked_dependent_role
+    manager = AccessRecording.new(
+      id: 2,
+      recordable_type: "RecordingStudio::Access",
+      recordable: AccessRecordable.new(role: "edit"),
+      root_id: 10
+    )
+
+    RecordingStudio.stub(:root_recording_id_for, lambda(&:root_id)) do
+      RecordingStudio::Recording.stub(:unscoped, recording_finder(manager)) do
+        RecordingStudioAccessible::DependentAccess.stub(:column_available?, true) do
+          assert_equal RecordingStudioAccessible::DependentAccess::UNRANKED_ROLE_MESSAGE,
+                       RecordingStudioAccessible::DependentAccess.grant_error(
+                         target_recording: AccessRecording.new(id: 1, root_id: 10),
+                         role: :download,
+                         depends_on: manager
+                       )
+        end
+      end
+    end
+  end
+
+  def test_grant_error_rejects_an_unranked_manager_role
+    manager = AccessRecording.new(
+      id: 2,
+      recordable_type: "RecordingStudio::Access",
+      recordable: AccessRecordable.new(role: "download"),
+      root_id: 10
+    )
+
+    RecordingStudio.stub(:root_recording_id_for, lambda(&:root_id)) do
+      RecordingStudio::Recording.stub(:unscoped, recording_finder(manager)) do
+        RecordingStudioAccessible::DependentAccess.stub(:column_available?, true) do
+          assert_equal RecordingStudioAccessible::DependentAccess::UNRANKED_ROLE_MESSAGE,
+                       RecordingStudioAccessible::DependentAccess.grant_error(
+                         target_recording: AccessRecording.new(id: 1, root_id: 10),
+                         role: :view,
+                         depends_on: manager
+                       )
+        end
+      end
+    end
+  end
+
+  def test_effective_fails_closed_for_an_unranked_dependent_role
+    manager = AccessRecording.new(
+      id: 2,
+      recordable_type: "RecordingStudio::Access",
+      recordable: AccessRecordable.new(role: "edit"),
+      root_id: 10
+    )
+    access_recording = AccessRecording.new(
+      id: 1,
+      recordable: AccessRecordable.new(role: "download", depends_on_recording_id: 2),
+      root_id: 10
+    )
+
+    RecordingStudio.stub(:root_recording_id_for, lambda(&:root_id)) do
+      RecordingStudio::Recording.stub(:unscoped, recording_finder(manager)) do
+        refute RecordingStudioAccessible::DependentAccess.effective?(access_recording)
+      end
+    end
+  end
+
   def test_grant_error_rejects_self_dependency
     manager = AccessRecording.new(
       id: 2,

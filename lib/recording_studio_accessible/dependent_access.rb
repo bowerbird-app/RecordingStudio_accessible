@@ -17,6 +17,7 @@ module RecordingStudioAccessible
     MISSING_MANAGER_MESSAGE = "Manager access grant is missing or inactive"
     NOT_ACCESS_SAME_ROOT_MESSAGE = "Manager must be an Access recording on the same root"
     ROLE_EXCEEDS_MESSAGE = "Dependent role cannot exceed the manager grant's role"
+    UNRANKED_ROLE_MESSAGE = "Dependent access requires a ranked role"
     CYCLE_MESSAGE = "Dependent access cannot depend on itself or form a cycle"
 
     class << self
@@ -60,6 +61,7 @@ module RecordingStudioAccessible
         return NOT_ACCESS_SAME_ROOT_MESSAGE unless access_recording?(manager)
         return NOT_ACCESS_SAME_ROOT_MESSAGE unless same_root?(target_recording, manager)
         return CYCLE_MESSAGE if cyclic_dependency?(depends_on: manager, dependent_recording: dependent_recording)
+        return UNRANKED_ROLE_MESSAGE unless ranked_for_comparison?(role, manager)
         return ROLE_EXCEEDS_MESSAGE unless role_capped?(dependent_role: role, manager: manager)
 
         nil
@@ -82,6 +84,11 @@ module RecordingStudioAccessible
         return false unless same_root?(relative_to, manager)
 
         true
+      end
+
+      def ranked_for_comparison?(role, manager)
+        manager_role = recordable_for(manager)&.role
+        RecordingStudio::AccessRoles.value_for(role) && RecordingStudio::AccessRoles.value_for(manager_role)
       end
 
       def role_capped?(dependent_role:, manager:)

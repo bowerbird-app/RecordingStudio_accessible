@@ -12,7 +12,7 @@ module RecordingStudioAccessible
       def initialize(recording:, email:, role:, manager_actor: nil, controller: nil)
         @recording = recording
         @email = AccessInvitation.normalize_email(email)
-        @role = role
+        @role = role.to_s.strip
         @manager_actor = manager_actor
         @controller = controller
       end
@@ -68,7 +68,7 @@ module RecordingStudioAccessible
       end
 
       def grantable_role?
-        defined?(::RecordingStudio::Access) && ::RecordingStudio::Access.roles.key?(@role.to_s)
+        RecordingStudioAccessible.role_valid_for?(@recording, @role)
       end
 
       def deliver_invitation(manager, raw_token)

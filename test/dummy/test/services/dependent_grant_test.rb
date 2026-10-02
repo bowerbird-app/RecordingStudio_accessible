@@ -393,7 +393,7 @@ class DependentGrantTest < ActiveSupport::TestCase
 
   def update_stored_role!(access_recording, role)
     connection = ActiveRecord::Base.connection
-    stored = RecordingStudio::Access.roles.fetch(role.to_s)
+    stored = role.to_s
     connection.execute(<<~SQL.squish)
       UPDATE recording_studio_accesses
       SET role = #{connection.quote(stored)}

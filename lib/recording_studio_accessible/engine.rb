@@ -6,6 +6,12 @@ module RecordingStudioAccessible
   class Engine < ::Rails::Engine
     isolate_namespace RecordingStudioAccessible
 
+    initializer "recording_studio_accessible.role_declaration" do
+      ActiveSupport.on_load(:active_record) do
+        extend RecordingStudioAccessible::RoleDeclaration unless respond_to?(:accessible_roles)
+      end
+    end
+
     initializer "recording_studio_accessible.view_helpers" do
       ActiveSupport.on_load(:action_view) do
         include RecordingStudioAccessible::AvatarsHelper

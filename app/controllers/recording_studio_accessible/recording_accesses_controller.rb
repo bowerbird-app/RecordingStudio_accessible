@@ -96,7 +96,7 @@ module RecordingStudioAccessible
 
     def prepare_new_page_state
       @selected_email = access_params[:email].to_s.strip
-      @selected_role = access_params[:role].presence || "view"
+      @selected_role = access_params[:role].presence || RecordingStudioAccessible.roles_for(@recording).first
       @form_errors ||= []
       prepare_shared_page_state
     end

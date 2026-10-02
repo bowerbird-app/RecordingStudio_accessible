@@ -552,7 +552,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
     access_id = SecureRandom.uuid
     recording_id = SecureRandom.uuid
     now = Time.current.utc.iso8601(6)
-    stored_role = RecordingStudio::Access.roles.fetch(role.to_s)
+    stored_role = role.to_s
 
     connection.exec_insert(<<~SQL.squish, "SQL", [])
       INSERT INTO recording_studio_accesses

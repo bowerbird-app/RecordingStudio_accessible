@@ -92,7 +92,7 @@ module RecordingStudioAccessible
 
     def role_is_grantable
       return if role.blank?
-      return if defined?(::RecordingStudio::Access) && ::RecordingStudio::Access.roles.key?(role.to_s)
+      return if RecordingStudioAccessible.role_valid_for?(recording, role)
 
       errors.add(:role, "is invalid")
     end
