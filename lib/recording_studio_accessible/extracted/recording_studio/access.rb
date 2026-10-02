@@ -19,8 +19,6 @@ module RecordingStudio
 
     belongs_to :actor, polymorphic: true
 
-    enum :role, { view: 0, edit: 1, admin: 2 }
-
     def dependent?
       return false unless self.class.column_names.include?("depends_on_recording_id")
 

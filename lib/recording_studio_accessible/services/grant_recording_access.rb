@@ -9,7 +9,7 @@ module RecordingStudioAccessible
       def initialize(recording:, actor:, role:, manager_actor: nil, controller: nil, depends_on: nil)
         @recording = recording
         @actor = actor
-        @role = role.to_s
+        @role = role.to_s.strip
         @manager_actor = manager_actor
         @controller = controller
         @depends_on = depends_on
@@ -42,7 +42,7 @@ module RecordingStudioAccessible
         )
         return access_validation unless access_validation == true
         return failure("Actor type is not allowed for access") unless allowed_access_actor_type?
-        return failure("Role is invalid") unless RecordingStudio::Access.roles.key?(@role)
+        return failure("Role is invalid") unless RecordingStudioAccessible.role_valid_for?(@recording, @role)
 
         dependency_result = validate_dependent_grant
         return dependency_result unless dependency_result == true

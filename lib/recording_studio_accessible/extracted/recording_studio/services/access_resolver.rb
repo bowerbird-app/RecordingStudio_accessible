@@ -20,6 +20,21 @@ module RecordingStudio
             .max_by { |role| RecordingStudio::AccessRoles.value_for(role) }
       end
 
+      def any_role?(roles)
+        return false unless actor && recording
+
+        wanted = normalized_role_names(roles)
+        return false if wanted.empty?
+
+        path.lookup_recordings.any? do |path_recording|
+          lookup.roles_for(path_recording).intersect?(wanted)
+        end
+      end
+
+      def normalized_role_names(roles)
+        Array(roles).filter_map { |role| RecordingStudio::AccessRoles.normalize(role)&.strip&.presence }
+      end
+
       private
 
       attr_reader :actor, :recording

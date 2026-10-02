@@ -4,8 +4,6 @@ module RecordingStudioAccessible
   module RecordingAccessesHelper
     include RecordingStudioAccessible::NavigationUrlSafety
 
-    ROLE_OPTIONS = [%w[View view], %w[Edit edit], %w[Admin admin]].freeze
-
     def recording_access_index_back_url
       safe_local_navigation_url(params[:back_url], fallback: host_root_path)
     end
@@ -34,8 +32,8 @@ module RecordingStudioAccessible
       recording_access_path(recording, access_id, **recording_access_navigation_params)
     end
 
-    def access_role_options
-      ROLE_OPTIONS
+    def access_role_options(recording = nil)
+      RecordingStudioAccessible.roles_for(recording).map { |name| [name.humanize, name] }
     end
 
     def show_access_actor_type_column?(direct_rows, inherited_rows = [])

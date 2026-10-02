@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "recording_studio_accessible/extracted/recording_studio/access_roles"
+
 module RecordingStudioAccessible
   module AuthorizationClassMethods
     def role_for(actor:, recording:)
@@ -107,10 +109,10 @@ module RecordingStudioAccessible
       )
       return scope if minimum_role.blank?
 
-      minimum_value = RecordingStudio::Access.roles[minimum_role.to_s]
-      return nil unless minimum_value
+      names = RecordingStudio::AccessRoles.names_at_or_above(minimum_role)
+      return nil if names.empty?
 
-      scope.where(role: minimum_value..)
+      scope.where(role: names)
     end
 
     def active_recordings_scope
@@ -121,7 +123,7 @@ module RecordingStudioAccessible
     end
 
     def valid_role?(role)
-      RecordingStudio::Access.roles.key?(role.to_s)
+      RecordingStudio::AccessRoles.value_for(role).present?
     end
   end
 end

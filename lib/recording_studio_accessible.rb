@@ -18,6 +18,9 @@ require "recording_studio_accessible/actor_type"
 require "recording_studio_accessible/check_registry"
 require "recording_studio_accessible/registry_class_methods"
 require "recording_studio_accessible/navigation_url_safety"
+require "recording_studio_accessible/role_set"
+require "recording_studio_accessible/role_declaration"
+require "recording_studio_accessible/roles"
 require "recording_studio_accessible/authorization_class_methods"
 require "recording_studio_accessible/configuration"
 require "recording_studio_accessible/authorization"
@@ -61,6 +64,20 @@ module RecordingStudioAccessible
 
     def authorized?(actor:, recording:, role:)
       Authorization.allowed?(actor: actor, recording: recording, role: role)
+    end
+
+    def authorized_for_any_role?(actor:, recording:, roles:)
+      return false unless actor && recording
+
+      RecordingStudio::Services::AccessResolver.new(actor: actor, recording: recording).any_role?(roles)
+    end
+
+    def roles_for(recording)
+      Roles.names_for(recording)
+    end
+
+    def role_valid_for?(recording, role)
+      Roles.allowed?(recording, role)
     end
 
     def role_through(actor:, through:, recording:, controller: nil)

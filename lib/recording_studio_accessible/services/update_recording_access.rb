@@ -8,7 +8,7 @@ module RecordingStudioAccessible
       def initialize(recording:, access_recording:, role:, manager_actor: nil, controller: nil)
         @recording = recording
         @access_recording = access_recording
-        @role = role.to_s
+        @role = role.to_s.strip
         @manager_actor = manager_actor
         @controller = controller
       end
@@ -84,7 +84,7 @@ module RecordingStudioAccessible
       end
 
       def valid_role?
-        RecordingStudio::Access.roles.key?(@role)
+        RecordingStudioAccessible.role_valid_for?(@recording, @role)
       end
     end
   end

@@ -87,6 +87,22 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.11.0
+
+Direct grants can use role names declared on that recordable. The default list is still `view`, `edit`, and `admin`. Existing `authorized?` checks keep that hierarchy.
+
+`recording_studio_accesses.role` becomes a string. The migration maps `0` to `view`, `1` to `edit`, and `2` to `admin`.
+
+1. Install Accessible `0.11.0`.
+2. Copy the migration and run it.
+
+```bash
+bin/rails generate recording_studio_accessible:migrations
+bin/rails db:migrate
+```
+
+No model needs `accessible_roles` unless that context grants something other than `view`, `edit`, and `admin`. `bootstrap_owner_access!` still grants `admin`, so a context that omits `admin` cannot use it.
+
 #### Upgrading to 0.10.1
 
 Manage access shows each person inside the table columns. No migration.
@@ -832,6 +848,41 @@ RecordingStudioAccessible.authorized?(
 ```
 
 It does not check whether a user can use the workspace's access.
+
+### Context roles
+
+A recordable with no `accessible_roles` declaration uses `view`, `edit`, and `admin`. `authorized?` still treats those as a hierarchy. `view` satisfies a view check. `edit` satisfies view and edit. `admin` satisfies all three. `RecordingStudio::AccessRoles::ORDER` stays that map. It is not a host setting.
+
+Declare direct role names on the recordable that receives the grant.
+
+```ruby
+class LibraryItem < ApplicationRecord
+  recording_studio_recordable label: "Library item", root: false, allowed_parent_types: ["Workspace"]
+  RecordingStudio.enable_capability(:accessible, on: self)
+
+  accessible_roles :view, :download
+end
+```
+
+The declaration needs one or more unique names. Blank names are rejected. The order you write is the order manage access shows. The access row stores the chosen name, such as `"download"`. It does not store the declaration.
+
+Only those names can be granted, updated, or invited on that recording. A normal workspace still accepts `view`, `edit`, and `admin`, and rejects `download`. A library item accepts `view` and `download`, and rejects `edit`.
+
+Ancestor grants are not rewritten to the target list. A parent `edit` grant stays `edit`. It can still authorize a child when the caller includes `:edit` in the role set.
+
+```ruby
+RecordingStudioAccessible.authorized_for_any_role?(
+  actor: current_user,
+  recording: recording,
+  roles: [:download, :edit, :admin]
+)
+```
+
+That call walks the same access path as `authorized?`. It returns true when the actor has any listed role on the recording or an ancestor. One name is enough. `roles: [:download]` checks that name only.
+
+The caller decides which names satisfy a capability. Accessible does not treat `download` as `edit` because they sit in the same position in two different lists. A download check that should also allow editors passes `[:download, :edit, :admin]`. An API check that should not allow downloaders passes `[:api, :admin]`. The same tree can answer those differently.
+
+`roles_for(recording)` returns the declared names. `role_valid_for?(recording, role)` is the direct-grant check. Manage access renders those names, humanized. A library item shows View and Download.
 
 ### Authorizing named actions
 

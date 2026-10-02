@@ -9,7 +9,12 @@ module RecordingStudio
       end
 
       def role_for(recording)
-        roles_by_parent_id[recording&.id]
+        ranked = roles_for(recording).select { |name| RecordingStudio::AccessRoles.value_for(name) }
+        ranked.max_by { |name| RecordingStudio::AccessRoles.value_for(name) }
+      end
+
+      def roles_for(recording)
+        Array(roles_by_parent_id[recording&.id])
       end
 
       private
@@ -27,23 +32,18 @@ module RecordingStudio
           recordings: recordings,
           actor: actor
         ).each_with_object({}) do |access_recording, roles|
-          store_stronger_role(roles, access_recording)
+          store_role(roles, access_recording)
         end
       end
 
-      def store_stronger_role(roles, access_recording)
-        role = access_recording.recordable&.role
-        return unless RecordingStudio::AccessRoles.value_for(role)
+      def store_role(roles, access_recording)
+        role = access_recording.recordable&.role.to_s.strip
+        return if role.empty?
         return unless RecordingStudioAccessible::DependentAccess.effective?(access_recording)
 
         parent_id = access_recording.parent_recording_id
-        current_role = roles[parent_id]
-        roles[parent_id] = role if stronger_role?(role, current_role)
-      end
-
-      def stronger_role?(role, current_role)
-        current_role.nil? || RecordingStudio::AccessRoles.value_for(role) >
-          RecordingStudio::AccessRoles.value_for(current_role)
+        bucket = (roles[parent_id] ||= [])
+        bucket << role unless bucket.include?(role)
       end
     end
   end

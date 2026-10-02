@@ -48,7 +48,7 @@
 
       <%= render FlatPack::RadioGroup::Component.new(
         name: "access[role]",
-        options: access_role_options,
+        options: access_role_options(@recording),
         value: @selected_role,
         label: "Role",
         required: true

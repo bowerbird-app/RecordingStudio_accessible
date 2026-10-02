@@ -137,7 +137,7 @@ class AccessResolverTest < ActiveSupport::TestCase
   end
 
   def stored_role(role)
-    RecordingStudio::Access.roles.fetch(role.to_s, role)
+    role.to_s
   end
 
   def update_access_role!(access_recording, role)
