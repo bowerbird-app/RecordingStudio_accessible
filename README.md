@@ -195,7 +195,7 @@ or weaker than the dependent — even when a background void job has not run.
 - an owned root (`shared: false`), such as a Workspace
 - an accessible child under a shared root, such as a Profile or a MessageGroup
 
-1. Upgrade RecordingStudio to `~> 4.2` (tag `v4.2.0`).
+1. Upgrade RecordingStudio to `~> 4.2` (tag `v4.2.2`).
 2. Keep calling bootstrap on a new empty owned root. That path is unchanged.
 3. For shared forests, create the accessible child first, then bootstrap on
    **that child** — never on the shared root itself:
@@ -222,7 +222,7 @@ or weaker than the dependent — even when a background void job has not run.
 5. Do not add an `access_management_authorizer` mutex, ENV bootstrap, or
    `AccessCreationContext.allow` workaround. Bootstrap is the first-owner API.
 6. If you use the dummy app or copy its companion gems, pin:
-   - `recording_studio` to tag `v4.2.0`
+   - `recording_studio` to tag `v4.2.2`
    - `recording_studio_root_switchable` to tag `v0.5.0`
    - `flat_pack` to tag `v0.1.133`
 

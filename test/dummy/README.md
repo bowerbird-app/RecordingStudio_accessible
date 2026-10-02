@@ -1,6 +1,6 @@
 # Dummy App
 
-This Rails app demonstrates **Recording Studio Accessible** as a separately installed addon on top of RecordingStudio. It pins RecordingStudio `v4.2.0`, RecordingStudioRootSwitchable `v0.5.0`, and FlatPack `v0.1.133` so the demo matches the versions this addon is tested with. Layouts use FlatPack's rounded theme (`data-theme="rounded"`). The Tailwind entry scans component sources and does not redeclare FlatPack color or radius tokens. RecordingStudio engine pages include `UsesDefaultLayout`.
+This Rails app demonstrates **Recording Studio Accessible** as a separately installed addon on top of RecordingStudio. It pins RecordingStudio `v4.2.2`, RecordingStudioRootSwitchable `v0.5.0`, and FlatPack `v0.1.133` so the demo matches the versions this addon is tested with. Layouts use FlatPack's rounded theme (`data-theme="rounded"`). The Tailwind entry scans component sources and does not redeclare FlatPack color or radius tokens. RecordingStudio engine pages include `UsesDefaultLayout`.
 
 ## What it proves
 
