@@ -23,6 +23,7 @@ log() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 if [ -n "${RAILS_MASTER_KEY:-}" ]; then
   log "Writing dummy master.key from RAILS_MASTER_KEY"
   umask 077
+  mkdir -p "${ROOT}/test/dummy/config"
   printf '%s' "${RAILS_MASTER_KEY}" > "${ROOT}/test/dummy/config/master.key"
 fi
 
