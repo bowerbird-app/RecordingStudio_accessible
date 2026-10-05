@@ -1124,6 +1124,8 @@ use another actor's access grant.
 
 The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `4.2.0`, RecordingStudioRootSwitchable `v0.5.0`, and FlatPack `0.1.133`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens.
 
+Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
+
 The dummy app configures actor types, through-authorization, and avatars in `test/dummy/config/initializers/recording_studio_accessible.rb`. It leaves an unknown email as an invitation until the signup page creates the user and accepts.
 
 Run it with:
