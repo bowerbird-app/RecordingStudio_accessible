@@ -3,6 +3,7 @@
 require "recording_studio"
 require "action_mailer"
 require "recording_studio_accessible/version"
+require "recording_studio_accessible/copy"
 require "recording_studio_accessible/hooks"
 require "recording_studio_accessible/compatibility"
 RecordingStudioAccessible::Compatibility.register_access_capability!
@@ -41,6 +42,7 @@ require "recording_studio_accessible/services/accept_access_invitation"
 require "recording_studio_accessible/services/revoke_access_invitation"
 require "recording_studio_accessible/services/void_dependent_accesses"
 require_relative "../app/jobs/recording_studio_accessible/void_dependent_accesses_job"
+require_relative "../app/helpers/recording_studio_accessible/copy_helper"
 require_relative "../app/mailers/recording_studio_accessible/access_granted_mailer"
 require_relative "../app/mailers/recording_studio_accessible/access_invitation_mailer"
 

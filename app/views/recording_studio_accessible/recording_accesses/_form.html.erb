@@ -29,8 +29,8 @@
         <%= render FlatPack::EmailInput::Component.new(
           name: "access[email]",
           value: @selected_email,
-          label: "User email",
-          placeholder: "email@example.com",
+          label: accessible_t("form.user_email"),
+          placeholder: accessible_t("form.email_placeholder"),
           required: true
         ) %>
       <% else %>
@@ -50,7 +50,7 @@
         name: "access[role]",
         options: access_role_options(@recording),
         value: @selected_role,
-        label: "Role",
+        label: accessible_t("form.role"),
         required: true
       ) %>
 
@@ -69,8 +69,8 @@
     <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
       <% card.body do %>
         <%= render FlatPack::SectionTitle::Component.new(
-          title: "Recording",
-          subtitle: "#{@recording.recordable_type.demodulize} inside #{@root_label}",
+          title: accessible_t("form.recording"),
+          subtitle: accessible_t("form.recording_inside", type: @recording.recordable_type.demodulize, root: @root_label),
           anchor_link: true,
           anchor_id: "recording-details"
         ) %>

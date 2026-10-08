@@ -58,6 +58,7 @@ module RecordingStudioAccessible
                   :access_invitation_subject,
                   :access_invitation_url_resolver,
                   :access_invitation_sign_in_url_resolver,
+                  :access_notification_locale,
                   :access_management_authorizer,
                   :mounted_page_authorizer,
                   :authorize_actor_through
@@ -82,6 +83,7 @@ module RecordingStudioAccessible
       @access_invitation_subject = method(:default_access_invitation_subject)
       @access_invitation_url_resolver = method(:default_access_invitation_url_resolver)
       @access_invitation_sign_in_url_resolver = nil
+      @access_notification_locale = nil
       @access_management_authorizer = method(:default_access_management_authorizer)
       @mounted_page_authorizer = method(:default_mounted_page_authorizer)
       @access_actor_types = nil
@@ -282,7 +284,20 @@ module RecordingStudioAccessible
         manager_actor: manager_actor
       )
     rescue StandardError
-      "You were invited"
+      Copy.t("mailers.invitation.subject")
+    end
+
+    def access_notification_locale_for(**)
+      callable = access_notification_locale
+      if callable.respond_to?(:call)
+        resolve_configurable(callable, **).presence || I18n.locale
+      elsif callable.present?
+        callable
+      else
+        I18n.locale
+      end
+    rescue StandardError
+      I18n.locale
     end
 
     def deliver_access_invitation(controller:, recording:, email:, role:, manager_actor:, raw_token:)
@@ -370,7 +385,7 @@ module RecordingStudioAccessible
     end
 
     def default_access_management_actor_label(actor)
-      return "Unknown actor" unless actor
+      return Copy.t("errors.unknown_actor") unless actor
 
       actor_name = if actor.respond_to?(:email)
                      actor.email.to_s.squish.presence
@@ -433,29 +448,41 @@ module RecordingStudioAccessible
 
       return unless defined?(RecordingStudioAccessible::AccessGrantedMailer)
 
-      mail = RecordingStudioAccessible::AccessGrantedMailer.with(
+      locale = access_notification_locale_for(
         controller: controller,
         recording: recording,
         actor: actor,
+        email: recipient_email,
         role: role,
-        manager_actor: manager_actor,
-        subject: access_granted_subject_for(
-          controller: controller,
-          recording: recording,
-          actor: actor,
-          role: role,
-          manager_actor: manager_actor
-        ),
-        access_url: access_granted_url_for(
-          controller: controller,
-          recording: recording,
-          actor: actor,
-          role: role,
-          manager_actor: manager_actor
-        )
-      ).access_granted
+        manager_actor: manager_actor
+      )
 
-      deliver_notification(mail)
+      I18n.with_locale(locale) do
+        mail = RecordingStudioAccessible::AccessGrantedMailer.with(
+          controller: controller,
+          recording: recording,
+          actor: actor,
+          role: role,
+          manager_actor: manager_actor,
+          locale: locale,
+          subject: access_granted_subject_for(
+            controller: controller,
+            recording: recording,
+            actor: actor,
+            role: role,
+            manager_actor: manager_actor
+          ),
+          access_url: access_granted_url_for(
+            controller: controller,
+            recording: recording,
+            actor: actor,
+            role: role,
+            manager_actor: manager_actor
+          )
+        ).access_granted
+
+        deliver_notification(mail, locale: locale)
+      end
     rescue StandardError
       nil
     end
@@ -544,9 +571,9 @@ module RecordingStudioAccessible
 
     def default_missing_actor_error_for_email(email:)
       normalized_email = email.to_s.strip
-      return "User is required" if normalized_email.blank?
+      return Copy.t("errors.user_required") if normalized_email.blank?
 
-      "User with email #{normalized_email} was not found"
+      Copy.t("errors.user_not_found", email: normalized_email)
     end
 
     def default_missing_actor_notice_for_email(email:)
@@ -560,11 +587,11 @@ module RecordingStudioAccessible
       _role = role
       _manager_actor = manager_actor
       recording_label = recording_notification_label(recording)
-      return "You were given access" if recording_label.blank?
+      return Copy.t("mailers.granted.subject") if recording_label.blank?
 
-      "You were given access to #{recording_label}"
+      Copy.t("mailers.granted.subject_with_recording", recording: recording_label)
     rescue StandardError
-      "You were given access"
+      Copy.t("mailers.granted.subject")
     end
 
     def default_access_invitation_subject(recording:, controller: nil, email: nil, role: nil, manager_actor: nil)
@@ -573,11 +600,11 @@ module RecordingStudioAccessible
       _role = role
       _manager_actor = manager_actor
       recording_label = recording_notification_label(recording)
-      return "You were invited" if recording_label.blank?
+      return Copy.t("mailers.invitation.subject") if recording_label.blank?
 
-      "You were invited to #{recording_label}"
+      Copy.t("mailers.invitation.subject_with_recording", recording: recording_label)
     rescue StandardError
-      "You were invited"
+      Copy.t("mailers.invitation.subject")
     end
 
     def default_access_invitation_notifier(controller:, recording:, email:, role:, manager_actor:, raw_token:)
@@ -593,22 +620,33 @@ module RecordingStudioAccessible
       )
       return false if acceptance_url.blank?
 
-      mail = RecordingStudioAccessible::AccessInvitationMailer.with(
-        email: email,
+      locale = access_notification_locale_for(
+        controller: controller,
         recording: recording,
+        email: email,
         role: role,
-        manager_actor: manager_actor,
-        acceptance_url: acceptance_url,
-        subject: access_invitation_subject_for(
-          controller: controller,
-          recording: recording,
-          email: email,
-          role: role,
-          manager_actor: manager_actor
-        )
-      ).access_invitation
+        manager_actor: manager_actor
+      )
 
-      deliver_notification(mail).present?
+      I18n.with_locale(locale) do
+        mail = RecordingStudioAccessible::AccessInvitationMailer.with(
+          email: email,
+          recording: recording,
+          role: role,
+          manager_actor: manager_actor,
+          acceptance_url: acceptance_url,
+          locale: locale,
+          subject: access_invitation_subject_for(
+            controller: controller,
+            recording: recording,
+            email: email,
+            role: role,
+            manager_actor: manager_actor
+          )
+        ).access_invitation
+
+        deliver_notification(mail, locale: locale).present?
+      end
     rescue StandardError
       false
     end
@@ -750,13 +788,15 @@ module RecordingStudioAccessible
       true
     end
 
-    def deliver_notification(mail)
+    def deliver_notification(mail, locale: I18n.locale)
       return unless mail
 
-      if mail.respond_to?(:deliver_now)
-        mail.deliver_now
-      elsif mail.respond_to?(:deliver_later)
-        mail.deliver_later
+      I18n.with_locale(locale) do
+        if mail.respond_to?(:deliver_now)
+          mail.deliver_now
+        elsif mail.respond_to?(:deliver_later)
+          mail.deliver_later
+        end
       end
     end
 

@@ -11,7 +11,7 @@ module RecordingStudioAccessible
       private
 
       def perform
-        return failure("Invitation was not found") if @invitation.nil?
+        return failure(copy("errors.invitation_not_found")) if @invitation.nil?
 
         result = nil
         @invitation.with_lock do
@@ -19,7 +19,7 @@ module RecordingStudioAccessible
         end
         result
       rescue ActiveRecord::RecordNotFound
-        failure("Invitation was not found")
+        failure(copy("errors.invitation_not_found"))
       end
 
       def service_args
@@ -31,9 +31,9 @@ module RecordingStudioAccessible
 
       def revoke_locked
         unless AccessManagementPolicy.allowed?(recording: @invitation.recording, actor: @manager_actor)
-          return failure("Not authorized to manage access")
+          return failure(copy("errors.not_authorized"))
         end
-        return failure("Invitation has already been accepted") if @invitation.accepted?
+        return failure(copy("errors.invitation_already_accepted")) if @invitation.accepted?
         return success(AccessInvitation::Outcome.revoked) if @invitation.revoked?
 
         @invitation.update!(revoked_at: Time.current)

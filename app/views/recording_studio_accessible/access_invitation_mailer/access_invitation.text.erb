@@ -1,6 +1,10 @@
-Hello <%= @email %>,
+<%= accessible_t("mailers.hello", email: @email) %>
 
-<%= @manager_actor_display_name %> invited you to <%= @role.humanize.downcase %> access<%= @recording_label.present? ? " to #{@recording_label}" : "" %>.
+<% if @recording_label.present? %>
+<%= accessible_t("mailers.invitation.body", inviter: @manager_actor_display_name, role: @role_label, recording: @recording_label) %>
+<% else %>
+<%= accessible_t("mailers.invitation.body_without_recording", inviter: @manager_actor_display_name, role: @role_label) %>
+<% end %>
 <% if @acceptance_url.present? %>
-Accept the invitation: <%= @acceptance_url %>
+<%= accessible_t("mailers.invitation.accept_with_url", url: @acceptance_url) %>
 <% end %>

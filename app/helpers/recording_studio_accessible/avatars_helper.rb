@@ -117,7 +117,7 @@ module RecordingStudioAccessible
     def recording_studio_accessible_access_button(recording, button_size:, button_style:)
       recording_studio_accessible_button(
         recording,
-        text: "+ Access",
+        text: Copy.t("manage.add_access"),
         button_size: button_size,
         button_style: button_style
       )
@@ -130,12 +130,12 @@ module RecordingStudioAccessible
         button_style: button_style,
         icon: "lock-closed",
         icon_only: true,
-        aria: { label: "Manage access" }
+        aria: { label: Copy.t("manage.manage_access") }
       )
 
       return button unless defined?(::FlatPack::Tooltip::Component)
 
-      render FlatPack::Tooltip::Component.new(text: "Manage access", placement: :top) do
+      render FlatPack::Tooltip::Component.new(text: Copy.t("manage.manage_access"), placement: :top) do
         button
       end
     end

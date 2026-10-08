@@ -47,18 +47,18 @@ module RecordingStudioAccessible
       end
 
       def email_problem
-        return "Email is required" if @email.blank?
-        return "Email is invalid" unless @email.match?(AccessInvitation::EMAIL_FORMAT)
+        return copy("errors.email_required") if @email.blank?
+        return copy("errors.email_invalid") unless @email.match?(AccessInvitation::EMAIL_FORMAT)
 
         nil
       end
 
       def management_gate(manager)
-        return failure("Recording is required") unless persisted_recording?
+        return failure(copy("errors.recording_required")) unless persisted_recording?
 
         target = validate_access_management_target!(@recording, manager_actor: manager, controller: @controller)
         return target unless target == true
-        return failure("Role is invalid") unless grantable_role?
+        return failure(copy("errors.role_invalid")) unless grantable_role?
 
         nil
       end

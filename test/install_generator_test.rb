@@ -59,7 +59,7 @@ class InstallGeneratorTest < Minitest::Test
 
       assert File.exist?(html_template)
       assert File.exist?(text_template)
-      assert_includes File.read(text_template), "Open the shared item"
+      assert_includes File.read(text_template), 'accessible_t("mailers.granted.open_with_url"'
     end
   end
 

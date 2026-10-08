@@ -48,16 +48,16 @@ module RecordingStudioAccessible
         # owned roots and shared-forest children are allowed next.
         target_result = validate_bootstrap_target!
         return target_result unless target_result == true
-        return failure("Actor type is not allowed for access") unless allowed_access_actor_type?
-        return failure("Role is invalid") unless RecordingStudioAccessible.role_valid_for?(@recording, @role)
+        return failure(copy("errors.actor_type_not_allowed")) unless allowed_access_actor_type?
+        return failure(copy("errors.role_invalid")) unless RecordingStudioAccessible.role_valid_for?(@recording, @role)
 
         true
       end
 
       def validate_presence_and_persistence!
-        return failure("Recording is required") unless @recording
+        return failure(copy("errors.recording_required")) unless @recording
         return failure(RECORDING_NOT_PERSISTED_MESSAGE) unless persisted_record?(@recording)
-        return failure("Actor is required") unless @actor
+        return failure(copy("errors.actor_required")) unless @actor
         return failure(ACTOR_NOT_PERSISTED_MESSAGE) unless persisted_record?(@actor)
 
         true
@@ -67,7 +67,7 @@ module RecordingStudioAccessible
         shared_root_result = reject_shared_root_target!(@recording)
         return shared_root_result unless shared_root_result == true
         return failure(UNSUPPORTED_RECORDING_MESSAGE) unless bootstrap_recording_shape?
-        return failure("Direct access is not enabled for this recording") unless access_management_allowed?(@recording)
+        return failure(copy("errors.direct_access_not_enabled")) unless access_management_allowed?(@recording)
 
         true
       end

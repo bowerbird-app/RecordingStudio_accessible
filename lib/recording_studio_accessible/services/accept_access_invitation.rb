@@ -17,7 +17,7 @@ module RecordingStudioAccessible
 
         accept_with_lock
       rescue ActiveRecord::RecordNotFound
-        failure("Invitation was not found")
+        failure(copy("errors.invitation_not_found"))
       end
 
       def service_args
@@ -29,9 +29,9 @@ module RecordingStudioAccessible
       end
 
       def precondition_error
-        return "Invitation was not found" if @invitation.nil?
-        return "Sign in to accept this invitation" if @actor.nil?
-        return "This invitation was sent to a different email" unless actor_matches?
+        return copy("errors.invitation_not_found") if @invitation.nil?
+        return copy("flashes.sign_in_to_accept") if @actor.nil?
+        return copy("errors.invitation_wrong_email") unless actor_matches?
 
         nil
       end
@@ -46,11 +46,11 @@ module RecordingStudioAccessible
       end
 
       def accept_locked
-        return failure("This invitation was sent to a different email") unless actor_matches?
+        return failure(copy("errors.invitation_wrong_email")) unless actor_matches?
         return accept_existing if @invitation.accepted?
-        return failure("Invitation was revoked") if @invitation.revoked?
-        return failure("Invitation has expired") unless @invitation.acceptable?
-        return failure("Not authorized to manage access") unless manager_still_allowed?
+        return failure(copy("errors.invitation_revoked")) if @invitation.revoked?
+        return failure(copy("errors.invitation_expired")) unless @invitation.acceptable?
+        return failure(copy("errors.not_authorized")) unless manager_still_allowed?
 
         grant_and_stamp
       end
@@ -60,7 +60,7 @@ module RecordingStudioAccessible
           recording: @invitation.recording,
           actor: @actor
         ).first
-        notice = access_recording ? "Access granted." : "Invitation already accepted."
+        notice = access_recording ? copy("flashes.access_granted") : copy("flashes.invitation_already_accepted")
         success(AccessInvitation::Outcome.granted(access_recording: access_recording, notice: notice))
       end
 
@@ -78,7 +78,7 @@ module RecordingStudioAccessible
         return grant unless grant.success?
 
         @invitation.update!(accepted_at: Time.current, accepted_by_actor: @actor)
-        success(AccessInvitation::Outcome.granted(access_recording: grant.value, notice: "Access granted."))
+        success(AccessInvitation::Outcome.granted(access_recording: grant.value, notice: copy("flashes.access_granted")))
       end
 
       def actor_matches?

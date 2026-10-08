@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   mount RecordingStudioRootSwitchable::Engine, at: "/recording_studio_root_switchable"
+  mount RecordingStudioInternationalization::Engine, at: "/recording_studio_internationalization"
   devise_for :users
   resources :access_actions, only: [ :show ], param: :action_name
   resources :message_groups, only: [ :index ]

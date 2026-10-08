@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "../../app/helpers/recording_studio_accessible/copy_helper"
 require_relative "../../app/helpers/recording_studio_accessible/avatars_helper"
 
 module RecordingStudioAccessible
@@ -14,6 +15,7 @@ module RecordingStudioAccessible
 
     initializer "recording_studio_accessible.view_helpers" do
       ActiveSupport.on_load(:action_view) do
+        include RecordingStudioAccessible::CopyHelper
         include RecordingStudioAccessible::AvatarsHelper
       end
     end

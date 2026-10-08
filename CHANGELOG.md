@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-08
+
+### Added
+- Customer invitation, mail, and manage-access copy uses Rails I18n under `recording_studio.accessible.*`. The gem ships English only in `config/locales/en.yml`.
+- `config.access_notification_locale` lets the host pick the locale for invitation and access-granted mail. Default is the current locale. No new database column.
+
+### Changed
+- Dummy pins FlatPack `v0.1.208` and adds Recording Studio Internationalization (dummy only) with a French locale file covering every engine key.
+
+### Upgrade Notes
+- Install Accessible `0.12.0`. No migration.
+- Copy `recording_studio.accessible.*` into host locale files for other languages.
+- Config callables for subjects, actor labels, and missing-actor errors still win over locale defaults.
+- Role labels look up `recording_studio.accessible.roles.<name>` and fall back to humanize for custom host roles.
+- Invitation and access-granted mail render inside `I18n.with_locale`. Override with `access_notification_locale` when the host already knows the recipient's language.
+
+## [0.11.2] - 2026-10-06
+
+### Changed
+- Dummy credentials use the shared Recording Studio development master key. `RAILS_MASTER_KEY` writes gitignored `test/dummy/config/master.key`.
+
+## [0.11.1] - 2026-10-02
+
 ### Changed
 - Development and dummy companion pin for RecordingStudio moved from git tag `v4.2.0` to `v4.2.2` (gem version `4.2.1`).
 
@@ -365,7 +388,10 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.11.2...v0.12.0
+[0.11.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.11.1...v0.11.2
+[0.11.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.9.1...v0.10.0
