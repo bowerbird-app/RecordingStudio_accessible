@@ -87,6 +87,17 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.12.0
+
+Customer invitation, mail, and manage-access copy now follows Rails I18n. The gem still ships English only.
+
+1. Install Accessible `0.12.0`. No migration.
+2. Copy `recording_studio.accessible.*` from this gem's `config/locales/en.yml` into the host's `config/locales/<locale>.yml` for every language you offer.
+3. Leave config callables that set subjects, actor labels, or missing-actor errors as they are. A host-supplied string still wins over the locale default.
+4. Optional: set `config.access_notification_locale` to a locale or a callable if invitation and access-granted mail should not use the current request locale.
+
+Staff actor-access-point screens, demo/docs pages, generator text, and developer `ArgumentError`s stay English.
+
 #### Upgrading to 0.11.0
 
 Direct grants can use role names declared on that recordable. The default list is still `view`, `edit`, and `admin`. Existing `authorized?` checks keep that hierarchy.
@@ -739,6 +750,12 @@ RecordingStudioAccessible.configure do |config|
   config.access_management_access_granted_subject = lambda do |recording:, **|
     "A recording was shared with you: #{RecordingStudio::Labels.title_for(recording.recordable)}"
   end
+  # Optional. Invitation and access-granted mail render inside I18n.with_locale.
+  # Default is the current locale (the inviter's request). Pass a locale, or a
+  # callable that returns one from the recipient email, without storing a column.
+  config.access_notification_locale = lambda do |email:, **|
+    User.find_by(email: email)&.preferred_locale.presence || I18n.locale
+  end
   config.access_management_access_granted_url_resolver = lambda do |controller:, recording:, **|
     controller.main_app.root_url
   end
@@ -1120,9 +1137,33 @@ automatically use workspace, company, or team access. Use
 `authorized_through?` or `role_through` when you explicitly want one actor to
 use another actor's access grant.
 
+## Internationalization
+
+The gem ships **English only** in `config/locales/en.yml`. Keys nest under `recording_studio.accessible.*`:
+
+```ruby
+t("recording_studio.accessible.manage.title")
+t("recording_studio.accessible.flashes.invitation_sent")
+t("recording_studio.accessible.mailers.invitation.subject_with_recording", recording: name)
+```
+
+Hosts own other languages. Copy `recording_studio.accessible.*` into `config/locales/<locale>.yml` and list that locale in `config.i18n.available_locales`. Do not add `RecordingStudio_Internationalization` as a dependency of this gem — it is optional on the host (the dummy uses it to switch English/French).
+
+Config callables still win. If you set `access_invitation_subject`, `access_management_access_granted_subject`, `access_management_actor_label`, or a missing-actor error string, that copy is used instead of the locale default.
+
+Role labels look up `recording_studio.accessible.roles.<name>` and fall back to the current humanize, so a custom host role still has a label.
+
+Invitation and access-granted mail render inside `I18n.with_locale`. The default locale is the current one (the inviter's request when they send the mail). Set `config.access_notification_locale` to a locale or a callable when the host already knows the recipient's language. This gem does not add a locale column.
+
+Stored names stay data: recording titles, people names, emails, and type names are not translated. Mailer bodies are whole-sentence keys with interpolation so translators see the full sentence.
+
+Staff `actor_access_points` screens, the engine demo/docs pages, generator text, and developer-facing errors stay English.
+
+Add [Recording Studio Internationalization](https://github.com/bowerbird-app/RecordingStudio_Internationalization) on the host when you want a language selector.
+
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `4.2.0`, RecordingStudioRootSwitchable `v0.5.0`, and FlatPack `0.1.133`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v4.2.2`, RecordingStudioRootSwitchable `v0.5.0`, FlatPack `v0.1.208`, and (dummy only) Recording Studio Internationalization `v0.1.2`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

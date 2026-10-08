@@ -10,7 +10,7 @@ module RecordingStudioAccessible
         return grant unless grant&.success?
 
         notify_known_grant(actor, manager)
-        success(AccessInvitation::Outcome.granted(access_recording: grant.value, notice: "Access granted."))
+        success(AccessInvitation::Outcome.granted(access_recording: grant.value, notice: copy("flashes.access_granted")))
       end
 
       def grant_and_close_invitation(actor, manager)

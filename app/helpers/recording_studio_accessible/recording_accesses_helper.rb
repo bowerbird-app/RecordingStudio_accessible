@@ -3,6 +3,7 @@
 module RecordingStudioAccessible
   module RecordingAccessesHelper
     include RecordingStudioAccessible::NavigationUrlSafety
+    include RecordingStudioAccessible::CopyHelper
 
     def recording_access_index_back_url
       safe_local_navigation_url(params[:back_url], fallback: host_root_path)
@@ -33,7 +34,7 @@ module RecordingStudioAccessible
     end
 
     def access_role_options(recording = nil)
-      RecordingStudioAccessible.roles_for(recording).map { |name| [name.humanize, name] }
+      RecordingStudioAccessible.roles_for(recording).map { |name| [accessible_role_name(name), name] }
     end
 
     def show_access_actor_type_column?(direct_rows, inherited_rows = [])
@@ -75,12 +76,12 @@ module RecordingStudioAccessible
         icon: "ellipsis-vertical",
         show_chevron: false,
         trigger_attributes: {
-          title: "Access point actions",
-          aria: { label: "Access point actions" }
+          title: accessible_t("manage.access_point_actions"),
+          aria: { label: accessible_t("manage.access_point_actions") }
         }
       ) do |dropdown|
         dropdown.menu_item(
-          text: "Manage access",
+          text: accessible_t("manage.manage_access"),
           href: recording_accesses_path(
             source_recording,
             **recording_access_navigation_params(back_url: recording_access_index_back_reference(recording))
@@ -106,9 +107,11 @@ module RecordingStudioAccessible
     def pending_invitation_person_cell(row)
       parts = [
         content_tag(:span, row[:email], class: "font-medium text-[var(--surface-content-color)]"),
-        content_tag(:span, "Pending invitation", class: "text-sm text-[var(--surface-content-color)]")
+        content_tag(:span, accessible_t("manage.pending_invitation"), class: "text-sm text-[var(--surface-content-color)]")
       ]
-      parts << content_tag(:span, "Expired", class: "text-sm text-[var(--surface-content-color)]") if row[:expired]
+      if row[:expired]
+        parts << content_tag(:span, accessible_t("manage.expired"), class: "text-sm text-[var(--surface-content-color)]")
+      end
       safe_join(parts, " ")
     end
 
@@ -119,41 +122,22 @@ module RecordingStudioAccessible
     def pending_invitation_actions_cell(recording, row)
       resend_form_id = "resend-invitation-form-#{row[:id]}"
       cancel_form_id = "cancel-invitation-form-#{row[:id]}"
+      navigation = recording_access_navigation_params
 
-      dropdown = render FlatPack::Button::Dropdown::Component.new(
-        text: "",
-        style: :ghost,
-        icon: "ellipsis-vertical",
-        show_chevron: false,
-        trigger_attributes: {
-          title: "Invitation actions",
-          aria: { label: "Invitation actions" }
-        }
-      ) do |dropdown|
-        dropdown.menu_item(text: "Resend", form: resend_form_id, type: :submit)
-        dropdown.menu_item(
-          text: "Cancel invitation",
-          destructive: true,
-          form: cancel_form_id,
-          type: :submit
-        )
-      end
-
-      resend_form = form_with(
-        url: resend_recording_access_invitation_path(recording, row[:id], **recording_access_navigation_params),
-        method: :post,
-        local: true,
-        html: { id: resend_form_id, class: "hidden" }
-      ) { "" }
-
-      cancel_form = form_with(
-        url: recording_access_invitation_path(recording, row[:id], **recording_access_navigation_params),
-        method: :delete,
-        local: true,
-        html: { id: cancel_form_id, class: "hidden" }
-      ) { "" }
-
-      safe_join([dropdown, resend_form, cancel_form])
+      safe_join(
+        [
+          invitation_actions_dropdown(resend_form_id, cancel_form_id),
+          hidden_method_form(
+            resend_form_id,
+            resend_recording_access_invitation_path(recording, row[:id], **navigation)
+          ),
+          hidden_method_form(
+            cancel_form_id,
+            recording_access_invitation_path(recording, row[:id], **navigation),
+            method: :delete
+          )
+        ]
+      )
     end
 
     def access_actions_cell(recording, row)
@@ -165,16 +149,16 @@ module RecordingStudioAccessible
         icon: "ellipsis-vertical",
         show_chevron: false,
         trigger_attributes: {
-          title: "Access actions",
-          aria: { label: "Access actions" }
+          title: accessible_t("manage.access_actions"),
+          aria: { label: accessible_t("manage.access_actions") }
         }
       ) do |dropdown|
         dropdown.menu_item(
-          text: "Edit",
+          text: accessible_t("manage.edit"),
           href: edit_recording_access_path_with_back_url(recording, row[:id])
         )
         dropdown.menu_item(
-          text: "Remove access",
+          text: accessible_t("manage.remove_access"),
           destructive: true,
           form: delete_form_id,
           type: :submit
@@ -193,6 +177,31 @@ module RecordingStudioAccessible
 
     private
 
+    def invitation_actions_dropdown(resend_form_id, cancel_form_id)
+      render FlatPack::Button::Dropdown::Component.new(
+        text: "",
+        style: :ghost,
+        icon: "ellipsis-vertical",
+        show_chevron: false,
+        trigger_attributes: {
+          title: accessible_t("manage.invitation_actions"),
+          aria: { label: accessible_t("manage.invitation_actions") }
+        }
+      ) do |dropdown|
+        dropdown.menu_item(text: accessible_t("manage.resend"), form: resend_form_id, type: :submit)
+        dropdown.menu_item(
+          text: accessible_t("manage.cancel_invitation"),
+          destructive: true,
+          form: cancel_form_id,
+          type: :submit
+        )
+      end
+    end
+
+    def hidden_method_form(form_id, url, method: :post)
+      form_with(url: url, method: method, local: true, html: { id: form_id, class: "hidden" }) { "" }
+    end
+
     def recording_access_index_back_reference(recording)
       recording_accesses_path(recording, **recording_access_navigation_params(back_url: recording_access_index_back_url))
     end
@@ -210,7 +219,7 @@ module RecordingStudioAccessible
     end
 
     def access_role_label(role)
-      role.to_s.humanize
+      accessible_role_name(role)
     end
   end
 end

@@ -15,8 +15,8 @@ module RecordingStudioAccessible
       private
 
       def perform
-        return failure("Recording is required") unless @recording
-        return failure("Access recording is required") unless @access_recording
+        return failure(copy("errors.recording_required")) unless @recording
+        return failure(copy("errors.access_recording_required")) unless @access_recording
 
         authorization_result = authorize_access_management!(
           recording: @recording,
@@ -24,8 +24,8 @@ module RecordingStudioAccessible
           controller: @controller
         )
         return authorization_result unless authorization_result == true
-        return failure("Access recording is invalid") unless valid_access_recording_for_parent?(recording: @recording,
-                                                                                                access_recording: @access_recording)
+        return failure(copy("errors.access_recording_invalid")) unless valid_access_recording_for_parent?(recording: @recording,
+                                                                                                          access_recording: @access_recording)
 
         ensure_current_impersonator_accessor!
 

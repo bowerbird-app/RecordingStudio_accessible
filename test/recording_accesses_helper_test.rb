@@ -6,6 +6,7 @@ require "ostruct"
 require "cgi"
 require "recording_studio_accessible/engine"
 require "recording_studio_accessible"
+require_relative "../app/helpers/recording_studio_accessible/copy_helper"
 require_relative "../app/helpers/recording_studio_accessible/recording_accesses_helper"
 
 module FlatPack

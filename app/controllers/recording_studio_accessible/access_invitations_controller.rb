@@ -42,7 +42,7 @@ module RecordingStudioAccessible
 
     def render_sign_in_required
       assign_show_state
-      flash.now[:alert] = "Sign in to accept this invitation"
+      flash.now[:alert] = Copy.t("flashes.sign_in_to_accept")
       render :show, status: :unprocessable_entity
     end
 

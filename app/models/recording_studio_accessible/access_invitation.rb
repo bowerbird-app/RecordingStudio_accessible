@@ -87,25 +87,27 @@ module RecordingStudioAccessible
       return if email.blank?
       return if email == self.class.normalize_email(email)
 
-      errors.add(:email, "must be normalized")
+      errors.add(:email, :not_normalized, message: Copy.t("errors.email_not_normalized"))
     end
 
     def role_is_grantable
       return if role.blank?
       return if RecordingStudioAccessible.role_valid_for?(recording, role)
 
-      errors.add(:role, "is invalid")
+      errors.add(:role, :invalid, message: Copy.t("errors.role_invalid"))
     end
 
     def recording_and_email_are_immutable
-      errors.add(:recording_id, "cannot change") if will_save_change_to_recording_id?
-      errors.add(:email, "cannot change") if will_save_change_to_email?
+      if will_save_change_to_recording_id?
+        errors.add(:recording_id, :immutable, message: Copy.t("errors.cannot_change"))
+      end
+      errors.add(:email, :immutable, message: Copy.t("errors.cannot_change")) if will_save_change_to_email?
     end
 
     def accepted_and_revoked_are_exclusive
       return if accepted_at.blank? || revoked_at.blank?
 
-      errors.add(:base, "cannot be accepted and revoked")
+      errors.add(:base, :accepted_and_revoked, message: Copy.t("errors.accepted_and_revoked"))
     end
   end
 end

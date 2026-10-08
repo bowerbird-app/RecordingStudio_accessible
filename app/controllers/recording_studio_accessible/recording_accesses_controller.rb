@@ -59,7 +59,7 @@ module RecordingStudioAccessible
       )
 
       if result.success?
-        redirect_to recording_access_index_redirect_path, notice: "Access removed."
+        redirect_to recording_access_index_redirect_path, notice: Copy.t("flashes.access_removed")
       else
         head :unprocessable_entity
       end
@@ -148,9 +148,9 @@ module RecordingStudioAccessible
       if configuration.respond_to?(:missing_actor_error_for_email)
         configuration.missing_actor_error_for_email(email: email)
       elsif email.blank?
-        "User is required"
+        Copy.t("errors.user_required")
       else
-        "User with email #{email} was not found"
+        Copy.t("errors.user_not_found", email: email)
       end
     end
 
@@ -210,7 +210,7 @@ module RecordingStudioAccessible
         redirect_options[:alert] = actor_resolution.alert if actor_resolution.alert.present?
         redirect_to safe_missing_actor_redirect_location(actor_resolution.location), **redirect_options
       when :invited
-        redirect_options = { notice: actor_resolution.notice.presence || "Invitation sent." }
+        redirect_options = { notice: actor_resolution.notice.presence || Copy.t("flashes.invitation_sent") }
         redirect_to recording_access_index_redirect_path, **redirect_options
       else
         @form_errors = Array(actor_resolution.error.presence || missing_actor_error)
@@ -317,7 +317,7 @@ module RecordingStudioAccessible
     end
 
     def recordable_label_for(recordable)
-      return "Unknown" unless recordable
+      return Copy.t("errors.unknown") unless recordable
       return recordable.recordable_name if recordable.respond_to?(:recordable_name)
       return recordable.name if recordable.respond_to?(:name)
       return recordable.title if recordable.respond_to?(:title)

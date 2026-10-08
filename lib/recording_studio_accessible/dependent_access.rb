@@ -53,16 +53,18 @@ module RecordingStudioAccessible
       def grant_error(target_recording:, role:, depends_on:, dependent_recording: nil)
         return if depends_on.nil?
 
-        return MISSING_COLUMN_MESSAGE unless column_available?
+        return Copy.t("errors.dependent_missing_column") unless column_available?
 
         manager = resolve_recording(depends_on)
-        return MISSING_MANAGER_MESSAGE unless manager
-        return MISSING_MANAGER_MESSAGE unless active_recording?(manager)
-        return NOT_ACCESS_SAME_ROOT_MESSAGE unless access_recording?(manager)
-        return NOT_ACCESS_SAME_ROOT_MESSAGE unless same_root?(target_recording, manager)
-        return CYCLE_MESSAGE if cyclic_dependency?(depends_on: manager, dependent_recording: dependent_recording)
-        return UNRANKED_ROLE_MESSAGE unless ranked_for_comparison?(role, manager)
-        return ROLE_EXCEEDS_MESSAGE unless role_capped?(dependent_role: role, manager: manager)
+        return Copy.t("errors.dependent_missing_manager") unless manager
+        return Copy.t("errors.dependent_missing_manager") unless active_recording?(manager)
+        return Copy.t("errors.dependent_not_same_root") unless access_recording?(manager)
+        return Copy.t("errors.dependent_not_same_root") unless same_root?(target_recording, manager)
+        if cyclic_dependency?(depends_on: manager, dependent_recording: dependent_recording)
+          return Copy.t("errors.dependent_cycle")
+        end
+        return Copy.t("errors.dependent_unranked_role") unless ranked_for_comparison?(role, manager)
+        return Copy.t("errors.dependent_role_exceeds") unless role_capped?(dependent_role: role, manager: manager)
 
         nil
       end

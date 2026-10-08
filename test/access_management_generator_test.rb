@@ -93,7 +93,7 @@ class AccessManagementGeneratorTest < Minitest::Test
 
       assert File.exist?(html_template)
       assert File.exist?(text_template)
-      assert_includes File.read(html_template), "Open the shared item"
+      assert_includes File.read(html_template), 'accessible_t("mailers.granted.open"'
     end
   end
 

@@ -169,6 +169,10 @@ module RecordingStudioAccessible
 
         record.to_global_id.to_s
       end
+
+      def copy(...)
+        RecordingStudioAccessible::Copy.t(...)
+      end
     end
   end
 end

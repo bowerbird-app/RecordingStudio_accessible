@@ -21,13 +21,13 @@ module RecordingStudioAccessible
           manager_actor: manager,
           raw_token: raw_token
         )
-        return failure("Invitation could not be sent.") unless deliver_invitation(manager, raw_token)
-        return failure("Invitation could not be saved") unless delivered_token_current?(raw_token)
+        return failure(copy("errors.invitation_not_sent")) unless deliver_invitation(manager, raw_token)
+        return failure(copy("errors.invitation_not_saved")) unless delivered_token_current?(raw_token)
 
         invited_result(invitation)
       rescue ActiveRecord::RecordNotUnique
         existing = unclosed_invitation
-        return failure("Invitation could not be saved") unless existing
+        return failure(copy("errors.invitation_not_saved")) unless existing
 
         resend_unclosed(existing, manager)
       end
@@ -35,7 +35,7 @@ module RecordingStudioAccessible
       def resend_unclosed(invitation, manager)
         raw_token = fresh_invitation_token
         expected_digest = invitation.token_digest
-        return failure("Invitation could not be sent.") unless deliver_invitation(manager, raw_token)
+        return failure(copy("errors.invitation_not_sent")) unless deliver_invitation(manager, raw_token)
 
         committed = AccessInvitation.commit_resend!(
           invitation: invitation,
@@ -44,7 +44,7 @@ module RecordingStudioAccessible
           manager_actor: manager,
           raw_token: raw_token
         )
-        return failure("Invitation could not be saved") unless committed
+        return failure(copy("errors.invitation_not_saved")) unless committed
 
         invited_result(invitation)
       end

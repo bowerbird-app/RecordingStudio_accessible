@@ -1,10 +1,16 @@
+<%
+  html_attributes = accessible_document_attributes(
+    "data-theme" => "rounded",
+    class: "h-full overflow-hidden overscroll-none"
+  )
+%>
 <!DOCTYPE html>
-<html class="h-full overflow-hidden overscroll-none" data-theme="rounded">
+<html <%= tag.attributes(html_attributes) %>>
   <head>
-    <title><%= content_for(:title) || "Recording Studio Accessible" %></title>
+    <title><%= content_for(:title) || accessible_t("layout.title") %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Recording Studio Accessible">
+    <meta name="application-name" content="<%= accessible_t("layout.title") %>">
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>

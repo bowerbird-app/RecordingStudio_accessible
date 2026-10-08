@@ -1,0 +1,238 @@
+# Dummy-only host translations. The engine ships English defaults; other
+# languages belong to the host. This file covers every engine
+# recording_studio.accessible key plus dummy chrome and Flatpack kit copy.
+fr:
+  date:
+    formats:
+      default: "%d/%m/%Y"
+      long: "%d %B %Y"
+      short: "%d %b"
+    abbr_month_names:
+      - ~
+      - janv.
+      - févr.
+      - mars
+      - avr.
+      - mai
+      - juin
+      - juil.
+      - août
+      - sept.
+      - oct.
+      - nov.
+      - déc.
+    month_names:
+      - ~
+      - janvier
+      - février
+      - mars
+      - avril
+      - mai
+      - juin
+      - juillet
+      - août
+      - septembre
+      - octobre
+      - novembre
+      - décembre
+  recording_studio:
+    internationalization:
+      selector:
+        label: Langue
+        submit: Changer de langue
+    accessible:
+      layout:
+        title: "Recording Studio Accessible"
+      roles:
+        view: "Voir"
+        edit: "Modifier"
+        admin: "Admin"
+      invitations:
+        title: "Invitation"
+        email: "E-mail %{email}"
+        role: "Rôle %{role}"
+        recording: "Élément %{recording}"
+        state: "État %{state}"
+        sign_in_with_email: "Connectez-vous avec %{email} pour accepter cette invitation."
+        accept: "Accepter l’invitation"
+        states:
+          pending: "en attente"
+          accepted: "acceptée"
+          revoked: "révoquée"
+          expired: "expirée"
+      manage:
+        title: "Gérer l’accès"
+        add: "Ajouter un accès"
+        add_access: "+ Accès"
+        people: "Personnes avec accès"
+        empty_title: "Pas encore d’accès direct"
+        empty_subtitle: "Ajoutez quelqu’un pour lui donner accès."
+        inherited_title: "Autres personnes avec accès"
+        inherited_subtitle: "Accès accordé ailleurs"
+        pending_invitation: "Invitation en attente"
+        expired: "Expirée"
+        resend: "Renvoyer"
+        cancel_invitation: "Annuler l’invitation"
+        remove_access: "Retirer l’accès"
+        edit: "Modifier"
+        manage_access: "Gérer l’accès"
+        invitation_actions: "Actions d’invitation"
+        access_actions: "Actions d’accès"
+        access_point_actions: "Actions du point d’accès"
+        columns:
+          who: "Qui"
+          type: "Type"
+          role: "Rôle"
+          actions: "Actions"
+          access_point: "Point d’accès"
+      form:
+        new_title: "Nouvel accès"
+        edit_title: "Modifier l’accès"
+        create: "Créer l’accès"
+        update: "Mettre à jour l’accès"
+        user_email: "E-mail de la personne"
+        email_placeholder: "email@example.com"
+        role: "Rôle"
+        recording: "Élément"
+        recording_inside: "%{type} dans %{root}"
+      flashes:
+        access_granted: "Accès accordé."
+        invitation_sent: "Invitation envoyée."
+        invitation_revoked: "Invitation révoquée."
+        access_removed: "Accès retiré."
+        invitation_already_accepted: "Invitation déjà acceptée."
+        sign_in_to_accept: "Connectez-vous pour accepter cette invitation"
+      errors:
+        invitation_not_found: "Invitation introuvable"
+        invitation_wrong_email: "Cette invitation a été envoyée à une autre adresse e-mail"
+        invitation_expired: "L’invitation a expiré"
+        invitation_revoked: "L’invitation a été révoquée"
+        invitation_already_accepted: "L’invitation a déjà été acceptée"
+        invitation_not_sent: "L’invitation n’a pas pu être envoyée."
+        invitation_not_saved: "L’invitation n’a pas pu être enregistrée"
+        not_authorized: "Vous n’êtes pas autorisé à gérer l’accès"
+        recording_required: "L’élément est obligatoire"
+        actor_required: "La personne est obligatoire"
+        access_recording_required: "L’accès est obligatoire"
+        access_recording_invalid: "L’accès n’est pas valide"
+        role_invalid: "Le rôle n’est pas valide"
+        actor_type_not_allowed: "Ce type de personne n’est pas autorisé pour l’accès"
+        email_required: "L’e-mail est obligatoire"
+        email_invalid: "L’e-mail n’est pas valide"
+        user_required: "Une personne est obligatoire"
+        user_not_found: "Aucune personne avec l’e-mail %{email} n’a été trouvée"
+        unknown_actor: "Personne inconnue"
+        unknown: "Inconnu"
+        direct_access_not_enabled: "L’accès direct n’est pas activé pour cet élément"
+        grant_denied: "Accordez l’accès sur les objets sous une racine partagée, pas sur la racine partagée elle-même."
+        email_not_normalized: "doit être normalisé"
+        cannot_change: "ne peut pas être modifié"
+        accepted_and_revoked: "ne peut pas être à la fois acceptée et révoquée"
+        dependent_missing_column: "Les accès dépendants nécessitent la colonne depends_on_recording_id"
+        dependent_missing_manager: "L’accès gestionnaire est manquant ou inactif"
+        dependent_not_same_root: "Le gestionnaire doit être un accès sur la même racine"
+        dependent_role_exceeds: "Le rôle dépendant ne peut pas dépasser le rôle du gestionnaire"
+        dependent_unranked_role: "Un accès dépendant nécessite un rôle classé"
+        dependent_cycle: "Un accès dépendant ne peut pas dépendre de lui-même ni former un cycle"
+      mailers:
+        someone: "Quelqu’un"
+        hello: "Bonjour %{email},"
+        hello_there: "Bonjour,"
+        invitation:
+          subject: "Vous avez été invité"
+          subject_with_recording: "Vous avez été invité à %{recording}"
+          body: "%{inviter} vous a invité à un accès %{role} à %{recording}."
+          body_without_recording: "%{inviter} vous a invité à un accès %{role}."
+          body_html: "%{inviter} vous a invité à un accès <strong>%{role}</strong> à %{recording}."
+          body_html_without_recording: "%{inviter} vous a invité à un accès <strong>%{role}</strong>."
+          accept: "Accepter l’invitation"
+          accept_with_url: "Accepter l’invitation : %{url}"
+        granted:
+          subject: "On vous a donné accès"
+          subject_with_recording: "On vous a donné accès à %{recording}"
+          body: "%{granter} vous a accordé un accès %{role} à %{recording}."
+          body_html: "%{granter} vous a accordé un accès <strong>%{role}</strong> à %{recording}."
+          body_without_recording: "%{granter} vous a accordé un accès %{role}."
+          body_html_without_recording: "%{granter} vous a accordé un accès <strong>%{role}</strong>."
+          open: "Ouvrir l’élément partagé"
+          open_with_url: "Ouvrir l’élément partagé : %{url}"
+  dummy:
+    nav:
+      toggle_sidebar: "Afficher le menu"
+  flatpack:
+    chat:
+      placeholder: Écrire un message…
+      send: Envoyer
+      back: Retour
+      back_to_conversations: Retour aux conversations
+      loading_older: Chargement des messages plus anciens…
+      jump_to_latest: Aller au plus récent
+      jump_to_latest_message: Aller au message le plus récent
+      sending: Envoi…
+      failed: Échec
+      edit: Modifier
+      delete: Supprimer
+      typing: Quelqu’un écrit
+      outgoing_images: Images envoyées
+      incoming_images: Images reçues
+      image: Image
+      you: Vous
+      attachment: Pièce jointe
+    timestamp:
+      fallback: "-"
+      in: Dans %{distance}
+      ago: "il y a %{distance}"
+      just_now: À l’instant
+      a_min_ago: il y a 1 min
+      minutes_ago: "il y a %{count} minutes"
+      hours_ago: "il y a %{count} heures"
+      yesterday: Hier
+      days_ago: "il y a %{count} jours"
+      weeks_ago: "il y a %{count} semaines"
+      months_ago: "il y a %{count} mois"
+      short_a_min_ago: il y a 1 min
+      short_min_ago: "il y a %{count} min"
+      short_hr_ago: "il y a %{count} h"
+      short_yesterday: il y a 1 j
+      short_d_ago: "il y a %{count} j"
+      short_wk_ago: "il y a %{count} sem"
+      short_mo_ago: "il y a %{count} mois"
+    page_nav:
+      back: Retour
+      close: Fermer
+      previous: Page précédente
+      label: Navigation de page
+    search:
+      placeholder: Rechercher…
+      no_results: Aucun résultat
+      clear: Effacer la recherche
+      searching: Recherche…
+      result_fallback: Résultat
+    search_input:
+      clear: Effacer la recherche
+    select:
+      placeholder: Choisir
+      search: Rechercher…
+      remove: Retirer %{label}
+      type_to_search: Tapez au moins %{count} caractères
+      searching: Recherche…
+      empty: Aucune option
+    common:
+      close: Fermer
+      search: Rechercher
+      previous: Préc.
+      next: Suiv.
+      back: Retour
+      save: Enregistrer
+    modal:
+      close: Fermer
+    alert:
+      dismiss: Fermer
+    button:
+      loading: Chargement
+    notification:
+      bell: Notifications
+      empty: Aucune notification récente
+      fallback: Notification
+      see_all: Voir toutes les notifications
+      overflow: 9+

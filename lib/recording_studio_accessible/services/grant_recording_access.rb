@@ -32,8 +32,8 @@ module RecordingStudioAccessible
       end
 
       def validate_request
-        return failure("Recording is required") unless @recording
-        return failure("Actor is required") unless @actor
+        return failure(copy("errors.recording_required")) unless @recording
+        return failure(copy("errors.actor_required")) unless @actor
 
         access_validation = validate_access_management_target!(
           @recording,
@@ -41,8 +41,8 @@ module RecordingStudioAccessible
           controller: @controller
         )
         return access_validation unless access_validation == true
-        return failure("Actor type is not allowed for access") unless allowed_access_actor_type?
-        return failure("Role is invalid") unless RecordingStudioAccessible.role_valid_for?(@recording, @role)
+        return failure(copy("errors.actor_type_not_allowed")) unless allowed_access_actor_type?
+        return failure(copy("errors.role_invalid")) unless RecordingStudioAccessible.role_valid_for?(@recording, @role)
 
         dependency_result = validate_dependent_grant
         return dependency_result unless dependency_result == true

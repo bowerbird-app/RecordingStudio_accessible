@@ -12,7 +12,7 @@ module RecordingStudioAccessible
           controller: controller
         )
 
-        failure("Not authorized to manage access")
+        failure(Copy.t("errors.not_authorized"))
       end
 
       def effective_manager_actor(manager_actor:, controller: nil)
@@ -85,7 +85,7 @@ module RecordingStudioAccessible
       def reject_shared_root_target!(recording)
         return true unless RecordingStudioAccessible::SharedRootAccess.target?(recording)
 
-        failure(RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE)
+        failure(Copy.t("errors.grant_denied"))
       end
 
       def validate_access_management_target!(recording, manager_actor:, controller: nil)
@@ -98,7 +98,7 @@ module RecordingStudioAccessible
 
         shared_root_result = reject_shared_root_target!(recording)
         return shared_root_result unless shared_root_result == true
-        return failure("Direct access is not enabled for this recording") unless access_management_allowed?(recording)
+        return failure(Copy.t("errors.direct_access_not_enabled")) unless access_management_allowed?(recording)
 
         true
       end

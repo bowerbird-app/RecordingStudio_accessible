@@ -16,9 +16,12 @@
   <% end %>
 
   <% nav.center do %>
-    <% if user_signed_in? %>
-      <%= recording_studio_root_switch_dropdown(style: :ghost, size: :md) %>
-    <% end %>
+    <div class="flex items-center gap-2">
+      <%= dummy_language_selector %>
+      <% if user_signed_in? %>
+        <%= recording_studio_root_switch_dropdown(style: :ghost, size: :md) %>
+      <% end %>
+    </div>
   <% end %>
 
   <% nav.right do %>

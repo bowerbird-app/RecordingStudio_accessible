@@ -36,8 +36,8 @@ module RecordingStudioAccessible
       end
 
       def validate_update_request
-        return failure("Recording is required") unless @recording
-        return failure("Access recording is required") unless @access_recording
+        return failure(copy("errors.recording_required")) unless @recording
+        return failure(copy("errors.access_recording_required")) unless @access_recording
 
         access_validation = validate_access_management_target!(
           @recording,
@@ -45,9 +45,9 @@ module RecordingStudioAccessible
           controller: @controller
         )
         return access_validation unless access_validation == true
-        return failure("Access recording is invalid") unless valid_access_recording_for_parent?(recording: @recording,
-                                                                                                access_recording: @access_recording)
-        return failure("Role is invalid") unless valid_role?
+        return failure(copy("errors.access_recording_invalid")) unless valid_access_recording_for_parent?(recording: @recording,
+                                                                                                          access_recording: @access_recording)
+        return failure(copy("errors.role_invalid")) unless valid_role?
 
         dependency_result = validate_dependent_grant
         return dependency_result unless dependency_result == true

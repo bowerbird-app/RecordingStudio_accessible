@@ -1,8 +1,8 @@
 <%= render "form",
-           title: "New access",
+           title: accessible_t("form.new_title"),
            form_url: recording_access_collection_path_with_navigation(@recording),
            form_method: :post,
-           submit_label: "Create access",
+           submit_label: accessible_t("form.create"),
            show_actor_email_input: true,
            show_recording_card: false,
            wrap_form_card: false %>

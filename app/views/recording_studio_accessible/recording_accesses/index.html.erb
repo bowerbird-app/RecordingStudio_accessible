@@ -4,14 +4,14 @@
 ) %>
 
 <%= render FlatPack::PageTitle::Component.new(
-  title: "Manage access",
+  title: accessible_t("manage.title"),
   subtitle: @recording_label,
   variant: :h1
 ) %>
 
 <div class="mb-6 flex flex-wrap items-center gap-3">
   <%= render FlatPack::Button::Component.new(
-    text: "Add access",
+    text: accessible_t("manage.add"),
     style: :primary,
     size: :md,
     href: new_recording_access_path_with_back_url(@recording)
@@ -25,13 +25,13 @@
 <% if people_rows.any? %>
   <div class="grid gap-4">
     <%= render FlatPack::SectionTitle::Component.new(
-      title: "People with access",
+      title: accessible_t("manage.people"),
       anchor_link: true,
       anchor_id: "people-with-access"
     ) %>
 
     <%= render FlatPack::Table::Component.new(data: people_rows) do |table| %>
-      <% table.column(title: "Who") do |row| %>
+      <% table.column(title: accessible_t("manage.columns.who")) do |row| %>
         <% if row[:kind] == :invitation %>
           <% pending_invitation_person_cell(row) %>
         <% else %>
@@ -39,7 +39,7 @@
         <% end %>
       <% end %>
       <% if show_actor_type_column %>
-        <% table.column(title: "Type") do |row| %>
+        <% table.column(title: accessible_t("manage.columns.type")) do |row| %>
           <% if row[:kind] == :invitation %>
             <% content_tag(:span, "", class: "text-sm text-[var(--surface-content-color)]") %>
           <% else %>
@@ -47,14 +47,14 @@
           <% end %>
         <% end %>
       <% end %>
-      <% table.column(title: "Role") do |row| %>
+      <% table.column(title: accessible_t("manage.columns.role")) do |row| %>
         <% if row[:kind] == :invitation %>
           <% pending_invitation_role_cell(row) %>
         <% else %>
           <% access_role_cell(row) %>
         <% end %>
       <% end %>
-      <% table.column(title: "Actions") do |row| %>
+      <% table.column(title: accessible_t("manage.columns.actions")) do |row| %>
         <% if row[:kind] == :invitation %>
           <% pending_invitation_actions_cell(@recording, row) %>
         <% else %>
@@ -67,8 +67,8 @@
   <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
     <% card.body(class: "grid gap-3 justify-items-start") do %>
       <%= render FlatPack::SectionTitle::Component.new(
-        title: "No direct access yet",
-        subtitle: "Add someone to give them access.",
+        title: accessible_t("manage.empty_title"),
+        subtitle: accessible_t("manage.empty_subtitle"),
         anchor_link: true,
         anchor_id: "no-direct-grants"
       ) %>
@@ -79,20 +79,20 @@
 <% if @inherited_access_rows.any? %>
   <div class="mt-8 grid gap-4">
     <%= render FlatPack::SectionTitle::Component.new(
-      title: "Other people with access",
-      subtitle: "Access granted elsewhere",
+      title: accessible_t("manage.inherited_title"),
+      subtitle: accessible_t("manage.inherited_subtitle"),
       anchor_link: true,
       anchor_id: "other-people-with-access"
     ) %>
 
     <%= render FlatPack::Table::Component.new(data: @inherited_access_rows) do |table| %>
-      <% table.column(title: "Who") { |row| access_person_cell(row) } %>
+      <% table.column(title: accessible_t("manage.columns.who")) { |row| access_person_cell(row) } %>
       <% if show_actor_type_column %>
-        <% table.column(title: "Type") { |row| access_actor_type_cell(row) } %>
+        <% table.column(title: accessible_t("manage.columns.type")) { |row| access_actor_type_cell(row) } %>
       <% end %>
-      <% table.column(title: "Access point") { |row| inherited_access_source_cell(row) } %>
-      <% table.column(title: "Role") { |row| inherited_access_source_role_cell(row) } %>
-      <% table.column(title: "Actions") { |row| inherited_access_actions_cell(@recording, row) } %>
+      <% table.column(title: accessible_t("manage.columns.access_point")) { |row| inherited_access_source_cell(row) } %>
+      <% table.column(title: accessible_t("manage.columns.role")) { |row| inherited_access_source_role_cell(row) } %>
+      <% table.column(title: accessible_t("manage.columns.actions")) { |row| inherited_access_actions_cell(@recording, row) } %>
     <% end %>
   </div>
 <% end %>

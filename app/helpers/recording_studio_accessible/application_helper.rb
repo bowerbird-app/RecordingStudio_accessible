@@ -2,6 +2,8 @@
 
 module RecordingStudioAccessible
   module ApplicationHelper
+    include RecordingStudioAccessible::CopyHelper
+
     def recording_studio_accessible_flash_style(level)
       case level.to_s
       when "notice"

@@ -1,6 +1,14 @@
-Hello <%%= @actor.respond_to?(:email) ? @actor.email : "there" %>,
+<% if @greeting_email.present? %>
+<%= accessible_t("mailers.hello", email: @greeting_email) %>
+<% else %>
+<%= accessible_t("mailers.hello_there") %>
+<% end %>
 
-<%%= @manager_actor.present? ? @manager_actor.email : "Someone" %> granted you <%%= @role.humanize.downcase %> access.
-<%% if @access_url.present? %>
-Open the shared item: <%%= @access_url %>
-<%% end %>
+<% if @recording_label.present? %>
+<%= accessible_t("mailers.granted.body", granter: @manager_actor_display_name, role: @role_label, recording: @recording_label) %>
+<% else %>
+<%= accessible_t("mailers.granted.body_without_recording", granter: @manager_actor_display_name, role: @role_label) %>
+<% end %>
+<% if @access_url.present? %>
+<%= accessible_t("mailers.granted.open_with_url", url: @access_url) %>
+<% end %>
