@@ -6,6 +6,8 @@ require "yaml"
 class LocalesTest < Minitest::Test
   Copy = RecordingStudioAccessible::Copy
 
+  # I18n template tokens use %{name}; RuboCop prefers %<name>s for Kernel#sprintf.
+  # rubocop:disable Style/FormatStringToken
   ACTOR_ACCESS_POINTS_KEYS = {
     "title" => "%{actor} access points",
     "workspace" => "Workspace: %{name}",
@@ -15,6 +17,7 @@ class LocalesTest < Minitest::Test
     "empty_title" => "No access recordings",
     "empty_subtitle" => "%{actor_type} has no direct access recordings in this workspace"
   }.freeze
+  # rubocop:enable Style/FormatStringToken
 
   HOME_KEYS = {
     "index.title" => "Recording Studio Accessible Demo",
@@ -88,6 +91,11 @@ class LocalesTest < Minitest::Test
       assert_equal "Unknown actor", Copy.t("errors.unknown_actor")
       assert_equal "View", Copy.role_name("view")
       assert_equal "pending", Copy.invitation_state("pending")
+    end
+  end
+
+  def test_english_actor_access_points_and_home_copy_is_unchanged
+    I18n.with_locale(:en) do
       assert_equal "admin@example.com access points",
                    Copy.t("actor_access_points.title", actor: "admin@example.com")
       assert_equal "Workspace: Demo", Copy.t("actor_access_points.workspace", name: "Demo")
