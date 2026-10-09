@@ -156,6 +156,54 @@ fr:
           body_html_without_recording: "%{granter} vous a accordé un accès <strong>%{role}</strong>."
           open: "Ouvrir l’élément partagé"
           open_with_url: "Ouvrir l’élément partagé : %{url}"
+      actor_access_points:
+        title: "Points d’accès de %{actor}"
+        workspace: "Espace de travail : %{name}"
+        columns:
+          access_point: "Point d’accès"
+          role: "Rôle"
+          access_recording: "Enregistrement d’accès"
+        empty_title: "Aucun enregistrement d’accès"
+        empty_subtitle: "%{actor_type} n’a aucun enregistrement d’accès direct dans cet espace de travail"
+      home:
+        index:
+          title: "Démo Recording Studio Accessible"
+          subtitle: "Addon optionnel de contrôle d’accès"
+          snapshot_title: "Instantané de contrôle d’accès"
+          snapshot_subtitle: "Démonstration de l’accès pour l’espace de travail amorcé"
+          integration_mode: "Mode d’intégration :"
+          workspace: "Espace de travail :"
+          root_recording: "Enregistrement racine :"
+          not_available: "Non disponible"
+        overview:
+          title: "Aperçu"
+          subtitle: "Comment l’accès est structuré"
+          add_access_title: "Ajouter un accès à quelque chose"
+          add_access_subtitle: "L’accès est accordé en ajoutant un enregistrement enfant avec un access recordable."
+        methods:
+          title: "Méthodes"
+          subtitle: "API d’accès fournies par ce gem"
+        user_invites:
+          title: "Invitations utilisateur"
+          subtitle: "Comment les e-mails manquants sont résolus lors des octrois d’accès"
+          missing_user_title: "Que se passe-t-il quand un utilisateur est introuvable"
+          default_badge: "Par défaut"
+          default_body: "Si vous ne faites rien, un e-mail inconnu reste non résolu. La page d’accès enregistre une AccessInvitation et envoie l’invitation. Elle ne crée pas d’utilisateur."
+          dummy_badge: "App de démo"
+          dummy_body: "Cette app de démo laisse l’invitation en place jusqu’à ce que la page d’inscription crée l’utilisateur et accepte."
+          statuses_title: "Statuts que vous pouvez renvoyer"
+          setup_patterns_title: "Modèles de configuration"
+          setup_patterns_subtitle: "Choisissez une forme de gestionnaire selon ce que votre app hôte doit faire ensuite"
+        email_template:
+          title: "Modèle d’e-mail"
+          subtitle: "Message par défaut envoyé lorsque l’accès est accordé"
+          message_details_title: "Détails du message"
+          message_details_subtitle: "En-têtes utilisés par le mailer par défaut"
+          html_preview_title: "Aperçu HTML"
+          html_preview_subtitle: "Rendu depuis le modèle d’e-mail HTML par défaut"
+          html_preview_iframe: "Aperçu de l’e-mail HTML"
+          text_preview_title: "Aperçu texte"
+          text_preview_subtitle: "Repli en texte brut depuis le modèle d’e-mail par défaut"
   dummy:
     nav:
       toggle_sidebar: "Afficher le menu"

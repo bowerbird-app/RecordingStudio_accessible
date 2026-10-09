@@ -1,14 +1,14 @@
 <div class="mx-auto w-full max-w-6xl">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "User invites",
-    subtitle: "How missing emails are resolved during access grants",
+    title: accessible_t("home.user_invites.title"),
+    subtitle: accessible_t("home.user_invites.subtitle"),
     variant: :h1
   ) %>
 
   <div class="mt-6 grid gap-8">
     <section>
       <%= render FlatPack::SectionTitle::Component.new(
-        title: "What happens when a user is not found",
+        title: accessible_t("home.user_invites.missing_user_title"),
         anchor_link: true,
         anchor_id: "missing-user"
       ) %>
@@ -16,19 +16,18 @@
       <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md, align: :start, class: "w-full") do %>
         <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
           <% card.body(class: "grid gap-3 justify-items-start") do %>
-            <%= render FlatPack::Badge::Component.new(text: "Default", style: :default, size: :sm) %>
+            <%= render FlatPack::Badge::Component.new(text: accessible_t("home.user_invites.default_badge"), style: :default, size: :sm) %>
             <p class="text-base leading-7 text-[var(--surface-content-color)]">
-              If you do nothing, an unknown email returns unresolved. The access page stores an
-              AccessInvitation and sends the invitation. It does not create a user.
+              <%= accessible_t("home.user_invites.default_body") %>
             </p>
           <% end %>
         <% end %>
 
         <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
           <% card.body(class: "grid gap-3 justify-items-start") do %>
-            <%= render FlatPack::Badge::Component.new(text: "Dummy app", style: :info, size: :sm) %>
+            <%= render FlatPack::Badge::Component.new(text: accessible_t("home.user_invites.dummy_badge"), style: :info, size: :sm) %>
             <p class="text-base leading-7 text-[var(--surface-content-color)]">
-              This dummy app leaves the invitation in place until the signup page creates the user and accepts.
+              <%= accessible_t("home.user_invites.dummy_body") %>
             </p>
           <% end %>
         <% end %>
@@ -37,7 +36,7 @@
 
     <section>
       <%= render FlatPack::SectionTitle::Component.new(
-        title: "Statuses you can return",
+        title: accessible_t("home.user_invites.statuses_title"),
         anchor_link: true,
         anchor_id: "statuses"
       ) %>
@@ -56,8 +55,8 @@
 
     <section>
       <%= render FlatPack::SectionTitle::Component.new(
-        title: "Setup patterns",
-        subtitle: "Choose one handler shape based on what your host app should do next",
+        title: accessible_t("home.user_invites.setup_patterns_title"),
+        subtitle: accessible_t("home.user_invites.setup_patterns_subtitle"),
         anchor_link: true,
         anchor_id: "setup-patterns"
       ) %>

@@ -120,7 +120,7 @@ module RecordingStudioAccessible
     end
 
     def recordable_label_for(recordable)
-      return "Unknown" unless recordable
+      return Copy.t("errors.unknown") unless recordable
       return recordable.recordable_name if recordable.respond_to?(:recordable_name)
       return recordable.name if recordable.respond_to?(:name)
       return recordable.title if recordable.respond_to?(:title)

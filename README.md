@@ -87,6 +87,14 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.13.0
+
+Actor access points and the engine demo/docs home pages now use Rails I18n under `recording_studio.accessible.actor_access_points.*` and `recording_studio.accessible.home.*`. English output is unchanged.
+
+1. Install Accessible `0.13.0`. No migration.
+2. Copy the new keys into host locale files when you translate those screens.
+3. Controller-supplied home demo examples, generator text, and developer `ArgumentError`s stay English.
+
 #### Upgrading to 0.12.0
 
 Customer invitation, mail, and manage-access copy now follows Rails I18n. The gem still ships English only.
@@ -1143,11 +1151,13 @@ The gem ships **English only** in `config/locales/en.yml`. Keys nest under `reco
 
 ```ruby
 t("recording_studio.accessible.manage.title")
+t("recording_studio.accessible.actor_access_points.title", actor: label)
+t("recording_studio.accessible.home.overview.title")
 t("recording_studio.accessible.flashes.invitation_sent")
 t("recording_studio.accessible.mailers.invitation.subject_with_recording", recording: name)
 ```
 
-Hosts own other languages. Copy `recording_studio.accessible.*` into `config/locales/<locale>.yml` and list that locale in `config.i18n.available_locales`. Do not add `RecordingStudio_Internationalization` as a dependency of this gem — it is optional on the host (the dummy uses it to switch English/French).
+Customer invitation and manage-access screens, actor access points, and the engine demo/docs home pages use these keys. Developer examples passed from `HomeController` stay English. Hosts own other languages. Copy `recording_studio.accessible.*` into `config/locales/<locale>.yml` and list that locale in `config.i18n.available_locales`. Do not add `RecordingStudio_Internationalization` as a dependency of this gem — it is optional on the host (the dummy uses it to switch English/French).
 
 Config callables still win. If you set `access_invitation_subject`, `access_management_access_granted_subject`, `access_management_actor_label`, or a missing-actor error string, that copy is used instead of the locale default.
 
@@ -1157,7 +1167,7 @@ Invitation and access-granted mail render inside `I18n.with_locale`. The default
 
 Stored names stay data: recording titles, people names, emails, and type names are not translated. Mailer bodies are whole-sentence keys with interpolation so translators see the full sentence.
 
-Staff `actor_access_points` screens, the engine demo/docs pages, generator text, and developer-facing errors stay English.
+Generator CLI text, developer-facing `ArgumentError`s, and controller-supplied demo examples on the home docs pages stay English.
 
 Add [Recording Studio Internationalization](https://github.com/bowerbird-app/RecordingStudio_Internationalization) on the host when you want a language selector.
 

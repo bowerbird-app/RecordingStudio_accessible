@@ -6,10 +6,65 @@ require "yaml"
 class LocalesTest < Minitest::Test
   Copy = RecordingStudioAccessible::Copy
 
+  # I18n template tokens use %{name}; RuboCop prefers %<name>s for Kernel#sprintf.
+  # rubocop:disable Style/FormatStringToken
+  ACTOR_ACCESS_POINTS_KEYS = {
+    "title" => "%{actor} access points",
+    "workspace" => "Workspace: %{name}",
+    "columns.access_point" => "Access point",
+    "columns.role" => "Role",
+    "columns.access_recording" => "Access recording",
+    "empty_title" => "No access recordings",
+    "empty_subtitle" => "%{actor_type} has no direct access recordings in this workspace"
+  }.freeze
+  # rubocop:enable Style/FormatStringToken
+
+  HOME_KEYS = {
+    "index.title" => "Recording Studio Accessible Demo",
+    "index.subtitle" => "Optional access-control addon",
+    "index.snapshot_title" => "Access check snapshot",
+    "index.snapshot_subtitle" => "Demo of how access works for the seeded workspace",
+    "index.integration_mode" => "Integration mode:",
+    "index.workspace" => "Workspace:",
+    "index.root_recording" => "Root recording:",
+    "index.not_available" => "Not available",
+    "overview.title" => "Overview",
+    "overview.subtitle" => "How access is structured",
+    "overview.add_access_title" => "Add access to something",
+    "overview.add_access_subtitle" => "Access is granted by adding a child recording using an access recordable.",
+    "methods.title" => "Methods",
+    "methods.subtitle" => "Access APIs provided by this gem",
+    "user_invites.title" => "User invites",
+    "user_invites.subtitle" => "How missing emails are resolved during access grants",
+    "user_invites.missing_user_title" => "What happens when a user is not found",
+    "user_invites.default_badge" => "Default",
+    "user_invites.default_body" => "If you do nothing, an unknown email returns unresolved. The access page stores an AccessInvitation and sends the invitation. It does not create a user.",
+    "user_invites.dummy_badge" => "Dummy app",
+    "user_invites.dummy_body" => "This dummy app leaves the invitation in place until the signup page creates the user and accepts.",
+    "user_invites.statuses_title" => "Statuses you can return",
+    "user_invites.setup_patterns_title" => "Setup patterns",
+    "user_invites.setup_patterns_subtitle" => "Choose one handler shape based on what your host app should do next",
+    "email_template.title" => "Email template",
+    "email_template.subtitle" => "Default message sent when access is granted",
+    "email_template.message_details_title" => "Message details",
+    "email_template.message_details_subtitle" => "Headers used by the default mailer",
+    "email_template.html_preview_title" => "HTML preview",
+    "email_template.html_preview_subtitle" => "Rendered from the default HTML email template",
+    "email_template.html_preview_iframe" => "HTML email preview",
+    "email_template.text_preview_title" => "Text preview",
+    "email_template.text_preview_subtitle" => "Plain-text fallback from the default email template"
+  }.freeze
+
   def test_engine_ships_only_english_locale_files
     files = Dir[File.join(engine_locales_dir, "*")].map { |path| File.basename(path) }
 
     assert_equal ["en.yml"], files.sort
+  end
+
+  def test_rails_i18n_load_path_includes_the_gem_english_locale_file
+    locale_path = File.join(engine_locales_dir, "en.yml")
+
+    assert_includes I18n.load_path.map { |path| File.expand_path(path) }, File.expand_path(locale_path)
   end
 
   def test_dummy_french_covers_every_engine_english_key
@@ -39,10 +94,55 @@ class LocalesTest < Minitest::Test
     end
   end
 
+  def test_english_actor_access_points_and_home_copy_is_unchanged
+    I18n.with_locale(:en) do
+      assert_equal "admin@example.com access points",
+                   Copy.t("actor_access_points.title", actor: "admin@example.com")
+      assert_equal "Workspace: Demo", Copy.t("actor_access_points.workspace", name: "Demo")
+      assert_equal "Access point", Copy.t("actor_access_points.columns.access_point")
+      assert_equal "No access recordings", Copy.t("actor_access_points.empty_title")
+      assert_equal "User has no direct access recordings in this workspace",
+                   Copy.t("actor_access_points.empty_subtitle", actor_type: "User")
+      assert_equal "Recording Studio Accessible Demo", Copy.t("home.index.title")
+      assert_equal "Optional access-control addon", Copy.t("home.index.subtitle")
+      assert_equal "Overview", Copy.t("home.overview.title")
+      assert_equal "Methods", Copy.t("home.methods.title")
+      assert_equal "User invites", Copy.t("home.user_invites.title")
+      assert_equal "Email template", Copy.t("home.email_template.title")
+      assert_equal "HTML email preview", Copy.t("home.email_template.html_preview_iframe")
+    end
+  end
+
+  def test_actor_access_points_and_home_keys_resolve_to_literal_english
+    I18n.with_locale(:en) do
+      ACTOR_ACCESS_POINTS_KEYS.each do |key, english|
+        full_key = "recording_studio.accessible.actor_access_points.#{key}"
+        translation = I18n.t(full_key, default: nil)
+
+        assert_equal english, translation, "#{full_key} should resolve to #{english.inspect}"
+      end
+
+      HOME_KEYS.each do |key, english|
+        full_key = "recording_studio.accessible.home.#{key}"
+        translation = I18n.t(full_key, default: nil)
+
+        assert_equal english, translation, "#{full_key} should resolve to #{english.inspect}"
+      end
+    end
+  end
+
   def test_role_names_fall_back_to_humanize_for_custom_roles
     I18n.with_locale(:en) do
       assert_equal "Approver", Copy.role_name("approver")
       assert_equal "Download", Copy.role_name("download")
+    end
+  end
+
+  def test_role_name_guards_nil_and_blank_roles
+    I18n.with_locale(:en) do
+      assert_equal "", Copy.role_name(nil)
+      assert_equal "", Copy.role_name("")
+      refute_kind_of Hash, Copy.role_name(nil)
     end
   end
 
