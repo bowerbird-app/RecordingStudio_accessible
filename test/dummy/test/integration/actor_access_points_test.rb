@@ -63,8 +63,21 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Workspace folder"
     assert_includes @response.body, "View"
     assert_includes @response.body, "Edit"
+    refute_includes @response.body, "No access recordings"
     refute_includes @response.body, "Other folder"
     assert_includes @response.body, 'href="/#workspace-access"'
+  end
+
+  test "actor access points empty-state copy resolves to literal English" do
+    I18n.with_locale(:en) do
+      assert_equal "No access recordings",
+                   RecordingStudioAccessible::Copy.t("actor_access_points.empty_title")
+      assert_equal "User has no direct access recordings in this workspace",
+                   RecordingStudioAccessible::Copy.t(
+                     "actor_access_points.empty_subtitle",
+                     actor_type: "User"
+                   )
+    end
   end
 
   test "actor access points page rejects unsafe anchor_url" do

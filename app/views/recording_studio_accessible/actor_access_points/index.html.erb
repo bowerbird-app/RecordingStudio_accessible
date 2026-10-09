@@ -4,23 +4,23 @@
 ) %>
 
 <%= render FlatPack::PageTitle::Component.new(
-  title: "#{@actor_label} access points",
-  subtitle: "Workspace: #{@workspace.name}",
+  title: accessible_t("actor_access_points.title", actor: @actor_label),
+  subtitle: accessible_t("actor_access_points.workspace", name: @workspace.name),
   variant: :h1
 ) %>
 
 <% if @access_rows.any? %>
   <%= render FlatPack::Table::Component.new(data: @access_rows) do |table| %>
-    <% table.column(title: "Access point") { |row| row[:access_point] } %>
-    <% table.column(title: "Role") { |row| row[:role].to_s.humanize } %>
-    <% table.column(title: "Access recording") { |row| "##{row[:recording_id]}" } %>
+    <% table.column(title: accessible_t("actor_access_points.columns.access_point")) { |row| row[:access_point] } %>
+    <% table.column(title: accessible_t("actor_access_points.columns.role")) { |row| accessible_role_name(row[:role]) } %>
+    <% table.column(title: accessible_t("actor_access_points.columns.access_recording")) { |row| "##{row[:recording_id]}" } %>
   <% end %>
 <% else %>
   <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
     <% card.body(class: "grid gap-3 justify-items-start") do %>
       <%= render FlatPack::SectionTitle::Component.new(
-        title: "No access recordings",
-        subtitle: "#{@actor_type_label} has no direct access recordings in this workspace",
+        title: accessible_t("actor_access_points.empty_title"),
+        subtitle: accessible_t("actor_access_points.empty_subtitle", actor_type: @actor_type_label),
         anchor_link: true,
         anchor_id: "no-access-recordings"
       ) %>

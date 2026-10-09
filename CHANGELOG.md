@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-09
+
+### Added
+- English Rails I18n keys for remaining gem views: actor access points and engine demo/docs home pages (`home.*`, `actor_access_points.*` under `recording_studio.accessible`).
+
+### Changed
+- Actor access points and engine home demo screens resolve static interface copy through `accessible_t` / `Copy.t` (English output unchanged).
+- Actor access point role cells use `accessible_role_name` so role labels follow `recording_studio.accessible.roles.*`.
+
+### Upgrade Notes
+- Install Accessible `0.13.0`. No migration.
+- English hosts need no change. To translate the new screens, copy `recording_studio.accessible.actor_access_points.*` and `recording_studio.accessible.home.*` into host locale files.
+- Engine demo/docs home copy is now overridable; controller-supplied method and invite-status examples stay English developer content.
+
 ## [0.12.0] - 2026-10-08
 
 ### Added
@@ -388,7 +402,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.11.2...v0.12.0
 [0.11.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.11.0...v0.11.1

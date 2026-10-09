@@ -1,14 +1,14 @@
 <div class="mx-auto w-full max-w-6xl">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "Email template",
-    subtitle: "Default message sent when access is granted",
+    title: accessible_t("home.email_template.title"),
+    subtitle: accessible_t("home.email_template.subtitle"),
     variant: :h1
   ) %>
 
   <section class="mt-6 space-y-4">
     <%= render FlatPack::SectionTitle::Component.new(
-      title: "Message details",
-      subtitle: "Headers used by the default mailer",
+      title: accessible_t("home.email_template.message_details_title"),
+      subtitle: accessible_t("home.email_template.message_details_subtitle"),
       anchor_link: true,
       anchor_id: "message-details"
     ) %>
@@ -39,14 +39,14 @@
 
   <section class="mt-10 space-y-4">
     <%= render FlatPack::SectionTitle::Component.new(
-      title: "HTML preview",
-      subtitle: "Rendered from the default HTML email template",
+      title: accessible_t("home.email_template.html_preview_title"),
+      subtitle: accessible_t("home.email_template.html_preview_subtitle"),
       anchor_link: true,
       anchor_id: "html-preview"
     ) %>
 
     <iframe
-      title="HTML email preview"
+      title="<%= accessible_t("home.email_template.html_preview_iframe") %>"
       class="block h-72 w-full rounded-lg border border-(--surface-border-color) bg-white"
       srcdoc="<%= html_escape(@preview_html_body) %>">
     </iframe>
@@ -54,8 +54,8 @@
 
   <section class="mt-10 space-y-4">
       <%= render FlatPack::SectionTitle::Component.new(
-        title: "Text preview",
-        subtitle: "Plain-text fallback from the default email template",
+        title: accessible_t("home.email_template.text_preview_title"),
+        subtitle: accessible_t("home.email_template.text_preview_subtitle"),
         anchor_link: true,
         anchor_id: "text-preview"
       ) %>
