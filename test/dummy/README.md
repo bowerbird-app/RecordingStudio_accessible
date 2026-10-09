@@ -1,6 +1,6 @@
 # Dummy App
 
-This Rails app demonstrates **Recording Studio Accessible** as a separately installed addon on top of RecordingStudio. It pins RecordingStudio `v4.3.0`, RecordingStudioRootSwitchable `v0.5.0`, FlatPack `v0.1.208`, and (dummy only) Recording Studio Internationalization `v0.1.2` so the demo matches the versions this addon is tested with. Layouts use FlatPack's rounded theme (`data-theme="rounded"`). The Tailwind entry scans component sources and does not redeclare FlatPack color or radius tokens. RecordingStudio engine pages include `UsesDefaultLayout`. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `config/locales/fr.yml`. The engine does not ship French.
+This Rails app demonstrates **Recording Studio Accessible** as a separately installed addon on top of RecordingStudio. It pins RecordingStudio `v4.4.0`, RecordingStudioRootSwitchable `v0.5.0`, FlatPack `v0.1.208`, and (dummy only) Recording Studio Internationalization `v0.1.2` so the demo matches the versions this addon is tested with. Layouts use FlatPack's rounded theme (`data-theme="rounded"`). The Tailwind entry scans component sources and does not redeclare FlatPack color or radius tokens. RecordingStudio engine pages include `UsesDefaultLayout`. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `config/locales/fr.yml`. The engine does not ship French.
 
 ## What it proves
 
