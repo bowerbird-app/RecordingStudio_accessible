@@ -104,6 +104,8 @@ Customer invitation, mail, and manage-access copy now follows Rails I18n. The ge
 3. Leave config callables that set subjects, actor labels, or missing-actor errors as they are. A host-supplied string still wins over the locale default.
 4. Optional: set `config.access_notification_locale` to a locale or a callable if invitation and access-granted mail should not use the current request locale.
 
+Staff actor-access-point screens, demo/docs pages, generator text, and developer `ArgumentError`s stay English.
+
 #### Upgrading to 0.11.0
 
 Direct grants can use role names declared on that recordable. The default list is still `view`, `edit`, and `admin`. Existing `authorized?` checks keep that hierarchy.

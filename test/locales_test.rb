@@ -138,6 +138,14 @@ class LocalesTest < Minitest::Test
     end
   end
 
+  def test_role_name_guards_nil_and_blank_roles
+    I18n.with_locale(:en) do
+      assert_equal "", Copy.role_name(nil)
+      assert_equal "", Copy.role_name("")
+      refute_kind_of Hash, Copy.role_name(nil)
+    end
+  end
+
   def test_component_text_overrides_win_including_nil
     assert_equal "Manage access", Copy.value(Copy::UNSET, "manage.title")
     assert_equal "Acme access", Copy.value("Acme access", "manage.title")

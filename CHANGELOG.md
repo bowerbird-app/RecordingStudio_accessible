@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Actor access points and engine home demo screens resolve static interface copy through `accessible_t` / `Copy.t` (English output unchanged).
 - Actor access point role cells use `accessible_role_name` so role labels follow `recording_studio.accessible.roles.*`.
+- `Copy.role_name` returns an empty string for nil or blank roles instead of looking up the roles hash.
 
 ### Upgrade Notes
 - Install Accessible `0.13.0`. No migration.
