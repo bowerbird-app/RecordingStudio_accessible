@@ -7,6 +7,7 @@ This Rails app demonstrates **Recording Studio Accessible** as a separately inst
 - the host app installs `recording_studio_accessible` separately from `recording_studio`
 - the addon mounts its own engine at `/recording_studio_accessible`
 - seeded access data resolves through `RecordingStudioAccessible.role_for` and `RecordingStudioAccessible.authorized?`
+- Workspace, Folder, and MessageGroup enable `:action_audiences` so the dummy can store per-action audience rules and workspace limits (API only; no picker UI)
 - message groups demonstrate first-owner bootstrap on an accessible child under shared `MessageRoot`, then later members through `grant_access` (including `authorized_through?` with the demo workspace)
 - the host app uses folders and pages as recordable demo content
 - the demo initializer auto-creates missing users only to keep the walkthrough short; host apps should usually verify or route missing emails before granting access

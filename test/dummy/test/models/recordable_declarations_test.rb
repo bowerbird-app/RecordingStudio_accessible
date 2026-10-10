@@ -32,10 +32,22 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
     assert_equal [ "Folder", "MessageGroup", "Workspace" ],
                  RecordingStudio.recordable_parent_allowances_for(RecordingStudio::Access)
                                 .fetch("recording_studio_accessible")
-    assert_equal [ "RecordingStudio::Access" ], RecordingStudio.child_recordable_types_for(Workspace)
-    assert_equal [ "RecordingStudio::Access" ], RecordingStudio.child_recordable_types_for(Folder)
+    assert_equal [
+      "RecordingStudio::Access",
+      "RecordingStudio::AccessConstraint",
+      "RecordingStudio::AccessRule"
+    ], RecordingStudio.child_recordable_types_for(Workspace)
+    assert_equal [
+      "RecordingStudio::Access",
+      "RecordingStudio::AccessConstraint",
+      "RecordingStudio::AccessRule"
+    ], RecordingStudio.child_recordable_types_for(Folder)
     refute_includes RecordingStudio.child_recordable_types_for(MessageRoot), "RecordingStudio::Access"
-    assert_equal [ "RecordingStudio::Access" ], RecordingStudio.child_recordable_types_for(MessageGroup)
+    assert_equal [
+      "RecordingStudio::Access",
+      "RecordingStudio::AccessConstraint",
+      "RecordingStudio::AccessRule"
+    ], RecordingStudio.child_recordable_types_for(MessageGroup)
     assert_empty RecordingStudio.child_recordable_types_for(Page)
     assert_empty RecordingStudio.child_recordable_types_for(Card)
   end

@@ -110,6 +110,9 @@ class LocalesTest < Minitest::Test
       assert_equal "User invites", Copy.t("home.user_invites.title")
       assert_equal "Email template", Copy.t("home.email_template.title")
       assert_equal "HTML email preview", Copy.t("home.email_template.html_preview_iframe")
+      assert_equal "Anyone", Copy.t("audiences.public")
+      assert_equal "Signed in", Copy.t("audiences.signed_in")
+      assert_equal "People with access", Copy.t("audiences.granted")
     end
   end
 

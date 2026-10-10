@@ -4,11 +4,20 @@ module RecordingStudioAccessible
   # rubocop:disable Metrics/ModuleLength
   module Compatibility
     EXTRACTED_FILES = {
-      "RecordingStudio::Access" => "recording_studio_accessible/extracted/recording_studio/access"
+      "RecordingStudio::Access" => "recording_studio_accessible/extracted/recording_studio/access",
+      "RecordingStudio::AccessConstraint" => "recording_studio_accessible/extracted/recording_studio/access_constraint",
+      "RecordingStudio::AccessRule" => "recording_studio_accessible/extracted/recording_studio/access_rule"
     }.freeze
-    RECORDABLE_TYPES = ["RecordingStudio::Access"].freeze
+    RECORDABLE_TYPES = [
+      "RecordingStudio::Access",
+      "RecordingStudio::AccessConstraint",
+      "RecordingStudio::AccessRule"
+    ].freeze
     ACCESS_RECORDABLE_TYPE = "RecordingStudio::Access"
+    ACCESS_CONSTRAINT_RECORDABLE_TYPE = "RecordingStudio::AccessConstraint"
+    ACCESS_RULE_RECORDABLE_TYPE = "RecordingStudio::AccessRule"
     ACCESS_CAPABILITY = :accessible
+    ACTION_AUDIENCES_CAPABILITY = :action_audiences
     ACCESS_CAPABILITY_SOURCE = "recording_studio_accessible"
 
     class << self # rubocop:disable Metrics/ClassLength
@@ -18,11 +27,11 @@ module RecordingStudioAccessible
       end
 
       def core_access_present?
-        !addon_loaded_access? && RECORDABLE_TYPES.all? { |path| constant_defined_path?(path) }
+        !addon_loaded_access? && constant_defined_path?(ACCESS_RECORDABLE_TYPE)
       end
 
       def addon_provides_access?
-        addon_loaded_access? || missing_constant_paths.any?
+        addon_loaded_access? || missing_constant_paths.include?(EXTRACTED_FILES.fetch(ACCESS_RECORDABLE_TYPE))
       end
 
       def integration_mode
@@ -51,6 +60,7 @@ module RecordingStudioAccessible
           RecordingStudio.register_recordable_type(type_name) if constant_defined_path?(type_name)
         end
         ensure_access_recordable_declaration!
+        ensure_audience_recordable_declarations!
       end
 
       def register_access_capability!
@@ -64,9 +74,22 @@ module RecordingStudioAccessible
         )
       end
 
+      def register_action_audiences_capability!
+        return unless defined?(::RecordingStudio)
+
+        RecordingStudio.register_capability(
+          ACTION_AUDIENCES_CAPABILITY,
+          source: ACCESS_CAPABILITY_SOURCE,
+          child_recordables: [ACCESS_CONSTRAINT_RECORDABLE_TYPE, ACCESS_RULE_RECORDABLE_TYPE]
+        )
+      end
+
       def ensure_creation_guards!
         include_guard("RecordingStudio::Access", RecordingStudioAccessible::AccessCreationGuard)
+        include_guard("RecordingStudio::AccessConstraint", RecordingStudioAccessible::AudienceCreationGuard)
+        include_guard("RecordingStudio::AccessRule", RecordingStudioAccessible::AudienceCreationGuard)
         include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AccessRecordingCreationGuard)
+        include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AudienceRecordingCreationGuard)
         include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AccessRecordingDependentLifecycle)
       end
 
@@ -80,6 +103,25 @@ module RecordingStudioAccessible
           label: "Access",
           root: false
         )
+      end
+
+      def ensure_audience_recordable_declarations!
+        return unless defined?(::RecordingStudio)
+
+        declare_audience_recordable(ACCESS_CONSTRAINT_RECORDABLE_TYPE, "Audience limit")
+        declare_audience_recordable(ACCESS_RULE_RECORDABLE_TYPE, "Audience")
+      end
+
+      def audience_parent_allowed?(recording:, child_type:)
+        return false unless defined?(::RecordingStudio)
+        return false if recording.blank? || child_type.blank?
+
+        RecordingStudio.parent_allowed?(
+          child_type: child_type,
+          parent_recording: recording
+        )
+      rescue RecordingStudio::InvalidRecordableDeclaration, RecordingStudio::MissingRecordableDeclaration
+        false
       end
 
       def access_parent_allowed?(recording)
@@ -127,9 +169,18 @@ module RecordingStudioAccessible
         Array(registration[:child_recordables]).include?(ACCESS_RECORDABLE_TYPE)
       end
 
+      def declare_audience_recordable(type_name, label)
+        recordable_class = constant_for_path(type_name)
+        return unless recordable_class.respond_to?(:recording_studio_recordable)
+
+        recordable_class.recording_studio_recordable(label: label, root: false)
+      end
+
       def load_priority
         {
-          "RecordingStudio::Access" => 1
+          "RecordingStudio::Access" => 1,
+          "RecordingStudio::AccessConstraint" => 2,
+          "RecordingStudio::AccessRule" => 3
         }
       end
 

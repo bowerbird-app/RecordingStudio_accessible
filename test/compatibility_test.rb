@@ -32,13 +32,30 @@ class CompatibilityTest < Minitest::Test
     refute RecordingStudioAccessible::Compatibility.core_access_present?
   end
 
+  def test_core_access_present_does_not_require_audience_types
+    singleton = RecordingStudioAccessible::Compatibility.singleton_class
+    original_method = singleton.instance_method(:constant_defined_path?)
+    singleton.send(:define_method, :constant_defined_path?) { |path| path == "RecordingStudio::Access" }
+
+    assert RecordingStudioAccessible::Compatibility.core_access_present?
+    assert_equal :core, RecordingStudioAccessible::Compatibility.integration_mode
+    assert_equal [
+      "recording_studio_accessible/extracted/recording_studio/access_constraint",
+      "recording_studio_accessible/extracted/recording_studio/access_rule"
+    ], RecordingStudioAccessible::Compatibility.missing_constant_paths
+  ensure
+    singleton.send(:define_method, :constant_defined_path?, original_method)
+  end
+
   def test_missing_constant_paths_load_in_dependency_order
     singleton = RecordingStudioAccessible::Compatibility.singleton_class
     original_method = singleton.instance_method(:constant_defined_path?)
     singleton.send(:define_method, :constant_defined_path?) { |_path| false }
 
     expected = [
-      "recording_studio_accessible/extracted/recording_studio/access"
+      "recording_studio_accessible/extracted/recording_studio/access",
+      "recording_studio_accessible/extracted/recording_studio/access_constraint",
+      "recording_studio_accessible/extracted/recording_studio/access_rule"
     ]
 
     assert_equal expected, RecordingStudioAccessible::Compatibility.missing_constant_paths
@@ -58,6 +75,8 @@ class CompatibilityTest < Minitest::Test
     end
 
     assert_includes registered, "RecordingStudio::Access"
+    assert_includes registered, "RecordingStudio::AccessConstraint"
+    assert_includes registered, "RecordingStudio::AccessRule"
   ensure
     singleton.send(:define_method, :constant_defined_path?, original_method)
   end
@@ -203,6 +222,25 @@ class CompatibilityTest < Minitest::Test
     end
 
     assert_empty registered
+  end
+
+  def test_register_action_audiences_capability_registers_constraint_and_rule
+    registered = []
+
+    RecordingStudio.stub(:register_capability, ->(*args, **kwargs) { registered << [args, kwargs] }) do
+      RecordingStudioAccessible::Compatibility.register_action_audiences_capability!
+    end
+
+    assert_equal(
+      [[
+        [:action_audiences],
+        {
+          source: "recording_studio_accessible",
+          child_recordables: ["RecordingStudio::AccessConstraint", "RecordingStudio::AccessRule"]
+        }
+      ]],
+      registered
+    )
   end
 
   def test_warn_if_core_access_present_logs_once_outside_test

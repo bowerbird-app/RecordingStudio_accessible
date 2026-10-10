@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioAccessibleTest < Minitest::Test
   def test_version_matches_the_current_release
-    assert_equal "0.13.0", RecordingStudioAccessible::VERSION
+    assert_equal "0.14.0", RecordingStudioAccessible::VERSION
   end
 
   def test_recording_studio_version_is_4_4

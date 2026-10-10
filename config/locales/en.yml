@@ -7,6 +7,10 @@ en:
         view: "View"
         edit: "Edit"
         admin: "Admin"
+      audiences:
+        public: "Anyone"
+        signed_in: "Signed in"
+        granted: "People with access"
       invitations:
         title: "Invitation"
         email: "Email %{email}"
@@ -94,6 +98,15 @@ en:
         dependent_role_exceeds: "Dependent role cannot exceed the manager grant's role"
         dependent_unranked_role: "Dependent access requires a ranked role"
         dependent_cycle: "Dependent access cannot depend on itself or form a cycle"
+        audience_unauthorized: "You cannot change who can do this"
+        audience_not_allowed: "That choice is not available here"
+        audience_action_invalid: "Action is required"
+        audience_action_not_configured: "This action has no audience settings"
+        audience_root_required: "A workspace is required"
+        audience_constraint_not_root: "Audience limits can only be set on a workspace"
+        audience_constraint_unauthorized: "You cannot limit who can do this for the workspace"
+        audience_constraint_not_narrower: "A workspace can only narrow the audiences the app already allows"
+        audience_not_enabled: "Audience settings are not enabled for this item"
       mailers:
         someone: "Someone"
         hello: "Hello %{email},"

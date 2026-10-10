@@ -47,6 +47,10 @@ fr:
         view: "Voir"
         edit: "Modifier"
         admin: "Admin"
+      audiences:
+        public: "Tout le monde"
+        signed_in: "Connecté"
+        granted: "Les personnes avec accès"
       invitations:
         title: "Invitation"
         email: "E-mail %{email}"
@@ -134,6 +138,15 @@ fr:
         dependent_role_exceeds: "Le rôle dépendant ne peut pas dépasser le rôle du gestionnaire"
         dependent_unranked_role: "Un accès dépendant nécessite un rôle classé"
         dependent_cycle: "Un accès dépendant ne peut pas dépendre de lui-même ni former un cycle"
+        audience_unauthorized: "Vous ne pouvez pas changer qui peut faire ça"
+        audience_not_allowed: "Ce choix n’est pas disponible ici"
+        audience_action_invalid: "L’action est obligatoire"
+        audience_action_not_configured: "Cette action n’a pas de réglage d’audience"
+        audience_root_required: "Un espace de travail est obligatoire"
+        audience_constraint_not_root: "Les limites d’audience ne peuvent être définies que sur un espace de travail"
+        audience_constraint_unauthorized: "Vous ne pouvez pas limiter qui peut faire ça pour l’espace de travail"
+        audience_constraint_not_narrower: "Un espace de travail ne peut que restreindre les audiences déjà autorisées par l’appli"
+        audience_not_enabled: "Les réglages d’audience ne sont pas activés pour cet élément"
       mailers:
         someone: "Quelqu’un"
         hello: "Bonjour %{email},"
