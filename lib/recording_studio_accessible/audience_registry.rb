@@ -63,18 +63,11 @@ module RecordingStudioAccessible
     def register(name, label_key: nil, &block)
       normalized_name = normalize_name!(name)
       raise ArgumentError, "audience predicate block is required" unless block
-
-      definition = AudienceDefinition.new(
-        name: normalized_name,
-        label_key: label_key.presence || default_label_key(normalized_name),
-        predicate: block
-      ).freeze
-
-      @mutex.synchronize do
-        @definitions[normalized_name] = definition
+      if reserved_name?(normalized_name)
+        raise ArgumentError, "cannot redefine built-in audience #{normalized_name.inspect}"
       end
 
-      definition.metadata.merge(name: normalized_name)
+      write_definition!(normalized_name, label_key: label_key, &block)
     end
 
     def registered?(name)
@@ -129,10 +122,28 @@ module RecordingStudioAccessible
 
     private
 
+    def reserved_name?(name)
+      built_in?(name) || name == DENIED
+    end
+
+    def write_definition!(name, label_key: nil, &block)
+      definition = AudienceDefinition.new(
+        name: name,
+        label_key: label_key.presence || default_label_key(name),
+        predicate: block
+      ).freeze
+
+      @mutex.synchronize do
+        @definitions[name] = definition
+      end
+
+      definition.metadata.merge(name: name)
+    end
+
     def register_built_ins!
-      register(PUBLIC, label_key: "#{BUILT_IN_LABEL_PREFIX}.public") { true }
-      register(SIGNED_IN, label_key: "#{BUILT_IN_LABEL_PREFIX}.signed_in") { |actor:| actor.present? }
-      register(GRANTED, label_key: "#{BUILT_IN_LABEL_PREFIX}.granted") do |actor:, recording:, context:|
+      write_definition!(PUBLIC, label_key: "#{BUILT_IN_LABEL_PREFIX}.public") { true }
+      write_definition!(SIGNED_IN, label_key: "#{BUILT_IN_LABEL_PREFIX}.signed_in") { |actor:| actor.present? }
+      write_definition!(GRANTED, label_key: "#{BUILT_IN_LABEL_PREFIX}.granted") do |actor:, recording:, context:|
         action = context.is_a?(Hash) ? context[:action] : nil
         roles = RecordingStudioAccessible.granted_roles_for(action)
         RecordingStudioAccessible.authorized_for_any_role?(actor: actor, recording: recording, roles: roles)

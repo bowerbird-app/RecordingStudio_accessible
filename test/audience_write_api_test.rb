@@ -115,6 +115,27 @@ class AudienceWriteApiTest < Minitest::Test
     Struct.new(:id).new("actor-id")
   end
 
+  def test_installing_action_audiences_warns_when_host_already_defined_the_action
+    RecordingStudioAccessible.instance_variable_set(:@action_registry, RecordingStudioAccessible::ActionRegistry.new)
+    RecordingStudioAccessible.define_action(KIT) { true }
+    messages = []
+    logger = Object.new
+    logger.define_singleton_method(:warn) { |message| messages << message }
+
+    Rails.stub(:logger, logger) do
+      RecordingStudioAccessible.configuration.action_audiences[KIT] = {
+        allowed: %i[granted],
+        default: :granted,
+        granted_roles: %i[admin]
+      }
+    end
+
+    assert_equal 1, messages.size
+    assert_includes messages.first, KIT.inspect
+    assert_includes messages.first, "define_action"
+    assert RecordingStudioAccessible.action_defined?(KIT)
+  end
+
   def test_action_audiences_replace_installs_policies
     RecordingStudioAccessible.configuration.action_audiences = {
       KIT => { allowed: %i[granted], default: :granted, granted_roles: %i[admin] }

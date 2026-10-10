@@ -113,6 +113,19 @@ class ActionAudiencesTest < Minitest::Test
     assert RecordingStudioAccessible.authorized_action?(actor: :actor, action: KIT, recording: :recording)
   end
 
+  def test_granted_audience_uses_granted_roles_not_any_role
+    configure_kit(allowed: %i[granted], default: :granted, granted_roles: %i[download edit admin])
+    viewer = Object.new
+    editor = Object.new
+
+    RecordingStudioAccessible.stub(:authorized_for_any_role?, lambda { |**kwargs|
+      kwargs[:actor].equal?(editor) && kwargs[:roles] == %w[download edit admin]
+    }) do
+      refute RecordingStudioAccessible.authorized_action?(actor: viewer, action: KIT, recording: :recording)
+      assert RecordingStudioAccessible.authorized_action?(actor: editor, action: KIT, recording: :recording)
+    end
+  end
+
   def test_granted_override_on_allows_granted_actor_for_other_audiences
     RecordingStudioAccessible.register_audience(:verified) { false }
     configure_kit(

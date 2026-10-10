@@ -151,6 +151,7 @@ module RecordingStudioAccessible
     def install_action_audience_policy!(action)
       return unless AudienceResolver.configured?(action)
 
+      warn_if_replacing_defined_action!(action)
       register_action(
         action,
         source: "recording_studio_accessible",
@@ -163,6 +164,21 @@ module RecordingStudioAccessible
           recording: recording,
           context: context
         )
+      end
+    end
+
+    def warn_if_replacing_defined_action!(action)
+      return unless action_defined?(action)
+
+      registration = action_registration_for(action)
+      return if registration && registration[:source] == "recording_studio_accessible"
+
+      message = "[RecordingStudioAccessible] action #{action.inspect} already has a define_action policy. " \
+                "config.action_audiences takes over that action; the host policy will not run."
+      if defined?(Rails) && Rails.respond_to?(:logger) && Rails.logger
+        Rails.logger.warn(message)
+      else
+        warn(message)
       end
     end
 

@@ -1122,7 +1122,8 @@ Built-in audiences:
 - `granted` — `authorized_for_any_role?` against that action's `granted_roles`
 
 Register more audiences in the host or a consuming gem. Predicates run
-server-side. Unknown audiences, missing policies, invalid config, and predicate
+server-side. Built-in names (`public`, `signed_in`, `granted`) cannot be
+redefined. Unknown audiences, missing policies, invalid config, and predicate
 exceptions deny.
 
 ```ruby
@@ -1186,10 +1187,15 @@ whose audience is no longer allowed to `granted` (revision plus an
 `audience_fallback` event). Relaxing the limit later does not restore the old
 audience; someone with `manage_role` must pick it again.
 
+Narrowing `config.action_audiences` in code is not persisted. Stored rules are
+not rewritten, and there is no fallback event. Resolution still treats a
+now-disallowed stored audience as `granted` until someone writes a new rule.
+
 Accessible supplies the `define_action` policy for every action in
 `action_audiences`. `authorized_action?` then checks the effective audience,
-or the granted role when `granted_override` is on. Actions that are not
-configured keep their existing host policies.
+or the granted role when `granted_override` is on. If a host already defined
+that action, Accessible logs a boot-time warning and the audience policy wins.
+Actions that are not configured keep their existing host policies.
 
 This gem does not ship an audience picker. Use `audience_options_for` with a
 Flatpack `RadioGroup` on the host screen. Staff limits belong in Recording

@@ -165,8 +165,12 @@ module RecordingStudioAccessible
             previous_audience: previous_audience,
             audience: AudienceRegistry::GRANTED.to_s
           },
-          idempotency_key: "#{FALLBACK_EVENT}:#{rule_recording.id}:#{previous_audience}"
+          idempotency_key: fallback_idempotency_key(rule_recording, previous_audience: previous_audience)
         )
+      end
+
+      def fallback_idempotency_key(rule_recording, previous_audience:)
+        "#{FALLBACK_EVENT}:#{rule_recording.id}:#{rule_recording.recordable_id}:#{previous_audience}"
       end
 
       def service_args

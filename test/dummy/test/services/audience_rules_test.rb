@@ -287,6 +287,137 @@ class AudienceRulesTest < ActiveSupport::TestCase
     assert_equal :signed_in, RecordingStudioAccessible.effective_audience(recording: @folder_recording, action: KIT)
   end
 
+  test "a public audience rule never grants recording access" do
+    page = Page.create!(folder: @folder, title: "Kit page", summary: "Public kit", position: 0)
+    page_recording = create_child_recording(recordable: page, parent_recording: @folder_recording)
+
+    RecordingStudioAccessible.set_audience!(
+      recording: @folder_recording,
+      action: KIT,
+      audience: :public,
+      actor: @admin
+    )
+
+    assert RecordingStudioAccessible.authorized_action?(actor: nil, action: KIT, recording: @folder_recording)
+    refute RecordingStudioAccessible.authorized?(actor: nil, recording: @folder_recording, role: :view)
+    refute RecordingStudioAccessible.authorized?(actor: @outsider, recording: @folder_recording, role: :view)
+    refute RecordingStudioAccessible.authorized?(actor: @outsider, recording: page_recording, role: :view)
+    assert RecordingStudioAccessible.authorized?(actor: @editor, recording: @folder_recording, role: :view)
+    assert RecordingStudioAccessible.authorized?(actor: @editor, recording: page_recording, role: :edit)
+  end
+
+  test "view holders fail authorized_action when granted_roles omit view" do
+    viewer = create_user("audience-viewer@example.com")
+    grant = RecordingStudioAccessible.grant_access(
+      recording: @root,
+      actor: viewer,
+      role: :view,
+      manager_actor: @admin
+    )
+    assert grant.success?, grant.error.to_s
+
+    RecordingStudioAccessible.configuration.action_audiences[KIT] = {
+      allowed: %i[granted],
+      default: :granted,
+      granted_roles: %i[download edit admin],
+      granted_override: false,
+      manage_role: :admin
+    }
+
+    refute RecordingStudioAccessible.authorized_action?(actor: viewer, action: KIT, recording: @folder_recording)
+    assert RecordingStudioAccessible.authorized?(actor: viewer, recording: @folder_recording, role: :view)
+    assert RecordingStudioAccessible.authorized_action?(actor: @editor, action: KIT, recording: @folder_recording)
+  end
+
+  test "set_audience rechecks the allowed set after locking the root" do
+    original_allowed = nil
+    locked_ids = []
+    RecordingStudio::Recording.class_eval do
+      alias_method :lock_without_audience_probe!, :lock!
+      define_method(:lock!) do |*args, **kwargs|
+        locked_ids << id
+        lock_without_audience_probe!(*args, **kwargs)
+      end
+    end
+
+    calls = 0
+    resolver = RecordingStudioAccessible::AudienceResolver
+    original_allowed = resolver.method(:allowed_audiences_for)
+    resolver.define_singleton_method(:allowed_audiences_for) do |**|
+      calls += 1
+      calls == 1 ? %i[public signed_in granted] : %i[granted]
+    end
+
+    error = assert_raises(RecordingStudioAccessible::AudienceNotAllowed) do
+      RecordingStudioAccessible.set_audience!(
+        recording: @folder_recording,
+        action: KIT,
+        audience: :public,
+        actor: @admin
+      )
+    end
+    assert_equal RecordingStudioAccessible::Copy.t("errors.audience_not_allowed"), error.message
+
+    assert_operator calls, :>=, 2
+    assert_equal @root.id, locked_ids.first
+    assert_nil RecordingStudioAccessible::AudienceQuery.rule_recording_for(recording: @folder_recording, action: KIT)
+  ensure
+    if original_allowed
+      RecordingStudioAccessible::AudienceResolver.define_singleton_method(:allowed_audiences_for, original_allowed)
+    end
+    if RecordingStudio::Recording.method_defined?(:lock_without_audience_probe!)
+      RecordingStudio::Recording.class_eval do
+        alias_method :lock!, :lock_without_audience_probe!
+        remove_method :lock_without_audience_probe!
+      end
+    end
+  end
+
+  test "fallback event idempotency key includes the rule revision" do
+    RecordingStudioAccessible.set_audience!(
+      recording: @folder_recording,
+      action: KIT,
+      audience: :public,
+      actor: @admin
+    )
+
+    first = RecordingStudioAccessible.set_audience_constraint!(
+      root: @root,
+      action: KIT,
+      allowed_audiences: %i[granted],
+      actor: @admin
+    )
+    rule = RecordingStudioAccessible::AudienceQuery.rule_recording_for(recording: @folder_recording, action: KIT)
+    first_event = RecordingStudio::Event.find_by!(recording_id: rule.id, action: "audience_fallback")
+    assert_equal "audience_fallback:#{rule.id}:#{rule.recordable_id}:public", first_event.idempotency_key
+
+    RecordingStudioAccessible.set_audience_constraint!(
+      root: @root,
+      action: KIT,
+      allowed_audiences: %i[public signed_in granted],
+      actor: @admin
+    )
+    RecordingStudioAccessible.set_audience!(
+      recording: @folder_recording,
+      action: KIT,
+      audience: :public,
+      actor: @admin
+    )
+    RecordingStudioAccessible.set_audience_constraint!(
+      root: @root,
+      action: KIT,
+      allowed_audiences: %i[granted],
+      actor: @admin
+    )
+
+    rule.reload
+    events = RecordingStudio::Event.where(recording_id: rule.id, action: "audience_fallback").order(:created_at)
+    assert_equal 2, events.size
+    assert_equal "audience_fallback:#{rule.id}:#{rule.recordable_id}:public", events.last.idempotency_key
+    refute_equal events.first.idempotency_key, events.last.idempotency_key
+    assert first.present?
+  end
+
   test "recordable declarations include audience types on opted-in parents" do
     assert_includes RecordingStudio.configuration.recordable_types, "RecordingStudio::AccessConstraint"
     assert_includes RecordingStudio.configuration.recordable_types, "RecordingStudio::AccessRule"

@@ -50,6 +50,45 @@ class AudienceRegistryTest < Minitest::Test
     )
   end
 
+  def test_register_audience_raises_for_built_in_names
+    original_granted = RecordingStudioAccessible.audience_registry.evaluate(
+      :granted,
+      actor: nil,
+      recording: :recording,
+      context: { action: :anything }
+    )
+
+    %i[public signed_in granted denied].each do |name|
+      error = assert_raises(ArgumentError) do
+        RecordingStudioAccessible.register_audience(name) { true }
+      end
+      assert_match(/cannot redefine built-in audience #{name.inspect}/, error.message)
+    end
+
+    refute RecordingStudioAccessible.audience_registry.evaluate(
+      :granted,
+      actor: nil,
+      recording: :recording,
+      context: { action: :anything }
+    )
+    assert_equal original_granted, RecordingStudioAccessible.audience_registry.evaluate(
+      :granted,
+      actor: nil,
+      recording: :recording,
+      context: { action: :anything }
+    )
+    assert RecordingStudioAccessible.audience_registry.evaluate(
+      :public,
+      actor: nil,
+      recording: :recording
+    )
+    refute RecordingStudioAccessible.audience_registry.evaluate(
+      :signed_in,
+      actor: nil,
+      recording: :recording
+    )
+  end
+
   def test_register_audience_requires_symbol_name_and_block
     assert_raises(ArgumentError) { RecordingStudioAccessible.register_audience(nil) { true } }
     assert_raises(ArgumentError) { RecordingStudioAccessible.register_audience("") { true } }

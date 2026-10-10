@@ -45,6 +45,7 @@ Metrics/ClassLength:
     - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/authorization_service.rb'
     - 'lib/recording_studio_accessible/services/bootstrap_owner_access.rb'
+    - 'lib/recording_studio_accessible/services/set_audience.rb'
     - 'lib/recording_studio_accessible/services/set_audience_constraint.rb'
 
 Metrics/ModuleLength:

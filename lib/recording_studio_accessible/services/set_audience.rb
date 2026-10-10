@@ -16,7 +16,8 @@ module RecordingStudioAccessible
         validate_request!
 
         recording = RecordingStudio::Recording.transaction do
-          @recording.lock!
+          lock_root_then_recording!
+          ensure_audience_currently_allowed!
           upsert_rule_recording!
         end
         success(recording)
@@ -36,9 +37,24 @@ module RecordingStudioAccessible
         unless audience_parent_allowed?
           raise RecordingStudioAccessible::AudienceInvalid, copy("errors.audience_not_enabled")
         end
-        return if allowed_audiences.include?(normalized_audience)
+
+        ensure_audience_currently_allowed!
+      end
+
+      def ensure_audience_currently_allowed!
+        return if current_allowed_audiences.include?(normalized_audience)
 
         raise RecordingStudioAccessible::AudienceNotAllowed, copy("errors.audience_not_allowed")
+      end
+
+      def lock_root_then_recording!
+        root = root_recording
+        raise RecordingStudioAccessible::AudienceInvalid, copy("errors.audience_root_required") unless root
+
+        root.lock!
+        return if @recording.id == root.id
+
+        @recording.lock!
       end
 
       def valid_action?
@@ -52,8 +68,8 @@ module RecordingStudioAccessible
         end
       end
 
-      def allowed_audiences
-        @allowed_audiences ||= AudienceResolver.allowed_audiences_for(recording: @recording, action: @action)
+      def current_allowed_audiences
+        AudienceResolver.allowed_audiences_for(recording: @recording, action: @action)
       end
 
       def audience_parent_allowed?
