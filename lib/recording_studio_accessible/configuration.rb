@@ -62,7 +62,7 @@ module RecordingStudioAccessible
                   :access_management_authorizer,
                   :mounted_page_authorizer,
                   :authorize_actor_through
-    attr_reader :hooks, :access_actor_types
+    attr_reader :hooks, :access_actor_types, :action_audiences
 
     def initialize
       @warn_on_core_conflict = true
@@ -89,6 +89,18 @@ module RecordingStudioAccessible
       @access_actor_types = nil
       @authorize_actor_through = method(:default_authorize_actor_through)
       @hooks = Hooks.new
+      @action_audiences = ActionAudiences.new
+      owner = self
+      @action_audiences.on_change = lambda do |action|
+        next unless RecordingStudioAccessible.instance_variable_get(:@configuration).equal?(owner)
+
+        RecordingStudioAccessible.install_action_audience_policy!(action)
+      end
+    end
+
+    def action_audiences=(value)
+      @action_audiences ||= ActionAudiences.new
+      @action_audiences.replace(value)
     end
 
     def to_h
@@ -106,6 +118,7 @@ module RecordingStudioAccessible
         setter = "#{key}="
         public_send(setter, cast_boolean(v)) if key == "warn_on_core_conflict" && respond_to?(setter)
         public_send(setter, v) if key == "avatar_resolver" && v.respond_to?(:call) && respond_to?(setter)
+        public_send(setter, v) if key == "action_audiences" && respond_to?(setter)
       end
     end
 
@@ -221,6 +234,14 @@ module RecordingStudioAccessible
 
     def defined_checks
       RecordingStudioAccessible.defined_checks
+    end
+
+    def register_audience(...)
+      RecordingStudioAccessible.register_audience(...)
+    end
+
+    def registered_audiences
+      RecordingStudioAccessible.registered_audiences
     end
 
     def notify_access_granted(controller:, recording:, actor:, role:, manager_actor:)

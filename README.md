@@ -8,8 +8,8 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 
 - child-only `RecordingStudio::Access` recordables for direct grants under opted-in recordings
 - optional dependent grants: one Access recording can be capped by and die with another Access recording on the same root. Dependents void in place when the manager Access is revised weaker, trashed, destroyed, or moved — they do not follow a move
-- `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, and `authorized_through?` for role lookup and authorization checks
-- `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, and `authorized_through?` for role lookup and authorization checks
+- optional per-action audiences (`public`, `signed_in`, `granted`, plus `register_audience`) with workspace limits and per-recording rules
+- `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, and named-action checks
 - a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
 - install and migration generators for host apps
 - a dummy Rails app that demonstrates the addon mounted separately from RecordingStudio
@@ -86,6 +86,29 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.14.0
+
+Named actions can opt into audiences. Existing `register_action` / `define_action` / `authorized_action?` behaviour is unchanged until an action is listed in `config.action_audiences`.
+
+1. Install Accessible `0.14.0`.
+2. Copy the migrations and run them.
+
+```bash
+bin/rails generate recording_studio_accessible:migrations
+bin/rails db:migrate
+```
+
+3. Enable `:action_audiences` on host types that should hold audience settings. Constraints are valid only on a workspace (root). Rules live on the target item.
+
+```ruby
+RecordingStudio.enable_capability(:action_audiences, on: Workspace)
+RecordingStudio.enable_capability(:action_audiences, on: PressKit)
+```
+
+4. Register any custom audiences, then configure each action. `granted` stays in every allowed set. Copy `recording_studio.accessible.audiences.*` into host locale files when you translate picker labels.
+
+No audience picker ships in this gem. Host screens should use `audience_options_for` with a Flatpack `RadioGroup`. Staff controls belong in Recording Studio Admin.
 
 #### Upgrading to 0.13.0
 
@@ -471,6 +494,9 @@ Useful RecordingStudio 4 introspection helpers:
 ```ruby
 RecordingStudio.capability_child_recordables_for(:accessible)
 # => ["RecordingStudio::Access"]
+
+RecordingStudio.capability_child_recordables_for(:action_audiences)
+# => ["RecordingStudio::AccessConstraint", "RecordingStudio::AccessRule"]
 
 RecordingStudio.capability_allowed_parent_types_for("RecordingStudio::Access")
 # => ["Workspace"] # plus any other opted-in host types
@@ -1082,6 +1108,92 @@ RecordingStudioAccessible.action_defined?(:"recording_studio_messages.create_gro
 > private children. Use an action permission such as
 > `recording_studio_messages.create_group` instead, then grant ordinary access
 > directly on the created child recording.
+
+### Action audiences
+
+Grants say who holds a role on a recording. Audiences say who may attempt one
+named action. They are opt-in and keyed by action. A kit download rule never
+affects a private-data export.
+
+Built-in audiences:
+
+- `public` — anyone, including a nil actor
+- `signed_in` — `actor.present?`
+- `granted` — `authorized_for_any_role?` against that action's `granted_roles`
+
+Register more audiences in the host or a consuming gem. Predicates run
+server-side. Unknown audiences, missing policies, invalid config, and predicate
+exceptions deny.
+
+```ruby
+RecordingStudioAccessible.register_audience(
+  :"presskits.verified_journalist",
+  label_key: "recording_studio_presskits.audiences.verified_journalist"
+) do |actor:, recording:, context:|
+  actor.present? && actor.respond_to?(:verified_journalist?) && actor.verified_journalist?
+end
+
+RecordingStudioAccessible.configure do |config|
+  config.action_audiences[:"presskits.kit_download"] = {
+    allowed: %i[signed_in granted],
+    default: :granted,
+    granted_roles: %i[download edit admin],
+    granted_override: true,
+    manage_role: :admin
+  }
+end
+```
+
+`granted` cannot be removed from an allowed set. If an action has no valid
+granted roles, effective audience is an internal `denied`. `public` is never
+implied; add it explicitly. `granted_override` defaults to false: when true, an
+actor who already holds a granted role passes even if the selected audience is
+narrower. Domain conditions (publication, exports) stay in the consuming gem.
+
+Accessible stores two child recordables under types that enable
+`:action_audiences`:
+
+- `RecordingStudio::AccessConstraint` — `action`, `allowed_audiences`. Root
+  only. Can only narrow the host `allowed` list.
+- `RecordingStudio::AccessRule` — `action`, `audience`. Lives on the target
+  recording. At most one live rule per action per recording.
+
+Do not insert those rows yourself. Use the public API:
+
+```ruby
+RecordingStudioAccessible.effective_audience(recording: kit, action: :"presskits.kit_download")
+RecordingStudioAccessible.audience_options_for(recording: kit, action: :"presskits.kit_download")
+# => [{ audience: :signed_in, label: "Signed in" }, { audience: :granted, label: "People with access" }]
+
+RecordingStudioAccessible.set_audience!(
+  recording: kit,
+  action: :"presskits.kit_download",
+  audience: :signed_in,
+  actor: current_actor
+)
+
+RecordingStudioAccessible.set_audience_constraint!(
+  root: workspace_root,
+  action: :"presskits.kit_download",
+  allowed_audiences: %i[granted],
+  actor: current_actor
+)
+```
+
+`set_audience!` requires `manage_role` on the recording. `set_audience_constraint!`
+requires `:admin` on the root. Narrowing a workspace rewrites descendant rules
+whose audience is no longer allowed to `granted` (revision plus an
+`audience_fallback` event). Relaxing the limit later does not restore the old
+audience; someone with `manage_role` must pick it again.
+
+Accessible supplies the `define_action` policy for every action in
+`action_audiences`. `authorized_action?` then checks the effective audience,
+or the granted role when `granted_override` is on. Actions that are not
+configured keep their existing host policies.
+
+This gem does not ship an audience picker. Use `audience_options_for` with a
+Flatpack `RadioGroup` on the host screen. Staff limits belong in Recording
+Studio Admin.
 
 ### Access through another actor
 

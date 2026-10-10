@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-10
+
+### Added
+- Registrable action audiences (`public`, `signed_in`, `granted`, plus `register_audience`) and per-action host config `config.action_audiences`.
+- `RecordingStudio::AccessConstraint` (workspace limit) and `RecordingStudio::AccessRule` (per-recording audience), with history, trash, and at most one live row per action per recording.
+- Public API: `effective_audience`, `audience_options_for`, `set_audience!`, `set_audience_constraint!`, `granted_roles_for`.
+- Persistent fallback: narrowing a workspace rewrites now-disallowed descendant rules to `granted` with an `audience_fallback` event. Relaxing never restores the old audience.
+- `:action_audiences` capability so hosts opt types in independently of `:accessible`.
+
+### Changed
+- `authorized_action?` uses audience resolution for actions listed in `action_audiences` (audience predicate, or granted when `granted_override` is on). Unconfigured actions keep their existing policies.
+
+### Upgrade Notes
+- Install Accessible `0.14.0`, then run:
+
+```bash
+bin/rails generate recording_studio_accessible:migrations
+bin/rails db:migrate
+```
+
+- Existing apps do nothing until they set `config.action_audiences` and enable `:action_audiences` on the types that should hold rules and workspace limits.
+- Copy `recording_studio.accessible.audiences.*` into host locale files when translating picker labels.
+- `granted` stays in every allowed set. An action with no valid `granted_roles` is denied.
+- No audience UI ships here. Host screens should use `audience_options_for` with Flatpack `RadioGroup`. Staff limits belong in Recording Studio Admin.
+
 ## [0.13.0] - 2026-10-09
 
 ### Added

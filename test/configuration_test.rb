@@ -25,6 +25,23 @@ class ConfigurationTest < Minitest::Test
     assert_equal true, @configuration.warn_on_core_conflict
   end
 
+  def test_action_audiences_defaults_empty
+    assert_predicate @configuration.action_audiences, :empty?
+    assert_equal({}, @configuration.action_audiences.to_h)
+  end
+
+  def test_action_audiences_assignment_keeps_granted
+    @configuration.action_audiences[:"presskits.kit_download"] = {
+      allowed: %i[public],
+      default: :public,
+      granted_roles: %i[view]
+    }
+
+    allowed = @configuration.action_audiences[:"presskits.kit_download"].fetch(:allowed)
+    assert_includes allowed, :public
+    assert_includes allowed, :granted
+  end
+
   def test_merge_updates_known_attributes
     @configuration.merge!(warn_on_core_conflict: false)
 

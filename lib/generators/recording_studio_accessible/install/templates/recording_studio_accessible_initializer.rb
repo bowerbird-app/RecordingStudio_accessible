@@ -133,4 +133,25 @@ RecordingStudioAccessible.configure do |config|
   #     role: :admin
   #   )
   # end
+
+  # Optional: per-action audiences. Opt-in. Existing named-action policies are
+  # unchanged until an action is listed here. `granted` is always kept in the
+  # allowed set. Enable `:action_audiences` on host types that should hold
+  # audience settings, and register custom audiences before they appear in
+  # `allowed`.
+  #
+  # RecordingStudioAccessible.register_audience(
+  #   :"presskits.verified_journalist",
+  #   label_key: "recording_studio_presskits.audiences.verified_journalist"
+  # ) do |actor:, recording:, context:|
+  #   false
+  # end
+  #
+  # config.action_audiences[:"presskits.kit_download"] = {
+  #   allowed: %i[signed_in granted],
+  #   default: :granted,
+  #   granted_roles: %i[download edit admin],
+  #   granted_override: true,
+  #   manage_role: :admin
+  # }
 end

@@ -18,7 +18,7 @@ module RecordingStudioAccessible
       def copy_migrations
         if RecordingStudioAccessible::Compatibility.core_access_present?
           say "RecordingStudio already provides access tables; skipping addon-owned access migrations.", :yellow
-          copy_migration_files(invitation_migration_files)
+          copy_migration_files(addon_owned_migration_files)
           say "Run 'bin/rails db:migrate' to apply the migrations.", :green
           return
         end
@@ -51,6 +51,15 @@ module RecordingStudioAccessible
 
       def invitation_migration_files
         migration_files.select { |path| File.basename(path).include?("access_invitation") }
+      end
+
+      def addon_owned_migration_files
+        migration_files.select do |path|
+          name = File.basename(path)
+          name.include?("access_invitation") ||
+            name.include?("access_constraints") ||
+            name.include?("access_rules")
+        end
       end
 
       def migration_exists?(migration_name)
