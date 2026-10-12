@@ -8,9 +8,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - English Rails I18n keys for HomeController demo method/invite copy, call-time recordable labels, and remaining user-facing service/validation errors under `recording_studio.accessible.*`.
-- Host English override coverage: test-only fixture `test/dummy/test/locales/accessible_host_override.en.yml` plus an integration test that appends it last to `I18n.load_path`, reloads, asserts a nested key wins on a real manage-access page, then restores the load path.
+- Host English override coverage: test-only fixture `test/dummy/test/locales/accessible_host_override.en.yml` plus an integration test that appends that file last to `I18n.load_path`, calls `I18n.backend.load_translations` on it, asserts a nested key wins on a real manage-access page, then restores the load path and a deep snapshot of the I18n backend (no bare `I18n.reload!`).
 - Locale regression: every `lib/**/*.rb` file must not mention `i18n.load_path` / `I18n.load_path`. Unit tests seed gem English via `I18n.backend.store_translations` instead of appending the locale file to the load path.
-- Actor access points empty state is reachable for authorized viewers when the actor exists but has no direct grants in the workspace; rendered-page asserts cover empty-state and engine home snapshot labels.
+- Actor access points empty state is reachable when the signed-in actor opens their own page with no grants in that workspace; managers looking up another actor with no grants still get HTTP 404. Rendered-page asserts cover that empty state and engine home snapshot labels.
 
 ### Changed
 - `Copy.role_name` treats blank or whitespace-only roles as empty (same as nil), instead of falling through to `humanize`.
@@ -18,12 +18,13 @@ All notable changes to this project will be documented in this file.
 - Validation `errors.add` for former English-string types passes `Copy.t(..., default: <main's English>)` as the String type (ActiveModel 8.1 ignores `message:` for Strings); symbol-typed invitation errors keep `errors.add(attr, :sym, message: ...)`. In non-English locales, `errors.details` carries the translated string for those former String types.
 - Recordable `recordable_type_label` / `recordable_name` / `audience_write_error` resolve at call time; `recording_studio_recordable label:` stays English (class-load DSL).
 - Layout title / `application-name` meta pass an English `default:` so non-HTML surfaces never emit “Translation missing”.
+- Email template demo Role line uses `accessible_role_name` (`Copy.role_name`) instead of `humanize`.
 
 ### Upgrade Notes
 - Install Accessible `0.15.0`. No migration.
 - English hosts need no change. Copy new `recording_studio.accessible.home.methods.*`, `home.user_invites.statuses.*`, `home.user_invites.setup.*`, `recordables.*`, and `errors.*` keys into host locale files when translating.
 - Hosts override by defining the same nested keys in their own `config/locales`. Public constants (`GRANT_DENIED_MESSAGE`, bootstrap messages, duplicate-grant errors, recordable `LABEL`s) remain; displayed copy follows the locale with those constants as `default:`.
-- Actor access points for an existing actor with no grants in the workspace render the empty state instead of HTTP 404 when the viewer is authorized.
+- When the signed-in actor opens their own access-points page with no grants in that workspace, the empty state renders instead of HTTP 404. Managers looking up another actor with no grants in the workspace still get 404 (no name/email disclosure).
 
 ## [0.14.0] - 2026-10-10
 

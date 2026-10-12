@@ -83,11 +83,14 @@ class LocalesTest < Minitest::Test
     assert_equal ["en.yml"], files.sort
   end
 
-  def test_rails_i18n_load_path_includes_the_gem_english_locale_file
+  def test_gem_english_locale_file_on_load_path_supplies_manage_copy
+    # with_gem_english_locale_only puts only en.yml on the path and reloads.
+    # Assert that file actually drives lookups (not merely that the path we set is present).
     with_gem_english_locale_only do
-      locale_path = File.join(engine_locales_dir, "en.yml")
-
-      assert_includes I18n.load_path.map { |path| File.expand_path(path) }, File.expand_path(locale_path)
+      locale_path = File.expand_path(File.join(engine_locales_dir, "en.yml"))
+      assert_equal [locale_path], I18n.load_path.map { |path| File.expand_path(path) }
+      assert_equal "Manage access", I18n.t("recording_studio.accessible.manage.title")
+      assert_equal "Access granted.", I18n.t("recording_studio.accessible.flashes.access_granted")
     end
   end
 

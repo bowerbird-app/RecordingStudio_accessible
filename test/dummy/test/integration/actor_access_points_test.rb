@@ -68,24 +68,19 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, 'href="/#workspace-access"'
   end
 
-  test "actor access points empty state renders literal English when actor has no workspace grants" do
-    actor_without_workspace_access = create_user("empty-actor@admin.com")
-    create_direct_access_recording(
-      actor: actor_without_workspace_access,
-      role: :admin,
-      parent_recording: @other_root_recording
-    )
-    sign_in @admin
+  test "current actor with no workspace grants sees empty state on their own page" do
+    outsider = create_user("empty-self@admin.com")
+    sign_in outsider
 
     get actor_access_points_path, params: {
       actor_type: "User",
-      actor_id: actor_without_workspace_access.id
+      actor_id: outsider.id
     }
 
     assert_response :success
     assert_includes @response.body, "No access recordings"
     assert_includes @response.body, "User has no direct access recordings in this workspace"
-    assert_includes @response.body, "#{actor_without_workspace_access.email} access points"
+    assert_includes @response.body, "#{outsider.email} access points"
     refute_includes @response.body, "<table"
   end
 
@@ -144,16 +139,22 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, @actor.email
   end
 
-  test "actor access point lookup 404s for actors that do not exist" do
-    missing_id = "00000000-0000-4000-8000-000000000099"
+  test "actor access point lookup does not reveal actors without workspace access" do
+    actor_without_workspace_access = create_user("other-actor@admin.com")
+    create_direct_access_recording(
+      actor: actor_without_workspace_access,
+      role: :admin,
+      parent_recording: @other_root_recording
+    )
     sign_in @admin
 
     get actor_access_points_path, params: {
       actor_type: "User",
-      actor_id: missing_id
+      actor_id: actor_without_workspace_access.id
     }
 
     assert_response :not_found
+    refute_includes @response.body, actor_without_workspace_access.email
   end
 
   test "broad mounted page access cannot view another actor access points" do

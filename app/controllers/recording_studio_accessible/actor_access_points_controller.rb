@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module RecordingStudioAccessible
-  # rubocop:disable Metrics/ClassLength
   class ActorAccessPointsController < ApplicationController
     include RecordingStudioAccessible::NavigationUrlSafety
 
@@ -50,33 +49,26 @@ module RecordingStudioAccessible
 
     def load_access_rows
       access_recordings = workspace_access_recordings.to_a
-      @actor = actor_from_access_rows(access_recordings) || resolve_actor_record
-      return head :not_found unless @actor
+      if access_recordings.empty?
+        # Empty state only for the signed-in actor viewing their own page.
+        # Managers must not discover actors with no grants in this workspace.
+        return head :not_found unless requested_current_actor?
+
+        @actor = current_actor
+      else
+        @actor = access_recordings.first.recordable.actor
+      end
 
       @actor_label = RecordingStudioAccessible.configuration.actor_label_for(@actor)
       @actor_type_label = @resolved_actor_type.demodulize
-      @access_rows = access_row_hashes(access_recordings)
-    end
 
-    def access_row_hashes(access_recordings)
-      access_recordings.map do |access_recording|
+      @access_rows = access_recordings.map do |access_recording|
         {
           access_point: recordable_label_for(access_recording.parent_recording&.recordable),
           role: access_recording.recordable.role,
           recording_id: access_recording.id
         }
       end
-    end
-
-    def actor_from_access_rows(access_recordings)
-      access_recordings.first&.recordable&.actor
-    end
-
-    def resolve_actor_record
-      klass = @resolved_actor_type.safe_constantize
-      return unless klass.respond_to?(:find_by)
-
-      klass.find_by(id: @actor_id)
     end
 
     def workspace_access_recordings
@@ -143,5 +135,4 @@ module RecordingStudioAccessible
       recordable.class.name.demodulize
     end
   end
-  # rubocop:enable Metrics/ClassLength
 end
