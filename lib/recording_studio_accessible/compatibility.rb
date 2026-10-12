@@ -100,8 +100,10 @@ module RecordingStudioAccessible
         return unless access_class.respond_to?(:recording_studio_recordable)
 
         # Label is captured at class load by Recording Studio; keep English here.
+        # Use literals (not ::Access::LABEL) so unit tests that stub RecordingStudio
+        # without loading Access/AccessRule/AccessConstraint still succeed.
         access_class.recording_studio_recordable(
-          label: ::RecordingStudio::Access::LABEL,
+          label: "Access",
           root: false
         )
       end
@@ -109,14 +111,8 @@ module RecordingStudioAccessible
       def ensure_audience_recordable_declarations!
         return unless defined?(::RecordingStudio)
 
-        declare_audience_recordable(
-          ACCESS_CONSTRAINT_RECORDABLE_TYPE,
-          ::RecordingStudio::AccessConstraint::LABEL
-        )
-        declare_audience_recordable(
-          ACCESS_RULE_RECORDABLE_TYPE,
-          ::RecordingStudio::AccessRule::LABEL
-        )
+        declare_audience_recordable(ACCESS_CONSTRAINT_RECORDABLE_TYPE, "Audience limit")
+        declare_audience_recordable(ACCESS_RULE_RECORDABLE_TYPE, "Audience")
       end
 
       def audience_parent_allowed?(recording:, child_type:)

@@ -529,7 +529,12 @@ class AccessInvitationTest < ActiveSupport::TestCase
       manager_actor: @manager
     )
     invitation.valid?
-    assert_includes invitation.errors.details[:email].map { |detail| detail[:error] }, :not_normalized
+
+    # Main used symbol types with message:; details must stay identical.
+    reference = ActiveModel::Errors.new(invitation)
+    reference.add(:email, :not_normalized)
+    assert_includes invitation.errors.details[:email], { error: :not_normalized }
+    assert_equal :not_normalized, invitation.errors.details[:email].find { |d| d[:error] == :not_normalized }[:error]
     assert invitation.errors.added?(:email, :not_normalized)
     assert_equal ["must be normalized"], invitation.errors[:email]
 
@@ -548,7 +553,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
       manager_actor: @manager
     )
     invitation.valid?
-    assert_includes invitation.errors.details[:email].map { |detail| detail[:error] }, :not_normalized
+    assert_includes invitation.errors.details[:email], { error: :not_normalized }
     assert invitation.errors.added?(:email, :not_normalized)
     assert_equal ["doit être normalisé"], invitation.errors[:email]
   ensure
