@@ -25,7 +25,7 @@ class AccessCreationGuardErrorTypesTest < Minitest::Test
     def persisted? = false
   end
 
-  def test_create_via_grant_error_type_matches_main_english_string
+  def test_english_details_match_main_string_type
     recordable = AccessRecordable.new
     recordable.send(:prevent_unsupported_direct_creation)
 
@@ -34,10 +34,10 @@ class AccessCreationGuardErrorTypesTest < Minitest::Test
 
     assert_equal reference.details[:base], recordable.errors.details[:base]
     assert_equal [{ error: CREATE_VIA_GRANT }], recordable.errors.details[:base]
-    assert recordable.errors.added?(:base, CREATE_VIA_GRANT)
+    assert_includes recordable.errors.full_messages, CREATE_VIA_GRANT
   end
 
-  def test_create_via_grant_error_type_stays_english_under_french_locale
+  def test_french_full_messages_and_details_use_translated_string
     french = "Créer via grant_access"
     previous_locale = I18n.locale
     previous_available = I18n.available_locales.dup
@@ -53,17 +53,29 @@ class AccessCreationGuardErrorTypesTest < Minitest::Test
     recordable = AccessRecordable.new
     recordable.send(:prevent_unsupported_direct_creation)
 
-    reference = ActiveModel::Errors.new(recordable)
-    reference.add(:base, CREATE_VIA_GRANT)
-
-    assert_equal reference.details[:base], recordable.errors.details[:base]
-    assert_equal [{ error: CREATE_VIA_GRANT }], recordable.errors.details[:base]
-    assert recordable.errors.added?(:base, CREATE_VIA_GRANT)
-    # String error types are the displayed message in ActiveModel; details stay English.
-    assert_equal [CREATE_VIA_GRANT], recordable.errors[:base]
+    assert_equal [{ error: french }], recordable.errors.details[:base]
+    assert_includes recordable.errors.full_messages, french
   ensure
     I18n.locale = previous_locale
     I18n.available_locales = previous_available if previous_available
+    I18n.backend.instance_variable_set(:@translations, previous_translations) if previous_translations
+  end
+
+  def test_host_english_override_renders
+    host = "HOST Create via grant_access"
+    previous_translations = deep_plain_copy(I18n.backend.translations)
+
+    I18n.backend.store_translations(
+      :en,
+      recording_studio: { accessible: { errors: { create_via_grant_access: host } } }
+    )
+
+    recordable = AccessRecordable.new
+    recordable.send(:prevent_unsupported_direct_creation)
+
+    assert_equal [{ error: host }], recordable.errors.details[:base]
+    assert_includes recordable.errors.full_messages, host
+  ensure
     I18n.backend.instance_variable_set(:@translations, previous_translations) if previous_translations
   end
 

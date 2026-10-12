@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - `Copy.role_name` treats blank or whitespace-only roles as empty (same as nil), instead of falling through to `humanize`.
 - Creation-guard and bootstrap/integrity failures resolve through `Copy.t(..., default: <constant English>)` while public message constants stay for API compatibility.
-- Validation `errors.add` keeps the original English string or symbol as the error type and passes the locale string via `message:`, so `errors.details`, `added?`, and `of_kind?` match pre-i18n behavior.
+- Validation `errors.add` for former English-string types passes `Copy.t(..., default: <main's English>)` as the String type (ActiveModel 8.1 ignores `message:` for Strings); symbol-typed invitation errors keep `errors.add(attr, :sym, message: ...)`. In non-English locales, `errors.details` carries the translated string for those former String types.
 - Recordable `recordable_type_label` / `recordable_name` / `audience_write_error` resolve at call time; `recording_studio_recordable label:` stays English (class-load DSL).
 - Layout title / `application-name` meta pass an English `default:` so non-HTML surfaces never emit “Translation missing”.
 

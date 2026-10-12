@@ -556,6 +556,7 @@ class AccessInvitationTest < ActiveSupport::TestCase
     assert_includes invitation.errors.details[:email], { error: :not_normalized }
     assert invitation.errors.added?(:email, :not_normalized)
     assert_equal ["doit être normalisé"], invitation.errors[:email]
+    assert_includes invitation.errors.full_messages, "Email doit être normalisé"
   ensure
     I18n.locale = previous_locale if previous_locale
     I18n.backend.instance_variable_set(:@translations, previous_translations) if previous_translations

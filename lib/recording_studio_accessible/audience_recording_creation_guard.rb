@@ -23,8 +23,8 @@ module RecordingStudioAccessible
       return unless audience_placement_enabled?
       return if RecordingStudioAccessible::AudienceWriteContext.allowed?
 
-      write_error = audience_recordable_class::WRITE_ERROR
-      errors.add(:base, write_error, message: audience_recordable_class.audience_write_error)
+      # ActiveModel 8.1 ignores message: for String types; pass translated string.
+      errors.add(:base, audience_recordable_class.audience_write_error)
     end
 
     def prevent_duplicate_live_audience_recording
@@ -45,8 +45,7 @@ module RecordingStudioAccessible
 
       errors.add(
         :base,
-        DUPLICATE_AUDIENCE_RECORDING_ERROR,
-        message: Copy.t("errors.duplicate_audience_recording", default: DUPLICATE_AUDIENCE_RECORDING_ERROR)
+        Copy.t("errors.duplicate_audience_recording", default: DUPLICATE_AUDIENCE_RECORDING_ERROR)
       )
     end
 
@@ -58,8 +57,7 @@ module RecordingStudioAccessible
 
       errors.add(
         :parent_recording,
-        CONSTRAINT_NOT_ROOT_ERROR,
-        message: Copy.t("errors.audience_constraint_create_not_root", default: CONSTRAINT_NOT_ROOT_ERROR)
+        Copy.t("errors.audience_constraint_create_not_root", default: CONSTRAINT_NOT_ROOT_ERROR)
       )
     end
 
@@ -67,11 +65,12 @@ module RecordingStudioAccessible
       return false if parent_recording.blank?
 
       if constraint_recordable? && RecordingStudioAccessible::SharedRootAccess.target?(parent_recording)
-        denied = RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
         errors.add(
           :parent_recording,
-          denied,
-          message: Copy.t("errors.grant_denied", default: denied)
+          Copy.t(
+            "errors.grant_denied",
+            default: RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
+          )
         )
         return false
       end
@@ -81,12 +80,10 @@ module RecordingStudioAccessible
         child_type: recordable_type_name
       )
 
-      # Keep the English interpolated string as the error type (matches main).
-      audience_children_not_allowed = "does not allow #{recordable_type_name} children"
+      # Main used the interpolated English as the String type/message.
       errors.add(
         :parent_recording,
-        audience_children_not_allowed,
-        message: Copy.t(
+        Copy.t(
           "errors.audience_children_not_allowed",
           # I18n interpolation tokens use %{name}, not %<name>s.
           default: "does not allow %{type} children", # rubocop:disable Style/FormatStringToken

@@ -32,7 +32,7 @@ class AudienceCreationGuardErrorTypesTest < Minitest::Test
     def persisted? = false
   end
 
-  def test_audience_write_error_type_matches_main_english_string
+  def test_english_details_match_main_string_type
     recordable = AudienceRecordable.new
     recordable.send(:prevent_unsupported_direct_audience_creation)
 
@@ -41,10 +41,10 @@ class AudienceCreationGuardErrorTypesTest < Minitest::Test
 
     assert_equal reference.details[:base], recordable.errors.details[:base]
     assert_equal [{ error: AudienceRecordable::WRITE_ERROR }], recordable.errors.details[:base]
-    assert recordable.errors.added?(:base, AudienceRecordable::WRITE_ERROR)
+    assert_includes recordable.errors.full_messages, AudienceRecordable::WRITE_ERROR
   end
 
-  def test_audience_write_error_type_stays_english_under_french_locale
+  def test_french_full_messages_and_details_use_translated_string
     french = "Créer via set_audience!"
     previous_locale = I18n.locale
     previous_available = I18n.available_locales.dup
@@ -62,17 +62,31 @@ class AudienceCreationGuardErrorTypesTest < Minitest::Test
     recordable = AudienceRecordable.new
     recordable.send(:prevent_unsupported_direct_audience_creation)
 
-    reference = ActiveModel::Errors.new(recordable)
-    reference.add(:base, AudienceRecordable::WRITE_ERROR)
-
-    assert_equal reference.details[:base], recordable.errors.details[:base]
-    assert_equal [{ error: AudienceRecordable::WRITE_ERROR }], recordable.errors.details[:base]
-    assert recordable.errors.added?(:base, AudienceRecordable::WRITE_ERROR)
-    # String error types are the displayed message in ActiveModel; details stay English.
-    assert_equal [AudienceRecordable::WRITE_ERROR], recordable.errors[:base]
+    assert_equal [{ error: french }], recordable.errors.details[:base]
+    assert_includes recordable.errors.full_messages, french
   ensure
     I18n.locale = previous_locale
     I18n.available_locales = previous_available if previous_available
+    I18n.backend.instance_variable_set(:@translations, previous_translations) if previous_translations
+  end
+
+  def test_host_english_override_renders
+    host = "HOST Create via set_audience!"
+    previous_translations = deep_plain_copy(I18n.backend.translations)
+
+    I18n.backend.store_translations(
+      :en,
+      recording_studio: {
+        accessible: { recordables: { access_rule: { write_error: host } } }
+      }
+    )
+
+    recordable = AudienceRecordable.new
+    recordable.send(:prevent_unsupported_direct_audience_creation)
+
+    assert_equal [{ error: host }], recordable.errors.details[:base]
+    assert_includes recordable.errors.full_messages, host
+  ensure
     I18n.backend.instance_variable_set(:@translations, previous_translations) if previous_translations
   end
 

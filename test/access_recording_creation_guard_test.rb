@@ -97,9 +97,8 @@ class AccessRecordingCreationGuardTest < Minitest::Test
       end
     end
 
-    assert_main_identical_error_details(recording.errors, :base, CREATE_VIA_GRANT)
-    assert recording.errors.added?(:base, CREATE_VIA_GRANT)
-    assert_equal [CREATE_VIA_GRANT], recording.errors[:base]
+    assert_english_details_match_main(recording.errors, :base, CREATE_VIA_GRANT)
+    assert_includes recording.errors.full_messages, CREATE_VIA_GRANT
   end
 
   def test_allows_access_recording_creation_inside_access_context
@@ -124,8 +123,7 @@ class AccessRecordingCreationGuardTest < Minitest::Test
       recording.send(:prevent_unsupported_access_recording_creation)
     end
 
-    assert_main_identical_error_details(recording.errors, :parent_recording, denied)
-    assert recording.errors.added?(:parent_recording, denied)
+    assert_english_details_match_main(recording.errors, :parent_recording, denied)
   end
 
   def test_rejects_access_recording_when_parent_disallows_access_children
@@ -137,11 +135,10 @@ class AccessRecordingCreationGuardTest < Minitest::Test
       end
     end
 
-    assert_main_identical_error_details(recording.errors, :parent_recording, ACCESS_CHILDREN_NOT_ALLOWED)
-    assert recording.errors.added?(:parent_recording, ACCESS_CHILDREN_NOT_ALLOWED)
+    assert_english_details_match_main(recording.errors, :parent_recording, ACCESS_CHILDREN_NOT_ALLOWED)
   end
 
-  def test_translated_guard_message_keeps_main_english_error_type_in_details
+  def test_french_locale_full_messages_and_details_use_translated_string
     recording = Recording.new
     french = "Créer via grant_access"
     previous_locale = I18n.locale
@@ -161,15 +158,34 @@ class AccessRecordingCreationGuardTest < Minitest::Test
       end
     end
 
-    # details / added? must match main even when the locale is not English.
-    # ActiveModel uses a String type as the displayed message and ignores message:.
-    assert_main_identical_error_details(recording.errors, :base, CREATE_VIA_GRANT)
-    assert recording.errors.added?(:base, CREATE_VIA_GRANT)
-    assert_equal [CREATE_VIA_GRANT], recording.errors[:base]
-    refute_equal([french], recording.errors.details[:base].map { |detail| detail[:error] })
+    assert_equal [{ error: french }], recording.errors.details[:base]
+    assert_includes recording.errors.full_messages, french
+    refute_includes recording.errors.full_messages, CREATE_VIA_GRANT
   ensure
     I18n.locale = previous_locale
     I18n.available_locales = previous_available if previous_available
+    I18n.backend.instance_variable_set(:@translations, previous_translations) if previous_translations
+  end
+
+  def test_host_english_override_renders_on_guard_error
+    recording = Recording.new
+    host = "HOST Create via grant_access"
+    previous_translations = deep_plain_copy(I18n.backend.translations)
+
+    I18n.backend.store_translations(
+      :en,
+      recording_studio: { accessible: { errors: { create_via_grant_access: host } } }
+    )
+
+    RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+      RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, true) do
+        recording.send(:prevent_unsupported_access_recording_creation)
+      end
+    end
+
+    assert_equal [{ error: host }], recording.errors.details[:base]
+    assert_includes recording.errors.full_messages, host
+  ensure
     I18n.backend.instance_variable_set(:@translations, previous_translations) if previous_translations
   end
 
@@ -200,8 +216,7 @@ class AccessRecordingCreationGuardTest < Minitest::Test
     recording.send(:prevent_duplicate_active_access_recording)
 
     duplicate = RecordingStudioAccessible::AccessRecordingCreationGuard::DUPLICATE_ACCESS_RECORDING_ERROR
-    assert_main_identical_error_details(recording.errors, :base, duplicate)
-    assert recording.errors.added?(:base, duplicate)
+    assert_english_details_match_main(recording.errors, :base, duplicate)
     assert_includes Recording.scope.wheres, [{ trashed_at: nil }]
     assert_includes Recording.scope.wheres,
                     [{ recording_studio_accesses: { actor_type: "AccessRecordingCreationGuardTest::Actor", actor_id: 42 } }]
@@ -220,13 +235,12 @@ class AccessRecordingCreationGuardTest < Minitest::Test
 
   private
 
-  # Main called errors.add(attr, english_or_symbol) with no message: option.
-  # details must stay identical when we only add message: for translation.
-  def assert_main_identical_error_details(actual_errors, attribute, main_type)
+  # English default: must match main's errors.add(attr, "<English>") details byte-for-byte.
+  def assert_english_details_match_main(actual_errors, attribute, main_english)
     reference = ActiveModel::Errors.new(actual_errors.instance_variable_get(:@base))
-    reference.add(attribute, main_type)
+    reference.add(attribute, main_english)
     assert_equal reference.details[attribute], actual_errors.details[attribute]
-    assert_equal [{ error: main_type }], actual_errors.details[attribute]
+    assert_equal [{ error: main_english }], actual_errors.details[attribute]
   end
 
   def deep_plain_copy(value)

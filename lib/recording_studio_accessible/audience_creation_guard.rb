@@ -15,8 +15,9 @@ module RecordingStudioAccessible
     def prevent_unsupported_direct_audience_creation
       return if RecordingStudioAccessible::AudienceWriteContext.allowed?
 
-      write_error = self.class::WRITE_ERROR
-      errors.add(:base, write_error, message: self.class.audience_write_error)
+      # audience_write_error already resolves Copy.t with default: WRITE_ERROR.
+      # ActiveModel 8.1 ignores message: for String types, so pass it directly.
+      errors.add(:base, self.class.audience_write_error)
     end
   end
 end
