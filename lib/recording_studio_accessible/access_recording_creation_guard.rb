@@ -22,7 +22,10 @@ module RecordingStudioAccessible
 
       errors.add(
         :base,
-        Copy.t("errors.create_via_grant_access", default: "Create access grants through RecordingStudioAccessible.grant_access")
+        Copy.t(
+          "errors.create_via_grant_access",
+          default: "Create access grants through RecordingStudioAccessible.grant_access"
+        )
       )
     end
 
@@ -50,12 +53,12 @@ module RecordingStudioAccessible
                          .where(recording_studio_accesses: { actor_type: actor_type, actor_id: actor_id })
                          .exists?
 
-      if duplicate_exists
-        errors.add(
-          :base,
-          Copy.t("errors.duplicate_access_recording", default: DUPLICATE_ACCESS_RECORDING_ERROR)
-        )
-      end
+      return unless duplicate_exists
+
+      errors.add(
+        :base,
+        Copy.t("errors.duplicate_access_recording", default: DUPLICATE_ACCESS_RECORDING_ERROR)
+      )
     end
 
     def access_recordable?

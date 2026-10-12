@@ -53,14 +53,10 @@ module RecordingStudioAccessible
       def grant_error(target_recording:, role:, depends_on:, dependent_recording: nil)
         return if depends_on.nil?
 
-        unless column_available?
-          return Copy.t("errors.dependent_missing_column", default: MISSING_COLUMN_MESSAGE)
-        end
+        return Copy.t("errors.dependent_missing_column", default: MISSING_COLUMN_MESSAGE) unless column_available?
 
         manager = resolve_recording(depends_on)
-        unless manager
-          return Copy.t("errors.dependent_missing_manager", default: MISSING_MANAGER_MESSAGE)
-        end
+        return Copy.t("errors.dependent_missing_manager", default: MISSING_MANAGER_MESSAGE) unless manager
         unless active_recording?(manager)
           return Copy.t("errors.dependent_missing_manager", default: MISSING_MANAGER_MESSAGE)
         end

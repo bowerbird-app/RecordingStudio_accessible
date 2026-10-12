@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module RecordingStudioAccessible
+  # rubocop:disable Metrics/ClassLength
   class ActorAccessPointsController < ApplicationController
     include RecordingStudioAccessible::NavigationUrlSafety
 
@@ -54,8 +55,11 @@ module RecordingStudioAccessible
 
       @actor_label = RecordingStudioAccessible.configuration.actor_label_for(@actor)
       @actor_type_label = @resolved_actor_type.demodulize
+      @access_rows = access_row_hashes(access_recordings)
+    end
 
-      @access_rows = access_recordings.map do |access_recording|
+    def access_row_hashes(access_recordings)
+      access_recordings.map do |access_recording|
         {
           access_point: recordable_label_for(access_recording.parent_recording&.recordable),
           role: access_recording.recordable.role,
@@ -139,4 +143,5 @@ module RecordingStudioAccessible
       recordable.class.name.demodulize
     end
   end
+  # rubocop:enable Metrics/ClassLength
 end

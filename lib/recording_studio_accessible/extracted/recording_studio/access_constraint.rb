@@ -12,7 +12,8 @@ module RecordingStudio
     include RecordingStudioAccessible::AudienceCreationGuard
 
     LABEL = "Audience limit"
-    NAME_DEFAULT = "Audience limit: %{action} — %{audiences}"
+    # I18n interpolation tokens use %{name}, not %<name>s.
+    NAME_DEFAULT = "Audience limit: %{action} — %{audiences}" # rubocop:disable Style/FormatStringToken
     WRITE_ERROR = "Create audience limits through RecordingStudioAccessible.set_audience_constraint!"
 
     # recording_studio_recordable captures label at class load; keep English here.

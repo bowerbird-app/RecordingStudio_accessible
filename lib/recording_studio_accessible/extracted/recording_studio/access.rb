@@ -16,7 +16,8 @@ module RecordingStudio
     include RecordingStudioAccessible::AccessCreationGuard
 
     LABEL = "Access"
-    NAME_DEFAULT = "Access: %{role} — %{actor}"
+    # I18n interpolation tokens use %{name}, not %<name>s.
+    NAME_DEFAULT = "Access: %{role} — %{actor}" # rubocop:disable Style/FormatStringToken
 
     # recording_studio_recordable captures label at class load; keep English here.
     recording_studio_recordable label: LABEL, root: false if respond_to?(:recording_studio_recordable)
@@ -38,25 +39,21 @@ module RecordingStudio
     end
 
     def recordable_name
-      actor_name = actor.respond_to?(:name) ? actor.name.to_s.squish.presence : nil
-      actor_text =
-        if actor_name.present?
-          suffix = actor.class.name.demodulize
-          "#{actor_name} (#{suffix})"
-        else
-          RecordingStudioAccessible::Copy.t(
-            "errors.unknown_actor",
-            default: "Unknown actor"
-          )
-        end
-
       RecordingStudioAccessible::Copy.t(
         "recordables.access.name",
         default: NAME_DEFAULT,
         role: role,
-        actor: actor_text
+        actor: access_actor_text
       )
     end
+
+    def access_actor_text
+      actor_name = actor.respond_to?(:name) ? actor.name.to_s.squish.presence : nil
+      return "#{actor_name} (#{actor.class.name.demodulize})" if actor_name.present?
+
+      RecordingStudioAccessible::Copy.t("errors.unknown_actor", default: "Unknown actor")
+    end
+    private :access_actor_text
 
     alias recording_studio_label recordable_name
   end

@@ -12,7 +12,8 @@ module RecordingStudio
     include RecordingStudioAccessible::AudienceCreationGuard
 
     LABEL = "Audience"
-    NAME_DEFAULT = "Audience: %{action} — %{audience}"
+    # I18n interpolation tokens use %{name}, not %<name>s.
+    NAME_DEFAULT = "Audience: %{action} — %{audience}" # rubocop:disable Style/FormatStringToken
     WRITE_ERROR = "Create audiences through RecordingStudioAccessible.set_audience!"
 
     # recording_studio_recordable captures label at class load; keep English here.

@@ -3,6 +3,7 @@
 require "active_support/concern"
 
 module RecordingStudioAccessible
+  # rubocop:disable Metrics/ModuleLength
   module AudienceRecordingCreationGuard
     DUPLICATE_AUDIENCE_RECORDING_ERROR = "Only one live audience setting is allowed per action under the same parent"
     CONSTRAINT_NOT_ROOT_ERROR = "Audience limits can only be added on a workspace"
@@ -39,12 +40,12 @@ module RecordingStudioAccessible
         action: action,
         except_id: id
       )
-      if duplicate
-        errors.add(
-          :base,
-          Copy.t("errors.duplicate_audience_recording", default: DUPLICATE_AUDIENCE_RECORDING_ERROR)
-        )
-      end
+      return unless duplicate
+
+      errors.add(
+        :base,
+        Copy.t("errors.duplicate_audience_recording", default: DUPLICATE_AUDIENCE_RECORDING_ERROR)
+      )
     end
 
     def prevent_access_constraint_on_non_root
@@ -82,7 +83,8 @@ module RecordingStudioAccessible
         :parent_recording,
         Copy.t(
           "errors.audience_children_not_allowed",
-          default: "does not allow %{type} children",
+          # I18n interpolation tokens use %{name}, not %<name>s.
+          default: "does not allow %{type} children", # rubocop:disable Style/FormatStringToken
           type: recordable_type_name
         )
       )
@@ -136,4 +138,5 @@ module RecordingStudioAccessible
       false
     end
   end
+  # rubocop:enable Metrics/ModuleLength
 end
