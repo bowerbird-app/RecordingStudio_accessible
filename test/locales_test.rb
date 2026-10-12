@@ -88,7 +88,7 @@ class LocalesTest < Minitest::Test
     # Assert that file actually drives lookups (not merely that the path we set is present).
     with_gem_english_locale_only do
       locale_path = File.expand_path(File.join(engine_locales_dir, "en.yml"))
-      assert_equal [locale_path], I18n.load_path.map { |path| File.expand_path(path) }
+      assert_equal([locale_path], I18n.load_path.map { |path| File.expand_path(path) })
       assert_equal "Manage access", I18n.t("recording_studio.accessible.manage.title")
       assert_equal "Access granted.", I18n.t("recording_studio.accessible.flashes.access_granted")
     end
