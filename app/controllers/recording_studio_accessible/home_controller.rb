@@ -18,7 +18,10 @@ module RecordingStudioAccessible
     def access_methods
       @method_sections = [
         {
-          title: "Bootstrap the first owner with RecordingStudioAccessible.bootstrap_owner_access!",
+          title: Copy.t(
+            "home.methods.bootstrap_title",
+            default: "Bootstrap the first owner with RecordingStudioAccessible.bootstrap_owner_access!"
+          ),
           code: <<~'RUBY'.strip
             RecordingStudioAccessible.bootstrap_owner_access!(
               recording: recording,
@@ -27,7 +30,10 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "Grant access with RecordingStudioAccessible.grant_access",
+          title: Copy.t(
+            "home.methods.grant_title",
+            default: "Grant access with RecordingStudioAccessible.grant_access"
+          ),
           code: <<~'RUBY'.strip
             RecordingStudioAccessible.grant_access(
               recording: recording,
@@ -38,7 +44,10 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "Resolve a user's role with RecordingStudioAccessible.role_for",
+          title: Copy.t(
+            "home.methods.role_for_title",
+            default: "Resolve a user's role with RecordingStudioAccessible.role_for"
+          ),
           code: <<~'RUBY'.strip
             RecordingStudioAccessible.role_for(
               actor: user,
@@ -47,7 +56,10 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "Check authorization with RecordingStudioAccessible.authorized?",
+          title: Copy.t(
+            "home.methods.authorized_title",
+            default: "Check authorization with RecordingStudioAccessible.authorized?"
+          ),
           code: <<~'RUBY'.strip
             RecordingStudioAccessible.authorized?(
               actor: user,
@@ -57,7 +69,10 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "List accessible roots with RecordingStudioAccessible.root_recordings_for",
+          title: Copy.t(
+            "home.methods.root_recordings_title",
+            default: "List accessible roots with RecordingStudioAccessible.root_recordings_for"
+          ),
           code: <<~'RUBY'.strip
             RecordingStudioAccessible.root_recordings_for(
               actor: user,
@@ -66,7 +81,10 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "List accessible root ids with RecordingStudioAccessible.root_recording_ids_for",
+          title: Copy.t(
+            "home.methods.root_recording_ids_title",
+            default: "List accessible root ids with RecordingStudioAccessible.root_recording_ids_for"
+          ),
           code: <<~RUBY.strip
             RecordingStudioAccessible.root_recording_ids_for(
               actor: user,
@@ -75,7 +93,10 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "List direct grants on a recording with RecordingStudioAccessible.access_recordings_for",
+          title: Copy.t(
+            "home.methods.access_recordings_title",
+            default: "List direct grants on a recording with RecordingStudioAccessible.access_recordings_for"
+          ),
           code: <<~RUBY.strip
             RecordingStudioAccessible.access_recordings_for(recording)
           RUBY
@@ -90,39 +111,63 @@ module RecordingStudioAccessible
         {
           title: "unresolved",
           badge_style: :default,
-          body: "The default when no actor matches the email. The access page stores an invitation and sends it."
+          body: Copy.t(
+            "home.user_invites.statuses.unresolved",
+            default: "The default when no actor matches the email. The access page stores an invitation and sends it."
+          )
         },
         {
           title: "found",
           badge_style: :default,
-          body: "An existing actor was resolved from the submitted email, so the access grant can continue immediately."
+          body: Copy.t(
+            "home.user_invites.statuses.found",
+            default: "An existing actor was resolved from the submitted email, so the access grant can continue immediately."
+          )
         },
         {
           title: "created",
           badge_style: :info,
-          body: "Use this only after your app has already verified the recipient and finished any setup needed for the same grant request."
+          body: Copy.t(
+            "home.user_invites.statuses.created",
+            default: "Use this only after your app has already verified the recipient and finished any setup needed for the same grant request."
+          )
         },
         {
           title: "invited",
           badge_style: :default,
-          body: "Use this when another invite flow sent the invitation. The addon stores nothing and sends the manager back to the access list with a notice."
+          body: Copy.t(
+            "home.user_invites.statuses.invited",
+            default: "Use this when another invite flow sent the invitation. The addon stores nothing and sends the manager back to the access list with a notice."
+          )
         },
         {
           title: "requires_resolution",
           badge_style: :info,
-          body: "Redirect the manager into a setup flow, such as a custom user creation screen, before granting access."
+          body: Copy.t(
+            "home.user_invites.statuses.requires_resolution",
+            default: "Redirect the manager into a setup flow, such as a custom user creation screen, before granting access."
+          )
         },
         {
           title: "invalid",
           badge_style: :default,
-          body: "The submitted email could not be used. The form re-renders with the returned error message."
+          body: Copy.t(
+            "home.user_invites.statuses.invalid",
+            default: "The submitted email could not be used. The form re-renders with the returned error message."
+          )
         }
       ]
 
       @invite_setup_examples = [
         {
-          title: "Only find existing users",
-          body: "Use the resolver when your app should only grant access to users that already exist.",
+          title: Copy.t(
+            "home.user_invites.setup.find_existing_title",
+            default: "Only find existing users"
+          ),
+          body: Copy.t(
+            "home.user_invites.setup.find_existing_body",
+            default: "Use the resolver when your app should only grant access to users that already exist."
+          ),
           code: <<~'RUBY'.strip
             config.access_management_actor_email_resolver = lambda do |controller:, email:|
               User.find_by(email: email.to_s.strip.downcase)
@@ -130,8 +175,14 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "Keep the form blocked until a trusted workflow resolves the email",
-          body: "Prefer returning an error until your app finishes any invite, approval, or verification work for that address.",
+          title: Copy.t(
+            "home.user_invites.setup.block_until_trusted_title",
+            default: "Keep the form blocked until a trusted workflow resolves the email"
+          ),
+          body: Copy.t(
+            "home.user_invites.setup.block_until_trusted_body",
+            default: "Prefer returning an error until your app finishes any invite, approval, or verification work for that address."
+          ),
           code: <<~'RUBY'.strip
             config.access_management_missing_actor_handler = lambda do |email:, **|
               normalized_email = email.to_s.strip.downcase
@@ -144,8 +195,14 @@ module RecordingStudioAccessible
           RUBY
         },
         {
-          title: "Send managers to a resolution flow",
-          body: "Return a redirect-style resolution when a person needs extra setup, approvals, or a richer invite workflow before the grant continues.",
+          title: Copy.t(
+            "home.user_invites.setup.redirect_resolution_title",
+            default: "Send managers to a resolution flow"
+          ),
+          body: Copy.t(
+            "home.user_invites.setup.redirect_resolution_body",
+            default: "Return a redirect-style resolution when a person needs extra setup, approvals, or a richer invite workflow before the grant continues."
+          ),
           code: <<~'RUBY'.strip
             config.access_management_missing_actor_handler = lambda do |controller:, email:, **|
               normalized_email = email.to_s.strip.downcase
@@ -261,9 +318,21 @@ module RecordingStudioAccessible
       return [] unless @root_recording
 
       [
-        access_row(label: @admin_user&.email || "Admin", actor: @admin_user, minimum_role: :admin),
-        access_row(label: @viewer_user&.email || "Viewer", actor: @viewer_user, minimum_role: :view),
-        access_row(label: "Anonymous", actor: nil, minimum_role: :view)
+        access_row(
+          label: @admin_user&.email || Copy.t("home.index.admin_fallback", default: "Admin"),
+          actor: @admin_user,
+          minimum_role: :admin
+        ),
+        access_row(
+          label: @viewer_user&.email || Copy.t("home.index.viewer_fallback", default: "Viewer"),
+          actor: @viewer_user,
+          minimum_role: :view
+        ),
+        access_row(
+          label: Copy.t("home.index.anonymous", default: "Anonymous"),
+          actor: nil,
+          minimum_role: :view
+        )
       ]
     end
 

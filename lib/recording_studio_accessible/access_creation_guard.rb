@@ -15,7 +15,13 @@ module RecordingStudioAccessible
     def prevent_unsupported_direct_creation
       return if RecordingStudioAccessible::AccessCreationContext.allowed?
 
-      errors.add(:base, "Create access grants through RecordingStudioAccessible.grant_access")
+      errors.add(
+        :base,
+        Copy.t(
+          "errors.create_via_grant_access",
+          default: "Create access grants through RecordingStudioAccessible.grant_access"
+        )
+      )
     end
   end
 end

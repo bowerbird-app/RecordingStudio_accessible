@@ -68,16 +68,25 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, 'href="/#workspace-access"'
   end
 
-  test "actor access points empty-state copy resolves to literal English" do
-    I18n.with_locale(:en) do
-      assert_equal "No access recordings",
-                   RecordingStudioAccessible::Copy.t("actor_access_points.empty_title")
-      assert_equal "User has no direct access recordings in this workspace",
-                   RecordingStudioAccessible::Copy.t(
-                     "actor_access_points.empty_subtitle",
-                     actor_type: "User"
-                   )
-    end
+  test "actor access points empty state renders literal English when actor has no workspace grants" do
+    actor_without_workspace_access = create_user("empty-actor@admin.com")
+    create_direct_access_recording(
+      actor: actor_without_workspace_access,
+      role: :admin,
+      parent_recording: @other_root_recording
+    )
+    sign_in @admin
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: actor_without_workspace_access.id
+    }
+
+    assert_response :success
+    assert_includes @response.body, "No access recordings"
+    assert_includes @response.body, "User has no direct access recordings in this workspace"
+    assert_includes @response.body, "#{actor_without_workspace_access.email} access points"
+    refute_includes @response.body, "<table"
   end
 
   test "actor access points page rejects unsafe anchor_url" do
@@ -135,22 +144,16 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, @actor.email
   end
 
-  test "actor access point lookup does not reveal actors without workspace access" do
-    actor_without_workspace_access = create_user("other-actor@admin.com")
-    create_direct_access_recording(
-      actor: actor_without_workspace_access,
-      role: :admin,
-      parent_recording: @other_root_recording
-    )
+  test "actor access point lookup 404s for actors that do not exist" do
+    missing_id = "00000000-0000-4000-8000-000000000099"
     sign_in @admin
 
     get actor_access_points_path, params: {
       actor_type: "User",
-      actor_id: actor_without_workspace_access.id
+      actor_id: missing_id
     }
 
     assert_response :not_found
-    refute_includes @response.body, actor_without_workspace_access.email
   end
 
   test "broad mounted page access cannot view another actor access points" do

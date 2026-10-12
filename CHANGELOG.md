@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-12
+
+### Added
+- English Rails I18n keys for HomeController demo method/invite copy, call-time recordable labels, and remaining user-facing service/validation errors under `recording_studio.accessible.*`.
+- Host English override coverage: test-only fixture `test/dummy/test/locales/accessible_host_override.en.yml` plus an integration test that appends it last to `I18n.load_path`, reloads, asserts a nested key wins on a real manage-access page, then restores the load path.
+- Locale regression: every `lib/**/*.rb` file must not mention `i18n.load_path` / `I18n.load_path`. Unit tests seed gem English via `I18n.backend.store_translations` instead of appending the locale file to the load path.
+- Actor access points empty state is reachable for authorized viewers when the actor exists but has no direct grants in the workspace; rendered-page asserts cover empty-state and engine home snapshot labels.
+
+### Changed
+- `Copy.role_name` treats blank or whitespace-only roles as empty (same as nil), instead of falling through to `humanize`.
+- Creation-guard and bootstrap/integrity failures resolve through `Copy.t(..., default: <constant English>)` while public message constants stay for API compatibility.
+- Recordable `recordable_type_label` / `recordable_name` / `audience_write_error` resolve at call time; `recording_studio_recordable label:` stays English (class-load DSL).
+- Layout title / `application-name` meta pass an English `default:` so non-HTML surfaces never emit “Translation missing”.
+
+### Upgrade Notes
+- Install Accessible `0.15.0`. No migration.
+- English hosts need no change. Copy new `recording_studio.accessible.home.methods.*`, `home.user_invites.statuses.*`, `home.user_invites.setup.*`, `recordables.*`, and `errors.*` keys into host locale files when translating.
+- Hosts override by defining the same nested keys in their own `config/locales`. Public constants (`GRANT_DENIED_MESSAGE`, bootstrap messages, duplicate-grant errors, recordable `LABEL`s) remain; displayed copy follows the locale with those constants as `default:`.
+- Actor access points for an existing actor with no grants in the workspace render the empty state instead of HTTP 404 when the viewer is authorized.
+
 ## [0.14.0] - 2026-10-10
 
 ### Added
@@ -433,7 +453,9 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.14.0...v0.15.0
+[0.14.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.11.2...v0.12.0
 [0.11.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.11.1...v0.11.2

@@ -56,9 +56,13 @@ module RecordingStudioAccessible
 
       def validate_presence_and_persistence!
         return failure(copy("errors.recording_required")) unless @recording
-        return failure(RECORDING_NOT_PERSISTED_MESSAGE) unless persisted_record?(@recording)
+        unless persisted_record?(@recording)
+          return failure(copy("errors.recording_not_persisted", default: RECORDING_NOT_PERSISTED_MESSAGE))
+        end
         return failure(copy("errors.actor_required")) unless @actor
-        return failure(ACTOR_NOT_PERSISTED_MESSAGE) unless persisted_record?(@actor)
+        unless persisted_record?(@actor)
+          return failure(copy("errors.actor_not_persisted", default: ACTOR_NOT_PERSISTED_MESSAGE))
+        end
 
         true
       end
@@ -66,7 +70,9 @@ module RecordingStudioAccessible
       def validate_bootstrap_target!
         shared_root_result = reject_shared_root_target!(@recording)
         return shared_root_result unless shared_root_result == true
-        return failure(UNSUPPORTED_RECORDING_MESSAGE) unless bootstrap_recording_shape?
+        unless bootstrap_recording_shape?
+          return failure(copy("errors.bootstrap_unsupported", default: UNSUPPORTED_RECORDING_MESSAGE))
+        end
         return failure(copy("errors.direct_access_not_enabled")) unless access_management_allowed?(@recording)
 
         true
@@ -108,7 +114,11 @@ module RecordingStudioAccessible
           holders = active_direct_access_holders.to_a
           result = if holders.any?
                      existing = existing_owner_grant(holders)
-                     existing ? success(existing) : failure(ALREADY_BOOTSTRAPPED_MESSAGE)
+                     if existing
+                       success(existing)
+                     else
+                       failure(copy("errors.already_bootstrapped", default: ALREADY_BOOTSTRAPPED_MESSAGE))
+                     end
                    else
                      success(create_access_recording)
                    end

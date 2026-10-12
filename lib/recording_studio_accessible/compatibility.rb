@@ -99,8 +99,9 @@ module RecordingStudioAccessible
         access_class = constant_for_path(ACCESS_RECORDABLE_TYPE)
         return unless access_class.respond_to?(:recording_studio_recordable)
 
+        # Label is captured at class load by Recording Studio; keep English here.
         access_class.recording_studio_recordable(
-          label: "Access",
+          label: ::RecordingStudio::Access::LABEL,
           root: false
         )
       end
@@ -108,8 +109,14 @@ module RecordingStudioAccessible
       def ensure_audience_recordable_declarations!
         return unless defined?(::RecordingStudio)
 
-        declare_audience_recordable(ACCESS_CONSTRAINT_RECORDABLE_TYPE, "Audience limit")
-        declare_audience_recordable(ACCESS_RULE_RECORDABLE_TYPE, "Audience")
+        declare_audience_recordable(
+          ACCESS_CONSTRAINT_RECORDABLE_TYPE,
+          ::RecordingStudio::AccessConstraint::LABEL
+        )
+        declare_audience_recordable(
+          ACCESS_RULE_RECORDABLE_TYPE,
+          ::RecordingStudio::AccessRule::LABEL
+        )
       end
 
       def audience_parent_allowed?(recording:, child_type:)

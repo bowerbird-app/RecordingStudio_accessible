@@ -39,7 +39,12 @@ module RecordingStudioAccessible
         action: action,
         except_id: id
       )
-      errors.add(:base, DUPLICATE_AUDIENCE_RECORDING_ERROR) if duplicate
+      if duplicate
+        errors.add(
+          :base,
+          Copy.t("errors.duplicate_audience_recording", default: DUPLICATE_AUDIENCE_RECORDING_ERROR)
+        )
+      end
     end
 
     def prevent_access_constraint_on_non_root
@@ -48,14 +53,23 @@ module RecordingStudioAccessible
       return if RecordingStudio.root_recording?(parent_recording)
       return if RecordingStudioAccessible::SharedRootAccess.target?(parent_recording)
 
-      errors.add(:parent_recording, CONSTRAINT_NOT_ROOT_ERROR)
+      errors.add(
+        :parent_recording,
+        Copy.t("errors.audience_constraint_create_not_root", default: CONSTRAINT_NOT_ROOT_ERROR)
+      )
     end
 
     def audience_placement_enabled?
       return false if parent_recording.blank?
 
       if constraint_recordable? && RecordingStudioAccessible::SharedRootAccess.target?(parent_recording)
-        errors.add(:parent_recording, RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE)
+        errors.add(
+          :parent_recording,
+          Copy.t(
+            "errors.grant_denied",
+            default: RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
+          )
+        )
         return false
       end
 
@@ -64,7 +78,14 @@ module RecordingStudioAccessible
         child_type: recordable_type_name
       )
 
-      errors.add(:parent_recording, "does not allow #{recordable_type_name} children")
+      errors.add(
+        :parent_recording,
+        Copy.t(
+          "errors.audience_children_not_allowed",
+          default: "does not allow %{type} children",
+          type: recordable_type_name
+        )
+      )
       false
     end
 

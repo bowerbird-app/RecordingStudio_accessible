@@ -49,9 +49,9 @@ module RecordingStudioAccessible
 
     def load_access_rows
       access_recordings = workspace_access_recordings.to_a
-      return head :not_found if access_recordings.empty?
+      @actor = actor_from_access_rows(access_recordings) || resolve_actor_record
+      return head :not_found unless @actor
 
-      @actor = access_recordings.first.recordable.actor
       @actor_label = RecordingStudioAccessible.configuration.actor_label_for(@actor)
       @actor_type_label = @resolved_actor_type.demodulize
 
@@ -62,6 +62,17 @@ module RecordingStudioAccessible
           recording_id: access_recording.id
         }
       end
+    end
+
+    def actor_from_access_rows(access_recordings)
+      access_recordings.first&.recordable&.actor
+    end
+
+    def resolve_actor_record
+      klass = @resolved_actor_type.safe_constantize
+      return unless klass.respond_to?(:find_by)
+
+      klass.find_by(id: @actor_id)
     end
 
     def workspace_access_recordings

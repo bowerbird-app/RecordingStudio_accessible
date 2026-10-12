@@ -15,7 +15,11 @@ module RecordingStudio
     include RecordingStudio::Recordable
     include RecordingStudioAccessible::AccessCreationGuard
 
-    recording_studio_recordable label: "Access", root: false if respond_to?(:recording_studio_recordable)
+    LABEL = "Access"
+    NAME_DEFAULT = "Access: %{role} — %{actor}"
+
+    # recording_studio_recordable captures label at class load; keep English here.
+    recording_studio_recordable label: LABEL, root: false if respond_to?(:recording_studio_recordable)
 
     belongs_to :actor, polymorphic: true
 
@@ -26,7 +30,7 @@ module RecordingStudio
     end
 
     def self.recordable_type_label
-      "Access"
+      RecordingStudioAccessible::Copy.t("recordables.access.label", default: LABEL)
     end
 
     class << self
@@ -40,10 +44,18 @@ module RecordingStudio
           suffix = actor.class.name.demodulize
           "#{actor_name} (#{suffix})"
         else
-          "Unknown actor"
+          RecordingStudioAccessible::Copy.t(
+            "errors.unknown_actor",
+            default: "Unknown actor"
+          )
         end
 
-      "Access: #{role} — #{actor_text}"
+      RecordingStudioAccessible::Copy.t(
+        "recordables.access.name",
+        default: NAME_DEFAULT,
+        role: role,
+        actor: actor_text
+      )
     end
 
     alias recording_studio_label recordable_name

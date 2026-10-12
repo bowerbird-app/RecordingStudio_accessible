@@ -20,7 +20,10 @@ module RecordingStudioAccessible
       return unless access_placement_enabled?
       return if RecordingStudioAccessible::AccessCreationContext.allowed?
 
-      errors.add(:base, "Create access grants through RecordingStudioAccessible.grant_access")
+      errors.add(
+        :base,
+        Copy.t("errors.create_via_grant_access", default: "Create access grants through RecordingStudioAccessible.grant_access")
+      )
     end
 
     def prevent_duplicate_active_access_recording
@@ -47,7 +50,12 @@ module RecordingStudioAccessible
                          .where(recording_studio_accesses: { actor_type: actor_type, actor_id: actor_id })
                          .exists?
 
-      errors.add(:base, DUPLICATE_ACCESS_RECORDING_ERROR) if duplicate_exists
+      if duplicate_exists
+        errors.add(
+          :base,
+          Copy.t("errors.duplicate_access_recording", default: DUPLICATE_ACCESS_RECORDING_ERROR)
+        )
+      end
     end
 
     def access_recordable?
@@ -68,13 +76,25 @@ module RecordingStudioAccessible
       return false if parent_recording.blank?
 
       if shared_root_parent?(parent_recording)
-        errors.add(:parent_recording, RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE)
+        errors.add(
+          :parent_recording,
+          Copy.t(
+            "errors.grant_denied",
+            default: RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
+          )
+        )
         return false
       end
 
       return true if RecordingStudioAccessible::Compatibility.access_parent_allowed?(parent_recording)
 
-      errors.add(:parent_recording, "does not allow RecordingStudio::Access children")
+      errors.add(
+        :parent_recording,
+        Copy.t(
+          "errors.access_children_not_allowed",
+          default: "does not allow RecordingStudio::Access children"
+        )
+      )
       false
     end
 
