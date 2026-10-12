@@ -118,7 +118,7 @@ Wave 2 finishes host-overridable copy outside views: HomeController demo titles/
 2. Copy new `recording_studio.accessible.home.methods.*`, `home.user_invites.statuses.*`, `home.user_invites.setup.*`, `recordables.*`, and `errors.*` keys into host locale files when translating.
 3. Public message constants and recordable `LABEL`s stay for API compatibility; displayed copy uses `Copy.t(..., default: <constant>)`.
 4. `recording_studio_recordable label:` stays English (class-load DSL). Ruby code samples on demo pages, generator CLI text, and developer `ArgumentError`s stay English.
-5. When the signed-in actor opens their own access-points page with no grants in that workspace, the empty state renders instead of HTTP 404. Managers looking up another actor with no grants still get 404.
+5. When the signed-in actor can view the workspace and opens their own access-points page with no actor-access rows there, the empty state renders instead of HTTP 404. Actors who cannot view the workspace, and managers looking up another actor with no grants, still get 404 (no workspace name disclosure).
 
 #### Upgrading to 0.13.0
 

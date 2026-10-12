@@ -50,9 +50,13 @@ module RecordingStudioAccessible
     def load_access_rows
       access_recordings = workspace_access_recordings.to_a
       if access_recordings.empty?
-        # Empty state only for the signed-in actor viewing their own page.
-        # Managers must not discover actors with no grants in this workspace.
-        return head :not_found unless requested_current_actor?
+        # Own page + workspace :view only; else 404 (no workspace name leak).
+        return head :not_found unless requested_current_actor? &&
+                                      RecordingStudioAccessible.authorized?(
+                                        actor: current_actor,
+                                        recording: @workspace_root_recording,
+                                        role: :view
+                                      )
 
         @actor = current_actor
       else
@@ -95,27 +99,19 @@ module RecordingStudioAccessible
 
     def current_actor = RecordingStudioAccessible.configuration.current_actor_for(controller: self)
 
-    def unauthorized_mounted_page_redirect_path
-      (main_app.root_path if respond_to?(:main_app) && main_app.respond_to?(:root_path)) || "/"
-    end
-
     def actor_access_points_anchor_url
-      back_url = safe_local_navigation_url(params[:back_url], fallback: unauthorized_mounted_page_redirect_path)
-
+      fallback = respond_to?(:main_app) && main_app.respond_to?(:root_path) ? main_app.root_path : "/"
+      back_url = safe_local_navigation_url(params[:back_url], fallback: fallback)
       safe_local_navigation_url(params[:anchor_url], fallback: back_url)
     end
 
     def permitted_actor_type_for(actor_type)
-      return unless valid_actor_type_param?(actor_type)
+      return unless actor_type.to_s.match?(ACTOR_TYPE_PATTERN)
 
       configured_types = RecordingStudioAccessible.configuration.access_actor_types
       return unless configured_types.is_a?(Array) && configured_types.present?
 
       actor_type.to_s if configured_types.include?(actor_type.to_s)
-    end
-
-    def valid_actor_type_param?(actor_type)
-      actor_type.to_s.match?(ACTOR_TYPE_PATTERN)
     end
 
     def requested_current_actor?

@@ -68,7 +68,47 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, 'href="/#workspace-access"'
   end
 
-  test "current actor with no workspace grants sees empty state on their own page" do
+  test "actor access points empty-state copy resolves to literal English" do
+    I18n.with_locale(:en) do
+      assert_equal "No access recordings",
+                   RecordingStudioAccessible::Copy.t("actor_access_points.empty_title")
+      assert_equal "User has no direct access recordings in this workspace",
+                   RecordingStudioAccessible::Copy.t(
+                     "actor_access_points.empty_subtitle",
+                     actor_type: "User"
+                   )
+    end
+  end
+
+  test "current actor who can view the workspace sees empty state with no access rows" do
+    viewer = create_user("empty-viewer@admin.com")
+    # Grant view on the workspace root, then detach the Access recording from
+    # this workspace's root_recording_id so the page has no actor-access rows
+    # while authorized?(:view) on the workspace root remains true.
+    access_recording = grant_access(viewer, :view, @workspace_root_recording)
+    access_recording.update_columns(root_recording_id: nil)
+    sign_in viewer
+
+    assert RecordingStudioAccessible.authorized?(
+      actor: viewer,
+      recording: @workspace_root_recording,
+      role: :view
+    )
+
+    get actor_access_points_path, params: {
+      actor_type: "User",
+      actor_id: viewer.id
+    }
+
+    assert_response :success
+    assert_includes @response.body, "No access recordings"
+    assert_includes @response.body, "User has no direct access recordings in this workspace"
+    assert_includes @response.body, "#{viewer.email} access points"
+    assert_includes @response.body, "Workspace: #{@workspace.name}"
+    refute_includes @response.body, "<table"
+  end
+
+  test "signed-in actor with no workspace grants gets 404 on their own access points page" do
     outsider = create_user("empty-self@admin.com")
     sign_in outsider
 
@@ -77,11 +117,22 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
       actor_id: outsider.id
     }
 
-    assert_response :success
-    assert_includes @response.body, "No access recordings"
-    assert_includes @response.body, "User has no direct access recordings in this workspace"
-    assert_includes @response.body, "#{outsider.email} access points"
-    refute_includes @response.body, "<table"
+    assert_response :not_found
+    refute_includes @response.body, @workspace.name
+    refute_includes @response.body, outsider.email
+  end
+
+  test "own actor id with another configured actor type returns 404" do
+    sign_in @actor
+
+    get actor_access_points_path, params: {
+      actor_type: "Workspace",
+      actor_id: @actor.id
+    }
+
+    assert_response :not_found
+    refute_includes @response.body, @actor.email
+    refute_includes @response.body, @workspace.name
   end
 
   test "actor access points page rejects unsafe anchor_url" do
