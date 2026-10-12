@@ -521,7 +521,59 @@ class AccessInvitationTest < ActiveSupport::TestCase
     assert_equal "Sign in to accept this invitation", unsigned.error
   end
 
+  test "validation error types stay stable while messages follow the locale" do
+    invitation = RecordingStudioAccessible::AccessInvitation.new(
+      recording: @recording,
+      email: "Not-Normalized@Example.com",
+      role: "view",
+      manager_actor: @manager
+    )
+    invitation.valid?
+
+    # Main used symbol types with message:; details must stay identical.
+    reference = ActiveModel::Errors.new(invitation)
+    reference.add(:email, :not_normalized)
+    assert_includes invitation.errors.details[:email], { error: :not_normalized }
+    assert_equal :not_normalized, invitation.errors.details[:email].find { |d| d[:error] == :not_normalized }[:error]
+    assert invitation.errors.added?(:email, :not_normalized)
+    assert_equal ["must be normalized"], invitation.errors[:email]
+
+    previous_locale = I18n.locale
+    I18n.backend.send(:init_translations) unless I18n.backend.initialized?
+    previous_translations = deep_plain_i18n_copy(I18n.backend.translations)
+    I18n.backend.store_translations(
+      :fr,
+      recording_studio: { accessible: { errors: { email_not_normalized: "doit être normalisé" } } }
+    )
+    I18n.locale = :fr
+    invitation = RecordingStudioAccessible::AccessInvitation.new(
+      recording: @recording,
+      email: "Not-Normalized@Example.com",
+      role: "view",
+      manager_actor: @manager
+    )
+    invitation.valid?
+    assert_includes invitation.errors.details[:email], { error: :not_normalized }
+    assert invitation.errors.added?(:email, :not_normalized)
+    assert_equal ["doit être normalisé"], invitation.errors[:email]
+    assert_includes invitation.errors.full_messages, "Email doit être normalisé"
+  ensure
+    I18n.locale = previous_locale if previous_locale
+    I18n.backend.instance_variable_set(:@translations, previous_translations) if previous_translations
+  end
+
   private
+
+  def deep_plain_i18n_copy(value)
+    case value
+    when Hash
+      value.each_with_object({}) { |(key, nested), copy| copy[key] = deep_plain_i18n_copy(nested) }
+    when Array
+      value.map { |nested| deep_plain_i18n_copy(nested) }
+    else
+      value
+    end
+  end
 
   def create_user(email)
     User.find_by(email: email) || User.create!(email: email, password: "Password", password_confirmation: "Password")

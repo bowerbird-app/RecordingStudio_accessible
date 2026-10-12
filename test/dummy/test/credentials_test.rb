@@ -3,6 +3,8 @@
 require "test_helper"
 
 class CredentialsTest < ActiveSupport::TestCase
+  # Known optional skip: CI and local runs without the shared Recording Studio
+  # dummy master key skip this decrypt check. Other credentials tests still run.
   test "dummy credentials expose shared keys when the master key is available" do
     skip "Set RAILS_MASTER_KEY or test/dummy/config/master.key to the shared dummy key" unless master_key_available?
 

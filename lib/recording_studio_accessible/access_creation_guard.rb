@@ -15,7 +15,15 @@ module RecordingStudioAccessible
     def prevent_unsupported_direct_creation
       return if RecordingStudioAccessible::AccessCreationContext.allowed?
 
-      errors.add(:base, "Create access grants through RecordingStudioAccessible.grant_access")
+      # ActiveModel 8.1 ignores message: when the type is a String, so pass the
+      # translated string (default: main's English) as the type/message.
+      errors.add(
+        :base,
+        Copy.t(
+          "errors.create_via_grant_access",
+          default: "Create access grants through RecordingStudioAccessible.grant_access"
+        )
+      )
     end
   end
 end

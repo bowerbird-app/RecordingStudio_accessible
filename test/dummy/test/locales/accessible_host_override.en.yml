@@ -1,0 +1,7 @@
+# Test-only host override. Appended to I18n.load_path inside one integration
+# test, then removed. Never loaded by the dummy app's normal boot path.
+en:
+  recording_studio:
+    accessible:
+      manage:
+        title: "HOST Manage access wins"

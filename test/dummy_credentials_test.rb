@@ -32,6 +32,8 @@ class DummyCredentialsTest < Minitest::Test
     assert_equal "", tracked, "master.key must not be committed"
   end
 
+  # Known optional skip: CI and local runs without the shared Recording Studio
+  # dummy master key skip this decrypt check. Other credentials tests still run.
   def test_dummy_credentials_decrypt_when_master_key_is_available
     skip "Set RAILS_MASTER_KEY or test/dummy/config/master.key to the shared dummy key" unless master_key_available?
 

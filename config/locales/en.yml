@@ -98,6 +98,18 @@ en:
         dependent_role_exceeds: "Dependent role cannot exceed the manager grant's role"
         dependent_unranked_role: "Dependent access requires a ranked role"
         dependent_cycle: "Dependent access cannot depend on itself or form a cycle"
+        create_via_grant_access: "Create access grants through RecordingStudioAccessible.grant_access"
+        duplicate_access_recording: "Only one direct access grant is allowed per actor under the same parent"
+        access_children_not_allowed: "does not allow RecordingStudio::Access children"
+        duplicate_audience_recording: "Only one live audience setting is allowed per action under the same parent"
+        audience_children_not_allowed: "does not allow %{type} children"
+        audience_constraint_create_not_root: "Audience limits can only be added on a workspace"
+        already_bootstrapped: "Access already exists; use grant_access with a manager_actor"
+        bootstrap_unsupported: "Bootstrap is only allowed on an empty owned root or an empty accessible child under a shared root"
+        recording_not_persisted: "Recording must be persisted"
+        actor_not_persisted: "Actor must be persisted"
+        repair_manager_required: "A persisted manager actor with a GlobalID is required for repair"
+        repair_failed: "Some duplicate access grants could not be repaired"
         audience_unauthorized: "You cannot change who can do this"
         audience_not_allowed: "That choice is not available here"
         audience_action_invalid: "Action is required"
@@ -138,6 +150,18 @@ en:
           access_recording: "Access recording"
         empty_title: "No access recordings"
         empty_subtitle: "%{actor_type} has no direct access recordings in this workspace"
+      recordables:
+        access:
+          label: "Access"
+          name: "Access: %{role} — %{actor}"
+        access_rule:
+          label: "Audience"
+          name: "Audience: %{action} — %{audience}"
+          write_error: "Create audiences through RecordingStudioAccessible.set_audience!"
+        access_constraint:
+          label: "Audience limit"
+          name: "Audience limit: %{action} — %{audiences}"
+          write_error: "Create audience limits through RecordingStudioAccessible.set_audience_constraint!"
       home:
         index:
           title: "Recording Studio Accessible Demo"
@@ -148,6 +172,9 @@ en:
           workspace: "Workspace:"
           root_recording: "Root recording:"
           not_available: "Not available"
+          admin_fallback: "Admin"
+          viewer_fallback: "Viewer"
+          anonymous: "Anonymous"
         overview:
           title: "Overview"
           subtitle: "How access is structured"
@@ -156,6 +183,13 @@ en:
         methods:
           title: "Methods"
           subtitle: "Access APIs provided by this gem"
+          bootstrap_title: "Bootstrap the first owner with RecordingStudioAccessible.bootstrap_owner_access!"
+          grant_title: "Grant access with RecordingStudioAccessible.grant_access"
+          role_for_title: "Resolve a user's role with RecordingStudioAccessible.role_for"
+          authorized_title: "Check authorization with RecordingStudioAccessible.authorized?"
+          root_recordings_title: "List accessible roots with RecordingStudioAccessible.root_recordings_for"
+          root_recording_ids_title: "List accessible root ids with RecordingStudioAccessible.root_recording_ids_for"
+          access_recordings_title: "List direct grants on a recording with RecordingStudioAccessible.access_recordings_for"
         user_invites:
           title: "User invites"
           subtitle: "How missing emails are resolved during access grants"
@@ -165,8 +199,22 @@ en:
           dummy_badge: "Dummy app"
           dummy_body: "This dummy app leaves the invitation in place until the signup page creates the user and accepts."
           statuses_title: "Statuses you can return"
+          statuses:
+            unresolved: "The default when no actor matches the email. The access page stores an invitation and sends it."
+            found: "An existing actor was resolved from the submitted email, so the access grant can continue immediately."
+            created: "Use this only after your app has already verified the recipient and finished any setup needed for the same grant request."
+            invited: "Use this when another invite flow sent the invitation. The addon stores nothing and sends the manager back to the access list with a notice."
+            requires_resolution: "Redirect the manager into a setup flow, such as a custom user creation screen, before granting access."
+            invalid: "The submitted email could not be used. The form re-renders with the returned error message."
           setup_patterns_title: "Setup patterns"
           setup_patterns_subtitle: "Choose one handler shape based on what your host app should do next"
+          setup:
+            find_existing_title: "Only find existing users"
+            find_existing_body: "Use the resolver when your app should only grant access to users that already exist."
+            block_until_trusted_title: "Keep the form blocked until a trusted workflow resolves the email"
+            block_until_trusted_body: "Prefer returning an error until your app finishes any invite, approval, or verification work for that address."
+            redirect_resolution_title: "Send managers to a resolution flow"
+            redirect_resolution_body: "Return a redirect-style resolution when a person needs extra setup, approvals, or a richer invite workflow before the grant continues."
         email_template:
           title: "Email template"
           subtitle: "Default message sent when access is granted"

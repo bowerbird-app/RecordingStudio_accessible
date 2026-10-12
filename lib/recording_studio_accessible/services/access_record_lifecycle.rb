@@ -85,7 +85,12 @@ module RecordingStudioAccessible
       def reject_shared_root_target!(recording)
         return true unless RecordingStudioAccessible::SharedRootAccess.target?(recording)
 
-        failure(Copy.t("errors.grant_denied"))
+        failure(
+          Copy.t(
+            "errors.grant_denied",
+            default: RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
+          )
+        )
       end
 
       def validate_access_management_target!(recording, manager_actor:, controller: nil)

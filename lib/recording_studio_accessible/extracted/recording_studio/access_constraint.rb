@@ -11,14 +11,20 @@ module RecordingStudio
     include RecordingStudio::Recordable
     include RecordingStudioAccessible::AudienceCreationGuard
 
-    recording_studio_recordable label: "Audience limit", root: false if respond_to?(:recording_studio_recordable)
+    LABEL = "Audience limit"
+    # I18n interpolation tokens use %{name}, not %<name>s.
+    NAME_DEFAULT = "Audience limit: %{action} — %{audiences}" # rubocop:disable Style/FormatStringToken
+    WRITE_ERROR = "Create audience limits through RecordingStudioAccessible.set_audience_constraint!"
+
+    # recording_studio_recordable captures label at class load; keep English here.
+    recording_studio_recordable label: LABEL, root: false if respond_to?(:recording_studio_recordable)
 
     def self.audience_write_error
-      "Create audience limits through RecordingStudioAccessible.set_audience_constraint!"
+      RecordingStudioAccessible::Copy.t("recordables.access_constraint.write_error", default: WRITE_ERROR)
     end
 
     def self.recordable_type_label
-      "Audience limit"
+      RecordingStudioAccessible::Copy.t("recordables.access_constraint.label", default: LABEL)
     end
 
     class << self
@@ -28,7 +34,12 @@ module RecordingStudio
     def recordable_name
       names = Array(allowed_audiences).map(&:to_s).reject(&:blank?)
       suffix = names.any? ? names.join(", ") : "granted"
-      "Audience limit: #{action} — #{suffix}"
+      RecordingStudioAccessible::Copy.t(
+        "recordables.access_constraint.name",
+        default: NAME_DEFAULT,
+        action: action,
+        audiences: suffix
+      )
     end
 
     alias recording_studio_label recordable_name

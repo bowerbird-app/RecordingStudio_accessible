@@ -99,6 +99,9 @@ module RecordingStudioAccessible
         access_class = constant_for_path(ACCESS_RECORDABLE_TYPE)
         return unless access_class.respond_to?(:recording_studio_recordable)
 
+        # Label is captured at class load by Recording Studio; keep English here.
+        # Use literals (not ::Access::LABEL) so unit tests that stub RecordingStudio
+        # without loading Access/AccessRule/AccessConstraint still succeed.
         access_class.recording_studio_recordable(
           label: "Access",
           root: false

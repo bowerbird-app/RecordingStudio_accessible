@@ -110,13 +110,22 @@ RecordingStudio.enable_capability(:action_audiences, on: PressKit)
 
 No audience picker ships in this gem. Host screens should use `audience_options_for` with a Flatpack `RadioGroup`. Staff controls belong in Recording Studio Admin.
 
+#### Upgrading to 0.15.0
+
+Wave 2 finishes host-overridable copy outside views: HomeController demo titles/status bodies, call-time recordable labels, and remaining user-facing validation/service errors.
+
+1. Install Accessible `0.15.0`. No migration.
+2. Copy new `recording_studio.accessible.home.methods.*`, `home.user_invites.statuses.*`, `home.user_invites.setup.*`, `recordables.*`, and `errors.*` keys into host locale files when translating.
+3. Public message constants and recordable `LABEL`s stay for API compatibility; displayed copy uses `Copy.t(..., default: <constant>)`.
+4. `recording_studio_recordable label:` stays English (class-load DSL). Ruby code samples on demo pages, generator CLI text, and developer `ArgumentError`s stay English.
+
 #### Upgrading to 0.13.0
 
 Actor access points and the engine demo/docs home pages now use Rails I18n under `recording_studio.accessible.actor_access_points.*` and `recording_studio.accessible.home.*`. English output is unchanged.
 
 1. Install Accessible `0.13.0`. No migration.
 2. Copy the new keys into host locale files when you translate those screens.
-3. Controller-supplied home demo examples, generator text, and developer `ArgumentError`s stay English.
+3. Generator text and developer `ArgumentError`s stay English. HomeController demo titles/status copy moved to I18n in 0.15.0.
 
 #### Upgrading to 0.12.0
 
@@ -1275,7 +1284,7 @@ t("recording_studio.accessible.flashes.invitation_sent")
 t("recording_studio.accessible.mailers.invitation.subject_with_recording", recording: name)
 ```
 
-Customer invitation and manage-access screens, actor access points, and the engine demo/docs home pages use these keys. Developer examples passed from `HomeController` stay English. Hosts own other languages. Copy `recording_studio.accessible.*` into `config/locales/<locale>.yml` and list that locale in `config.i18n.available_locales`. Do not add `RecordingStudio_Internationalization` as a dependency of this gem — it is optional on the host (the dummy uses it to switch English/French).
+Customer invitation and manage-access screens, actor access points, engine demo/docs home pages, HomeController demo titles/status copy, validation and service error messages, and call-time recordable labels use these keys. Ruby code samples on the demo Methods and User invites pages stay English. `recording_studio_recordable label:` strings are captured at class load and stay English. Hosts own other languages: define the same keys in the host `config/locales` (the engine does not re-append its locales). Do not add `RecordingStudio_Internationalization` as a dependency of this gem — it is optional on the host (the dummy uses it to switch English/French).
 
 Config callables still win. If you set `access_invitation_subject`, `access_management_access_granted_subject`, `access_management_actor_label`, or a missing-actor error string, that copy is used instead of the locale default.
 

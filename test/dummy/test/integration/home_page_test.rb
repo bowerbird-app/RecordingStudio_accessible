@@ -192,7 +192,13 @@ class HomePageTest < ActionDispatch::IntegrationTest
     get "/recording_studio_accessible"
 
     assert_response :success
+    assert_includes @response.body, "Recording Studio Accessible Demo"
     assert_includes @response.body, "Optional access-control addon"
+    assert_includes @response.body, "Access check snapshot"
+    assert_includes @response.body, "Demo of how access works for the seeded workspace"
+    assert_includes @response.body, "Integration mode:"
+    assert_includes @response.body, "Workspace:"
+    assert_includes @response.body, "Root recording:"
   end
 
   test "non-admin users do not see mounted addon docs links" do
@@ -232,6 +238,13 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Methods"
     assert_includes @response.body, "Access APIs provided by this gem"
     assert_includes @response.body, "href=\"/recording_studio_accessible/methods\""
+    assert_includes @response.body, "Bootstrap the first owner with RecordingStudioAccessible.bootstrap_owner_access!"
+    assert_includes @response.body, "Grant access with RecordingStudioAccessible.grant_access"
+    assert_match(/Resolve a user(&#39;|')s role with RecordingStudioAccessible\.role_for/, @response.body)
+    assert_includes @response.body, "Check authorization with RecordingStudioAccessible.authorized?"
+    assert_includes @response.body, "List accessible roots with RecordingStudioAccessible.root_recordings_for"
+    assert_includes @response.body, "List accessible root ids with RecordingStudioAccessible.root_recording_ids_for"
+    assert_includes @response.body, "List direct grants on a recording with RecordingStudioAccessible.access_recordings_for"
     assert_includes @response.body, "RecordingStudioAccessible.bootstrap_owner_access!"
     assert_includes @response.body, "RecordingStudioAccessible.grant_access"
     assert_includes @response.body, "RecordingStudioAccessible.authorized?"
@@ -263,8 +276,13 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "User invites"
     assert_includes @response.body, "How missing emails are resolved during access grants"
     assert_includes @response.body, "href=\"/recording_studio_accessible/user_invites\""
+    assert_includes @response.body, "Statuses you can return"
+    assert_includes @response.body, "The default when no actor matches the email. The access page stores an invitation and sends it."
     assert_includes @response.body, "returns unresolved"
     assert_includes @response.body, "leaves the invitation in place until the signup page creates the user and accepts"
+    assert_includes @response.body, "Only find existing users"
+    assert_includes @response.body, "Keep the form blocked until a trusted workflow resolves the email"
+    assert_includes @response.body, "Send managers to a resolution flow"
     assert_includes @response.body, "before the grant continues"
     assert_includes @response.body, "requires_resolution"
     assert_includes @response.body, "config.access_management_actor_email_resolver"
@@ -287,6 +305,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Default message sent when access is granted"
     assert_includes @response.body, "href=\"/recording_studio_accessible/email_template\""
     assert_includes @response.body, "Message details"
+    assert_includes @response.body, "HTML email preview"
     assert_includes @response.body, "You were given access"
     assert_includes @response.body, "no-reply@example.com"
     assert_includes @response.body, @viewer.email
