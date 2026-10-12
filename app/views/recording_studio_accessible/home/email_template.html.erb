@@ -31,7 +31,7 @@
         #{@preview_sender_label}
 
         Role
-        #{accessible_role_name(@preview_role)}
+        #{@preview_role.to_s.humanize.downcase}
       TEXT
       separated: false
     ) %>

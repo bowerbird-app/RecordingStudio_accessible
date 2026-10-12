@@ -40,7 +40,7 @@ module RecordingStudioAccessible
 
     def role_name(role)
       name = role.to_s
-      return "" if name.strip.empty?
+      return name if name.empty?
 
       t("roles.#{name}", default: name.humanize)
     end

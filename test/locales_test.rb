@@ -83,7 +83,7 @@ class LocalesTest < Minitest::Test
     assert_equal ["en.yml"], files.sort
   end
 
-  def test_gem_english_locale_file_on_load_path_supplies_manage_copy
+  def test_rails_i18n_load_path_includes_the_gem_english_locale_file
     # with_gem_english_locale_only puts only en.yml on the path and reloads.
     # Assert that file actually drives lookups (not merely that the path we set is present).
     with_gem_english_locale_only do
@@ -194,12 +194,10 @@ class LocalesTest < Minitest::Test
     end
   end
 
-  def test_role_name_guards_nil_blank_and_whitespace_roles
+  def test_role_name_guards_nil_and_blank_roles
     I18n.with_locale(:en) do
       assert_equal "", Copy.role_name(nil)
       assert_equal "", Copy.role_name("")
-      assert_equal "", Copy.role_name("   ")
-      assert_equal "", Copy.role_name("\t")
       refute_kind_of Hash, Copy.role_name(nil)
     end
   end

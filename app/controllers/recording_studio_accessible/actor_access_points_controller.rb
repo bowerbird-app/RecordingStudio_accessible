@@ -49,20 +49,9 @@ module RecordingStudioAccessible
 
     def load_access_rows
       access_recordings = workspace_access_recordings.to_a
-      if access_recordings.empty?
-        # Own page + workspace :view only; else 404 (no workspace name leak).
-        return head :not_found unless requested_current_actor? &&
-                                      RecordingStudioAccessible.authorized?(
-                                        actor: current_actor,
-                                        recording: @workspace_root_recording,
-                                        role: :view
-                                      )
+      return head :not_found if access_recordings.empty?
 
-        @actor = current_actor
-      else
-        @actor = access_recordings.first.recordable.actor
-      end
-
+      @actor = access_recordings.first.recordable.actor
       @actor_label = RecordingStudioAccessible.configuration.actor_label_for(@actor)
       @actor_type_label = @resolved_actor_type.demodulize
 
@@ -99,19 +88,27 @@ module RecordingStudioAccessible
 
     def current_actor = RecordingStudioAccessible.configuration.current_actor_for(controller: self)
 
+    def unauthorized_mounted_page_redirect_path
+      (main_app.root_path if respond_to?(:main_app) && main_app.respond_to?(:root_path)) || "/"
+    end
+
     def actor_access_points_anchor_url
-      fallback = respond_to?(:main_app) && main_app.respond_to?(:root_path) ? main_app.root_path : "/"
-      back_url = safe_local_navigation_url(params[:back_url], fallback: fallback)
+      back_url = safe_local_navigation_url(params[:back_url], fallback: unauthorized_mounted_page_redirect_path)
+
       safe_local_navigation_url(params[:anchor_url], fallback: back_url)
     end
 
     def permitted_actor_type_for(actor_type)
-      return unless actor_type.to_s.match?(ACTOR_TYPE_PATTERN)
+      return unless valid_actor_type_param?(actor_type)
 
       configured_types = RecordingStudioAccessible.configuration.access_actor_types
       return unless configured_types.is_a?(Array) && configured_types.present?
 
       actor_type.to_s if configured_types.include?(actor_type.to_s)
+    end
+
+    def valid_actor_type_param?(actor_type)
+      actor_type.to_s.match?(ACTOR_TYPE_PATTERN)
     end
 
     def requested_current_actor?
