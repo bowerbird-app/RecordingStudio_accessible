@@ -20,12 +20,12 @@ module RecordingStudioAccessible
       return unless access_placement_enabled?
       return if RecordingStudioAccessible::AccessCreationContext.allowed?
 
+      create_via_grant_access_error =
+        "Create access grants through RecordingStudioAccessible.grant_access"
       errors.add(
         :base,
-        Copy.t(
-          "errors.create_via_grant_access",
-          default: "Create access grants through RecordingStudioAccessible.grant_access"
-        )
+        create_via_grant_access_error,
+        message: Copy.t("errors.create_via_grant_access", default: create_via_grant_access_error)
       )
     end
 
@@ -57,7 +57,8 @@ module RecordingStudioAccessible
 
       errors.add(
         :base,
-        Copy.t("errors.duplicate_access_recording", default: DUPLICATE_ACCESS_RECORDING_ERROR)
+        DUPLICATE_ACCESS_RECORDING_ERROR,
+        message: Copy.t("errors.duplicate_access_recording", default: DUPLICATE_ACCESS_RECORDING_ERROR)
       )
     end
 
@@ -79,24 +80,22 @@ module RecordingStudioAccessible
       return false if parent_recording.blank?
 
       if shared_root_parent?(parent_recording)
+        denied = RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
         errors.add(
           :parent_recording,
-          Copy.t(
-            "errors.grant_denied",
-            default: RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
-          )
+          denied,
+          message: Copy.t("errors.grant_denied", default: denied)
         )
         return false
       end
 
       return true if RecordingStudioAccessible::Compatibility.access_parent_allowed?(parent_recording)
 
+      access_children_not_allowed = "does not allow RecordingStudio::Access children"
       errors.add(
         :parent_recording,
-        Copy.t(
-          "errors.access_children_not_allowed",
-          default: "does not allow RecordingStudio::Access children"
-        )
+        access_children_not_allowed,
+        message: Copy.t("errors.access_children_not_allowed", default: access_children_not_allowed)
       )
       false
     end

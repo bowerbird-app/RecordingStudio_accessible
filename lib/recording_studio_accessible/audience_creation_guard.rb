@@ -15,7 +15,8 @@ module RecordingStudioAccessible
     def prevent_unsupported_direct_audience_creation
       return if RecordingStudioAccessible::AudienceWriteContext.allowed?
 
-      errors.add(:base, self.class.audience_write_error)
+      write_error = self.class::WRITE_ERROR
+      errors.add(:base, write_error, message: self.class.audience_write_error)
     end
   end
 end

@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - `Copy.role_name` treats blank or whitespace-only roles as empty (same as nil), instead of falling through to `humanize`.
 - Creation-guard and bootstrap/integrity failures resolve through `Copy.t(..., default: <constant English>)` while public message constants stay for API compatibility.
+- Validation `errors.add` keeps the original English string or symbol as the error type and passes the locale string via `message:`, so `errors.details`, `added?`, and `of_kind?` match pre-i18n behavior.
 - Recordable `recordable_type_label` / `recordable_name` / `audience_write_error` resolve at call time; `recording_studio_recordable label:` stays English (class-load DSL).
 - Layout title / `application-name` meta pass an English `default:` so non-HTML surfaces never emit “Translation missing”.
 

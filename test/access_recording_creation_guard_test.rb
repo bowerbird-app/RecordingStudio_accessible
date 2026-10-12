@@ -11,14 +11,19 @@ class AccessRecordingCreationGuardTest < Minitest::Test
   ParentRecording = Struct.new(:id, :recordable_type, keyword_init: true)
 
   class Errors
-    attr_reader :added
+    attr_reader :added, :details, :messages
 
     def initialize
       @added = []
+      @details = Hash.new { |hash, key| hash[key] = [] }
+      @messages = Hash.new { |hash, key| hash[key] = [] }
     end
 
-    def add(attribute, message)
-      @added << [attribute, message]
+    # Mirrors ActiveModel::Errors#add so type stays distinct from message:.
+    def add(attribute, type = :invalid, **options)
+      @added << [attribute, type]
+      @details[attribute] << { error: type }
+      @messages[attribute] << (options[:message] || type)
     end
   end
 
@@ -92,6 +97,7 @@ class AccessRecordingCreationGuardTest < Minitest::Test
 
   def test_prevents_direct_access_recording_creation_without_access_context
     recording = Recording.new
+    create_via_grant = "Create access grants through RecordingStudioAccessible.grant_access"
 
     RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
       RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, true) do
@@ -99,8 +105,9 @@ class AccessRecordingCreationGuardTest < Minitest::Test
       end
     end
 
-    assert_includes recording.errors.added,
-                    [:base, "Create access grants through RecordingStudioAccessible.grant_access"]
+    assert_includes recording.errors.added, [:base, create_via_grant]
+    assert_equal [{ error: create_via_grant }], recording.errors.details[:base]
+    assert_equal [create_via_grant], recording.errors.messages[:base]
   end
 
   def test_allows_access_recording_creation_inside_access_context
@@ -119,17 +126,19 @@ class AccessRecordingCreationGuardTest < Minitest::Test
 
   def test_rejects_access_recording_when_parent_is_shared_root
     recording = Recording.new(parent_recording: ParentRecording.new(id: 1, recordable_type: "MessageRoot"))
+    denied = RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
 
     RecordingStudioAccessible::SharedRootAccess.stub(:target?, true) do
       recording.send(:prevent_unsupported_access_recording_creation)
     end
 
-    assert_includes recording.errors.added,
-                    [:parent_recording, RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE]
+    assert_includes recording.errors.added, [:parent_recording, denied]
+    assert_equal [{ error: denied }], recording.errors.details[:parent_recording]
   end
 
   def test_rejects_access_recording_when_parent_disallows_access_children
     recording = Recording.new
+    not_allowed = "does not allow RecordingStudio::Access children"
 
     RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
       RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, false) do
@@ -137,8 +146,49 @@ class AccessRecordingCreationGuardTest < Minitest::Test
       end
     end
 
-    assert_includes recording.errors.added,
-                    [:parent_recording, "does not allow RecordingStudio::Access children"]
+    assert_includes recording.errors.added, [:parent_recording, not_allowed]
+    assert_equal [{ error: not_allowed }], recording.errors.details[:parent_recording]
+  end
+
+  def test_translated_guard_message_keeps_english_error_type_in_details
+    recording = Recording.new
+    create_via_grant = "Create access grants through RecordingStudioAccessible.grant_access"
+    french = "Créer via grant_access"
+    previous_locale = I18n.locale
+    previous_available = I18n.available_locales.dup
+    previous_translations = deep_plain_copy(I18n.backend.translations)
+
+    I18n.available_locales = previous_available | %i[fr]
+    I18n.backend.store_translations(
+      :fr,
+      recording_studio: { accessible: { errors: { create_via_grant_access: french } } }
+    )
+    I18n.locale = :fr
+
+    RecordingStudioAccessible::SharedRootAccess.stub(:target?, false) do
+      RecordingStudioAccessible::Compatibility.stub(:access_parent_allowed?, true) do
+        recording.send(:prevent_unsupported_access_recording_creation)
+      end
+    end
+
+    assert_includes recording.errors.added, [:base, create_via_grant]
+    assert_equal [{ error: create_via_grant }], recording.errors.details[:base]
+    assert_equal [french], recording.errors.messages[:base]
+  ensure
+    I18n.locale = previous_locale
+    I18n.available_locales = previous_available if previous_available
+    I18n.backend.instance_variable_set(:@translations, previous_translations) if previous_translations
+  end
+
+  def deep_plain_copy(value)
+    case value
+    when Hash
+      value.each_with_object({}) { |(key, nested), copy| copy[key] = deep_plain_copy(nested) }
+    when Array
+      value.map { |nested| deep_plain_copy(nested) }
+    else
+      value
+    end
   end
 
   def test_duplicate_guard_ignores_non_access_recordings_and_missing_parents
@@ -167,8 +217,9 @@ class AccessRecordingCreationGuardTest < Minitest::Test
 
     recording.send(:prevent_duplicate_active_access_recording)
 
-    assert_includes recording.errors.added,
-                    [:base, RecordingStudioAccessible::AccessRecordingCreationGuard::DUPLICATE_ACCESS_RECORDING_ERROR]
+    duplicate = RecordingStudioAccessible::AccessRecordingCreationGuard::DUPLICATE_ACCESS_RECORDING_ERROR
+    assert_includes recording.errors.added, [:base, duplicate]
+    assert_equal [{ error: duplicate }], recording.errors.details[:base]
     assert_includes Recording.scope.wheres, [{ trashed_at: nil }]
     assert_includes Recording.scope.wheres,
                     [{ recording_studio_accesses: { actor_type: "AccessRecordingCreationGuardTest::Actor", actor_id: 42 } }]
