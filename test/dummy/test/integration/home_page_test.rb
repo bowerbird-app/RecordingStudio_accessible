@@ -240,7 +240,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "href=\"/recording_studio_accessible/methods\""
     assert_includes @response.body, "Bootstrap the first owner with RecordingStudioAccessible.bootstrap_owner_access!"
     assert_includes @response.body, "Grant access with RecordingStudioAccessible.grant_access"
-    assert_includes @response.body, "Resolve a user's role with RecordingStudioAccessible.role_for"
+    assert_match(/Resolve a user(&#39;|')s role with RecordingStudioAccessible\.role_for/, @response.body)
     assert_includes @response.body, "Check authorization with RecordingStudioAccessible.authorized?"
     assert_includes @response.body, "List accessible roots with RecordingStudioAccessible.root_recordings_for"
     assert_includes @response.body, "List accessible root ids with RecordingStudioAccessible.root_recording_ids_for"
