@@ -49,8 +49,9 @@ bin/rails db:migrate
 ```
 
 Accessible loads Trashable’s query entry point only
-(`require "recording_studio_trashable/query"`). It uses
-`recording_studio_trashable_kept?` for live-row predicates and additive
+(`require "recording_studio_trashable/query"`). Live-row predicates use
+`recording_studio_trashable_kept?` when the object responds to it, otherwise
+`trashed_at.nil?`. Scope filters use additive
 `where(recording_studio_trashable_kept_sql)` where main used
 `where(trashed_at: nil)`. It does not load the Trashable engine/importmap,
 register `:trashable`, or soft-void Access grants; revoke and dependent

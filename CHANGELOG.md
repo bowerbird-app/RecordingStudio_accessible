@@ -7,9 +7,10 @@ All notable changes to this project will be documented in this file.
 ## [0.17.0] - 2026-10-13
 
 ### Changed
-- Soft-trash predicates use Recording Studio Trashable query helpers
-  (`recording_studio_trashable_kept?`) instead of `trashed_at.nil?` in
-  dependent-access effectiveness and access-record lifecycle.
+- Soft-trash predicates in dependent-access effectiveness and access-record
+  lifecycle call `recording_studio_trashable_kept?` when present, otherwise
+  fall back to `trashed_at.nil?` (same as main for duck-typed objects that
+  expose `trashed_at` without Trashable helpers).
 - Scope filters that were `where(trashed_at: nil)` now use additive
   `where(recording_studio_trashable_kept_sql)` (byte-equivalent kept filter).
   They do **not** call `recording_studio_trashable_active`, which
