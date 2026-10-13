@@ -119,12 +119,12 @@ RecordingStudio.enable_capability(:action_audiences, on: PressKit)
 
 No audience picker ships in this gem. Host screens should use `audience_options_for` with a Flatpack `RadioGroup`. Staff controls belong in Recording Studio Admin.
 
-#### Upgrading to 0.16.0
+#### Upgrading to 0.17.0
 
 Accessible now depends on Recording Studio Trashable for live-recording filters
 (`recording_studio_trashable_active` / `recording_studio_trashable_kept?`).
 
-1. Install Accessible `0.16.0` and resolve `recording_studio_trashable` `~> 0.9`
+1. Install Accessible `0.17.0` and resolve `recording_studio_trashable` `~> 0.9`
    (git tag `v0.9.0` or host equivalent).
 2. No Accessible migration. Keep your existing `trashed_at` column if present.
 3. Revoke and dependent void still hard-destroy Access recordings; they do not
