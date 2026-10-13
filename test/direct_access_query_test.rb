@@ -11,25 +11,17 @@ class DirectAccessQueryTest < Minitest::Test
   end
 
   class RelationSpy
-    attr_reader :wheres, :joins_sql, :orders, :trashable_active_calls
+    attr_reader :wheres, :joins_sql, :orders
 
     def initialize
       @wheres = []
       @joins_sql = []
       @orders = []
-      @trashable_active_calls = 0
     end
 
     def where(*args)
       @wheres << args
       self
-    end
-
-    # Mirrors RecordingStudioTrashable::RecordingScopes#recording_studio_trashable_active
-    # SQL intent (`where(trashed_at: nil)`) so unit spies prove the shared API path.
-    def recording_studio_trashable_active
-      @trashable_active_calls += 1
-      where(trashed_at: nil)
     end
 
     def joins(sql)
@@ -60,7 +52,6 @@ class DirectAccessQueryTest < Minitest::Test
       end
     end
 
-    assert_equal 1, relation.trashable_active_calls
     assert_includes relation.wheres, [{ trashed_at: nil }]
     assert_includes relation.wheres, [{ parent_recording_id: 123 }]
     assert_includes relation.wheres, [{ recordable_type: "RecordingStudio::Access" }]

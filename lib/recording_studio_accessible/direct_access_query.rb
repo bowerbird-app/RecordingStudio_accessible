@@ -52,7 +52,10 @@ module RecordingStudioAccessible
         scope = RecordingStudio::Recording.unscoped
         return scope unless RecordingStudio::Recording.column_names.include?("trashed_at")
 
-        scope.recording_studio_trashable_active
+        # Additive kept filter (same as main). Do not use
+        # recording_studio_trashable_active: that scope unscopes(:trashed_at) first
+        # and diverges under a host default_scope that already constrains trashed_at.
+        scope.where(trashed_at: nil)
       end
 
       def actor_filter(actor)

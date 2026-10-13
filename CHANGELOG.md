@@ -7,12 +7,13 @@ All notable changes to this project will be documented in this file.
 ## [0.17.0] - 2026-10-13
 
 ### Changed
-- Soft-trash filters and predicates now use Recording Studio Trashable `0.9`
-  (`recording_studio_trashable_active`, `recording_studio_trashable_kept?`)
-  instead of duplicated `where(trashed_at: nil)` / `trashed_at.nil?` in
-  audience queries, authorization scopes, direct-access queries, access-grant
-  integrity, creation-guard duplicate checks, dependent-access effectiveness,
-  access-record lifecycle, and actor access-points.
+- Soft-trash predicates now use Recording Studio Trashable `0.9`
+  (`recording_studio_trashable_kept?`) instead of `trashed_at.nil?` in
+  dependent-access effectiveness and access-record lifecycle.
+- Scope filters keep main’s additive `where(trashed_at: nil)` on the same
+  base relation. They do **not** call `recording_studio_trashable_active`,
+  which `unscope(where: :trashed_at)` first and can diverge under a host
+  `default_scope` that already constrains `trashed_at`.
 - Depends on `recording_studio_trashable ~> 0.9` (Gemfile pin: git tag `v0.9.0`).
 
 ### Upgrade Notes

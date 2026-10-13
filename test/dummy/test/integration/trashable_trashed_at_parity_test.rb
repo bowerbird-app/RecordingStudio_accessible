@@ -19,7 +19,7 @@ class TrashableTrashedAtParityIntegrationTest < ActiveSupport::TestCase
     assert_equal "0.9.0", RecordingStudioTrashable::VERSION
   end
 
-  test "trashable_active matches main where(trashed_at: nil) membership" do
+  test "unscoped trashable_active matches main where(trashed_at: nil) membership" do
     live_ids = RecordingStudio::Recording.unscoped.where(trashed_at: nil).order(:id).pluck(:id)
     active_ids = RecordingStudio::Recording.unscoped.recording_studio_trashable_active.order(:id).pluck(:id)
 
@@ -48,7 +48,7 @@ class TrashableTrashedAtParityIntegrationTest < ActiveSupport::TestCase
     grant.update_column(:trashed_at, Time.current)
 
     refute_includes RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(@root).pluck(:id), grant.id
-    refute_includes RecordingStudio::Recording.unscoped.recording_studio_trashable_active.where(id: grant.id).pluck(:id),
+    refute_includes RecordingStudio::Recording.unscoped.where(trashed_at: nil).where(id: grant.id).pluck(:id),
                     grant.id
   end
 
@@ -68,6 +68,35 @@ class TrashableTrashedAtParityIntegrationTest < ActiveSupport::TestCase
     assert_equal recording, result
     assert_equal time.to_i, recording.trashed_at.to_i
     refute recording.recording_studio_trashable_kept?
-    assert_empty RecordingStudio::Recording.recording_studio_trashable_active.where(id: recording.id)
+    assert_empty RecordingStudio::Recording.unscoped.where(trashed_at: nil).where(id: recording.id)
+  end
+
+  # Host apps sometimes add `default_scope { where(trashed_at: …) }`. That leaves
+  # a trashed_at predicate on ordinary relations. Trashable's
+  # recording_studio_trashable_active unscopes(:trashed_at) first; main's
+  # Accessible filter only adds where(trashed_at: nil). Simulate the scoped
+  # base with an explicit prior predicate (same shape as a default_scope).
+  test "default_scope-shaped prior trashed_at: trashable_active diverges; Accessible matches main" do
+    # Prior predicate like a host default_scope that keeps only trashed rows.
+    scoped = RecordingStudio::Recording.unscoped.where.not(trashed_at: nil)
+    main_additive_ids = scoped.where(trashed_at: nil).order(:id).pluck(:id)
+    trashable_active_ids = scoped.recording_studio_trashable_active.order(:id).pluck(:id)
+
+    assert_empty main_additive_ids,
+                 "main's additive where(trashed_at: nil) keeps the prior NOT NULL → empty"
+    assert_includes trashable_active_ids, @root.id,
+                    "recording_studio_trashable_active unscopes the prior trashed_at predicate"
+    refute_equal main_additive_ids, trashable_active_ids
+
+    accessible_ids = RecordingStudioAccessible::DirectAccessQuery
+                     .send(:active_recordings_scope)
+                     .order(:id)
+                     .pluck(:id)
+    main_unscoped_ids = RecordingStudio::Recording.unscoped.where(trashed_at: nil).order(:id).pluck(:id)
+
+    assert_equal main_unscoped_ids, accessible_ids
+    assert_includes accessible_ids, @root.id
   end
 end
+
+

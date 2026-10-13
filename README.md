@@ -49,10 +49,11 @@ bin/rails generate recording_studio_trashable:migrations
 bin/rails db:migrate
 ```
 
-Accessible filters live recordings through Trashable
-(`recording_studio_trashable_active` / `recording_studio_trashable_kept?`) when
-the `trashed_at` column is present. It does not soft-void Access grants; revoke
-and dependent cleanup still destroy those rows.
+Accessible uses Trashable’s `recording_studio_trashable_kept?` for live-row
+predicates when `trashed_at` is present. Scope filters keep main’s additive
+`where(trashed_at: nil)` (not `recording_studio_trashable_active`, which
+unscopes `trashed_at` first). It does not soft-void Access grants; revoke and
+dependent cleanup still destroy those rows.
 
 If you want the gem-provided mounted UI for managing direct access, then also run:
 
@@ -121,8 +122,9 @@ No audience picker ships in this gem. Host screens should use `audience_options_
 
 #### Upgrading to 0.17.0
 
-Accessible now depends on Recording Studio Trashable for live-recording filters
-(`recording_studio_trashable_active` / `recording_studio_trashable_kept?`).
+Accessible now depends on Recording Studio Trashable for live-recording
+predicates (`recording_studio_trashable_kept?`). Scope filters keep main’s
+additive `where(trashed_at: nil)`.
 
 1. Install Accessible `0.17.0` and resolve `recording_studio_trashable` `~> 0.9`
    (git tag `v0.9.0` or host equivalent).

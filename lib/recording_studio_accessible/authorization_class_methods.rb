@@ -119,7 +119,8 @@ module RecordingStudioAccessible
       scope = RecordingStudio::Recording.unscoped
       return scope unless RecordingStudio::Recording.column_names.include?("trashed_at")
 
-      scope.recording_studio_trashable_active
+      # Additive kept filter (same as main). See DirectAccessQuery#active_recordings_scope.
+      scope.where(trashed_at: nil)
     end
 
     def valid_role?(role)

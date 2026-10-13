@@ -2,9 +2,11 @@
 
 require "test_helper"
 
-# Proves Accessible routes soft-trash filtering through Recording Studio Trashable
-# instead of raw `where(trashed_at: nil)` / `trashed_at.nil?`, with the same
-# column-existence / respond_to guards as main.
+# Proves Accessible routes soft-trash predicates through Recording Studio Trashable
+# (`recording_studio_trashable_kept?`) and keeps main's additive
+# `where(trashed_at: nil)` for scopes — Trashable's
+# `recording_studio_trashable_active` unscopes `:trashed_at` first and can diverge
+# under a host default_scope.
 class TrashableTrashedAtParityTest < Minitest::Test
   class RelationSpy
     attr_reader :wheres, :trashable_active_calls
@@ -65,16 +67,16 @@ class TrashableTrashedAtParityTest < Minitest::Test
     assert_equal "0.9.0", RecordingStudioTrashable::VERSION
   end
 
-  def test_direct_access_query_uses_trashable_active_when_trashed_at_exists
+  def test_direct_access_query_uses_main_additive_where_not_trashable_active
     with_unscoped_and_column(true) do
       RecordingStudioAccessible::DirectAccessQuery.send(:active_recordings_scope)
     end
 
-    assert_equal 1, @relation.trashable_active_calls
+    assert_equal 0, @relation.trashable_active_calls
     assert_includes @relation.wheres, [{ trashed_at: nil }]
   end
 
-  def test_direct_access_query_skips_trashable_active_when_column_missing
+  def test_direct_access_query_skips_kept_filter_when_column_missing
     with_unscoped_and_column(false) do
       assert_same @relation, RecordingStudioAccessible::DirectAccessQuery.send(:active_recordings_scope)
     end
@@ -83,16 +85,16 @@ class TrashableTrashedAtParityTest < Minitest::Test
     assert_empty @relation.wheres
   end
 
-  def test_audience_query_uses_trashable_active_when_trashed_at_exists
+  def test_audience_query_uses_main_additive_where_not_trashable_active
     with_unscoped_and_column(true) do
       RecordingStudioAccessible::AudienceQuery.send(:live_recordings)
     end
 
-    assert_equal 1, @relation.trashable_active_calls
+    assert_equal 0, @relation.trashable_active_calls
     assert_includes @relation.wheres, [{ trashed_at: nil }]
   end
 
-  def test_authorization_class_methods_use_trashable_active_when_trashed_at_exists
+  def test_authorization_class_methods_use_main_additive_where_not_trashable_active
     host = Object.new
     host.extend(RecordingStudioAccessible::AuthorizationClassMethods)
 
@@ -100,18 +102,18 @@ class TrashableTrashedAtParityTest < Minitest::Test
       host.send(:active_recordings_scope)
     end
 
-    assert_equal 1, @relation.trashable_active_calls
+    assert_equal 0, @relation.trashable_active_calls
     assert_includes @relation.wheres, [{ trashed_at: nil }]
   end
 
-  def test_access_grant_integrity_uses_trashable_active_when_trashed_at_exists
+  def test_access_grant_integrity_uses_main_additive_where_not_trashable_active
     service = RecordingStudioAccessible::Services::AccessGrantIntegrity.new
 
     with_unscoped_and_column(true) do
       service.send(:active_access_recordings)
     end
 
-    assert_equal 1, @relation.trashable_active_calls
+    assert_equal 0, @relation.trashable_active_calls
     assert_includes @relation.wheres, [{ trashed_at: nil }]
   end
 
@@ -153,6 +155,22 @@ class TrashableTrashedAtParityTest < Minitest::Test
     assert_includes source, "access_recording.destroy!"
     refute_includes source, "void_recording!"
     refute_includes source, "recording_studio_trashable_void!"
+  end
+
+  def test_scope_helpers_source_keeps_main_additive_where_not_trashable_active_call
+    paths = [
+      "lib/recording_studio_accessible/direct_access_query.rb",
+      "lib/recording_studio_accessible/audience_query.rb",
+      "lib/recording_studio_accessible/authorization_class_methods.rb",
+      "lib/recording_studio_accessible/services/access_grant_integrity.rb",
+      "lib/recording_studio_accessible/access_recording_creation_guard.rb"
+    ]
+
+    paths.each do |relative|
+      source = File.read(File.expand_path("../#{relative}", __dir__))
+      assert_includes source, "where(trashed_at: nil)", relative
+      refute_includes source, ".recording_studio_trashable_active", relative
+    end
   end
 
   private
