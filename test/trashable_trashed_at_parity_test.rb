@@ -131,12 +131,32 @@ class TrashableTrashedAtParityTest < Minitest::Test
     assert harness.send(:active_recording?, Object.new)
   end
 
+  # Duck-typed objects may expose trashed_at without Trashable helpers (same as main).
+  def test_lifecycle_active_recording_falls_back_to_trashed_at_nil_without_helper
+    harness = LifecycleHarness.new
+    duck = Struct.new(:trashed_at).new(nil)
+    trashed_duck = Struct.new(:trashed_at).new(Time.utc(2026, 10, 13))
+
+    refute_respond_to duck, :recording_studio_trashable_kept?
+    assert harness.send(:active_recording?, duck)
+    refute harness.send(:active_recording?, trashed_duck)
+  end
+
   def test_dependent_access_active_recording_delegates_to_trashable_kept
     assert RecordingStudioAccessible::DependentAccess.send(:active_recording?,
                                                            RecordingStub.new(trashed_at: nil))
     refute RecordingStudioAccessible::DependentAccess.send(:active_recording?,
                                                            RecordingStub.new(trashed_at: Time.now))
     refute RecordingStudioAccessible::DependentAccess.send(:active_recording?, nil)
+  end
+
+  def test_dependent_access_active_recording_falls_back_to_trashed_at_nil_without_helper
+    duck = Struct.new(:trashed_at).new(nil)
+    trashed_duck = Struct.new(:trashed_at).new(Time.utc(2026, 10, 13))
+
+    refute_respond_to duck, :recording_studio_trashable_kept?
+    assert RecordingStudioAccessible::DependentAccess.send(:active_recording?, duck)
+    refute RecordingStudioAccessible::DependentAccess.send(:active_recording?, trashed_duck)
   end
 
   def test_kept_predicate_matches_main_nil_check_for_datetime_values
