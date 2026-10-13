@@ -105,7 +105,10 @@ module RecordingStudioAccessible
 
       def active_access_recordings
         scope = RecordingStudio::Recording.unscoped.where(recordable_type: "RecordingStudio::Access")
-        scope = scope.where(trashed_at: nil) if RecordingStudio::Recording.column_names.include?("trashed_at")
+        # Additive kept filter (same as main). See DirectAccessQuery#active_recordings_scope.
+        if RecordingStudio::Recording.column_names.include?("trashed_at")
+          scope = scope.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
+        end
         scope.joins(DirectAccessQuery::ACCESS_JOIN_SQL).order(created_at: :desc, id: :desc)
       end
 

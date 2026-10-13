@@ -32,6 +32,9 @@ Add the gems to your host app:
 ```ruby
 gem "recording_studio", "~> 4.2"
 gem "recording_studio_accessible"
+# Query-only trash helpers used by Accessible (pin by tag or host equivalent).
+# Prefer require: false; Accessible loads recording_studio_trashable/query.
+gem "recording_studio_trashable", "~> 0.10", require: false
 ```
 
 Then run:
@@ -44,6 +47,16 @@ bin/rails generate recording_studio_accessible:install
 bin/rails generate recording_studio_accessible:migrations
 bin/rails db:migrate
 ```
+
+Accessible loads Trashable’s query entry point only
+(`require "recording_studio_trashable/query"`). Live-row predicates use
+`recording_studio_trashable_kept?` when the object responds to it, otherwise
+`trashed_at.nil?`. Scope filters use additive
+`where(recording_studio_trashable_kept_sql)` where main used
+`where(trashed_at: nil)`. It does not load the Trashable engine/importmap,
+register `:trashable`, or soft-void Access grants; revoke and dependent
+cleanup still destroy those rows. Hosts that want the trash UI install and
+mount Trashable separately.
 
 If you want the gem-provided mounted UI for managing direct access, then also run:
 
@@ -109,6 +122,18 @@ RecordingStudio.enable_capability(:action_audiences, on: PressKit)
 4. Register any custom audiences, then configure each action. `granted` stays in every allowed set. Copy `recording_studio.accessible.audiences.*` into host locale files when you translate picker labels.
 
 No audience picker ships in this gem. Host screens should use `audience_options_for` with a Flatpack `RadioGroup`. Staff controls belong in Recording Studio Admin.
+
+#### Upgrading to 0.17.0
+
+Accessible now depends on Recording Studio Trashable `~> 0.10` and loads only
+`recording_studio_trashable/query` for kept/trashed helpers.
+
+1. Install Accessible `0.17.0` and resolve `recording_studio_trashable` `~> 0.10`
+   (git tag `v0.10.0` or host equivalent), preferably with `require: false`.
+2. No Accessible migration. Keep your existing `trashed_at` column if present.
+3. Revoke and dependent void still hard-destroy Access recordings; they do not
+   call `RecordingStudioTrashable.void_recording!`.
+4. Accessible does not mount Trashable UI or register trash importmap pins.
 
 #### Upgrading to 0.15.0
 

@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-13
+
+### Changed
+- Soft-trash predicates in dependent-access effectiveness and access-record
+  lifecycle call `recording_studio_trashable_kept?` when present, otherwise
+  fall back to `trashed_at.nil?` (same as main for duck-typed objects that
+  expose `trashed_at` without Trashable helpers).
+- Scope filters that were `where(trashed_at: nil)` now use additive
+  `where(recording_studio_trashable_kept_sql)` (byte-equivalent kept filter).
+  They do **not** call `recording_studio_trashable_active`, which
+  `unscope(where: :trashed_at)` first and can diverge under a host
+  `default_scope` that already constrains `trashed_at`.
+- Depends on `recording_studio_trashable ~> 0.10` via
+  `require "recording_studio_trashable/query"` only (Gemfile pin: git tag
+  `v0.10.0`, `require: false`). Does not load the Trashable Rails engine,
+  importmap/assets, `:trashable` capability, CopyHelper, or trash metrics.
+
+### Upgrade Notes
+- Install Accessible `0.17.0` and resolve `recording_studio_trashable` `~> 0.10`
+  (git tag `v0.10.0` or equivalent). Prefer `require: false` plus Accessible’s
+  query require; hosts that want Trashable UI still load the full engine
+  themselves.
+- No Accessible migration. Hosts that already have `trashed_at` keep the same
+  active-row filtering; column-existence / `respond_to?(:trashed_at)` guards
+  remain so boots without the column still work.
+- Revoke / dependent void still hard-destroy Access recordings
+  (`destroy!`). Accessible does not call `RecordingStudioTrashable.void_recording!`
+  (that API is for soft-void writers such as Oauth).
+- Partial-index `WHERE` clauses stay unqualified `trashed_at IS NULL` per
+  Trashable guidance.
+- Version is `0.17.0` (not `0.16.0`) so it does not collide with the open
+  ControllerAuth PR `#34`, which reserves `0.16.0`.
+
 ## [0.15.0] - 2026-10-12
 
 ### Added
@@ -452,7 +485,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.15.0...v0.17.0
 [0.15.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.12.0...v0.13.0

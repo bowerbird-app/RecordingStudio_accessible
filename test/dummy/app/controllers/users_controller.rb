@@ -21,7 +21,10 @@ class UsersController < ApplicationController
 
   def active_recordings
     scope = RecordingStudio::Recording.unscoped
-    scope = scope.where(trashed_at: nil) if RecordingStudio::Recording.column_names.include?("trashed_at")
+    # Additive kept filter (same as main). See DirectAccessQuery#active_recordings_scope.
+    if RecordingStudio::Recording.column_names.include?("trashed_at")
+      scope = scope.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
+    end
 
     scope.where.not(recordable_type: [ "RecordingStudio::Access" ])
          .includes(:recordable, :root_recording)
