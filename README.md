@@ -92,42 +92,67 @@ end
 
 The macro:
 
-1. Adds `before_action :authenticate_x_actor!` and `before_action :set_x_current_actor`
-2. Defines one-line delegators so host overrides keep working:
+1. Adds `before_action :authenticate_x_actor!` and `before_action :set_x_current_actor` (unless turned off)
+2. Defines **private** one-line helpers so Rails `action_methods` stays clean and host overrides keep working:
    - `authenticate_x_actor!` → `authenticate_recording_studio_actor!`
    - `x_actor` → `recording_studio_actor`
    - `current_x_root` → `current_recording_studio_root` (also a `helper_method`)
+   - `set_x_current_actor` → `set_recording_studio_current_actor`
+
+`prefix` must match `/\A[a-z_][a-z0-9_]*\z/`. Calling the macro twice on the same
+controller raises. Options are frozen. Auth class attributes are class-only readers.
 
 Shared methods (defaults match the presskits ApplicationController):
 
 | Method | Behavior |
 | --- | --- |
 | `authenticate_recording_studio_actor!` | Calls `config.authentication_method` when present; otherwise `head :unauthorized` |
-| `recording_studio_actor` | `Current.actor` when present, else `config.current_actor_method` |
-| `authorize_recording!(recording, role:)` | `head :unauthorized` with no actor; `head :forbidden` unless `RecordingStudioAccessible.authorized?` |
+| `recording_studio_actor` | `Current.actor.presence`, else `config.current_actor_method` |
+| `authorize_recording!(recording, role:)` | `head :unauthorized` with no actor; `head :forbidden` unless `recording` and `RecordingStudioAccessible.authorized?` |
 | `current_recording_studio_root` | `current_root_recording` when the controller responds to it |
 | `require_root!` | `head :forbidden` when no root |
 
-When a gem’s previous behavior differed (status codes, plain/HTML bodies,
-redirects, actor resolution order, skipping `Current.actor`), pass options to
-`recording_studio_auth` rather than changing the defaults:
+When a gem’s previous behavior differed, pass options instead of changing defaults:
 
 ```ruby
+# brands-like
 recording_studio_auth(
-  config: -> { RecordingStudioX.configuration },
-  prefix: :x,
+  config: -> { RecordingStudioBrands.configuration },
+  prefix: :brands,
   set_current_actor: false,
-  actor_resolution: :method_only, # or :method_then_current
-  missing_actor_status: :forbidden,
+  actor_resolution: :method_only,
+  missing_actor_status: :forbidden
+)
+
+# site_settings-like names + configured method result as-is (nil stays nil)
+recording_studio_auth(
+  config: -> { RecordingStudioAdmin.configuration },
+  prefix: :site_settings,
+  authenticate_method: :authenticate_recording_studio_site_settings!,
+  set_current_actor_method: :set_current_actor,
+  actor_method: :current_actor,
+  actor_resolution: :configured_as_is
+)
+
+# stripe-like
+recording_studio_auth(
+  config: -> { RecordingStudioStripe.configuration },
+  prefix: :stripe,
+  authenticate: false,
+  set_current_actor: false,
+  require_actor: true,
+  actor_resolver: -> { /* … */ },
+  root_resolver: -> { /* … */ },
+  on_missing_actor_for_root: -> { redirect_to sign_in_path, alert: "…" },
   missing_root_status: :not_found,
-  response_style: :plain, # or ->(status, reason) { redirect_to ... }
-  plain_bodies: { forbidden: "no access", missing_root: "pick a workspace" }
+  response_style: :plain,
+  plain_bodies: { missing_root: "pick a workspace" }
 )
 ```
 
 The configuration object only needs `authentication_method` and
-`current_actor_method` (the attrs already used by brands, presskits, admin, and
-site_settings). Accessible gains no new gem dependencies for this concern.
+`current_actor_method` unless you pass `actor_resolver` / `root_resolver`.
+Accessible gains no new gem dependencies for this concern.
 
 ## Compatibility with RecordingStudio 4.2
 

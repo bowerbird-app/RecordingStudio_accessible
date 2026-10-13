@@ -19,6 +19,7 @@ Rails.application.routes.draw do
 
   resource :controller_auth_demo, only: [ :show ], controller: "controller_auth_demos" do
     get :authorize
+    get :authorize_nil_recording
     get :require_root
   end
   resource :controller_auth_custom_demo, only: [ :show ], controller: "controller_auth_custom_demos" do
@@ -26,6 +27,8 @@ Rails.application.routes.draw do
     get :require_root
   end
   resource :controller_auth_override_demo, only: [ :show ], controller: "controller_auth_override_demos"
+  resource :controller_auth_site_settings_demo, only: [ :show ], controller: "controller_auth_site_settings_demos"
+  resource :controller_auth_stripe_demo, only: [ :show ], controller: "controller_auth_stripe_demos"
 
   root "home#index"
 end

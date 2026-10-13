@@ -90,6 +90,7 @@ Metrics/AbcSize:
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'app/controllers/concerns/recording_studio_accessible/controller_auth.rb'
     - 'app/controllers/recording_studio_accessible/actor_access_points_controller.rb'
     - 'app/controllers/recording_studio_accessible/home_controller.rb'
     - 'app/controllers/recording_studio_accessible/recording_accesses_controller.rb'
@@ -106,6 +107,7 @@ Metrics/AbcSize:
 Metrics/CyclomaticComplexity:
   Exclude:
     - 'test/**/*'
+    - 'app/controllers/concerns/recording_studio_accessible/controller_auth.rb'
     - 'app/controllers/recording_studio_accessible/home_controller.rb'
     - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
     - 'lib/recording_studio_accessible/access_recording_creation_guard.rb'

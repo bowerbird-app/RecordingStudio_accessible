@@ -16,6 +16,7 @@ class ControllerAuthDemosController < ApplicationController
 
   # Test-only: plant Current.actor before the concern resolves the actor.
   prepend_before_action :plant_current_actor_from_param, if: -> { params[:plant_actor_email].present? }
+  prepend_before_action :plant_blank_current_actor, if: -> { params[:plant_blank_current_actor].present? }
 
   def show
     render plain: [
@@ -28,6 +29,13 @@ class ControllerAuthDemosController < ApplicationController
   def authorize
     recording = RecordingStudio::Recording.unscoped.find(params[:recording_id])
     authorize_recording!(recording, role: params.fetch(:role, "view").to_sym)
+    return if performed?
+
+    render plain: "authorized"
+  end
+
+  def authorize_nil_recording
+    authorize_recording!(nil, role: :view)
     return if performed?
 
     render plain: "authorized"
@@ -51,6 +59,10 @@ class ControllerAuthDemosController < ApplicationController
 
   def plant_current_actor_from_param
     Current.actor = User.find_by!(email: params[:plant_actor_email])
+  end
+
+  def plant_blank_current_actor
+    Current.actor = ""
   end
 
   # Test-only authentication that lets the request through with no actor.
