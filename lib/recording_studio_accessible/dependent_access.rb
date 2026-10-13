@@ -150,7 +150,7 @@ module RecordingStudioAccessible
         return false unless recording
         return true unless recording.respond_to?(:trashed_at)
 
-        recording.trashed_at.nil?
+        recording.recording_studio_trashable_kept?
       end
 
       def recordable_for(recording)

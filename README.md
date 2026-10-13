@@ -32,6 +32,8 @@ Add the gems to your host app:
 ```ruby
 gem "recording_studio", "~> 4.2"
 gem "recording_studio_accessible"
+# Soft-trash helpers used by Accessible (pin by tag or host equivalent).
+gem "recording_studio_trashable", "~> 0.9"
 ```
 
 Then run:
@@ -42,8 +44,15 @@ bin/rails generate recording_studio:install
 bin/rails generate recording_studio:migrations
 bin/rails generate recording_studio_accessible:install
 bin/rails generate recording_studio_accessible:migrations
+bin/rails generate recording_studio_trashable:install
+bin/rails generate recording_studio_trashable:migrations
 bin/rails db:migrate
 ```
+
+Accessible filters live recordings through Trashable
+(`recording_studio_trashable_active` / `recording_studio_trashable_kept?`) when
+the `trashed_at` column is present. It does not soft-void Access grants; revoke
+and dependent cleanup still destroy those rows.
 
 If you want the gem-provided mounted UI for managing direct access, then also run:
 
@@ -109,6 +118,17 @@ RecordingStudio.enable_capability(:action_audiences, on: PressKit)
 4. Register any custom audiences, then configure each action. `granted` stays in every allowed set. Copy `recording_studio.accessible.audiences.*` into host locale files when you translate picker labels.
 
 No audience picker ships in this gem. Host screens should use `audience_options_for` with a Flatpack `RadioGroup`. Staff controls belong in Recording Studio Admin.
+
+#### Upgrading to 0.16.0
+
+Accessible now depends on Recording Studio Trashable for live-recording filters
+(`recording_studio_trashable_active` / `recording_studio_trashable_kept?`).
+
+1. Install Accessible `0.16.0` and resolve `recording_studio_trashable` `~> 0.9`
+   (git tag `v0.9.0` or host equivalent).
+2. No Accessible migration. Keep your existing `trashed_at` column if present.
+3. Revoke and dependent void still hard-destroy Access recordings; they do not
+   call `RecordingStudioTrashable.void_recording!`.
 
 #### Upgrading to 0.15.0
 

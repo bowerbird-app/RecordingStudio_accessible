@@ -75,7 +75,7 @@ module RecordingStudioAccessible
         scope = RecordingStudio::Recording.unscoped
         return scope unless RecordingStudio::Recording.column_names.include?("trashed_at")
 
-        scope.where(trashed_at: nil)
+        scope.recording_studio_trashable_active
       end
 
       def join_for(recordable_type)

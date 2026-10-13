@@ -66,7 +66,7 @@ module RecordingStudioAccessible
 
     def workspace_access_recordings
       scope = RecordingStudio::Recording.unscoped
-      scope = scope.where(trashed_at: nil) if RecordingStudio::Recording.column_names.include?("trashed_at")
+      scope = scope.recording_studio_trashable_active if RecordingStudio::Recording.column_names.include?("trashed_at")
       scope
         .where(root_recording_id: @workspace_root_recording.id, recordable_type: "RecordingStudio::Access")
         .joins(RecordingStudioAccessible::DirectAccessQuery::ACCESS_JOIN_SQL)

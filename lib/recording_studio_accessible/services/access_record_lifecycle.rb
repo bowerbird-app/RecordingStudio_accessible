@@ -52,7 +52,7 @@ module RecordingStudioAccessible
       def active_recording?(recording)
         return true unless recording.respond_to?(:trashed_at)
 
-        recording.trashed_at.nil?
+        recording.recording_studio_trashable_kept?
       end
 
       def ensure_current_impersonator_accessor!

@@ -43,7 +43,7 @@ module RecordingStudioAccessible
       actor_id = access.actor_id || actor.id
 
       duplicate_scope = self.class.unscoped
-      duplicate_scope = duplicate_scope.where(trashed_at: nil) if has_attribute?(:trashed_at)
+      duplicate_scope = duplicate_scope.recording_studio_trashable_active if has_attribute?(:trashed_at)
 
       duplicate_exists = duplicate_scope
                          .where(parent_recording_id: parent_recording_id, recordable_type: "RecordingStudio::Access")

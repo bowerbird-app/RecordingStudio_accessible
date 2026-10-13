@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "recording_studio"
+require "recording_studio_trashable"
 require "action_mailer"
 require "recording_studio_accessible/version"
 require "recording_studio_accessible/copy"

@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-13
+
+### Changed
+- Soft-trash filters and predicates now use Recording Studio Trashable `0.9`
+  (`recording_studio_trashable_active`, `recording_studio_trashable_kept?`)
+  instead of duplicated `where(trashed_at: nil)` / `trashed_at.nil?` in
+  audience queries, authorization scopes, direct-access queries, access-grant
+  integrity, creation-guard duplicate checks, dependent-access effectiveness,
+  access-record lifecycle, and actor access-points.
+- Depends on `recording_studio_trashable ~> 0.9` (Gemfile pin: git tag `v0.9.0`).
+
+### Upgrade Notes
+- Install Accessible `0.16.0` and ensure the host resolves
+  `recording_studio_trashable` `~> 0.9` (git tag `v0.9.0` or equivalent).
+- No Accessible migration. Hosts that already have `trashed_at` keep the same
+  active-row filtering; column-existence / `respond_to?(:trashed_at)` guards
+  remain so boots without the column still work.
+- Revoke / dependent void still hard-destroy Access recordings
+  (`destroy!`). Accessible does not call `RecordingStudioTrashable.void_recording!`
+  (that API is for soft-void writers such as Oauth).
+- Accessible has no raw SQL `trashed_at` fragments to migrate to
+  `kept_sql` / `trashed_sql`. Partial-index `WHERE` clauses stay unqualified
+  `trashed_at IS NULL` per Trashable guidance.
+
 ## [0.15.0] - 2026-10-12
 
 ### Added
@@ -452,7 +476,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.12.0...v0.13.0

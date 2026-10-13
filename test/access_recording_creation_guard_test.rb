@@ -12,17 +12,23 @@ class AccessRecordingCreationGuardTest < Minitest::Test
   ParentRecording = Struct.new(:id, :recordable_type, keyword_init: true)
 
   class DuplicateScope
-    attr_reader :wheres, :joins_sql
+    attr_reader :wheres, :joins_sql, :trashable_active_calls
 
     def initialize(exists:)
       @exists = exists
       @wheres = []
       @joins_sql = []
+      @trashable_active_calls = 0
     end
 
     def where(*args)
       @wheres << args
       self
+    end
+
+    def recording_studio_trashable_active
+      @trashable_active_calls += 1
+      where(trashed_at: nil)
     end
 
     def not(*args)
@@ -217,6 +223,7 @@ class AccessRecordingCreationGuardTest < Minitest::Test
 
     duplicate = RecordingStudioAccessible::AccessRecordingCreationGuard::DUPLICATE_ACCESS_RECORDING_ERROR
     assert_english_details_match_main(recording.errors, :base, duplicate)
+    assert_equal 1, Recording.scope.trashable_active_calls
     assert_includes Recording.scope.wheres, [{ trashed_at: nil }]
     assert_includes Recording.scope.wheres,
                     [{ recording_studio_accesses: { actor_type: "AccessRecordingCreationGuardTest::Actor", actor_id: 42 } }]
