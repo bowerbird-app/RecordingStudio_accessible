@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.16.0] - 2026-10-13
+## [0.18.0] - 2026-10-13
 
 ### Added
 - `RecordingStudioAccessible::ControllerAuth` concern for sibling Recording Studio addon engines: class macro `recording_studio_auth config:, prefix:` wires authenticate + `Current.actor` before_actions and defines private one-line helpers (`authenticate_<prefix>_actor!`, `<prefix>_actor`, `current_<prefix>_root` helper, `set_<prefix>_current_actor`) so Rails does not treat them as actions.
@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file.
 - Dummy-app coverage for the macro, each shared method, `action_methods` exclusion, blank `Current.actor` via `.presence`, nil-recording authorize, actor_resolution validation, site_settings names, and stripe require-root flow.
 
 ### Upgrade Notes
-- Install Accessible `0.16.0`. No migration.
+- Install Accessible `0.18.0`. No migration.
 - Addon engines may replace duplicated ApplicationController auth with:
 
 ```ruby
@@ -513,7 +513,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.15.0...v0.17.0
 [0.15.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.13.0...v0.14.0
