@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-13
+
+### Added
+- `RecordingStudioAccessible::ControllerAuth` concern for sibling Recording Studio addon engines: class macro `recording_studio_auth config:, prefix:` wires authenticate + `Current.actor` before_actions and defines one-line `authenticate_<prefix>_actor!`, `<prefix>_actor`, and `current_<prefix>_root` (helper) delegators.
+- Shared helpers: `authenticate_recording_studio_actor!`, `recording_studio_actor`, `authorize_recording!(recording, role:)`, `current_recording_studio_root`, and `require_root!`.
+- Configurable divergence for sibling gems (status codes, `:head` / `:plain` / callable responses, whether to set `Current.actor`, actor resolution order). Defaults match the presskits ApplicationController shape.
+- Dummy-app integration coverage for the macro and each shared method, plus host override of prefixed authenticators.
+
+### Upgrade Notes
+- Install Accessible `0.16.0`. No migration.
+- Addon engines may replace duplicated ApplicationController auth with:
+
+```ruby
+include RecordingStudioAccessible::ControllerAuth
+
+recording_studio_auth(
+  config: -> { RecordingStudioX.configuration },
+  prefix: :x
+)
+```
+
+- Pass options only when a gem’s previous status codes or response style differed from the presskits defaults (`head :unauthorized` / `head :forbidden`). Host overrides of `authenticate_<prefix>_actor!` / `<prefix>_actor` / `current_<prefix>_root` keep working.
 ## [0.17.0] - 2026-10-13
 
 ### Changed
