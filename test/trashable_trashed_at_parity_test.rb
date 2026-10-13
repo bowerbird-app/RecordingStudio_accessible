@@ -2,12 +2,12 @@
 
 require "test_helper"
 
-# Proves Accessible routes soft-trash predicates through Recording Studio Trashable
-# (`recording_studio_trashable_kept?`) and keeps main's additive
-# `where(trashed_at: nil)` for scopes — Trashable's
-# `recording_studio_trashable_active` unscopes `:trashed_at` first and can diverge
-# under a host default_scope.
+# Proves Accessible uses Trashable query helpers (kept_sql / kept?) with the same
+# additive semantics as main's where(trashed_at: nil) / trashed_at.nil?, and does
+# not call recording_studio_trashable_active (which unscopes :trashed_at).
 class TrashableTrashedAtParityTest < Minitest::Test
+  KEPT_SQL = '"recording_studio_recordings"."trashed_at" IS NULL'
+
   class RelationSpy
     attr_reader :wheres, :trashable_active_calls
 
@@ -62,22 +62,23 @@ class TrashableTrashedAtParityTest < Minitest::Test
     RecordingStudio.send(:remove_const, :Recording) if @created_recording_class
   end
 
-  def test_trashable_gem_is_loaded
+  def test_query_entry_point_is_loaded_without_engine
     assert defined?(RecordingStudioTrashable)
-    assert_equal "0.9.0", RecordingStudioTrashable::VERSION
+    assert_equal "0.10.0", RecordingStudioTrashable::VERSION
+    refute defined?(RecordingStudioTrashable::Engine)
   end
 
-  def test_direct_access_query_uses_main_additive_where_not_trashable_active
-    with_unscoped_and_column(true) do
+  def test_direct_access_query_uses_kept_sql_not_trashable_active
+    with_unscoped_column_and_kept_sql(true) do
       RecordingStudioAccessible::DirectAccessQuery.send(:active_recordings_scope)
     end
 
     assert_equal 0, @relation.trashable_active_calls
-    assert_includes @relation.wheres, [{ trashed_at: nil }]
+    assert_includes @relation.wheres, [KEPT_SQL]
   end
 
   def test_direct_access_query_skips_kept_filter_when_column_missing
-    with_unscoped_and_column(false) do
+    with_unscoped_column_and_kept_sql(false) do
       assert_same @relation, RecordingStudioAccessible::DirectAccessQuery.send(:active_recordings_scope)
     end
 
@@ -85,36 +86,36 @@ class TrashableTrashedAtParityTest < Minitest::Test
     assert_empty @relation.wheres
   end
 
-  def test_audience_query_uses_main_additive_where_not_trashable_active
-    with_unscoped_and_column(true) do
+  def test_audience_query_uses_kept_sql_not_trashable_active
+    with_unscoped_column_and_kept_sql(true) do
       RecordingStudioAccessible::AudienceQuery.send(:live_recordings)
     end
 
     assert_equal 0, @relation.trashable_active_calls
-    assert_includes @relation.wheres, [{ trashed_at: nil }]
+    assert_includes @relation.wheres, [KEPT_SQL]
   end
 
-  def test_authorization_class_methods_use_main_additive_where_not_trashable_active
+  def test_authorization_class_methods_use_kept_sql_not_trashable_active
     host = Object.new
     host.extend(RecordingStudioAccessible::AuthorizationClassMethods)
 
-    with_unscoped_and_column(true) do
+    with_unscoped_column_and_kept_sql(true) do
       host.send(:active_recordings_scope)
     end
 
     assert_equal 0, @relation.trashable_active_calls
-    assert_includes @relation.wheres, [{ trashed_at: nil }]
+    assert_includes @relation.wheres, [KEPT_SQL]
   end
 
-  def test_access_grant_integrity_uses_main_additive_where_not_trashable_active
+  def test_access_grant_integrity_uses_kept_sql_not_trashable_active
     service = RecordingStudioAccessible::Services::AccessGrantIntegrity.new
 
-    with_unscoped_and_column(true) do
+    with_unscoped_column_and_kept_sql(true) do
       service.send(:active_access_recordings)
     end
 
     assert_equal 0, @relation.trashable_active_calls
-    assert_includes @relation.wheres, [{ trashed_at: nil }]
+    assert_includes @relation.wheres, [KEPT_SQL]
   end
 
   def test_lifecycle_active_recording_delegates_to_trashable_kept
@@ -126,9 +127,8 @@ class TrashableTrashedAtParityTest < Minitest::Test
 
   def test_lifecycle_active_recording_passes_without_trashed_at
     harness = LifecycleHarness.new
-    plain = Object.new
 
-    assert harness.send(:active_recording?, plain)
+    assert harness.send(:active_recording?, Object.new)
   end
 
   def test_dependent_access_active_recording_delegates_to_trashable_kept
@@ -157,7 +157,14 @@ class TrashableTrashedAtParityTest < Minitest::Test
     refute_includes source, "recording_studio_trashable_void!"
   end
 
-  def test_scope_helpers_source_keeps_main_additive_where_not_trashable_active_call
+  def test_lib_requires_query_entry_point_not_full_gem
+    source = File.read(File.expand_path("../lib/recording_studio_accessible.rb", __dir__))
+
+    assert_includes source, 'require "recording_studio_trashable/query"'
+    refute_match(/require ["']recording_studio_trashable["']/, source)
+  end
+
+  def test_scope_helpers_source_uses_kept_sql_not_active_call
     paths = [
       "lib/recording_studio_accessible/direct_access_query.rb",
       "lib/recording_studio_accessible/audience_query.rb",
@@ -168,17 +175,19 @@ class TrashableTrashedAtParityTest < Minitest::Test
 
     paths.each do |relative|
       source = File.read(File.expand_path("../#{relative}", __dir__))
-      assert_includes source, "where(trashed_at: nil)", relative
+      assert_includes source, "recording_studio_trashable_kept_sql", relative
       refute_includes source, ".recording_studio_trashable_active", relative
     end
   end
 
   private
 
-  def with_unscoped_and_column(column_present, &block)
+  def with_unscoped_column_and_kept_sql(column_present, &block)
     columns = column_present ? ["trashed_at"] : []
     RecordingStudio::Recording.stub(:unscoped, @relation) do
-      RecordingStudio::Recording.stub(:column_names, columns, &block)
+      RecordingStudio::Recording.stub(:column_names, columns) do
+        RecordingStudio::Recording.stub(:recording_studio_trashable_kept_sql, KEPT_SQL, &block)
+      end
     end
   end
 
@@ -189,6 +198,7 @@ class TrashableTrashedAtParityTest < Minitest::Test
     RecordingStudio.const_set(:Recording, Class.new do
       def self.unscoped = nil
       def self.column_names = []
+      def self.recording_studio_trashable_kept_sql(*) = '"recording_studio_recordings"."trashed_at" IS NULL'
     end)
   end
 end

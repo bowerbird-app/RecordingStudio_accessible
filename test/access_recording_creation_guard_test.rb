@@ -50,6 +50,10 @@ class AccessRecordingCreationGuardTest < Minitest::Test
       def validate(*); end
       def unscoped = scope
       def table_name = "recording_studio_recordings"
+
+      def recording_studio_trashable_kept_sql(_table = table_name)
+        '"recording_studio_recordings"."trashed_at" IS NULL'
+      end
     end
 
     include RecordingStudioAccessible::AccessRecordingCreationGuard
@@ -217,7 +221,7 @@ class AccessRecordingCreationGuardTest < Minitest::Test
 
     duplicate = RecordingStudioAccessible::AccessRecordingCreationGuard::DUPLICATE_ACCESS_RECORDING_ERROR
     assert_english_details_match_main(recording.errors, :base, duplicate)
-    assert_includes Recording.scope.wheres, [{ trashed_at: nil }]
+    assert_includes Recording.scope.wheres, ['"recording_studio_recordings"."trashed_at" IS NULL']
     assert_includes Recording.scope.wheres,
                     [{ recording_studio_accesses: { actor_type: "AccessRecordingCreationGuardTest::Actor", actor_id: 42 } }]
   end

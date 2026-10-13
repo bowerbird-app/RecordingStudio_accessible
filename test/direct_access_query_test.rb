@@ -45,14 +45,17 @@ class DirectAccessQueryTest < Minitest::Test
 
   def test_access_recordings_for_filters_to_active_access_children
     relation = RelationSpy.new
+    kept_sql = '"recording_studio_recordings"."trashed_at" IS NULL'
 
     RecordingStudio::Recording.stub(:unscoped, relation) do
       RecordingStudio::Recording.stub(:column_names, ["trashed_at"]) do
-        assert_same relation, RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(Recording.new(123))
+        RecordingStudio::Recording.stub(:recording_studio_trashable_kept_sql, kept_sql) do
+          assert_same relation, RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(Recording.new(123))
+        end
       end
     end
 
-    assert_includes relation.wheres, [{ trashed_at: nil }]
+    assert_includes relation.wheres, [kept_sql]
     assert_includes relation.wheres, [{ parent_recording_id: 123 }]
     assert_includes relation.wheres, [{ recordable_type: "RecordingStudio::Access" }]
   end
@@ -153,6 +156,10 @@ class DirectAccessQueryTest < Minitest::Test
       def self.unscoped = nil
       def self.none = nil
       def self.column_names = []
+
+      def self.recording_studio_trashable_kept_sql(*)
+        '"recording_studio_recordings"."trashed_at" IS NULL'
+      end
     end)
   end
 end

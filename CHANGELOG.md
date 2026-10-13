@@ -7,27 +7,32 @@ All notable changes to this project will be documented in this file.
 ## [0.17.0] - 2026-10-13
 
 ### Changed
-- Soft-trash predicates now use Recording Studio Trashable `0.9`
+- Soft-trash predicates use Recording Studio Trashable query helpers
   (`recording_studio_trashable_kept?`) instead of `trashed_at.nil?` in
   dependent-access effectiveness and access-record lifecycle.
-- Scope filters keep main’s additive `where(trashed_at: nil)` on the same
-  base relation. They do **not** call `recording_studio_trashable_active`,
-  which `unscope(where: :trashed_at)` first and can diverge under a host
+- Scope filters that were `where(trashed_at: nil)` now use additive
+  `where(recording_studio_trashable_kept_sql)` (byte-equivalent kept filter).
+  They do **not** call `recording_studio_trashable_active`, which
+  `unscope(where: :trashed_at)` first and can diverge under a host
   `default_scope` that already constrains `trashed_at`.
-- Depends on `recording_studio_trashable ~> 0.9` (Gemfile pin: git tag `v0.9.0`).
+- Depends on `recording_studio_trashable ~> 0.10` via
+  `require "recording_studio_trashable/query"` only (Gemfile pin: git tag
+  `v0.10.0`, `require: false`). Does not load the Trashable Rails engine,
+  importmap/assets, `:trashable` capability, CopyHelper, or trash metrics.
 
 ### Upgrade Notes
-- Install Accessible `0.17.0` and ensure the host resolves
-  `recording_studio_trashable` `~> 0.9` (git tag `v0.9.0` or equivalent).
+- Install Accessible `0.17.0` and resolve `recording_studio_trashable` `~> 0.10`
+  (git tag `v0.10.0` or equivalent). Prefer `require: false` plus Accessible’s
+  query require; hosts that want Trashable UI still load the full engine
+  themselves.
 - No Accessible migration. Hosts that already have `trashed_at` keep the same
   active-row filtering; column-existence / `respond_to?(:trashed_at)` guards
   remain so boots without the column still work.
 - Revoke / dependent void still hard-destroy Access recordings
   (`destroy!`). Accessible does not call `RecordingStudioTrashable.void_recording!`
   (that API is for soft-void writers such as Oauth).
-- Accessible has no raw SQL `trashed_at` fragments to migrate to
-  `kept_sql` / `trashed_sql`. Partial-index `WHERE` clauses stay unqualified
-  `trashed_at IS NULL` per Trashable guidance.
+- Partial-index `WHERE` clauses stay unqualified `trashed_at IS NULL` per
+  Trashable guidance.
 - Version is `0.17.0` (not `0.16.0`) so it does not collide with the open
   ControllerAuth PR `#34`, which reserves `0.16.0`.
 
