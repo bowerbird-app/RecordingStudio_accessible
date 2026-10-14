@@ -20,11 +20,11 @@ module RecordingStudio
     recording_studio_recordable label: LABEL, root: false if respond_to?(:recording_studio_recordable)
 
     def self.audience_write_error
-      RecordingStudioAccessible::Copy.t("recordables.access_constraint.write_error", default: WRITE_ERROR)
+      RecordingStudioAccessible::Copy.t("recordables.access_constraint.write_error")
     end
 
     def self.recordable_type_label
-      RecordingStudioAccessible::Copy.t("recordables.access_constraint.label", default: LABEL)
+      RecordingStudioAccessible::Copy.t("recordables.access_constraint.label")
     end
 
     class << self
@@ -36,7 +36,6 @@ module RecordingStudio
       suffix = names.any? ? names.join(", ") : "granted"
       RecordingStudioAccessible::Copy.t(
         "recordables.access_constraint.name",
-        default: NAME_DEFAULT,
         action: action,
         audiences: suffix
       )

@@ -53,28 +53,18 @@ module RecordingStudioAccessible
       def grant_error(target_recording:, role:, depends_on:, dependent_recording: nil)
         return if depends_on.nil?
 
-        return Copy.t("errors.dependent_missing_column", default: MISSING_COLUMN_MESSAGE) unless column_available?
+        return Copy.t("errors.dependent_missing_column") unless column_available?
 
         manager = resolve_recording(depends_on)
-        return Copy.t("errors.dependent_missing_manager", default: MISSING_MANAGER_MESSAGE) unless manager
-        unless active_recording?(manager)
-          return Copy.t("errors.dependent_missing_manager", default: MISSING_MANAGER_MESSAGE)
-        end
-        unless access_recording?(manager)
-          return Copy.t("errors.dependent_not_same_root", default: NOT_ACCESS_SAME_ROOT_MESSAGE)
-        end
-        unless same_root?(target_recording, manager)
-          return Copy.t("errors.dependent_not_same_root", default: NOT_ACCESS_SAME_ROOT_MESSAGE)
-        end
+        return Copy.t("errors.dependent_missing_manager") unless manager
+        return Copy.t("errors.dependent_missing_manager") unless active_recording?(manager)
+        return Copy.t("errors.dependent_not_same_root") unless access_recording?(manager)
+        return Copy.t("errors.dependent_not_same_root") unless same_root?(target_recording, manager)
         if cyclic_dependency?(depends_on: manager, dependent_recording: dependent_recording)
-          return Copy.t("errors.dependent_cycle", default: CYCLE_MESSAGE)
+          return Copy.t("errors.dependent_cycle")
         end
-        unless ranked_for_comparison?(role, manager)
-          return Copy.t("errors.dependent_unranked_role", default: UNRANKED_ROLE_MESSAGE)
-        end
-        unless role_capped?(dependent_role: role, manager: manager)
-          return Copy.t("errors.dependent_role_exceeds", default: ROLE_EXCEEDS_MESSAGE)
-        end
+        return Copy.t("errors.dependent_unranked_role") unless ranked_for_comparison?(role, manager)
+        return Copy.t("errors.dependent_role_exceeds") unless role_capped?(dependent_role: role, manager: manager)
 
         nil
       end

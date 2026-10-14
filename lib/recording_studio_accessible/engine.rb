@@ -28,6 +28,13 @@ module RecordingStudioAccessible
       RecordingStudioAccessible.install_action_audience_policies!
     end
 
+    initializer "recording_studio_accessible.register_shipped_english",
+                before: "recording_studio.load_shipped_english" do
+      RecordingStudio::Translation.register_shipped_english(
+        root.join("config/locales/en.yml")
+      )
+    end
+
     initializer "recording_studio_accessible.load_config" do |app|
       if app.respond_to?(:config_for)
         begin

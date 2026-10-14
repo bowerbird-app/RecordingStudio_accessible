@@ -14,10 +14,7 @@ class AudienceCreationGuardErrorTypesTest < Minitest::Test
       def validate(*); end
 
       def audience_write_error
-        RecordingStudioAccessible::Copy.t(
-          "recordables.access_rule.write_error",
-          default: WRITE_ERROR
-        )
+        RecordingStudioAccessible::Copy.t("recordables.access_rule.write_error")
       end
     end
 

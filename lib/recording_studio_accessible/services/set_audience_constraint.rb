@@ -38,10 +38,7 @@ module RecordingStudioAccessible
         end
         if RecordingStudioAccessible::SharedRootAccess.target?(@root)
           raise RecordingStudioAccessible::AudienceInvalid,
-                copy(
-                  "errors.grant_denied",
-                  default: RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
-                )
+                copy("errors.grant_denied")
         end
         unless AudienceResolver.configured?(@action) && AudienceResolver.valid_config?(@action)
           raise RecordingStudioAccessible::AudienceInvalid, copy("errors.audience_action_not_configured")

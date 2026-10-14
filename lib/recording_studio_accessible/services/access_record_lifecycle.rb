@@ -90,10 +90,7 @@ module RecordingStudioAccessible
         return true unless RecordingStudioAccessible::SharedRootAccess.target?(recording)
 
         failure(
-          Copy.t(
-            "errors.grant_denied",
-            default: RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
-          )
+          Copy.t("errors.grant_denied")
         )
       end
 

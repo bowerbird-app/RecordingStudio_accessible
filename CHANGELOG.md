@@ -4,6 +4,51 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-10-14
+
+### Added
+- English fallback for shipped `recording_studio.accessible.*` keys when the
+  active locale has no translation: `Copy.t` / `accessible_t` route through
+  `RecordingStudio.t`, which resolves loaded `:en` (host English overrides
+  included), then the caller's `default:`, then the merged shipped-English
+  table. This gem registers `config/locales/en.yml` at boot via
+  `RecordingStudio::Translation.register_shipped_english`.
+- Behavioral coverage: a locale with no translations renders loaded English on
+  manage access; a boot-loaded host English override for the rarely shown
+  `manage.expired` label wins on a real page; keys deleted from the loaded
+  backend still render this gem's English through `RecordingStudio.t` (not
+  "Translation missing", not a 500) with raise-on-missing on and off; en.yml
+  drift guard rejects hand-copied English `default:`s; registration of this
+  gem's `en.yml` path is asserted.
+
+### Changed
+- Depends on `recording_studio ~> 4.7` for `register_shipped_english`.
+- Gem call sites look up copy through `Copy.t` / `RecordingStudio.t` so
+  fallback English comes from the loaded `:en` backend or the registered
+  gem-shipped table (no hand-copied Ruby string defaults that can drift).
+- Public message constants (`GRANT_DENIED_MESSAGE`, bootstrap messages,
+  duplicate-grant errors, recordable `LABEL`s / `WRITE_ERROR` /
+  `NAME_DEFAULT`) remain for API compatibility; displayed copy no longer
+  passes them as `default:`.
+
+### Upgrade notes
+- Install Accessible `0.19.0` with RecordingStudio `~> 4.7`. No migration.
+  English hosts need no change.
+- Hosts that enable raise-on-missing translations no longer raise for
+  gem-shipped `recording_studio.accessible.*` keys looked up through
+  `RecordingStudio.t` / `Copy.t` / `accessible_t` when the active locale
+  lacks the key. Host overrides in the active locale still win; host `:en`
+  overrides win on the loaded-English fallback step.
+- Partial pluralization in a non-English locale (for example French with only
+  `one`) still raises `I18n::InvalidPluralizationData` — the English fallback
+  does not fill missing plural keys.
+- A missing `_html` key with a caller `default:` now follows
+  `RecordingStudio.t` / view `t` escaping (args escaped, template markup
+  kept) instead of main's `Copy.t` whole-template escaping. No in-gem call
+  site does this.
+- `en.yml` is unchanged. Prefer `RecordingStudio.t` / `Copy.t` for gem keys
+  when adding new call sites so missing locales keep the same fallback.
+
 ## [0.18.1] - 2026-10-14
 
 ### Changed
@@ -522,7 +567,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.18.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.18.1...v0.19.0
 [0.18.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.15.0...v0.17.0

@@ -19,10 +19,7 @@ module RecordingStudioAccessible
       def perform
         unless dry_run || valid_manager_actor?
           return failure(
-            Copy.t(
-              "errors.repair_manager_required",
-              default: "A persisted manager actor with a GlobalID is required for repair"
-            )
+            Copy.t("errors.repair_manager_required")
           )
         end
 
@@ -32,10 +29,7 @@ module RecordingStudioAccessible
 
         if failures.any?
           return failure(
-            Copy.t(
-              "errors.repair_failed",
-              default: "Some duplicate access grants could not be repaired"
-            ),
+            Copy.t("errors.repair_failed"),
             errors: failures,
             value: { report: report, dry_run: dry_run }
           )

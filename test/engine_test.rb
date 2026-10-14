@@ -77,6 +77,12 @@ class EngineTest < Minitest::Test
                                                                             false) && Object.const_get(:ApplicationRecord) == application_record
   end
 
+  def test_register_shipped_english_initializer_is_ordered_before_recording_studio_load
+    initializer = find_initializer("recording_studio_accessible.register_shipped_english")
+    refute_nil initializer
+    assert_equal "recording_studio.load_shipped_english", initializer.before
+  end
+
   private
 
   def find_initializer(name)

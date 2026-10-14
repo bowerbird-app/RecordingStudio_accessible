@@ -4,7 +4,7 @@ source "https://rubygems.org"
 gem "recording_studio_accessible", path: "../.."
 
 # RecordingStudio engine
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.5.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"
 # Query-only trash helpers (Accessible gemspec "~> 0.10"; pin by tag).
 # require: false — Accessible loads recording_studio_trashable/query only.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",

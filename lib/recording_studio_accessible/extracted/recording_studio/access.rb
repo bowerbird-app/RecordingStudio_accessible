@@ -31,7 +31,7 @@ module RecordingStudio
     end
 
     def self.recordable_type_label
-      RecordingStudioAccessible::Copy.t("recordables.access.label", default: LABEL)
+      RecordingStudioAccessible::Copy.t("recordables.access.label")
     end
 
     class << self
@@ -41,7 +41,6 @@ module RecordingStudio
     def recordable_name
       RecordingStudioAccessible::Copy.t(
         "recordables.access.name",
-        default: NAME_DEFAULT,
         role: role,
         actor: access_actor_text
       )
@@ -51,7 +50,7 @@ module RecordingStudio
       actor_name = actor.respond_to?(:name) ? actor.name.to_s.squish.presence : nil
       return "#{actor_name} (#{actor.class.name.demodulize})" if actor_name.present?
 
-      RecordingStudioAccessible::Copy.t("errors.unknown_actor", default: "Unknown actor")
+      RecordingStudioAccessible::Copy.t("errors.unknown_actor")
     end
     private :access_actor_text
 
