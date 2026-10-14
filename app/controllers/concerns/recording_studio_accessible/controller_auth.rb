@@ -139,6 +139,13 @@ module RecordingStudioAccessible
       method_name = recording_studio_auth_configuration&.authentication_method
       return send(method_name) if method_name && respond_to?(method_name, true)
 
+      if method_name
+        Rails.logger.warn(
+          "[RecordingStudioAccessible] ControllerAuth authentication_method " \
+          "#{method_name.inspect} is not defined on #{self.class.name}"
+        )
+      end
+
       recording_studio_auth_respond(:unauthorized, status_key: :unauthorized_status)
     end
 

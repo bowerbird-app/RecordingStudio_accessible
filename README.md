@@ -112,6 +112,8 @@ Shared methods (defaults match the presskits ApplicationController):
 | `current_recording_studio_root` | `current_root_recording` when the controller responds to it |
 | `require_root!` | `head :forbidden` when no root |
 
+When the configured `authentication_method` is not defined on the controller, Accessible logs a `Rails.logger.warn` naming the missing method and still responds `:unauthorized`.
+
 When a gem’s previous behavior differed, pass options instead of changing defaults:
 
 ```ruby
