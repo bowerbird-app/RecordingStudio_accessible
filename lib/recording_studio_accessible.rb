@@ -58,6 +58,7 @@ require_relative "../app/jobs/recording_studio_accessible/void_dependent_accesse
 require_relative "../app/helpers/recording_studio_accessible/copy_helper"
 require_relative "../app/mailers/recording_studio_accessible/access_granted_mailer"
 require_relative "../app/mailers/recording_studio_accessible/access_invitation_mailer"
+require_relative "../app/controllers/concerns/recording_studio_accessible/controller_auth"
 
 require "recording_studio_accessible/engine"
 

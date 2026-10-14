@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-13
+
+### Added
+- `RecordingStudioAccessible::ControllerAuth` concern for sibling Recording Studio addon engines: class macro `recording_studio_auth config:, prefix:` wires authenticate + `Current.actor` before_actions and defines private one-line helpers (`authenticate_<prefix>_actor!`, `<prefix>_actor`, `current_<prefix>_root` helper, `set_<prefix>_current_actor`) so Rails does not treat them as actions.
+- Shared helpers: `authenticate_recording_studio_actor!`, `recording_studio_actor`, `authorize_recording!(recording, role:)`, `current_recording_studio_root`, and `require_root!`.
+- Divergence options for sibling gems:
+  - status codes, `:head` / `:plain` / callable `response_style`, `plain_bodies`
+  - `set_current_actor`, `actor_resolution` (`:current_then_method`, `:method_then_current`, `:method_only`, `:configured_as_is`)
+  - method-name overrides (`authenticate_method`, `actor_method`, `set_current_actor_method`, `root_method`) for site_settings-style names
+  - `authenticate: false`, `require_actor`, `on_missing_actor_for_root`, `actor_resolver`, `root_resolver` for stripe-style flows
+- Macro guards: prefix must match `/\A[a-z_][a-z0-9_]*\z/`, second call raises, options are frozen, class attributes are class-only readers.
+- Dummy-app coverage for the macro, each shared method, `action_methods` exclusion, blank `Current.actor` via `.presence`, nil-recording authorize, actor_resolution validation, site_settings names, and stripe require-root flow.
+- Documents that `authentication_method` is the approved exception to “sign-in belongs in Users”: Users already depends on Accessible for permissions, so Accessible cannot depend on Users; hosts point the hook at Devise (for example `authenticate_user!`).
+
+### Upgrade Notes
+- Install Accessible `0.18.0`. No migration.
+- Addon engines may replace duplicated ApplicationController auth with:
+
+```ruby
+include RecordingStudioAccessible::ControllerAuth
+
+recording_studio_auth(
+  config: -> { RecordingStudioX.configuration },
+  prefix: :x
+)
+```
+
+- Pass options only when a gem’s previous status codes, method names, or response style differed from the presskits defaults (`head :unauthorized` / `head :forbidden`). Host overrides of the generated private helpers keep working.
+
 ## [0.17.0] - 2026-10-13
 
 ### Changed
@@ -485,7 +514,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.15.0...v0.17.0
 [0.15.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.13.0...v0.14.0

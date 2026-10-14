@@ -11,6 +11,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 - optional per-action audiences (`public`, `signed_in`, `granted`, plus `register_audience`) with workspace limits and per-recording rules
 - `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, and named-action checks
 - a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
+- `RecordingStudioAccessible::ControllerAuth` for sibling addon engines that share authenticate / authorize / current-root helpers
 - install and migration generators for host apps
 - a dummy Rails app that demonstrates the addon mounted separately from RecordingStudio
 
@@ -69,6 +70,110 @@ initializer and share-email templates, and it can optionally add
 `config/recording_studio_accessible.yml` for simple environment-specific
 settings such as `warn_on_core_conflict`. Proc-based hooks still belong in the
 initializer.
+
+## Controller auth for sibling engines
+
+Sibling Recording Studio gems often copy the same ApplicationController auth
+helpers. Use `RecordingStudioAccessible::ControllerAuth` instead of duplicating
+them.
+
+```ruby
+module RecordingStudioX
+  class ApplicationController < ActionController::Base
+    include RecordingStudioAccessible::ControllerAuth
+
+    recording_studio_auth(
+      config: -> { RecordingStudioX.configuration },
+      prefix: :x
+    )
+  end
+end
+```
+
+The macro:
+
+1. Adds `before_action :authenticate_x_actor!` and `before_action :set_x_current_actor` (unless turned off)
+2. Defines **private** one-line helpers so Rails `action_methods` stays clean and host overrides keep working:
+   - `authenticate_x_actor!` → `authenticate_recording_studio_actor!`
+   - `x_actor` → `recording_studio_actor`
+   - `current_x_root` → `current_recording_studio_root` (also a `helper_method`)
+   - `set_x_current_actor` → `set_recording_studio_current_actor`
+
+`prefix` must match `/\A[a-z_][a-z0-9_]*\z/`. Calling the macro twice on the same
+controller raises. Options are frozen. Auth class attributes are class-only readers.
+
+Shared methods (defaults match the presskits ApplicationController):
+
+| Method | Behavior |
+| --- | --- |
+| `authenticate_recording_studio_actor!` | Calls `config.authentication_method` when present; otherwise `head :unauthorized` |
+| `recording_studio_actor` | `Current.actor.presence`, else `config.current_actor_method` |
+| `authorize_recording!(recording, role:)` | `head :unauthorized` with no actor; `head :forbidden` unless `recording` and `RecordingStudioAccessible.authorized?` |
+| `current_recording_studio_root` | `current_root_recording` when the controller responds to it |
+| `require_root!` | `head :forbidden` when no root |
+
+When a gem’s previous behavior differed, pass options instead of changing defaults:
+
+```ruby
+# brands-like
+recording_studio_auth(
+  config: -> { RecordingStudioBrands.configuration },
+  prefix: :brands,
+  set_current_actor: false,
+  actor_resolution: :method_only,
+  missing_actor_status: :forbidden
+)
+
+# site_settings-like names + configured method result as-is (nil stays nil)
+recording_studio_auth(
+  config: -> { RecordingStudioAdmin.configuration },
+  prefix: :site_settings,
+  authenticate_method: :authenticate_recording_studio_site_settings!,
+  set_current_actor_method: :set_current_actor,
+  actor_method: :current_actor,
+  actor_resolution: :configured_as_is
+)
+
+# stripe-like
+recording_studio_auth(
+  config: -> { RecordingStudioStripe.configuration },
+  prefix: :stripe,
+  authenticate: false,
+  set_current_actor: false,
+  require_actor: true,
+  actor_resolver: -> { /* … */ },
+  root_resolver: -> { /* … */ },
+  on_missing_actor_for_root: -> { redirect_to sign_in_path, alert: "…" },
+  missing_root_status: :not_found,
+  response_style: :plain,
+  plain_bodies: { missing_root: "pick a workspace" }
+)
+```
+
+The configuration object only needs `authentication_method` and
+`current_actor_method` unless you pass `actor_resolver` / `root_resolver`.
+Accessible gains no new gem dependencies for this concern.
+
+### Why Accessible keeps an authentication hook
+
+Sign-in normally belongs to Recording Studio Users (`recording_studio_user`).
+`ControllerAuth`’s host-configured `authentication_method` is the one approved
+exception: Users already depends on Accessible for permissions
+(`RecordingStudioUser::ProfileAccess`), so Accessible cannot depend on Users
+without a circular gem dependency.
+
+Hosts should leave authentication in Users (Devise) and point the Accessible
+config hook at that API — for example `authenticate_user!` — rather than
+re-implementing sign-in inside Accessible:
+
+```ruby
+# In the host or addon configuration used by recording_studio_auth
+config.authentication_method = :authenticate_user!
+config.current_actor_method = :current_user
+```
+
+Accessible still owns permission checks (`authorize_recording!`, root helpers,
+`RecordingStudioAccessible.authorized?`). It does not resolve sign-in itself.
 
 ## Compatibility with RecordingStudio 4.2
 
