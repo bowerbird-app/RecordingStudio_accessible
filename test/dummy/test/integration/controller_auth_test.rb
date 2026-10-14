@@ -61,6 +61,28 @@ class ControllerAuthTest < ActionDispatch::IntegrationTest
     assert_response :unauthorized
   end
 
+  test "authenticate_recording_studio_actor! returns unauthorized when authentication_method is missing on the controller" do
+    ControllerAuthDemoConfig.authentication_method = :no_such_method!
+
+    get controller_auth_demo_path
+
+    assert_response :unauthorized
+  end
+
+  test "authenticate_recording_studio_actor! warns when authentication_method is missing on the controller" do
+    ControllerAuthDemoConfig.authentication_method = :no_such_method!
+    log_output = StringIO.new
+    previous_logger = Rails.logger
+    Rails.logger = ActiveSupport::Logger.new(log_output)
+
+    get controller_auth_demo_path
+
+    assert_response :unauthorized
+    assert_match(/no_such_method!/, log_output.string)
+  ensure
+    Rails.logger = previous_logger
+  end
+
   test "recording_studio_actor prefers Current.actor then current_actor_method" do
     sign_in @admin
 
