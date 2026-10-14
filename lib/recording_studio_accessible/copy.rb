@@ -1,21 +1,17 @@
 # frozen_string_literal: true
 
-require "erb"
 require "i18n"
+require_relative "translation"
 
 module RecordingStudioAccessible
   module Copy
-    PREFIX = "recording_studio.accessible"
+    PREFIX = Translation::PREFIX
     UNSET = Object.new.freeze
 
     module_function
 
     def t(key, **options)
-      full_key = "#{PREFIX}.#{key}"
-      return I18n.t(full_key, **options) unless key.to_s.end_with?("_html")
-
-      escaped = options.transform_values { |value| value.is_a?(String) ? ERB::Util.html_escape(value) : value }
-      I18n.t(full_key, **escaped).to_s.html_safe
+      Translation.t("#{PREFIX}.#{key}", **options)
     end
 
     def l(object, **)

@@ -45,7 +45,7 @@ module RecordingStudioAccessible
 
       errors.add(
         :base,
-        Copy.t("errors.duplicate_audience_recording", default: DUPLICATE_AUDIENCE_RECORDING_ERROR)
+        Copy.t("errors.duplicate_audience_recording")
       )
     end
 
@@ -57,7 +57,7 @@ module RecordingStudioAccessible
 
       errors.add(
         :parent_recording,
-        Copy.t("errors.audience_constraint_create_not_root", default: CONSTRAINT_NOT_ROOT_ERROR)
+        Copy.t("errors.audience_constraint_create_not_root")
       )
     end
 
@@ -67,10 +67,7 @@ module RecordingStudioAccessible
       if constraint_recordable? && RecordingStudioAccessible::SharedRootAccess.target?(parent_recording)
         errors.add(
           :parent_recording,
-          Copy.t(
-            "errors.grant_denied",
-            default: RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
-          )
+          Copy.t("errors.grant_denied")
         )
         return false
       end
@@ -85,8 +82,6 @@ module RecordingStudioAccessible
         :parent_recording,
         Copy.t(
           "errors.audience_children_not_allowed",
-          # I18n interpolation tokens use %{name}, not %<name>s.
-          default: "does not allow %{type} children", # rubocop:disable Style/FormatStringToken
           type: recordable_type_name
         )
       )

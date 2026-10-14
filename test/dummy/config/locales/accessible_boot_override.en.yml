@@ -1,0 +1,8 @@
+# Boot-loaded host override for a rarely shown manage-access label.
+# Asserted by EnglishFallbackBootOverrideTest. Does not change the default
+# manage-access chrome (title/people stay gem English).
+en:
+  recording_studio:
+    accessible:
+      manage:
+        expired: "HOST Expired boot"

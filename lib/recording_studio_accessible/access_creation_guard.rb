@@ -16,13 +16,10 @@ module RecordingStudioAccessible
       return if RecordingStudioAccessible::AccessCreationContext.allowed?
 
       # ActiveModel 8.1 ignores message: when the type is a String, so pass the
-      # translated string (default: main's English) as the type/message.
+      # translated string as the type/message.
       errors.add(
         :base,
-        Copy.t(
-          "errors.create_via_grant_access",
-          default: "Create access grants through RecordingStudioAccessible.grant_access"
-        )
+        Copy.t("errors.create_via_grant_access")
       )
     end
   end

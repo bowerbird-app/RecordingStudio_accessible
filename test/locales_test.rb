@@ -133,8 +133,7 @@ class LocalesTest < Minitest::Test
         assert_equal "Unknown actor", Copy.t("errors.unknown_actor")
         assert_equal "View", Copy.role_name("view")
         assert_equal "pending", Copy.invitation_state("pending")
-        assert_equal "Recording Studio Accessible",
-                     Copy.t("layout.title", default: "Recording Studio Accessible")
+        assert_equal "Recording Studio Accessible", Copy.t("layout.title")
       end
     end
   end
@@ -315,10 +314,7 @@ class LocalesTest < Minitest::Test
     )
 
     I18n.with_locale(:fr) do
-      translated = Copy.t(
-        "errors.grant_denied",
-        default: RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
-      )
+      translated = Copy.t("errors.grant_denied")
 
       assert_equal "Accès refusé sur la racine partagée", translated
       refute_equal RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE, translated

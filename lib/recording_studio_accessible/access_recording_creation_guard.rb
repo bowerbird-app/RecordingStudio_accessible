@@ -21,13 +21,10 @@ module RecordingStudioAccessible
       return if RecordingStudioAccessible::AccessCreationContext.allowed?
 
       # ActiveModel 8.1 ignores message: when the type is a String, so pass the
-      # translated string (default: main's English) as the type/message.
+      # translated string as the type/message.
       errors.add(
         :base,
-        Copy.t(
-          "errors.create_via_grant_access",
-          default: "Create access grants through RecordingStudioAccessible.grant_access"
-        )
+        Copy.t("errors.create_via_grant_access")
       )
     end
 
@@ -62,7 +59,7 @@ module RecordingStudioAccessible
 
       errors.add(
         :base,
-        Copy.t("errors.duplicate_access_recording", default: DUPLICATE_ACCESS_RECORDING_ERROR)
+        Copy.t("errors.duplicate_access_recording")
       )
     end
 
@@ -86,10 +83,7 @@ module RecordingStudioAccessible
       if shared_root_parent?(parent_recording)
         errors.add(
           :parent_recording,
-          Copy.t(
-            "errors.grant_denied",
-            default: RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
-          )
+          Copy.t("errors.grant_denied")
         )
         return false
       end
@@ -98,10 +92,7 @@ module RecordingStudioAccessible
 
       errors.add(
         :parent_recording,
-        Copy.t(
-          "errors.access_children_not_allowed",
-          default: "does not allow RecordingStudio::Access children"
-        )
+        Copy.t("errors.access_children_not_allowed")
       )
       false
     end

@@ -242,13 +242,35 @@ Accessible now depends on Recording Studio Trashable `~> 0.10` and loads only
    call `RecordingStudioTrashable.void_recording!`.
 4. Accessible does not mount Trashable UI or register trash importmap pins.
 
+#### Upgrading to 0.19.0
+
+This is a minor upgrade. Default English interface text is unchanged.
+Gem-shipped `recording_studio.accessible.*` keys now fall back when the active
+locale has no translation: loaded `:en` (host English overrides included), then
+the caller's `default:`, then an eager-loaded, deep-frozen copy of the gem's
+own `config/locales/en.yml` (reset on Rails code reload).
+
+1. Install Accessible `0.19.0`. No migration. English hosts need no change.
+2. Prefer `RecordingStudioAccessible.t` / `Copy.t` / `accessible_t` for gem keys
+   so missing locales keep the same fallback (no hand-copied English
+   `default:` strings that can drift from `en.yml`).
+3. Hosts that set raise-on-missing translations will no longer raise for
+   gem-shipped keys resolved through those helpers when the active locale lacks
+   the key. Host overrides in the active locale still win.
+4. A missing `_html` key with a non-interpolating caller `default:` stays
+   unsafe like view `t`. An interpolating caller `default:` on a missing
+   `_html` key is stricter: args are escaped and the result is marked
+   html_safe.
+5. Public message constants remain for API compatibility; displayed copy no
+   longer passes them as `default:`.
+
 #### Upgrading to 0.15.0
 
 Wave 2 finishes host-overridable copy outside views: HomeController demo titles/status bodies, call-time recordable labels, and remaining user-facing validation/service errors.
 
 1. Install Accessible `0.15.0`. No migration.
 2. Copy new `recording_studio.accessible.home.methods.*`, `home.user_invites.statuses.*`, `home.user_invites.setup.*`, `recordables.*`, and `errors.*` keys into host locale files when translating.
-3. Public message constants and recordable `LABEL`s stay for API compatibility; displayed copy uses `Copy.t(..., default: <constant>)`.
+3. Public message constants and recordable `LABEL`s stay for API compatibility; displayed copy uses `Copy.t` (English fallback from 0.19.0).
 4. `recording_studio_recordable label:` stays English (class-load DSL). Ruby code samples on demo pages, generator CLI text, and developer `ArgumentError`s stay English.
 
 #### Upgrading to 0.13.0
@@ -1416,7 +1438,7 @@ t("recording_studio.accessible.flashes.invitation_sent")
 t("recording_studio.accessible.mailers.invitation.subject_with_recording", recording: name)
 ```
 
-Customer invitation and manage-access screens, actor access points, engine demo/docs home pages, HomeController demo titles/status copy, validation and service error messages, and call-time recordable labels use these keys. Ruby code samples on the demo Methods and User invites pages stay English. `recording_studio_recordable label:` strings are captured at class load and stay English. Hosts own other languages: define the same keys in the host `config/locales` (the engine does not re-append its locales). Do not add `RecordingStudio_Internationalization` as a dependency of this gem — it is optional on the host (the dummy uses it to switch English/French).
+Customer invitation and manage-access screens, actor access points, engine demo/docs home pages, HomeController demo titles/status copy, validation and service error messages, and call-time recordable labels use these keys via `RecordingStudioAccessible.t` / `Copy.t` / `accessible_t`. When the active locale lacks a shipped key, fallback comes from the loaded English, host overrides included, then any caller `default:`, then the gem-shipped `en.yml` table. Ruby code samples on the demo Methods and User invites pages stay English. `recording_studio_recordable label:` strings are captured at class load and stay English. Hosts own other languages: define the same keys in the host `config/locales` (the engine does not re-append its locales). Do not add `RecordingStudio_Internationalization` as a dependency of this gem — it is optional on the host (the dummy uses it to switch English/French).
 
 Config callables still win. If you set `access_invitation_subject`, `access_management_access_granted_subject`, `access_management_actor_label`, or a missing-actor error string, that copy is used instead of the locale default.
 
