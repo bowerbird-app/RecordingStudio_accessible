@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
   - `authenticate: false`, `require_actor`, `on_missing_actor_for_root`, `actor_resolver`, `root_resolver` for stripe-style flows
 - Macro guards: prefix must match `/\A[a-z_][a-z0-9_]*\z/`, second call raises, options are frozen, class attributes are class-only readers.
 - Dummy-app coverage for the macro, each shared method, `action_methods` exclusion, blank `Current.actor` via `.presence`, nil-recording authorize, actor_resolution validation, site_settings names, and stripe require-root flow.
+- Documents that `authentication_method` is the approved exception to “sign-in belongs in Users”: Users already depends on Accessible for permissions, so Accessible cannot depend on Users; hosts point the hook at Devise (for example `authenticate_user!`).
 
 ### Upgrade Notes
 - Install Accessible `0.18.0`. No migration.

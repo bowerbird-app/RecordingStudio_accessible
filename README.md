@@ -154,6 +154,27 @@ The configuration object only needs `authentication_method` and
 `current_actor_method` unless you pass `actor_resolver` / `root_resolver`.
 Accessible gains no new gem dependencies for this concern.
 
+### Why Accessible keeps an authentication hook
+
+Sign-in normally belongs to Recording Studio Users (`recording_studio_user`).
+`ControllerAuth`’s host-configured `authentication_method` is the one approved
+exception: Users already depends on Accessible for permissions
+(`RecordingStudioUser::ProfileAccess`), so Accessible cannot depend on Users
+without a circular gem dependency.
+
+Hosts should leave authentication in Users (Devise) and point the Accessible
+config hook at that API — for example `authenticate_user!` — rather than
+re-implementing sign-in inside Accessible:
+
+```ruby
+# In the host or addon configuration used by recording_studio_auth
+config.authentication_method = :authenticate_user!
+config.current_actor_method = :current_user
+```
+
+Accessible still owns permission checks (`authorize_recording!`, root helpers,
+`RecordingStudioAccessible.authorized?`). It does not resolve sign-in itself.
+
 ## Compatibility with RecordingStudio 4.2
 
 Recording Studio Accessible targets RecordingStudio `4.2` (currently tested with
