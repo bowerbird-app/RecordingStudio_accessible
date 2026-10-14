@@ -61,7 +61,7 @@ class EnglishDefaultDriftGuardTest < Minitest::Test
   end
 
   def test_scanner_catches_single_quoted_multiline_paren_less_translate_constant_and_array_defaults
-    sample = <<~'RUBY'
+    sample = <<~RUBY
       Copy.t("manage.title", default: 'Manage access')
       Copy.t(
         "manage.add",
@@ -125,11 +125,14 @@ class EnglishDefaultDriftGuardTest < Minitest::Test
         "Create audiences through RecordingStudioAccessible.set_audience!",
         "Create audience limits through RecordingStudioAccessible.set_audience_constraint!"
       ],
+      # I18n template tokens use %{name}; RuboCop prefers %<name>s for Kernel#sprintf.
+      # rubocop:disable Style/FormatStringToken
       "NAME_DEFAULT" => [
         "Access: %{role} — %{actor}",
         "Audience: %{action} — %{audience}",
         "Audience limit: %{action} — %{audiences}"
       ],
+      # rubocop:enable Style/FormatStringToken
       "GRANT_DENIED_MESSAGE" => [RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE],
       "RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE" => [
         RecordingStudioAccessible::SharedRootAccess::GRANT_DENIED_MESSAGE
@@ -180,7 +183,9 @@ class EnglishDefaultDriftGuardTest < Minitest::Test
 
   def extract_call_body(source, start, method_name)
     return paren_body(source, start) if source[start] == "("
-    return " #{slice_until_newline(source, start)}" if method_name.strip.match?(/\A(?:accessible_t|I18n\.(?:t|translate))\z/)
+    if method_name.strip.match?(/\A(?:accessible_t|I18n\.(?:t|translate))\z/)
+      return " #{slice_until_newline(source, start)}"
+    end
 
     ""
   end
@@ -203,15 +208,15 @@ class EnglishDefaultDriftGuardTest < Minitest::Test
     source[open_index..]
   end
 
-  def skip_string(source, i)
-    quote = source[i]
-    i += 1
-    while i < source.length
-      return i + 1 if source[i] == quote && source[i - 1] != "\\"
+  def skip_string(source, index)
+    quote = source[index]
+    index += 1
+    while index < source.length
+      return index + 1 if source[index] == quote && source[index - 1] != "\\"
 
-      i += 1
+      index += 1
     end
-    i
+    index
   end
 
   def slice_until_newline(source, start)

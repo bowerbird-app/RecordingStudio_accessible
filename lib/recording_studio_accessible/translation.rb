@@ -20,6 +20,7 @@ module RecordingStudioAccessible
   # Partial pluralization data in a non-English locale still raises
   # `I18n::InvalidPluralizationData` (same as `I18n.t`); the English fallback
   # does not fill missing plural keys.
+  # rubocop:disable Metrics/ModuleLength -- mirrors RecordingStudio::Translation fallback helper
   module Translation
     extend self
 
@@ -208,6 +209,7 @@ module RecordingStudioAccessible
       key.to_s.match?(/(?:\b|_)html\z/)
     end
   end
+  # rubocop:enable Metrics/ModuleLength
 
   def self.t(...)
     Translation.t(...)

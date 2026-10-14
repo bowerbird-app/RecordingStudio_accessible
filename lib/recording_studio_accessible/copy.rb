@@ -10,8 +10,8 @@ module RecordingStudioAccessible
 
     module_function
 
-    def t(key, **options)
-      Translation.t("#{PREFIX}.#{key}", **options)
+    def t(key, **)
+      Translation.t("#{PREFIX}.#{key}", **)
     end
 
     def l(object, **)

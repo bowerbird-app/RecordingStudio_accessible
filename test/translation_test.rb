@@ -120,6 +120,8 @@ class TranslationTest < Minitest::Test
   end
 
   def test_parity_matrix_non_gem_keys_match_i18n_t
+    # I18n template tokens use %{name}; RuboCop prefers %<name>s for Kernel#sprintf.
+    # rubocop:disable Style/FormatStringToken
     I18n.backend.store_translations(:en, {
                                       probe: {
                                         greet: "Hi %{name}",
@@ -131,6 +133,7 @@ class TranslationTest < Minitest::Test
                                       }
                                     })
     I18n.backend.store_translations(:de, { probe: { greet: "Hallo %{name}" } })
+    # rubocop:enable Style/FormatStringToken
 
     I18n.with_locale(:de) do
       assert_parity("probe.greet", name: "M")
@@ -154,6 +157,8 @@ class TranslationTest < Minitest::Test
     key = "recording_studio.accessible.manage.title"
     missing = "recording_studio.accessible.manage.missing_key_for_parity"
 
+    # I18n template tokens use %{name}; RuboCop prefers %<name>s for Kernel#sprintf.
+    # rubocop:disable Style/FormatStringToken
     I18n.backend.store_translations(:en, {
                                       recording_studio: {
                                         accessible: {
@@ -168,12 +173,14 @@ class TranslationTest < Minitest::Test
                                         }
                                       }
                                     })
+    # rubocop:enable Style/FormatStringToken
 
     I18n.with_locale(:en) do
       assert_equal I18n.t(key), RecordingStudioAccessible.t(key)
       assert_equal "Manage access", RecordingStudioAccessible.t(key, default: "Ignored when present")
     end
 
+    # rubocop:disable Metrics/BlockLength -- gem-key parity matrix against I18n.t
     I18n.with_locale(:de) do
       assert_equal "Manage access", RecordingStudioAccessible.t(key),
                    "missing active locale uses loaded English"
@@ -243,6 +250,7 @@ class TranslationTest < Minitest::Test
 
       assert_equal "Manage access", RecordingStudioAccessible.t(key, locale: :en)
     end
+    # rubocop:enable Metrics/BlockLength
   end
 
   def test_fallback_order_prefers_loaded_english_then_caller_default_over_shipped_table
@@ -261,11 +269,6 @@ class TranslationTest < Minitest::Test
       I18n.with_locale(locale) do
         assert_equal "CALLER", RecordingStudioAccessible.t(key, default: "CALLER"),
                      "caller default: must come before the gem-shipped table in #{locale}"
-      end
-    end
-
-    %i[en fr de].each do |locale|
-      I18n.with_locale(locale) do
         assert_equal "Manage access", RecordingStudioAccessible.t(key),
                      "gem-shipped table is used last in #{locale}"
       end
@@ -275,6 +278,8 @@ class TranslationTest < Minitest::Test
   end
 
   def test_html_gem_keys_escape_unsafe_interpolation_like_view_t
+    # I18n template tokens use %{name}; RuboCop prefers %<name>s for Kernel#sprintf.
+    # rubocop:disable Style/FormatStringToken
     I18n.backend.store_translations(:en, {
                                       recording_studio: {
                                         accessible: {
@@ -289,8 +294,10 @@ class TranslationTest < Minitest::Test
                                         }
                                       }
                                     })
+    # rubocop:enable Style/FormatStringToken
     view = ActionController::Base.helpers
 
+    # rubocop:disable Metrics/BlockLength -- html_safe / escaping parity vs view t
     I18n.with_locale(:en) do
       value = RecordingStudioAccessible.t("recording_studio.accessible.probe.hi_html", name: "<script>")
       assert_equal "<b>Hi &lt;script&gt;</b>", value
@@ -334,6 +341,7 @@ class TranslationTest < Minitest::Test
       assert_equal "<b>Hi &lt;script&gt;alert(1)&lt;/script&gt;</b>", xss
       assert_predicate xss, :html_safe?
     end
+    # rubocop:enable Metrics/BlockLength
   end
 
   def test_shipped_english_table_is_present_after_boot

@@ -57,24 +57,14 @@ module RecordingStudioAccessible
 
         manager = resolve_recording(depends_on)
         return Copy.t("errors.dependent_missing_manager") unless manager
-        unless active_recording?(manager)
-          return Copy.t("errors.dependent_missing_manager")
-        end
-        unless access_recording?(manager)
-          return Copy.t("errors.dependent_not_same_root")
-        end
-        unless same_root?(target_recording, manager)
-          return Copy.t("errors.dependent_not_same_root")
-        end
+        return Copy.t("errors.dependent_missing_manager") unless active_recording?(manager)
+        return Copy.t("errors.dependent_not_same_root") unless access_recording?(manager)
+        return Copy.t("errors.dependent_not_same_root") unless same_root?(target_recording, manager)
         if cyclic_dependency?(depends_on: manager, dependent_recording: dependent_recording)
           return Copy.t("errors.dependent_cycle")
         end
-        unless ranked_for_comparison?(role, manager)
-          return Copy.t("errors.dependent_unranked_role")
-        end
-        unless role_capped?(dependent_role: role, manager: manager)
-          return Copy.t("errors.dependent_role_exceeds")
-        end
+        return Copy.t("errors.dependent_unranked_role") unless ranked_for_comparison?(role, manager)
+        return Copy.t("errors.dependent_role_exceeds") unless role_capped?(dependent_role: role, manager: manager)
 
         nil
       end
