@@ -22,7 +22,7 @@ All notable changes to this project will be documented in this file.
   gem's `en.yml` path is asserted.
 
 ### Changed
-- Depends on `recording_studio >= 4.7.0` for `register_shipped_english`.
+- Depends on `recording_studio ~> 4.7` for `register_shipped_english`.
 - Gem call sites look up copy through `Copy.t` / `RecordingStudio.t` so
   fallback English comes from the loaded `:en` backend or the registered
   gem-shipped table (no hand-copied Ruby string defaults that can drift).
@@ -32,7 +32,7 @@ All notable changes to this project will be documented in this file.
   passes them as `default:`.
 
 ### Upgrade notes
-- Install Accessible `0.19.0` with RecordingStudio `>= 4.7.0`. No migration.
+- Install Accessible `0.19.0` with RecordingStudio `~> 4.7`. No migration.
   English hosts need no change.
 - Hosts that enable raise-on-missing translations no longer raise for
   gem-shipped `recording_studio.accessible.*` keys looked up through
@@ -42,10 +42,10 @@ All notable changes to this project will be documented in this file.
 - Partial pluralization in a non-English locale (for example French with only
   `one`) still raises `I18n::InvalidPluralizationData` — the English fallback
   does not fill missing plural keys.
-- A missing `_html` key with a non-interpolating caller `default:` stays
-  unsafe like view `t`. An interpolating caller `default:` on a missing
-  `_html` key is stricter: args are escaped and the result is marked
-  html_safe.
+- A missing `_html` key with a caller `default:` now follows
+  `RecordingStudio.t` / view `t` escaping (args escaped, template markup
+  kept) instead of main's `Copy.t` whole-template escaping. No in-gem call
+  site does this.
 - `en.yml` is unchanged. Prefer `RecordingStudio.t` / `Copy.t` for gem keys
   when adding new call sites so missing locales keep the same fallback.
 

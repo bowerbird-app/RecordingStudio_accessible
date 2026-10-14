@@ -97,10 +97,21 @@ class EnglishFallbackTest < ActionDispatch::IntegrationTest
     I18n.reload!
   end
 
+  test "accessible en.yml path is registered at boot without invoking the initializer block" do
+    # Dummy boots the engine; this must fail if the register_shipped_english
+    # initializer body is removed (unlike unit tests that re-register in
+    # test_helper or call the block themselves).
+    expected = File.expand_path(RecordingStudioAccessible::Engine.root.join("config/locales/en.yml"))
+    paths = RecordingStudio::Translation.send(:registered_shipped_english_paths)
+
+    assert_includes paths, expected
+    assert_equal "Manage access",
+                 RecordingStudio::Translation.shipped_english.fetch(MANAGE_TITLE_KEY)
+  end
+
   test "accessible en.yml path stays registered after rails reloader reload" do
     expected = File.expand_path(RecordingStudioAccessible::Engine.root.join("config/locales/en.yml"))
-    before_paths = RecordingStudio::Translation.send(:registered_shipped_english_paths).dup
-    assert_includes before_paths, expected
+    assert_includes RecordingStudio::Translation.send(:registered_shipped_english_paths), expected
 
     previous_cache_classes = Rails.application.config.cache_classes
     # Test env normally keeps cache_classes on; metrics then treats a second
@@ -110,8 +121,7 @@ class EnglishFallbackTest < ActionDispatch::IntegrationTest
 
     Rails.application.reloader.reload!
 
-    after_paths = RecordingStudio::Translation.send(:registered_shipped_english_paths)
-    assert_includes after_paths, expected
+    assert_includes RecordingStudio::Translation.send(:registered_shipped_english_paths), expected
     assert_equal "Manage access",
                  RecordingStudio::Translation.shipped_english.fetch(MANAGE_TITLE_KEY)
   ensure

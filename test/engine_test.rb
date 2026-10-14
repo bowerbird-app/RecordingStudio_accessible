@@ -77,17 +77,10 @@ class EngineTest < Minitest::Test
                                                                             false) && Object.const_get(:ApplicationRecord) == application_record
   end
 
-  def test_register_shipped_english_initializer_runs_before_recording_studio_load
+  def test_register_shipped_english_initializer_is_ordered_before_recording_studio_load
     initializer = find_initializer("recording_studio_accessible.register_shipped_english")
     refute_nil initializer
     assert_equal "recording_studio.load_shipped_english", initializer.before
-
-    expected = File.expand_path(
-      RecordingStudioAccessible::Engine.root.join("config/locales/en.yml")
-    )
-    initializer.block.call
-
-    assert_includes RecordingStudio::Translation.send(:registered_shipped_english_paths), expected
   end
 
   private

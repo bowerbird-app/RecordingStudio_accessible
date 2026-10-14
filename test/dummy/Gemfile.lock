@@ -63,7 +63,7 @@ PATH
   specs:
     recording_studio_accessible (0.19.0)
       rails (~> 8.1.0)
-      recording_studio (>= 4.7.0)
+      recording_studio (~> 4.7)
       recording_studio_trashable (~> 0.10)
 
 GEM
