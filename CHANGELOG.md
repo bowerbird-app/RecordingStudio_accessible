@@ -49,10 +49,6 @@ All notable changes to this project will be documented in this file.
 - `en.yml` is unchanged. Prefer `RecordingStudio.t` / `Copy.t` for gem keys
   when adding new call sites so missing locales keep the same fallback.
 
-gem keys when adding new call sites so missing locales keep the same
-  fallback.
-- Version is `0.19.0` so it does not collide with the open ControllerAuth PR
-  `#34`, which reserves `0.18.0`.
 ## [0.18.1] - 2026-10-14
 
 ### Changed
