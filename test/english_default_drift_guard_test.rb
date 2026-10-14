@@ -4,7 +4,7 @@ require "test_helper"
 
 # Ensures production call sites for gem keys do not hand-copy English from
 # en.yml (or constants equal to those strings) as `default:`. English fallback
-# comes from RecordingStudioAccessible::Translation / loaded :en instead.
+# comes from RecordingStudio.t / loaded :en / registered shipped English.
 #
 # Scanner covers single-quoted, double-quoted, multi-line, paren-less,
 # I18n.translate, constant, and Array defaults.
@@ -16,13 +16,12 @@ class EnglishDefaultDriftGuardTest < Minitest::Test
   ].freeze
   SKIP_PATH_FRAGMENTS = %w[
     /generators/
-    /translation.rb
   ].freeze
 
   TRANSLATION_CALL = /
     (?:
       RecordingStudioAccessible::Copy\.t |
-      RecordingStudioAccessible\.t |
+      RecordingStudio\.t |
       Copy\.t |
       accessible_t |
       \bcopy |
@@ -55,7 +54,7 @@ class EnglishDefaultDriftGuardTest < Minitest::Test
 
     assert_empty offenders, <<~MSG
       Hand-copied English default:s drift from en.yml. Remove them and rely on
-      RecordingStudioAccessible::Translation / Copy.t fallback instead.
+      RecordingStudio.t / Copy.t fallback instead.
       #{offenders.join("\n")}
     MSG
   end

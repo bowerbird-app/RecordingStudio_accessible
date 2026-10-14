@@ -245,15 +245,17 @@ Accessible now depends on Recording Studio Trashable `~> 0.10` and loads only
 #### Upgrading to 0.19.0
 
 This is a minor upgrade. Default English interface text is unchanged.
-Gem-shipped `recording_studio.accessible.*` keys now fall back when the active
-locale has no translation: loaded `:en` (host English overrides included), then
-the caller's `default:`, then an eager-loaded, deep-frozen copy of the gem's
-own `config/locales/en.yml` (reset on Rails code reload).
+Requires RecordingStudio `>= 4.7.0`. Gem-shipped
+`recording_studio.accessible.*` keys fall back when the active locale has no
+translation via `RecordingStudio.t`: loaded `:en` (host English overrides
+included), then the caller's `default:`, then the merged shipped-English table
+(this gem registers `config/locales/en.yml` at boot).
 
-1. Install Accessible `0.19.0`. No migration. English hosts need no change.
-2. Prefer `RecordingStudioAccessible.t` / `Copy.t` / `accessible_t` for gem keys
-   so missing locales keep the same fallback (no hand-copied English
-   `default:` strings that can drift from `en.yml`).
+1. Install Accessible `0.19.0` and RecordingStudio `>= 4.7.0`. No migration.
+   English hosts need no change.
+2. Prefer `RecordingStudio.t` / `Copy.t` / `accessible_t` for gem keys so
+   missing locales keep the same fallback (no hand-copied English `default:`
+   strings that can drift from `en.yml`).
 3. Hosts that set raise-on-missing translations will no longer raise for
    gem-shipped keys resolved through those helpers when the active locale lacks
    the key. Host overrides in the active locale still win.
@@ -1438,7 +1440,7 @@ t("recording_studio.accessible.flashes.invitation_sent")
 t("recording_studio.accessible.mailers.invitation.subject_with_recording", recording: name)
 ```
 
-Customer invitation and manage-access screens, actor access points, engine demo/docs home pages, HomeController demo titles/status copy, validation and service error messages, and call-time recordable labels use these keys via `RecordingStudioAccessible.t` / `Copy.t` / `accessible_t`. When the active locale lacks a shipped key, fallback comes from the loaded English, host overrides included, then any caller `default:`, then the gem-shipped `en.yml` table. Ruby code samples on the demo Methods and User invites pages stay English. `recording_studio_recordable label:` strings are captured at class load and stay English. Hosts own other languages: define the same keys in the host `config/locales` (the engine does not re-append its locales). Do not add `RecordingStudio_Internationalization` as a dependency of this gem — it is optional on the host (the dummy uses it to switch English/French).
+Customer invitation and manage-access screens, actor access points, engine demo/docs home pages, HomeController demo titles/status copy, validation and service error messages, and call-time recordable labels use these keys via `RecordingStudio.t` / `Copy.t` / `accessible_t`. When the active locale lacks a shipped key, fallback comes from the loaded English, host overrides included, then any caller `default:`, then the merged shipped-English table (Accessible registers its `en.yml` with `RecordingStudio::Translation.register_shipped_english` at boot). Ruby code samples on the demo Methods and User invites pages stay English. `recording_studio_recordable label:` strings are captured at class load and stay English. Hosts own other languages: define the same keys in the host `config/locales` (the engine does not re-append its locales). Do not add `RecordingStudio_Internationalization` as a dependency of this gem — it is optional on the host (the dummy uses it to switch English/French).
 
 Config callables still win. If you set `access_invitation_subject`, `access_management_access_granted_subject`, `access_management_actor_label`, or a missing-actor error string, that copy is used instead of the locale default.
 

@@ -193,7 +193,7 @@ module RecordingStudioAccessible
       label_key = metadata&.[](:label_key)
       return audience.to_s.humanize if label_key.blank?
 
-      RecordingStudioAccessible.t(label_key, default: audience.to_s.humanize)
+      RecordingStudio.t(label_key, default: audience.to_s.humanize)
     rescue StandardError
       audience.to_s.humanize
     end

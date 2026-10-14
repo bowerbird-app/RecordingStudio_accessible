@@ -1,17 +1,16 @@
 # frozen_string_literal: true
 
 require "i18n"
-require_relative "translation"
 
 module RecordingStudioAccessible
   module Copy
-    PREFIX = Translation::PREFIX
+    PREFIX = "recording_studio.accessible"
     UNSET = Object.new.freeze
 
     module_function
 
     def t(key, **)
-      Translation.t("#{PREFIX}.#{key}", **)
+      RecordingStudio.t("#{PREFIX}.#{key}", **)
     end
 
     def l(object, **)

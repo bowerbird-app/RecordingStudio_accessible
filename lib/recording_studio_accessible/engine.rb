@@ -21,8 +21,6 @@ module RecordingStudioAccessible
     end
 
     config.to_prepare do
-      RecordingStudioAccessible::Translation.reset_shipped_english!
-      RecordingStudioAccessible::Translation.shipped_english
       RecordingStudioAccessible::Compatibility.register_access_capability!
       RecordingStudioAccessible::Compatibility.register_action_audiences_capability!
       RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
@@ -30,8 +28,11 @@ module RecordingStudioAccessible
       RecordingStudioAccessible.install_action_audience_policies!
     end
 
-    initializer "recording_studio_accessible.load_shipped_english" do
-      RecordingStudioAccessible::Translation.shipped_english
+    initializer "recording_studio_accessible.register_shipped_english",
+                before: "recording_studio.load_shipped_english" do
+      RecordingStudio::Translation.register_shipped_english(
+        root.join("config/locales/en.yml")
+      )
     end
 
     initializer "recording_studio_accessible.load_config" do |app|

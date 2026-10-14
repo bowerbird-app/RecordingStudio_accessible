@@ -45,7 +45,7 @@ class EnglishFallbackBootOverrideTest < ActionDispatch::IntegrationTest
     refute_match(/(?<!HOST )Expired/, @response.body)
     refute_includes @response.body, ">#{GEM_ENGLISH}<"
     assert_equal HOST, I18n.t(KEY)
-    assert_equal HOST, RecordingStudioAccessible.t(KEY)
+    assert_equal HOST, RecordingStudio.t(KEY)
     assert_equal HOST, RecordingStudioAccessible::Copy.t("manage.expired")
   end
 

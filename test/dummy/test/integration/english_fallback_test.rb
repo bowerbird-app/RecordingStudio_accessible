@@ -97,9 +97,10 @@ class EnglishFallbackTest < ActionDispatch::IntegrationTest
     I18n.reload!
   end
 
-  test "shipped english table becomes a new object after rails reloader reload" do
-    before = RecordingStudioAccessible::Translation.shipped_english
-    refute_empty before
+  test "accessible en.yml path stays registered after rails reloader reload" do
+    expected = File.expand_path(RecordingStudioAccessible::Engine.root.join("config/locales/en.yml"))
+    before_paths = RecordingStudio::Translation.send(:registered_shipped_english_paths).dup
+    assert_includes before_paths, expected
 
     previous_cache_classes = Rails.application.config.cache_classes
     # Test env normally keeps cache_classes on; metrics then treats a second
@@ -109,9 +110,10 @@ class EnglishFallbackTest < ActionDispatch::IntegrationTest
 
     Rails.application.reloader.reload!
 
-    after = RecordingStudioAccessible::Translation.shipped_english
-    refute_same before, after
-    assert_equal before, after
+    after_paths = RecordingStudio::Translation.send(:registered_shipped_english_paths)
+    assert_includes after_paths, expected
+    assert_equal "Manage access",
+                 RecordingStudio::Translation.shipped_english.fetch(MANAGE_TITLE_KEY)
   ensure
     Rails.application.config.cache_classes = previous_cache_classes if previous_cache_classes != nil
   end
