@@ -30,7 +30,7 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert_match "Please open the notes", response.body
     refute_match "I can edit this", response.body
     assert_select "turbo-frame#access_requests_index"
-    assert_equal [ "Who", "Note", "Status", "Actions" ], header_labels
+    assert_equal [ "Name", "Note", "Status", "Actions" ], header_labels
     assert_select "span.truncate[title='Please open the notes']"
     assert_select "[aria-label='Request actions']"
     assert_select "[role=menuitem]", text: "View"
@@ -60,6 +60,20 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert_match "Please open the notes", response.body
     assert_select "[role=menuitem]", text: "Pending"
     assert_select "[role=menuitem]", text: "Approve as Edit"
+  end
+
+  test "the name column shows the profile name and falls back to the email" do
+    RecordingStudioUser.record_profile!(@person, actor: @person, first_name: "Ada", last_name: "Lovelace")
+    ask(@person, @recording, "Please open the notes")
+    ask(@second_person, @recording, "No name on this account")
+    sign_in @manager
+
+    get recording_requests_path
+    assert_includes header_labels, "Name"
+    assert_select "span.font-medium", text: "Ada Lovelace"
+    assert_select "td div", text: "index-person@example.com"
+    assert_select "td", text: "index-second@example.com"
+    assert_select "span.font-medium", text: "index-second@example.com", count: 0
   end
 
   test "a recording route stays on that recording and a stranger is forbidden" do

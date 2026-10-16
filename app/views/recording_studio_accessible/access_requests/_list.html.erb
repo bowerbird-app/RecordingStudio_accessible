@@ -23,7 +23,7 @@
       data: page.requests,
       tbody_data: { pagination_content: true }
     ) do |table| %>
-      <% table.column(title: accessible_t("requests.columns.who")) do |request_recording| %>
+      <% table.column(title: accessible_t("requests.columns.name")) do |request_recording| %>
         <% access_request_person_label(request_recording.recordable.actor) %>
       <% end %>
       <% if page.multiple %>

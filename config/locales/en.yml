@@ -169,7 +169,7 @@ en:
           denied: "Deny"
           pending: "Pending"
         columns:
-          who: "Who"
+          name: "Name"
           recording: "Recording"
           message: "Note"
           status: "Status"

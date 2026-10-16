@@ -209,7 +209,7 @@ fr:
           denied: "Refuser"
           pending: "En attente"
         columns:
-          who: "Qui"
+          name: "Nom"
           recording: "Enregistrement"
           message: "Note"
           status: "Statut"

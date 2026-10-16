@@ -202,7 +202,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
   def assert_access_request_table(note)
     headers = css_select("table thead th").map { |node| node.text.squish }
-    assert_equal [ "Who", "Note", "Status", "Actions" ], headers
+    assert_equal [ "Name", "Note", "Status", "Actions" ], headers
     assert_select "table tbody tr", count: 1
     assert_select "table tbody td", text: note
     assert response.body.index("<thead") < response.body.index("<tbody")

@@ -81,11 +81,11 @@ module RecordingStudioAccessible
     def access_request_person_label(actor)
       return if actor.blank?
 
-      email = actor.try(:email).to_s
+      email = actor.try(:email).to_s.presence
       name = requester_name(actor, email)
-      return email if name.blank?
+      return name || email if name.blank? || email.blank?
 
-      safe_join([name, tag.div(email, class: muted_person_class)])
+      safe_join([tag.span(name, class: "font-medium"), tag.div(email, class: muted_person_class)])
     end
 
     private

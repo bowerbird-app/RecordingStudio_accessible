@@ -39,8 +39,10 @@ All notable changes to this project will be documented in this file.
 - Manager index for one recording or many. `access_requests_index` embeds the
   same slice the engine routes render. The host passes the recordings.
   `AccessManagementPolicy` decides which rows are visible. Pending is the
-  default status filter. Notes stay on one line. Several recordings add a
-  linked recording column. The row menu moves the request to another status.
+  default status filter. The name column shows the requester, with the email
+  underneath, or the email alone when there is no name. Notes stay on one line.
+  Several recordings add a linked recording column. The row menu moves the
+  request to another status.
   Further pages load with Flatpack infinite scroll.
 
 ### Upgrade notes

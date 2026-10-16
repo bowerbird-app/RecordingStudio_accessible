@@ -158,8 +158,36 @@ def delete_access_request_events(recording_ids)
 end
 
 def seed_demo_access_requests!(restricted_root:, workspace_root:, users:)
+  seed_demo_requester_names!(users)
   seed_restricted_requests!(restricted_root, users)
   seed_other_requests!(workspace_root, users)
+end
+
+def seed_demo_requester_names!(users)
+  {
+    "viewer@admin.com" => %w[Maya Chen],
+    "page_owner@admin.com" => %w[Sam Okonkwo],
+    "editor@admin.com" => %w[Priya Nair],
+    "access_user_1@admin.com" => %w[Luis Ortega],
+    "access_user_2@admin.com" => %w[Nora Blake],
+    "access_user_3@admin.com" => %w[Jonah Reed],
+    "access_user_4@admin.com" => %w[Amina Diallo],
+    "access_user_5@admin.com" => %w[Chris Nguyen],
+    "access_user_6@admin.com" => %w[Elena Vasquez],
+    "access_user_7@admin.com" => %w[Owen Park],
+    "access_user_8@admin.com" => %w[Leila Hassan],
+    "access_user_9@admin.com" => %w[Theo Marlow]
+  }.each do |email, name|
+    user = users.values.find { |candidate| candidate.email == email }
+    ensure_demo_profile!(user, name.first, name.last) if user
+  end
+end
+
+def ensure_demo_profile!(user, first_name, last_name)
+  profile = RecordingStudioUser.profile_for(user)
+  return if profile&.first_name == first_name && profile&.last_name == last_name
+
+  RecordingStudioUser.record_profile!(user, actor: user, first_name: first_name, last_name: last_name)
 end
 
 def seed_restricted_requests!(recording, users)

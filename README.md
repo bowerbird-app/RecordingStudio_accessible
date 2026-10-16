@@ -249,11 +249,14 @@ this helper again. Pending is the default. `status` is `pending`, `approved`,
 `denied`, or `all`. A long list appends the next page with Flatpack infinite
 scroll. The cursor is the last row's time and id. The page size is 10.
 
-The note is one truncated line, with the full text on the request page and in
-the cell's title. A single recording hides the recording column. More than one
-shows the recording's name or title, linked when the host can route to that
-recordable. Each row's actions are the Flatpack three-dot menu: View, and the
-statuses that request can move to. Approve lists one item per role.
+The name column shows the requester's name, from the profile collected at the
+email step or already on the user record, with the email underneath. A person
+with no name is shown by email alone. The note is one truncated line, with the
+full text on the request page and in the cell's title. A single recording hides
+the recording column. More than one shows the recording's name or title, linked
+when the host can route to that recordable. Each row's actions are the Flatpack
+three-dot menu: View, and the statuses that request can move to. Approve lists
+one item per role.
 
 `new` is the email step, the code step, or the request form. The email step
 shows the recording's name or title under the heading. Later steps do not.
