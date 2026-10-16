@@ -57,13 +57,13 @@ module RecordingStudioAccessible
 
     def access_request_approval_options(request_record)
       AccessRequestRoles.options_for(recording: @recording, action: request_record.action).map do |role|
-        { value: role, label: accessible_role_name(role) }
+        { value: role, label: accessible_role_name(role), icon: access_request_role_icon(role) }
       end
     end
 
     def access_request_approval_default(request_record)
       AccessRequestRoles.default_for(
-        recording: @recording, action: request_record.action, suggested: request_record.role
+        recording: @recording, action: request_record.action, suggested: request_record.role.presence || "view"
       )
     end
 

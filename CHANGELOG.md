@@ -46,7 +46,7 @@ All notable changes to this project will be documented in this file.
   Further pages load with Flatpack infinite scroll.
 - The request page names who asked and which recording, then the message and
   the date. Gate answers sit flush with that text. Approve and Deny are pills.
-  Approve picks a role with icon buttons. Save runs that status transition.
+  Approve picks a role with inline radios and icons. Save runs that status transition.
   The page, the email step, the code step, and the request form each work as
   a full page and inside the access request modal.
 
@@ -61,6 +61,8 @@ All notable changes to this project will be documented in this file.
   cache) the same way Messages does. Without it, `request_access` still works
   for an existing signed-in actor; the email step tells the visitor that
   codes are unavailable.
+- The approve role picker uses Flatpack `RadioGroup` `variant: :inline`
+  (Flatpack 0.1.212 or newer). The dummy pins Flatpack `v0.1.248`.
 
 ## [0.19.0] - 2026-10-14
 

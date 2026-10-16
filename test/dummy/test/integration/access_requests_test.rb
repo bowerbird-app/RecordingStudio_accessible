@@ -269,14 +269,14 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
   end
 
   def assert_role_buttons(selected)
-    assert_select "input[type=radio][name=role]", count: 0
-    assert_select "input[name=role][value=?]", selected
+    assert_select "button[name=role]", count: 0
+    assert_select "input[type=radio][name=role]", count: 3
+    assert_select "input[type=radio][name=role][value=?][checked]", selected
     { "view" => "eye", "edit" => "pencil", "admin" => "shield-check" }.each do |role, icon|
-      assert_select "button[name=role][value=?]", role do |buttons|
-        assert_select buttons, "[data-flat-pack--icon-name-value=?]", icon
+      assert_select "input[type=radio][name=role][value=?]", role do |inputs|
+        assert_select inputs.first.parent, "[data-flat-pack--icon-name-value=?]", icon
       end
     end
-    assert_select "button[name=role][value=?][data-fp-style=primary]", selected
   end
 
   def assert_email_step

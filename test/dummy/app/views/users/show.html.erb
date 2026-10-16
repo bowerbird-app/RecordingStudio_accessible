@@ -13,7 +13,7 @@
 
   <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md, align: :start, class: "w-full") do %>
     <% @accessible_items.each do |item| %>
-      <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+      <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
         <% card.body(class: "grid gap-2 justify-items-start") do %>
           <%= render FlatPack::PageTitle::Component.new(
             title: item[:label],

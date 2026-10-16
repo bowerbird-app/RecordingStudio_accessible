@@ -264,7 +264,8 @@ Visitors do not pick a role. Pass an optional `role:` or `action:` when the
 caller already knows a suggestion. The request page heading names who asked
 and which recording, then shows the message and the date they asked. Gate
 answers are labelled rows, flush with that heading. A manager uses Approve
-and Deny pills. Approve lists the allowed roles as icon buttons. Deny has an
+and Deny pills. Approve lists the allowed roles as inline radios with icons.
+Deny has an
 optional note. Each pill saves through `transition_access_request`. An
 approved request opens on Approve, and a denied request opens on Deny. The
 role choice defaults to the suggestion when it is allowed, then to the
@@ -1624,7 +1625,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v4.5.0`, RecordingStudioRootSwitchable `v0.8.0`, FlatPack `v0.1.208`, and (dummy only) Recording Studio Internationalization `v0.1.2`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v4.5.0`, RecordingStudioRootSwitchable `v0.8.0`, FlatPack `v0.1.248`, and (dummy only) Recording Studio Internationalization `v0.1.2`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

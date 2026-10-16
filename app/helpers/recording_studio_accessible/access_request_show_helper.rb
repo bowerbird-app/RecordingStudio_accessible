@@ -34,11 +34,5 @@ module RecordingStudioAccessible
     def access_request_role_icon(role)
       ROLE_ICONS.fetch(role.to_s, "user")
     end
-
-    # SegmentedButtons renders each button with #call, so icon: has no view to draw.
-    def access_request_role_button_text(option)
-      icon = render(FlatPack::Shared::IconComponent.new(name: access_request_role_icon(option[:value]), size: :sm))
-      tag.span(safe_join([icon, option[:label]]), class: "inline-flex items-center gap-2")
-    end
   end
 end

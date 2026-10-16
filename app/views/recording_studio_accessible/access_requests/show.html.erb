@@ -38,22 +38,20 @@
       ) do |tabs| %>
         <% tabs.tab(label: accessible_t("requests.approve"), id: "access-request-approve") do %>
           <%= form_with url: transition_recording_access_request_path(@recording, @request_recording),
-                        method: :post, class: "grid max-w-md gap-4", **access_request_form_options do %>
+                        method: :post,
+                        class: "grid max-w-md gap-4 [&_fieldset]:m-0 [&_fieldset]:min-w-0 [&_fieldset]:border-0 [&_fieldset]:p-0",
+                        **access_request_form_options do %>
             <%= access_request_modal_fields %>
             <%= hidden_field_tag :status, "approved" %>
-            <%= hidden_field_tag :role, access_request_approval_default(request_record) %>
-            <p class="text-sm text-[var(--surface-muted-content-color)]"><%= accessible_t("requests.approve_role") %></p>
-            <%= render FlatPack::SegmentedButtons::Component.new(size: :sm) do |buttons| %>
-              <% access_request_approval_options(request_record).each do |option| %>
-                <% buttons.button(
-                     text: access_request_role_button_text(option),
-                     type: "submit",
-                     name: "role",
-                     value: option[:value],
-                     selected: option[:value] == access_request_approval_default(request_record)
-                   ) %>
-              <% end %>
-            <% end %>
+            <%= render FlatPack::RadioGroup::Component.new(
+              name: "role",
+              variant: :inline,
+              size: :sm,
+              label: accessible_t("requests.approve_role"),
+              options: access_request_approval_options(request_record),
+              value: access_request_approval_default(request_record),
+              required: true
+            ) %>
             <%= render FlatPack::Button::Component.new(
               text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
             ) %>

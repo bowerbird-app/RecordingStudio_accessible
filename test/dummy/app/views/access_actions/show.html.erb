@@ -6,7 +6,7 @@
   ) %>
 
   <div class="mt-6">
-    <%= render FlatPack::Card::Component.new(style: @authorized ? :default : :outlined) do |card| %>
+    <%= render FlatPack::Card::Component.new(border: @authorized ? :default : :strong) do |card| %>
       <% card.body(class: "grid gap-3 justify-items-start") do %>
         <% if @authorized %>
           <%= render FlatPack::SectionTitle::Component.new(
