@@ -3,15 +3,14 @@
 require "securerandom"
 
 module RecordingStudioAccessible
-  # Keeps a disabled address on the same code page, and drops a user row when
-  # the send is refused. Recording Studio Users still rate-limits only after a
-  # user exists; this guard cleans up that window for access requests.
+  # A disabled address gets the same code page as any other email.
+  # This gem never deletes user accounts.
   module AccessRequestOtpGuard
     class << self
       def issue(account, request, session, &)
         return held(account, request, session) if account.hold
 
-        created(account, &)
+        yield
       end
 
       def issue_otp!(user:, purpose:, request:, session:)
@@ -35,24 +34,9 @@ module RecordingStudioAccessible
 
       private
 
-      def created(account, &block)
-        block.call
-      rescue StandardError
-        discard!(account)
-        raise
-      end
-
       def held(account, request, session)
         consume(:issue, account.user.email, request, session)
         ticket(SecureRandom.uuid)
-      end
-
-      def discard!(account)
-        return unless account.created && !account.user.confirmed?
-
-        account.user.destroy!
-      rescue StandardError
-        nil
       end
 
       def consume(scope, email, request, session)

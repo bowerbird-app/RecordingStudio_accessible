@@ -2,7 +2,7 @@
 
 module RecordingStudioAccessible
   module AccessRequestAccount
-    Account = Struct.new(:user, :purpose, :created, :hold, keyword_init: true)
+    Account = Struct.new(:user, :purpose, :hold, keyword_init: true)
 
     class << self
       def normalize_email(email)
@@ -58,7 +58,7 @@ module RecordingStudioAccessible
 
       def new_registration(email)
         require_otp!(:registration)
-        account(create_user!(email), "registration", created: true)
+        account(create_user!(email), "registration")
       rescue ActiveRecord::RecordNotUnique
         raced(email)
       end
@@ -88,8 +88,8 @@ module RecordingStudioAccessible
         account(user, "login", hold: true)
       end
 
-      def account(user, purpose, created: false, hold: false)
-        Account.new(user: user, purpose: purpose, created: created, hold: hold)
+      def account(user, purpose, hold: false)
+        Account.new(user: user, purpose: purpose, hold: hold)
       end
 
       def user_class

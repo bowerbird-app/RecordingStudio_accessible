@@ -225,22 +225,6 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     account.define_singleton_method(:active_account?, original) if defined?(original) && original
   end
 
-  test "a rate limited new email does not leave an unconfirmed user" do
-    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
-
-    email = "rate-limited-new@example.com"
-    limiter = RecordingStudioUser::Services::OtpRateLimiter
-    original = limiter.method(:allow_request!)
-    limiter.define_singleton_method(:allow_request!) { |**| raise RecordingStudioUser::RateLimited, :issue }
-    post email_path, params: { email: email, name: "Ada Lovelace" }
-
-    assert_response :unprocessable_entity
-    assert_match "Wait a minute", response.body
-    assert_nil User.find_by(email: email)
-  ensure
-    limiter.define_singleton_method(:allow_request!, original) if defined?(original) && original
-  end
-
   test "locked screen helper renders a modal and a page link" do
     get access_request_demo_path(recording_id: @recording.id)
 

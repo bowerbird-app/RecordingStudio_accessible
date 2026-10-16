@@ -15,8 +15,7 @@ All notable changes to this project will be documented in this file.
 - A manager can grant a role they hold or a weaker ranked role. An admin can
   grant any role that recording accepts.
 - Unexpected service errors are logged and shown as a generic message.
-- A disabled email gets the same code page as any other email, and a rate
-  limited signup does not leave an unconfirmed user behind.
+- A disabled email gets the same code page as any other email.
 
 ### Added
 - `RecordingStudio::AccessRequest`, a child recordable of the target. Submit,
