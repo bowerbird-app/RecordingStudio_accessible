@@ -8,12 +8,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - `RecordingStudio::AccessRequest`, a child recordable of the target. Submit,
-  re-submit, approve, deny, and withdraw each revise the snapshot and append
+  re-submit, approve, deny, and reopen each revise the snapshot and append
   an event, so who did it and when stay on the history.
-- `RecordingStudioAccessible.request_access`, `approve_access_request`,
-  `deny_access_request`, and `withdraw_access_request`. One open request per
-  person and target. Approval revises the request and grants access in one
-  transaction. Revoking the grant later leaves the request history alone.
+- `RecordingStudioAccessible.request_access`, `transition_access_request`,
+  `approve_access_request`, and `deny_access_request`. One open request per
+  person and target. A manager can move a request among pending, approved,
+  and denied. Approval grants access in the same transaction. Leaving approved
+  revokes that grant. Returning to pending clears the review stamps.
 - Visitor screens for email, code, the request, and the confirmation. Each
   works as a full page and inside a Flatpack modal. The email step shows the
   recording's name or title, asks for a name, and passes that name to
@@ -32,11 +33,15 @@ All notable changes to this project will be documented in this file.
   is no guest path.
 - `access_request_modal` for locked screens. Approval sends the existing
   access-granted email. Managers get `AccessRequestSubmittedMailer`. Hooks:
-  `:access_request_submitted`, `:access_request_approved`, `:access_request_denied`.
+  `:access_request_submitted`, `:access_request_approved`, `:access_request_denied`,
+  `:access_request_reopened`. Denial mail is sent only when
+  `access_request_denied_notifier` is set.
 - Manager index for one recording or many. `access_requests_index` embeds the
   same slice the engine routes render. The host passes the recordings.
   `AccessManagementPolicy` decides which rows are visible. Pending is the
-  default status filter. Further pages load with Flatpack infinite scroll.
+  default status filter. Notes stay on one line. Several recordings add a
+  linked recording column. The row menu moves the request to another status.
+  Further pages load with Flatpack infinite scroll.
 
 ### Upgrade notes
 - Run `rails generate recording_studio_accessible:migrations` and migrate.

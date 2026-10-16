@@ -40,7 +40,7 @@ module RecordingStudioAccessible
     end
 
     def access_request_event_style(action)
-      { "approved" => :success, "denied" => :danger, "withdrawn" => :default }.fetch(action.to_s, :warning)
+      { "approved" => :success, "denied" => :danger, "reopened" => :warning }.fetch(action.to_s, :warning)
     end
 
     def access_request_target_label

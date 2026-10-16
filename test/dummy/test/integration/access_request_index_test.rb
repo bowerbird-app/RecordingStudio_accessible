@@ -30,11 +30,20 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert_match "Please open the notes", response.body
     refute_match "I can edit this", response.body
     assert_select "turbo-frame#access_requests_index"
-    assert_equal [ "Who", "Role", "Note", "Status", "Actions" ], header_labels
+    assert_equal [ "Who", "Note", "Status", "Actions" ], header_labels
+    assert_select "span.truncate[title='Please open the notes']"
+    assert_select "[aria-label='Request actions']"
+    assert_select "[role=menuitem]", text: "View"
+    assert_select "[role=menuitem]", text: "Approve as View"
+    assert_select "[role=menuitem]", text: "Deny"
+    refute_match "Taken back", response.body
 
     get recording_requests_path(status: "approved")
     assert_match "I can edit this", response.body
     refute_match "Please open the notes", response.body
+    assert_select "[role=menuitem]", text: "Pending"
+    assert_select "[role=menuitem]", text: "Deny"
+    assert_select "[role=menuitem]", text: "Approve as View", count: 0
 
     get recording_requests_path(status: "all")
     assert_match "Please open the notes", response.body
@@ -49,12 +58,8 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     )
     get recording_requests_path(status: "denied")
     assert_match "Please open the notes", response.body
-
-    withdrawn = ask(create_user("index-withdrawn@example.com"), @recording, "Take this back")
-    RecordingStudioAccessible.withdraw_access_request(request_recording: withdrawn, actor: withdrawn.recordable.actor)
-    get recording_requests_path(status: "withdrawn")
-    assert_match "Take this back", response.body
-    refute_match "Please open the notes", response.body
+    assert_select "[role=menuitem]", text: "Pending"
+    assert_select "[role=menuitem]", text: "Approve as Edit"
   end
 
   test "a recording route stays on that recording and a stranger is forbidden" do
@@ -90,8 +95,8 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert_match "Notes for this kit", response.body
     assert_match "Notes for the other kit", response.body
     assert_includes header_labels, "Recording"
-    assert_match @workspace.name, response.body
-    assert_match @other_workspace.name, response.body
+    assert_select "a[href=?]", "/workspaces/#{@workspace.id}", text: @workspace.name
+    assert_select "a[href=?]", "/workspaces/#{@other_workspace.id}", text: @other_workspace.name
 
     get embed_path
     assert_match "Notes for this kit", response.body

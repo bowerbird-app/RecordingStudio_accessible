@@ -12,7 +12,7 @@ module RecordingStudio
     include RecordingStudio::Recordable
     include RecordingStudioAccessible::AccessRequestCreationGuard
 
-    STATUSES = %w[pending approved denied withdrawn].freeze
+    STATUSES = %w[pending approved denied].freeze
     MESSAGE_MAX = 2_000
     NOTE_MAX = 2_000
     ACTION_MAX = 120
@@ -21,13 +21,13 @@ module RecordingStudio
     EVENT_RESUBMITTED = "resubmitted"
     EVENT_APPROVED = "approved"
     EVENT_DENIED = "denied"
-    EVENT_WITHDRAWN = "withdrawn"
+    EVENT_REOPENED = "reopened"
     EVENTS = [
       EVENT_SUBMITTED,
       EVENT_RESUBMITTED,
       EVENT_APPROVED,
       EVENT_DENIED,
-      EVENT_WITHDRAWN
+      EVENT_REOPENED
     ].freeze
 
     recording_studio_recordable label: LABEL, root: false if respond_to?(:recording_studio_recordable)

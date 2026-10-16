@@ -3,19 +3,5 @@
   <div class="flex flex-col gap-[var(--stack-gap-lg)] text-center" data-access-request-step="sent">
     <%= render "recording_studio_accessible/access_requests/heading", title: access_request_t("sent_title") %>
     <p><%= access_request_t("sent_body") %></p>
-    <% if @request_recording&.recordable&.pending? %>
-      <%= form_with url: withdraw_recording_access_request_path(@recording, @request_recording), method: :post,
-                    **access_request_form_options do %>
-        <%= access_request_modal_fields %>
-        <%= access_request_copy_fields %>
-        <%= render FlatPack::Button::Component.new(
-          text: access_request_t("withdraw"),
-          style: :secondary,
-          size: :md,
-          type: "submit",
-          class: "w-full"
-        ) %>
-      <% end %>
-    <% end %>
   </div>
 <% end %>

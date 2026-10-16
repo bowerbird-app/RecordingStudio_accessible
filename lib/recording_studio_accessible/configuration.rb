@@ -61,6 +61,7 @@ module RecordingStudioAccessible
                   :access_notification_locale,
                   :access_management_authorizer,
                   :access_request_submitted_notifier,
+                  :access_request_denied_notifier,
                   :access_request_index_recordings,
                   :mounted_page_authorizer,
                   :authorize_actor_through
@@ -88,6 +89,7 @@ module RecordingStudioAccessible
       @access_notification_locale = nil
       @access_management_authorizer = method(:default_access_management_authorizer)
       @access_request_submitted_notifier = method(:default_access_request_submitted_notifier)
+      @access_request_denied_notifier = nil
       @mounted_page_authorizer = method(:default_mounted_page_authorizer)
       @access_actor_types = nil
       @authorize_actor_through = method(:default_authorize_actor_through)
@@ -276,6 +278,17 @@ module RecordingStudioAccessible
         recording: recording,
         actor: actor,
         role: role
+      )
+    end
+
+    def notify_access_request_denied(controller:, request_recording:, recording:, actor:, review_note:)
+      resolve_configurable(
+        access_request_denied_notifier,
+        controller: controller,
+        request_recording: request_recording,
+        recording: recording,
+        actor: actor,
+        review_note: review_note
       )
     end
 

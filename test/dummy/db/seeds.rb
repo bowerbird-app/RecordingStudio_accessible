@@ -169,7 +169,7 @@ def seed_restricted_requests!(recording, users)
     [ users[:page_owner], "Please share the embargoed brief.", "pending" ],
     [ users[:editor], "I need the release timing before we lock the page.", "pending" ],
     [ users[:access_user_1], "Can I download the raw files?", "denied" ],
-    [ users[:access_user_2], "I requested this by mistake.", "withdrawn" ]
+    [ users[:access_user_2], "I need the photo captions, photographer credits, and the embargo wording before we publish the gallery.", "pending" ]
   ].each do |actor, message, status|
     seed_access_request!(recording: recording, actor: actor, message: message, status: status, why: "I cover the embargoed launch.")
   end
@@ -200,10 +200,10 @@ def seed_access_request!(recording:, actor:, message:, status: "pending", why: n
   )
   raise result.error if result.failure?
 
-  close_seeded_request!(result.value, actor, status)
+  close_seeded_request!(result.value, status)
 end
 
-def close_seeded_request!(request_recording, actor, status)
+def close_seeded_request!(request_recording, status)
   case status
   when "approved"
     approve = RecordingStudioAccessible.approve_access_request(
@@ -216,9 +216,6 @@ def close_seeded_request!(request_recording, actor, status)
       review_note: "Not for this round."
     )
     raise deny.error if deny.failure?
-  when "withdrawn"
-    withdrawn = RecordingStudioAccessible.withdraw_access_request(request_recording: request_recording, actor: actor)
-    raise withdrawn.error if withdrawn.failure?
   end
 end
 

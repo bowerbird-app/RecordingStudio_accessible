@@ -99,12 +99,8 @@ module RecordingStudioAccessible
       )
     end
 
-    def withdraw
-      result = RecordingStudioAccessible.withdraw_access_request(
-        request_recording: find_request, actor: current_actor, controller: self
-      )
-      redirect_to sent_recording_access_requests_path(@recording, **presentation_params),
-                  (result.success? ? { notice: access_request_t("flashes.withdrawn") } : { alert: result.error })
+    def transition
+      review(transition_result, "requests.flashes.#{transition_flash}")
     end
 
     private
@@ -237,6 +233,18 @@ module RecordingStudioAccessible
 
     def review_args
       { request_recording: find_request, manager_actor: current_actor, controller: self }
+    end
+
+    def transition_result
+      RecordingStudioAccessible.transition_access_request(**review_args, **transition_params)
+    end
+
+    def transition_params
+      { status: params[:status], role: params[:role], review_note: params[:review_note] }
+    end
+
+    def transition_flash
+      AccessRequestTransitions.flash_key(params[:status]) || "approved"
     end
 
     def request_events(recording)

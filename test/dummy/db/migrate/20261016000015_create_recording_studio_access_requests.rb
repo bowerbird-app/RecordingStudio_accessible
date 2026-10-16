@@ -31,7 +31,7 @@ class CreateRecordingStudioAccessRequests < ActiveRecord::Migration[8.1]
 
   def add_status_and_message_guards
     add_check_constraint :recording_studio_access_requests,
-                         "status IN ('pending', 'approved', 'denied', 'withdrawn')",
+                         "status IN ('pending', 'approved', 'denied')",
                          name: "recording_studio_access_requests_status"
     add_check_constraint :recording_studio_access_requests,
                          "message IS NULL OR char_length(message) <= 2000",

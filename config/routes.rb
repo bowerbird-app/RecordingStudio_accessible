@@ -23,7 +23,7 @@ RecordingStudioAccessible::Engine.routes.draw do
       end
       member { post :approve }
       member { post :deny }
-      member { post :withdraw }
+      member { post :transition }
     end
     resources :access_invitations, only: [:destroy], controller: "recording_access_invitations" do
       member { post :resend }

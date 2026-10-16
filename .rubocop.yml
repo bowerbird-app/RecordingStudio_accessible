@@ -41,6 +41,7 @@ Metrics/ClassLength:
     - 'app/controllers/recording_studio_accessible/recording_accesses_controller.rb'
     - 'app/controllers/recording_studio_accessible/access_requests_controller.rb'
     - 'lib/recording_studio_accessible/services/request_access.rb'
+    - 'lib/recording_studio_accessible/services/transition_access_request.rb'
     - 'lib/recording_studio_accessible/action_audiences.rb'
     - 'lib/recording_studio_accessible/action_registry.rb'
     - 'lib/recording_studio_accessible/audience_registry.rb'
@@ -141,6 +142,7 @@ Metrics/ParameterLists:
     - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/services/grant_recording_access.rb'
     - 'lib/recording_studio_accessible/services/request_access.rb'
+    - 'lib/recording_studio_accessible/services/transition_access_request.rb'
     - 'lib/recording_studio_accessible/access_request_api.rb'
     - 'lib/recording_studio_accessible/access_request_intake.rb'
 

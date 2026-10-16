@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "access_request_menu_helper"
+
 module RecordingStudioAccessible
   module AccessRequestListHelper
+    include AccessRequestMenuHelper
+
     def access_requests_index(recordings:, url: nil)
       render partial: "recording_studio_accessible/access_requests/list",
              locals: access_request_list_locals(recordings, url)
@@ -35,15 +39,17 @@ module RecordingStudioAccessible
       )
     end
 
-    def access_request_actions_cell(request_recording)
-      safe_join([
-                  access_request_review_link(request_recording),
-                  access_request_cursor_marker(request_recording)
-                ])
+    def access_request_note_cell(request_recording)
+      message = request_recording.recordable.message.to_s
+      tag.span(message, class: "block max-w-sm truncate", title: message)
     end
 
     def access_request_recording_label(request_recording)
-      AccessGrantedMailer.recordable_label_for(request_recording.parent_recording).to_s
+      label = AccessGrantedMailer.recordable_label_for(request_recording.parent_recording).to_s
+      href = access_request_recording_href(request_recording)
+      return label if href.blank?
+
+      render(FlatPack::Link::Component.new(href: href)) { label }
     end
 
     private
@@ -63,23 +69,13 @@ module RecordingStudioAccessible
       RecordingStudioAccessible.configuration.current_actor_for(controller: controller)
     end
 
-    def access_request_review_link(request_recording)
-      render FlatPack::Link::Component.new(href: access_request_review_path(request_recording)) do
-        accessible_t("requests.show_title")
-      end
-    end
+    def access_request_recording_href(request_recording)
+      recordable = request_recording.parent_recording&.recordable
+      return if recordable.blank? || !respond_to?(:main_app)
 
-    def access_request_review_path(request_recording)
-      access_request_routes.recording_access_request_path(
-        request_recording.parent_recording, request_recording
-      )
-    end
-
-    def access_request_cursor_marker(request_recording)
-      tag.span(
-        nil, hidden: true,
-             data: { pagination_cursor: AccessRequestIndex.cursor_for(request_recording) }
-      )
+      main_app.polymorphic_path(recordable)
+    rescue ActionController::UrlGenerationError, NoMethodError, ArgumentError
+      nil
     end
   end
 end

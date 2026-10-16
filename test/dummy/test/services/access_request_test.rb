@@ -104,8 +104,9 @@ class AccessRequestTest < ActiveSupport::TestCase
     configuration.access_actor_types = previous_actor_types
   end
 
-  test "deny and withdraw close the request without granting access" do
+  test "deny closes the request without granting access" do
     request_recording = RecordingStudioAccessible.request_access(recording: @recording, actor: @person, role: "view").value
+    ActionMailer::Base.deliveries.clear
 
     denied = nil
     with_hook(:access_request_denied) do |denied_hooks|
@@ -118,11 +119,7 @@ class AccessRequestTest < ActiveSupport::TestCase
     assert_equal "denied", denied.value.recordable.status
     assert_equal "Not now", denied.value.recordable.review_note
     assert_equal 0, RecordingStudioAccessible.access_recordings_for_actor(recording: @recording, actor: @person).count
-
-    again = RecordingStudioAccessible.request_access(recording: @recording, actor: @person, role: "view").value
-    withdrawn = RecordingStudioAccessible.withdraw_access_request(request_recording: again, actor: @person)
-    assert withdrawn.success?
-    assert_equal "withdrawn", withdrawn.value.recordable.status
+    assert_empty ActionMailer::Base.deliveries
   end
 
   test "someone else cannot see another person's request" do

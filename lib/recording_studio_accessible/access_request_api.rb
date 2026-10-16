@@ -13,9 +13,22 @@ module RecordingStudioAccessible
       )
     end
 
-    def approve_access_request(request_recording:, manager_actor: nil, role: nil, controller: nil)
-      Services::ApproveAccessRequest.call(
+    def transition_access_request(request_recording:, status:, manager_actor: nil, role: nil, review_note: nil,
+                                  controller: nil)
+      Services::TransitionAccessRequest.call(
         request_recording: request_recording,
+        status: status,
+        manager_actor: manager_actor,
+        role: role,
+        review_note: review_note,
+        controller: controller
+      )
+    end
+
+    def approve_access_request(request_recording:, manager_actor: nil, role: nil, controller: nil)
+      transition_access_request(
+        request_recording: request_recording,
+        status: "approved",
         manager_actor: manager_actor,
         role: role,
         controller: controller
@@ -23,18 +36,11 @@ module RecordingStudioAccessible
     end
 
     def deny_access_request(request_recording:, manager_actor: nil, review_note: nil, controller: nil)
-      Services::DenyAccessRequest.call(
+      transition_access_request(
         request_recording: request_recording,
+        status: "denied",
         manager_actor: manager_actor,
         review_note: review_note,
-        controller: controller
-      )
-    end
-
-    def withdraw_access_request(request_recording:, actor: nil, controller: nil)
-      Services::WithdrawAccessRequest.call(
-        request_recording: request_recording,
-        actor: actor,
         controller: controller
       )
     end

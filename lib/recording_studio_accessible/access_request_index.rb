@@ -4,7 +4,7 @@ module RecordingStudioAccessible
   class AccessRequestIndex
     PAGE_SIZE = 10
     FRAME_ID = "access_requests_index"
-    STATUSES = %w[pending approved denied withdrawn all].freeze
+    STATUSES = %w[pending approved denied all].freeze
     DEFAULT_STATUS = "pending"
     CURSOR_SQL = "(recording_studio_recordings.created_at, recording_studio_recordings.id) < (?, ?)"
     UUID = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i

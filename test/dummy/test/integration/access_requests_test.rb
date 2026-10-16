@@ -79,7 +79,9 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     get requests_path
     assert_match "Ada Lovelace", response.body
     assert_match "Hello from the visitor", response.body
-    assert_match "Not chosen yet", response.body
+    assert_select "span.truncate[title='Hello from the visitor']"
+    assert_select "[role=menuitem]", text: "Deny"
+    refute_match "Not chosen yet", response.body
   end
 
   test "visitor copy overrides follow every step" do
@@ -200,7 +202,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
   def assert_access_request_table(note)
     headers = css_select("table thead th").map { |node| node.text.squish }
-    assert_equal [ "Who", "Role", "Note", "Status", "Actions" ], headers
+    assert_equal [ "Who", "Note", "Status", "Actions" ], headers
     assert_select "table tbody tr", count: 1
     assert_select "table tbody td", text: note
     assert response.body.index("<thead") < response.body.index("<tbody")

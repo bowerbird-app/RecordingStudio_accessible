@@ -184,15 +184,25 @@ on the target, `RecordingStudio::AccessRequest`. Writes go through:
 
 ```ruby
 RecordingStudioAccessible.request_access(recording:, actor:, role:, action: nil, message: nil, controller: nil)
-RecordingStudioAccessible.approve_access_request(request_recording:, manager_actor:, controller: nil)
+RecordingStudioAccessible.transition_access_request(
+  request_recording:, status:, manager_actor:, role: nil, review_note: nil, controller: nil
+)
+RecordingStudioAccessible.approve_access_request(request_recording:, manager_actor:, role:, controller: nil)
 RecordingStudioAccessible.deny_access_request(request_recording:, manager_actor:, review_note: nil, controller: nil)
-RecordingStudioAccessible.withdraw_access_request(request_recording:, actor:, controller: nil)
 ```
 
-Each change revises the snapshot and appends an event (`access_request_submitted`,
-`resubmitted`, `approved`, `denied`, `withdrawn`). Approval also calls
-`grant_access` in the same transaction and stores that grant's recording id
-on the request. Revoking the grant later does not rewrite the request.
+`transition_access_request` is the state machine. A manager can move a request
+from pending, approved, or denied to either of the other two. The same move
+revises the snapshot and appends `approved`, `denied`, or `reopened`.
+Approving calls `grant_access` with the chosen role, stores that grant on the
+request, sends the access-granted email, and runs `:access_request_approved`.
+Denying runs `:access_request_denied`. It also calls
+`config.access_request_denied_notifier` when one is set. Moving away from
+approved revokes the grant that approval created. Moving back to pending
+clears the role, the review note, and the grant id, and runs
+`:access_request_reopened`. Submit and re-submit still append
+`access_request_submitted` and `resubmitted`. Revoking the grant on its own
+does not rewrite the request.
 
 One open request per person and target. Asking again revises that request.
 A person who already has the role gets a no-op success.
@@ -236,9 +246,14 @@ config.access_request_index_recordings = ->(actor:, controller:) { press_kits }
 
 `url` is where the status filters and the next page return. It should render
 this helper again. Pending is the default. `status` is `pending`, `approved`,
-`denied`, `withdrawn`, or `all`. A long list appends the next page with
-Flatpack infinite scroll. The cursor is the last row's time and id. The page
-size is 10.
+`denied`, or `all`. A long list appends the next page with Flatpack infinite
+scroll. The cursor is the last row's time and id. The page size is 10.
+
+The note is one truncated line, with the full text on the request page and in
+the cell's title. A single recording hides the recording column. More than one
+shows the recording's name or title, linked when the host can route to that
+recordable. Each row's actions are the Flatpack three-dot menu: View, and the
+statuses that request can move to. Approve lists one item per role.
 
 `new` is the email step, the code step, or the request form. The email step
 shows the recording's name or title under the heading. Later steps do not.
@@ -313,7 +328,9 @@ Locked screens:
 ```
 
 Hooks: `:access_request_submitted`, `:access_request_approved`,
-`:access_request_denied`. Approval sends the access-granted email. A submitted
+`:access_request_denied`, `:access_request_reopened`. Approval sends the
+access-granted email. Denial sends mail only when
+`config.access_request_denied_notifier` is set. A submitted
 request emails direct admins on the target and its parents. Replace that with
 `config.access_request_submitted_notifier`.
 

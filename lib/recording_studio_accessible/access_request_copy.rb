@@ -6,7 +6,7 @@ module RecordingStudioAccessible
     KEYS = %w[
       cta email_title name email_label email_submit verify_title verify_intro
       code confirm resend form_title message submit sent_title sent_body
-      withdraw page_link already flashes.submitted flashes.withdrawn flashes.code_resent
+      page_link already flashes.submitted flashes.code_resent
     ].freeze
 
     def self.remember(session, recording_id, params)
