@@ -1,12 +1,14 @@
 <% recording = local_assigns.fetch(:recording) %>
-<% role = local_assigns.fetch(:role) %>
+<% role = local_assigns[:role] %>
 <% action = local_assigns[:action] %>
+<% copy = local_assigns[:copy] %>
+<% scope = local_assigns[:scope] %>
 <% label = local_assigns.fetch(:label) %>
 <% modal_id = "access-request-#{recording.id}" %>
 
 <%= render FlatPack::Button::Component.new(
   text: label,
-  href: access_request_modal_src(recording, role: role, action: action),
+  href: access_request_modal_src(recording, role: role, action: action, copy: copy, scope: scope),
   style: :primary,
   size: :md,
   data: { modal_id: modal_id, turbo_frame: access_request_frame_id }

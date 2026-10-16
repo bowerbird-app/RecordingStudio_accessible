@@ -3,10 +3,10 @@
 module RecordingStudioAccessible
   module Services
     class RequestAccess < BaseService
-      def initialize(recording:, actor:, role:, action: nil, message: nil, controller: nil)
+      def initialize(recording:, actor:, role: nil, action: nil, message: nil, controller: nil)
         @recording = recording
         @actor = actor
-        @role = role.to_s.strip
+        @role = role.to_s.strip.presence
         @action = action.to_s.strip.presence
         @message = message.to_s.strip.presence
         @controller = controller
@@ -43,7 +43,7 @@ module RecordingStudioAccessible
         return failure(copy("errors.recording_required")) unless @recording
         return failure(copy("errors.actor_required")) unless persisted_actor?
         return failure(copy("errors.actor_type_not_allowed")) unless allowed_actor_type?
-        return failure(copy("errors.role_invalid")) unless RecordingStudioAccessible.role_valid_for?(@recording, @role)
+        return failure(copy("errors.role_invalid")) if rejected_role?
         return failure(copy("errors.message_too_long")) if message_too_long?
         return failure(copy("errors.action_too_long")) if action_too_long?
         return failure(copy("errors.grant_denied")) if SharedRootAccess.target?(@recording)
@@ -72,7 +72,13 @@ module RecordingStudioAccessible
         Compatibility.access_request_parent_allowed?(@recording)
       end
 
+      def rejected_role?
+        @role.present? && !RecordingStudioAccessible.role_valid_for?(@recording, @role)
+      end
+
       def already_granted?
+        return false if @role.blank?
+
         RecordingStudioAccessible.authorized?(actor: @actor, recording: @recording, role: @role)
       end
 

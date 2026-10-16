@@ -5,10 +5,21 @@
 ) %>
 
 <div class="mt-6 flex flex-wrap items-center gap-3">
-  <%= access_request_modal(@recording, role: "view", action: "read") %>
+  <%= access_request_modal(@recording, action: "read") %>
   <%= render FlatPack::Button::Component.new(
     text: accessible_t("requests.page_link"),
-    href: access_request_page_path(@recording, role: "view", action: "read"),
+    href: access_request_page_path(@recording, action: "read"),
+    style: :secondary,
+    size: :md
+  ) %>
+  <%= render FlatPack::Button::Component.new(
+    text: "Request early access",
+    href: access_request_page_path(@recording, copy: {
+      cta: "Request early access",
+      email_title: "Request early access",
+      form_title: "Ask for early access",
+      submit: "Send early access request"
+    }),
     style: :secondary,
     size: :md
   ) %>

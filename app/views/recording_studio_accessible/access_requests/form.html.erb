@@ -1,28 +1,21 @@
-<% content_for :title, accessible_t("requests.form_title") %>
-<% selected_role = params[:role].presence || RecordingStudioAccessible.roles_for(@recording).first %>
-<% role_options = RecordingStudioAccessible.roles_for(@recording).map { |role| { value: role, label: accessible_role_name(role) } } %>
+<% content_for :title, access_request_t("form_title") %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
   <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="form">
-    <%= render "recording_studio_accessible/access_requests/heading", title: accessible_t("requests.form_title") %>
+    <%= render "recording_studio_accessible/access_requests/heading", title: access_request_t("form_title") %>
     <%= form_with url: recording_access_requests_path(@recording), method: :post,
                   class: "flex flex-col gap-[var(--stack-gap-lg)]", **access_request_form_options do %>
       <%= access_request_modal_fields %>
+      <%= access_request_copy_fields %>
+      <%= hidden_field_tag "access_request[role]", params[:role] %>
       <%= hidden_field_tag "access_request[action]", params[:access_action] %>
-      <%= render FlatPack::RadioGroup::Component.new(
-        name: "access_request[role]",
-        label: accessible_t("requests.role"),
-        options: role_options,
-        value: selected_role,
-        required: true
-      ) %>
       <%= render FlatPack::TextArea::Component.new(
         name: "access_request[message]",
-        label: accessible_t("requests.message"),
+        label: access_request_t("message"),
         rows: 4,
         max_characters: RecordingStudio::AccessRequest::MESSAGE_MAX
       ) %>
       <%= render FlatPack::Button::Component.new(
-        text: accessible_t("requests.submit"),
+        text: access_request_t("submit"),
         style: :primary,
         size: :md,
         type: "submit",

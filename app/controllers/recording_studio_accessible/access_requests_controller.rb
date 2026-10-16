@@ -11,6 +11,7 @@ module RecordingStudioAccessible
     skip_before_action :authenticate_user!, raise: false
     before_action :set_recording
     before_action :require_request_parent!
+    before_action :remember_access_request_copy
     layout :access_request_layout
 
     def index
@@ -62,7 +63,7 @@ module RecordingStudioAccessible
 
       AccessRequestIntake.resend!(intent: @intent, request: request, session: session)
       redirect_to verify_recording_access_requests_path(@recording, **presentation_params),
-                  notice: Copy.t("requests.flashes.code_resent")
+                  notice: access_request_t("flashes.code_resent")
     rescue AccessRequestIntake::Error => e
       flash.now[:alert] = e.message
       render :verify, status: :unprocessable_entity
@@ -80,7 +81,10 @@ module RecordingStudioAccessible
     end
 
     def approve
-      review(RecordingStudioAccessible.approve_access_request(**review_args), "requests.flashes.approved")
+      review(
+        RecordingStudioAccessible.approve_access_request(**review_args, role: params[:role]),
+        "requests.flashes.approved"
+      )
     end
 
     def deny
@@ -95,7 +99,7 @@ module RecordingStudioAccessible
         request_recording: find_request, actor: current_actor, controller: self
       )
       redirect_to sent_recording_access_requests_path(@recording, **presentation_params),
-                  (result.success? ? { notice: Copy.t("requests.flashes.withdrawn") } : { alert: result.error })
+                  (result.success? ? { notice: access_request_t("flashes.withdrawn") } : { alert: result.error })
     end
 
     private
@@ -109,6 +113,10 @@ module RecordingStudioAccessible
 
     def set_recording
       @recording = RecordingStudio::Recording.unscoped.find(params[:recording_id])
+    end
+
+    def remember_access_request_copy
+      AccessRequestCopy.remember(session, @recording.id, params)
     end
 
     def require_request_parent!
@@ -158,7 +166,7 @@ module RecordingStudioAccessible
 
     def redirect_after_submit(result)
       session[:recording_studio_accessible_access_request_id] = result.value&.id
-      notice = result.value ? Copy.t("requests.flashes.submitted") : Copy.t("requests.already")
+      notice = result.value ? access_request_t("flashes.submitted") : access_request_t("already")
       redirect_to sent_recording_access_requests_path(@recording, **presentation_params), notice: notice
     end
 

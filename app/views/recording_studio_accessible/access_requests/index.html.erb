@@ -11,7 +11,7 @@
         <%= access_request_person_label(request_recording.recordable.actor) %>
       <% end %>
       <% table.column(title: accessible_t("requests.columns.role")) do |request_recording| %>
-        <%= accessible_role_name(request_recording.recordable.role) %>
+        <%= access_request_role_label(request_recording.recordable.role) %>
       <% end %>
       <% table.column(title: accessible_t("requests.columns.message")) do |request_recording| %>
         <%= request_recording.recordable.message %>

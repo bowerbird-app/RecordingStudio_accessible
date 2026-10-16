@@ -6,9 +6,14 @@
   <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
     <% card.body(class: "grid gap-3") do %>
       <p><%= access_request_person_label(request_record.actor) %></p>
-      <p><%= accessible_role_name(request_record.role) %></p>
+      <% if request_record.role.present? && !request_record.pending? %>
+        <p><%= accessible_role_name(request_record.role) %></p>
+      <% end %>
       <% if request_record.message.present? %>
-        <p><%= request_record.message %></p>
+        <div class="grid gap-1">
+          <p class="font-medium"><%= accessible_t("requests.note_label") %></p>
+          <p><%= request_record.message %></p>
+        </div>
       <% end %>
       <%= render FlatPack::Badge::Component.new(
         text: accessible_t("requests.statuses.#{request_record.status}"),
@@ -19,13 +24,19 @@
   <% end %>
 
   <% if request_record.pending? && manager? %>
-    <div class="flex flex-wrap items-center gap-3">
-      <%= form_with url: approve_recording_access_request_path(@recording, @request_recording), method: :post do %>
-        <%= render FlatPack::Button::Component.new(
-          text: accessible_t("requests.approve"), style: :primary, size: :md, type: "submit"
-        ) %>
-      <% end %>
-    </div>
+    <%= form_with url: approve_recording_access_request_path(@recording, @request_recording), method: :post,
+                  class: "grid max-w-lg gap-3" do %>
+      <%= render FlatPack::Select::Component.new(
+        name: "role",
+        label: accessible_t("requests.approve_role"),
+        options: access_request_approval_options(request_record),
+        value: access_request_approval_default(request_record),
+        required: true
+      ) %>
+      <%= render FlatPack::Button::Component.new(
+        text: accessible_t("requests.approve"), style: :primary, size: :md, type: "submit"
+      ) %>
+    <% end %>
     <%= form_with url: deny_recording_access_request_path(@recording, @request_recording), method: :post,
                   class: "grid max-w-lg gap-3" do %>
       <%= render FlatPack::TextArea::Component.new(
@@ -45,7 +56,7 @@
       <%= render FlatPack::Timeline::Item.new(
         title: accessible_t("requests.events.#{event.action}"),
         timestamp: l(event.occurred_at, format: :short),
-        description: event.actor.try(:email),
+        description: access_request_event_description(event),
         style: access_request_event_style(event.action),
         last: index == @events.size - 1
       ) %>

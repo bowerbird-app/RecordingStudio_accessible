@@ -5,9 +5,10 @@ module RecordingStudioAccessible
     class ApproveAccessRequest < BaseService
       include AccessRecordLifecycle
 
-      def initialize(request_recording:, manager_actor: nil, controller: nil)
+      def initialize(request_recording:, manager_actor: nil, role: nil, controller: nil)
         @request_recording = request_recording
         @manager_actor = manager_actor
+        @role = role.to_s.strip.presence
         @controller = controller
       end
 
@@ -31,7 +32,7 @@ module RecordingStudioAccessible
           grant = GrantRecordingAccess.call(
             recording: target,
             actor: snapshot.actor,
-            role: snapshot.role,
+            role: @role,
             manager_actor: manager,
             controller: @controller
           )
@@ -57,14 +58,20 @@ module RecordingStudioAccessible
         return failure(copy("errors.access_request_required")) unless request_recording?
         return failure(copy("errors.access_request_not_pending")) unless pending_snapshot?
         return failure(copy("errors.not_authorized")) unless manager_allowed?
+        return failure(copy("errors.role_invalid")) unless approval_role_allowed?
 
         true
+      end
+
+      def approval_role_allowed?
+        AccessRequestRoles.allowed?(recording: target, action: snapshot.action, role: @role)
       end
 
       def revise_approved!(access_recording)
         revised = nil
         AccessRequestCreationContext.allow do
           revised = root_recording.revise(@request_recording, actor: manager) do |request|
+            request.role = @role
             request.status = "approved"
             request.access_recording_id = access_recording.id
           end
@@ -78,7 +85,7 @@ module RecordingStudioAccessible
           controller: @controller,
           recording: target,
           actor: snapshot.actor,
-          role: snapshot.role,
+          role: @role,
           manager_actor: manager
         )
       end

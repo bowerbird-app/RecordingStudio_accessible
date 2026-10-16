@@ -28,6 +28,9 @@ class AccessRequestTest < ActiveSupport::TestCase
       assert result.success?
       request_recording = result.value
       assert_equal "pending", request_recording.recordable.status
+      assert_equal "Need the notes", request_recording.recordable.message
+      assert_equal "Need the notes", submitted_event(request_recording).recordable.message
+      assert_includes ActionMailer::Base.deliveries.last.body.encoded, "Need the notes"
       assert_equal @recording.id, request_recording.parent_recording_id
       assert_equal "access_request_submitted", latest_event_action(request_recording)
       assert_includes submitted, request_recording
@@ -36,12 +39,15 @@ class AccessRequestTest < ActiveSupport::TestCase
     end
   end
 
-  test "a second request revises the open one" do
-    first = RecordingStudioAccessible.request_access(recording: @recording, actor: @person, role: "view", message: "First")
-    second = RecordingStudioAccessible.request_access(recording: @recording, actor: @person, role: "edit", message: "Second")
+  test "a second request revises the open one without requiring a role" do
+    first = RecordingStudioAccessible.request_access(recording: @recording, actor: @person, message: "First")
+    second = RecordingStudioAccessible.request_access(
+      recording: @recording, actor: @person, role: "edit", message: "Second"
+    )
 
     assert_equal first.value.id, second.value.id
     assert_equal "edit", second.value.recordable.role
+    assert_equal "Second", second.value.recordable.message
     assert_equal "resubmitted", latest_event_action(second.value)
     assert_equal 1, RecordingStudioAccessible::AccessRequestQuery.pending_for(recording: @recording, actor: @person).count
   end
@@ -55,7 +61,7 @@ class AccessRequestTest < ActiveSupport::TestCase
     with_hook(:access_request_approved) do |approved_hooks|
       assert_difference -> { RecordingStudio::Access.count }, 1 do
         result = RecordingStudioAccessible.approve_access_request(
-          request_recording: request_recording, manager_actor: @manager
+          request_recording: request_recording, manager_actor: @manager, role: "view"
         )
       end
       assert_includes approved_hooks, result.value
@@ -87,7 +93,7 @@ class AccessRequestTest < ActiveSupport::TestCase
     configuration.access_actor_types = ["MissingActor"]
 
     result = RecordingStudioAccessible.approve_access_request(
-      request_recording: request_recording, manager_actor: @manager
+      request_recording: request_recording, manager_actor: @manager, role: "view"
     )
     refute result.success?
 
@@ -132,6 +138,10 @@ class AccessRequestTest < ActiveSupport::TestCase
 
   def create_user(email)
     User.find_by(email: email) || User.create!(email: email, password: "Password", password_confirmation: "Password")
+  end
+
+  def submitted_event(recording)
+    recording.events.reorder(occurred_at: :asc, id: :asc).find { |event| event.action == "access_request_submitted" }
   end
 
   def latest_event_action(recording)

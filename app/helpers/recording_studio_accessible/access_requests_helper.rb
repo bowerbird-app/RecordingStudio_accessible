@@ -1,17 +1,13 @@
 # frozen_string_literal: true
 
+require_relative "access_request_flow_helper"
+
 module RecordingStudioAccessible
   module AccessRequestsHelper
+    include AccessRequestFlowHelper
+
     FRAME_ID = "access_request"
     MODAL = "modal"
-
-    def access_request_modal(recording, role:, action: nil, label: nil)
-      render "recording_studio_accessible/access_requests/modal",
-             recording: recording,
-             role: role,
-             action: action,
-             label: label.presence || accessible_t("requests.cta")
-    end
 
     def access_request_frame_id
       FRAME_ID
@@ -37,23 +33,6 @@ module RecordingStudioAccessible
       hidden_field_tag(:presentation, MODAL)
     end
 
-    def access_request_page_path(recording, role:, action: nil)
-      access_request_routes.new_recording_access_request_path(
-        recording,
-        role: role,
-        access_action: action
-      )
-    end
-
-    def access_request_modal_src(recording, role:, action:)
-      access_request_routes.new_recording_access_request_path(
-        recording,
-        presentation: MODAL,
-        role: role,
-        access_action: action
-      )
-    end
-
     def access_request_status_style(status)
       { "pending" => :warning, "approved" => :success, "denied" => :danger }.fetch(status.to_s, :default)
     end
@@ -70,6 +49,33 @@ module RecordingStudioAccessible
       AccessRequestIntake.name_required?
     end
 
+    def access_request_role_label(role)
+      return accessible_t("requests.role_unset") if role.blank?
+
+      accessible_role_name(role)
+    end
+
+    def access_request_approval_options(request_record)
+      AccessRequestRoles.options_for(recording: @recording, action: request_record.action).map do |role|
+        { value: role, label: accessible_role_name(role) }
+      end
+    end
+
+    def access_request_approval_default(request_record)
+      AccessRequestRoles.default_for(
+        recording: @recording, action: request_record.action, suggested: request_record.role
+      )
+    end
+
+    def access_request_event_description(event)
+      note = event_note(event)
+      email = event.actor.try(:email).to_s
+      return email if note.blank?
+      return note if email.blank?
+
+      safe_join([note, email], " — ")
+    end
+
     def access_request_person_label(actor)
       return if actor.blank?
 
@@ -81,6 +87,12 @@ module RecordingStudioAccessible
     end
 
     private
+
+    def event_note(event)
+      return unless %w[access_request_submitted resubmitted].include?(event.action.to_s)
+
+      event.recordable.try(:message).to_s.strip.presence
+    end
 
     def requester_name(actor, email)
       return unless defined?(::RecordingStudioUser) && RecordingStudioUser.respond_to?(:display_name_for)

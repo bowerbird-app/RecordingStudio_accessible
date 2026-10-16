@@ -17,7 +17,9 @@ All notable changes to this project will be documented in this file.
 - Visitor screens for email, code, the request, and the confirmation. Each
   works as a full page and inside a Flatpack modal. The email step shows the
   recording's name or title, asks for a name, and passes that name to
-  `complete_email_proof!` when the account is created.
+  `complete_email_proof!` when the account is created. The request form does
+  not ask for a role. The manager chooses the role when approving. Visitor
+  copy can be overridden per flow with `copy:` or an I18n scope.
   The name is required only when the user model requires one. A signed-in
   person skips the email code. Visitors get an account through Recording
   Studio Users (`issue_otp!`, `verify_otp!`, `complete_email_proof!`). There

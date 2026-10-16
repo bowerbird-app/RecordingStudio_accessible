@@ -2,7 +2,7 @@
 
 module RecordingStudioAccessible
   module AccessRequestApi
-    def request_access(recording:, actor:, role:, action: nil, message: nil, controller: nil)
+    def request_access(recording:, actor:, role: nil, action: nil, message: nil, controller: nil)
       Services::RequestAccess.call(
         recording: recording,
         actor: actor,
@@ -13,10 +13,11 @@ module RecordingStudioAccessible
       )
     end
 
-    def approve_access_request(request_recording:, manager_actor: nil, controller: nil)
+    def approve_access_request(request_recording:, manager_actor: nil, role: nil, controller: nil)
       Services::ApproveAccessRequest.call(
         request_recording: request_recording,
         manager_actor: manager_actor,
+        role: role,
         controller: controller
       )
     end

@@ -19,10 +19,12 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     get new_request_path
     assert_response :success
     assert_match "Ask for access", response.body
+    assert_match "Add a note", response.body
+    refute_role_picker
     refute_recording_subtitle
     assert_match "<html", response.body
 
-    post request_path, params: { access_request: { role: "view", message: "From the page", action: "read" } }
+    post request_path, params: { access_request: { message: "From the page", action: "read" } }
     follow_redirect!
     assert_match "Request sent", response.body
     refute_recording_subtitle
@@ -53,16 +55,18 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     post verify_path, params: { code: otp_code }
     follow_redirect!
     assert_match "Ask for access", response.body
-    assert_match "read", response.body
+    assert_match "Add a note", response.body
+    refute_role_picker
     refute_recording_subtitle
     get new_request_path(presentation: "modal"), headers: modal_headers
     assert_match "Ask for access", response.body
+    refute_role_picker
     refute_recording_subtitle
 
     requester = User.find_by!(email: "new-requester@example.com")
     assert_equal "Ada Lovelace", RecordingStudioUser.display_name_for(requester)
 
-    post request_path, params: { access_request: { role: "view", message: "Hello", action: "read" } }
+    post request_path, params: { access_request: { message: "Hello from the visitor", action: "read" } }
     follow_redirect!
     assert_match "Request sent", response.body
     refute_recording_subtitle
@@ -74,6 +78,24 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     sign_in @manager
     get requests_path
     assert_match "Ada Lovelace", response.body
+    assert_match "Hello from the visitor", response.body
+    assert_match "Not chosen yet", response.body
+  end
+
+  test "visitor copy overrides follow every step" do
+    get new_request_path(copy: { email_title: "Request early access", verify_title: "Early code" }, copy_scope: "")
+    assert_select "h1", text: "Request early access"
+
+    post email_path, params: {
+      email: "early-access@example.com", name: "Early User",
+      copy: { verify_title: "Early code" }, copy_scope: ""
+    }
+    follow_redirect!
+    assert_select "h1", text: "Early code"
+    refute_match "Check your email", response.body
+
+    get new_request_path(copy_scope: "early_access_demo")
+    assert_select "h1", text: "Request early access"
   end
 
   test "email step keeps a blank name when the account does not require one" do
@@ -115,11 +137,15 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match @person.email, response.body
     assert_match "Pending", response.body
+    assert_match "I edit", response.body
 
     get request_show_path(request_recording)
     assert_match "Asked for access", response.body
+    assert_match "I edit", response.body
+    assert_match "Note", response.body
+    assert_select "select[name=role]"
 
-    post approve_path(request_recording)
+    post approve_path(request_recording), params: { role: "edit" }
     follow_redirect!
     assert_match "Approved", response.body
     assert_match "What happened", response.body
@@ -131,6 +157,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_match "Request access", response.body
+    assert_match "Request early access", response.body
     assert_select "h2", text: "Request access", count: 0
     assert_match "data-modal-id", response.body
     assert_match "access_request", response.body
@@ -173,6 +200,11 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
   def refute_recording_subtitle
     refute_match @workspace.name, response.body
+  end
+
+  def refute_role_picker
+    assert_select "input[type=radio][name='access_request[role]']", count: 0
+    refute_match "What do you need?", response.body
   end
 
   def request_show_path(request_recording)

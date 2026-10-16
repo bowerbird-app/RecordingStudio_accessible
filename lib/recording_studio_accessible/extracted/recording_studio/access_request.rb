@@ -34,7 +34,7 @@ module RecordingStudio
 
     belongs_to :actor, polymorphic: true
 
-    validates :role, presence: true
+    validates :role, length: { maximum: 64 }, allow_nil: true
     validates :status, inclusion: { in: STATUSES }
     validates :message, length: { maximum: MESSAGE_MAX }, allow_nil: true
     validates :review_note, length: { maximum: NOTE_MAX }, allow_nil: true
@@ -53,11 +53,13 @@ module RecordingStudio
     end
 
     def recordable_name
-      RecordingStudioAccessible::Copy.t(
-        "recordables.access_request.name",
-        role: role,
-        status: status
-      )
+      return named_with_role if role.present?
+
+      RecordingStudioAccessible::Copy.t("recordables.access_request.name_without_role", status: status)
+    end
+
+    def named_with_role
+      RecordingStudioAccessible::Copy.t("recordables.access_request.name", role: role, status: status)
     end
 
     alias recording_studio_label recordable_name

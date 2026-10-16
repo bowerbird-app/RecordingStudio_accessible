@@ -216,8 +216,29 @@ Routes live under the mounted engine:
 
 `new` is the email step, the code step, or the request form. The email step
 shows the recording's name or title under the heading. Later steps do not.
+Visitors do not pick a role. Pass an optional `role:` or `action:` when the
+caller already knows a suggestion. The manager chooses the role when approving.
+The select defaults to that suggestion when it is allowed, then to the action's
+granted roles, then to `roles_for`.
+
 Pass `presentation=modal` and load it in the `access_request` Turbo frame to
 use the modal. The same URLs without that param are full pages.
+
+Visitor copy defaults to `recording_studio.accessible.requests`. Override one
+flow with `copy:` or an I18n `scope:`. Scope keys match the relative request
+keys, such as `cta` and `email_title`. A missing key falls back to the default.
+The overrides follow every step of that flow.
+
+```erb
+<%= access_request_modal(recording, copy: {
+  cta: "Request early access",
+  email_title: "Request early access",
+  form_title: "Ask for early access"
+}) %>
+<%= access_request_modal(recording, scope: "press_kit.early_access", role: "view") %>
+```
+
+`label:` still sets the button when `copy[:cta]` is absent.
 
 Locked screens:
 

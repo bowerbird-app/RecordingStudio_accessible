@@ -19,6 +19,8 @@ module RecordingStudioAccessible
         @greeting_email = @reviewer.respond_to?(:email) ? @reviewer.email.to_s : ""
         @message = params[:request_recording]&.recordable&.message
         @review_url = params[:review_url]
+        @text_body_key = body_key(html: false)
+        @html_body_key = body_key(html: true)
 
         mail(
           from: resolved_from_address,
@@ -29,6 +31,15 @@ module RecordingStudioAccessible
     end
 
     private
+
+    def body_key(html:)
+      prefix = html ? "body_html" : "body"
+      return "mailers.access_request.#{prefix}" if @role_label.present? && @recording_label.present?
+      return "mailers.access_request.#{prefix}_without_role" if @recording_label.present?
+      return "mailers.access_request.#{prefix}_without_recording" if @role_label.present?
+
+      "mailers.access_request.#{prefix}_without_role_or_recording"
+    end
 
     def subject_line
       if @recording_label.present?
