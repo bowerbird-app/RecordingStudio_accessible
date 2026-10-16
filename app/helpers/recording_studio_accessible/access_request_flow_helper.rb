@@ -65,5 +65,38 @@ module RecordingStudioAccessible
     def access_request_copy_resolver
       AccessRequestCopy.resolve(session, @recording&.id, params)
     end
+
+    public
+
+    def access_request_gate_answers(request_record)
+      return [] unless access_request_manager?
+
+      labels = gate_metadata_labels(request_record)
+      gate_metadata_pairs(request_record).map do |key, value|
+        [labels[key] || key.humanize, value.nil? ? "" : value.to_s]
+      end
+    end
+
+    def access_request_manager?
+      respond_to?(:manager?) && manager?
+    end
+
+    private
+
+    def gate_metadata_pairs(request_record)
+      metadata = request_record.try(:gate_metadata)
+      return [] unless metadata.is_a?(Hash)
+
+      metadata.stringify_keys.to_a
+    end
+
+    def gate_metadata_labels(request_record)
+      gate = AccessRequestGate.for_action(request_record.try(:action))
+      return {} unless gate.respond_to?(:metadata_labels)
+
+      gate.metadata_labels.to_h.stringify_keys
+    rescue StandardError
+      {}
+    end
   end
 end

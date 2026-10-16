@@ -190,6 +190,7 @@ en:
           email_unavailable: "That email can't be used."
           expired: "That code expired. Start again."
           code_mismatch: "That code doesn't match."
+          gate_unavailable: "We couldn't open the next step. Try again."
       mailers:
         someone: "Someone"
         hello: "Hello %{email},"

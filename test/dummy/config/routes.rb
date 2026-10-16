@@ -17,6 +17,8 @@ Rails.application.routes.draw do
 
   get "tree", to: "home#tree"
   get "access_request_demo", to: "access_request_demos#show"
+  get "access_request_gate", to: "access_request_gates#show", as: :access_request_gate
+  patch "access_request_gate", to: "access_request_gates#update"
 
   resource :controller_auth_demo, only: [ :show ], controller: "controller_auth_demos" do
     get :authorize

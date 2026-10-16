@@ -48,6 +48,7 @@ module RecordingStudioAccessible
         return failure(copy("errors.action_too_long")) if action_too_long?
         return failure(copy("errors.grant_denied")) if SharedRootAccess.target?(@recording)
         return failure(copy("errors.direct_access_not_enabled")) unless parent_allowed?
+        return failure(copy("requests.errors.gate_unavailable")) if gate_unsatisfied?
 
         true
       end
@@ -120,6 +121,32 @@ module RecordingStudioAccessible
         request.action = @action
         request.message = @message
         request.status = "pending"
+        request.gate_metadata = gate_metadata
+      end
+
+      def gate_unsatisfied?
+        AccessRequestGate.blocking?(
+          AccessRequestGate.for_action(@action),
+          recording: @recording,
+          actor: @actor,
+          request: http_request
+        )
+      end
+
+      def http_request
+        @controller.request if @controller.respond_to?(:request)
+      rescue StandardError
+        nil
+      end
+
+      def gate_metadata
+        AccessRequestGateMetadata.clean(
+          AccessRequestGate.metadata_for(
+            AccessRequestGate.for_action(@action),
+            recording: @recording,
+            actor: @actor
+          )
+        )
       end
 
       def notify_and_hook(request_recording)

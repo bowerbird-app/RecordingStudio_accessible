@@ -240,6 +240,45 @@ The overrides follow every step of that flow.
 
 `label:` still sets the button when `copy[:cta]` is absent.
 
+### Access request gate
+
+A host can pause the request until its own step is done. Accessible does not know the question. An action with no registered gate skips the step. When the visitor did not pass an action, the gate registered under `:default` is used.
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.register_access_request_gate(:read, Presskits::AccessRequestGate)
+  config.register_access_request_gate(:default, Presskits::AccessRequestGate)
+end
+```
+
+Register a class or any object. Every method is optional:
+
+| Method | Role |
+| --- | --- |
+| `satisfied?(recording:, actor:, request:)` | `true` when the host step is done. Omit it and the gate does not block. A raise fails closed. |
+| `continuation_url(recording:, actor:, request:)` | Where the visitor goes while the gate is still open. Same host only. A modal keeps `presentation=modal` and the `access_request` frame. |
+| `component` | Optional ViewComponent class. Accessible does not render it; the continuation page is the form. |
+| `metadata_for(recording:, actor:)` | Flat hash copied onto the request when it is submitted or submitted again. |
+| `metadata_labels` | Optional key to label hash for the manager review list. |
+
+The check runs after the email code, and again for a signed-in visitor opening the form. `create` checks `satisfied?` again before it writes. While the gate is open, the visitor is redirected to `continuation_url` with the presentation params. A modal redirect stays in the `access_request` Turbo frame. A full page redirect stays a full page.
+
+A continuation URL on another host is not followed. If `satisfied?` or `continuation_url` raises, or the URL is missing, the visitor sees a Flatpack alert and the request is not recorded.
+
+In-progress answers stay with the host. Accessible does not open a draft row for them.
+
+`gate_metadata` is `jsonb`, default `{}`, with no GIN index. Submit and re-submit keep a flat snapshot on that version of the recordable, so it stays with the history:
+
+- at most 32 keys
+- each key matches `[a-z0-9_]{1,40}`
+- values are scalars: string, number, boolean, or null
+- strings at most 200 characters
+- the JSON document at most 2KB
+
+Dropped data is reported. A metadata failure stores `{}` and the request still proceeds when the gate is satisfied. Accessible does not interpret the keys.
+
+Managers who pass `AccessManagementPolicy` see the answers as a read-only labelled list beside the note. Labels come from `metadata_labels` when the gate provides them, otherwise the key is humanized. The requester does not see that list.
+
 Locked screens:
 
 ```erb

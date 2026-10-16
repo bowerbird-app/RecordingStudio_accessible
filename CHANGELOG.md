@@ -20,6 +20,12 @@ All notable changes to this project will be documented in this file.
   `complete_email_proof!` when the account is created. The request form does
   not ask for a role. The manager chooses the role when approving. Visitor
   copy can be overridden per flow with `copy:` or an I18n scope.
+- Optional pre-request gate, `register_access_request_gate`, keyed by the
+  requested action or `:default` when there is no action. The step sits after
+  the email code and before the note. `create` checks it again. Continuation
+  URLs must stay on the same host. A raising gate shows an alert and does not
+  record the request. Sanitized answers are stored as `gate_metadata` on the
+  snapshot at submit and re-submit, and managers see them beside the note.
   The name is required only when the user model requires one. A signed-in
   person skips the email code. Visitors get an account through Recording
   Studio Users (`issue_otp!`, `verify_otp!`, `complete_email_proof!`). There
@@ -31,7 +37,8 @@ All notable changes to this project will be documented in this file.
 ### Upgrade notes
 - Run `rails generate recording_studio_accessible:migrations` and migrate.
   New tables: `recording_studio_access_requests` and
-  `recording_studio_access_request_intents`.
+  `recording_studio_access_request_intents`. `gate_metadata` is added to
+  `recording_studio_access_requests`.
 - Accessible does not depend on Users in the gemspec. Users already depends
   on Accessible, and a gemspec dependency would cycle. Hosts that want the
   email-code screens add `recording_studio_user` (with notifications and

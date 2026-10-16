@@ -63,7 +63,7 @@ module RecordingStudioAccessible
                   :access_request_submitted_notifier,
                   :mounted_page_authorizer,
                   :authorize_actor_through
-    attr_reader :hooks, :access_actor_types, :action_audiences
+    attr_reader :hooks, :access_actor_types, :action_audiences, :access_request_gates
 
     def initialize
       @warn_on_core_conflict = true
@@ -91,6 +91,7 @@ module RecordingStudioAccessible
       @access_actor_types = nil
       @authorize_actor_through = method(:default_authorize_actor_through)
       @hooks = Hooks.new
+      @access_request_gates = {}
       @action_audiences = ActionAudiences.new
       owner = self
       @action_audiences.on_change = lambda do |action|
@@ -244,6 +245,19 @@ module RecordingStudioAccessible
 
     def registered_audiences
       RecordingStudioAccessible.registered_audiences
+    end
+
+    FALLBACK_ACCESS_REQUEST_GATE = :default
+
+    def register_access_request_gate(action_key, gate)
+      raise ArgumentError, "action is required" if action_key.blank?
+      raise ArgumentError, "gate is required" if gate.nil?
+
+      access_request_gates[action_key.to_sym] = gate
+    end
+
+    def access_request_gate_for(action)
+      access_request_gates[action.blank? ? FALLBACK_ACCESS_REQUEST_GATE : action.to_sym]
     end
 
     def notify_access_request_submitted(controller:, request_recording:, recording:, actor:, role:)

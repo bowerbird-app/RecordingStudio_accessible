@@ -30,7 +30,10 @@ module RecordingStudioAccessible
     end
 
     def new
-      render current_actor ? :form : :email
+      return render(:email) unless current_actor
+      return if hold_for_gate?
+
+      render :form
     end
 
     def submit_email
@@ -51,7 +54,7 @@ module RecordingStudioAccessible
       return head :not_found unless @intent
 
       sign_in_verified_requester(AccessRequestIntake.verify!(intent: @intent, code: params[:code], session: session))
-      redirect_to form_after_verification
+      redirect_after_verification
     rescue AccessRequestIntake::Error => e
       flash.now[:alert] = e.message
       render :verify, status: :unprocessable_entity
@@ -71,6 +74,7 @@ module RecordingStudioAccessible
 
     def create
       return redirect_to new_recording_access_request_path(@recording, **kept_params) unless current_actor
+      return if hold_for_gate?
 
       result = submit_request
       result.success? ? redirect_after_submit(result) : render_request_error(result)
@@ -149,6 +153,39 @@ module RecordingStudioAccessible
     def open_intent
       intent = AccessRequestIntent.find_by(id: session[AccessRequestIntake::SESSION_KEY])
       intent if intent && intent.recording_id == @recording.id
+    end
+
+    def redirect_after_verification
+      return if hold_for_gate?(role: @intent.role, action: @intent.action)
+
+      redirect_to form_after_verification
+    end
+
+    def hold_for_gate?(role: requested_role, action: requested_action)
+      gate_held?(gate_decision(role, action))
+    end
+
+    def gate_decision(role, action)
+      AccessRequestGate.decide(
+        recording: @recording, actor: current_actor, action: action,
+        request: request, carry: carry_params(role, action)
+      )
+    end
+
+    def carry_params(role, action)
+      presentation_params.merge(role: role.presence, access_action: action.presence).compact
+    end
+
+    def gate_held?(decision)
+      return false if decision[:status] == :open
+
+      if decision[:status] == :redirect
+        redirect_to(decision[:location])
+      else
+        flash.now[:alert] = access_request_t("errors.gate_unavailable")
+        render :gate_closed, status: :unprocessable_entity
+      end
+      true
     end
 
     def form_after_verification

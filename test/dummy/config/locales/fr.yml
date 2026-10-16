@@ -230,6 +230,7 @@ fr:
           email_unavailable: "Cet e-mail ne peut pas être utilisé."
           expired: "Ce code a expiré. Recommencez."
           code_mismatch: "Ce code ne correspond pas."
+          gate_unavailable: "Nous n’avons pas pu ouvrir l’étape suivante. Réessayez."
       mailers:
         someone: "Quelqu’un"
         hello: "Bonjour %{email},"

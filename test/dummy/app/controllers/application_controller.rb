@@ -9,6 +9,7 @@ class ApplicationController < ActionController::Base
 
   before_action :authenticate_user!
   before_action :set_current_actor
+  before_action :remember_access_request_reason
 
   include RecordingStudio::RootSwitchable::ControllerSupport
 
@@ -25,6 +26,10 @@ class ApplicationController < ActionController::Base
 
   def set_current_actor
     Current.actor = current_user
+  end
+
+  def remember_access_request_reason
+    Current.access_request_reason = session[AccessRequestReasonGate::SESSION_KEY]
   end
 
   def current_workspace

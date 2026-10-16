@@ -15,6 +15,15 @@
           <p><%= request_record.message %></p>
         </div>
       <% end %>
+      <% if manager? && access_request_gate_answers(request_record).any? %>
+        <%= render FlatPack::List::Component.new(divider: true) do %>
+          <% access_request_gate_answers(request_record).each do |label, value| %>
+            <%= render FlatPack::List::Item.new(leading: label, class: "px-0 py-2") do %>
+              <%= value %>
+            <% end %>
+          <% end %>
+        <% end %>
+      <% end %>
       <%= render FlatPack::Badge::Component.new(
         text: accessible_t("requests.statuses.#{request_record.status}"),
         style: access_request_status_style(request_record.status),
