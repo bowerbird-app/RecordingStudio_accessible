@@ -38,6 +38,7 @@ class ActionDispatch::IntegrationTest
   def before_setup
     super
     host! "localhost"
+    Rails.cache.clear
   end
 
   %i[get post patch put delete head].each do |http_method|

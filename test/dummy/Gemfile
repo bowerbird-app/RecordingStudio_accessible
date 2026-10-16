@@ -8,10 +8,10 @@ gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"
 # Query-only trash helpers (Accessible gemspec "~> 0.10"; pin by tag).
 # require: false — Accessible loads recording_studio_trashable/query only.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",
-                                  tag: "v0.10.0", require: false
-gem "recording_studio_root_switchable", github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.8.0"
-# Required by root_switchable >= 0.7 and trashable gemspec (git-only; not on RubyGems).
-gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.2.0"
+                                  tag: "v0.11.1", require: false
+gem "recording_studio_root_switchable", github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.9.4"
+# Required by root_switchable and trashable (git-only; not on RubyGems).
+gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.3.1"
 
 # Dummy-only language switching. Accessible ships English; hosts own other languages.
 gem "recording_studio_internationalization",
@@ -48,8 +48,8 @@ gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.248"
 gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.2"
 gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.10.0"
 gem "recording_studio_cache", github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.1"
-gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.7.2"
-gem "recording_studio_user", github: "bowerbird-app/RecordingStudio_users", tag: "v0.22.0"
+gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.9.0"
+gem "recording_studio_user", github: "bowerbird-app/RecordingStudio_users", tag: "v0.24.0"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"

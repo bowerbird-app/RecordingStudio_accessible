@@ -25,7 +25,8 @@ Rails.application.configure do
     config.action_controller.perform_caching = false
   end
 
-  # Change to :null_store to avoid any caching.
+  # In-process memory store. OTP rate limits are atomic inside this process.
+  # A host that runs more than one process needs Redis or Memcached.
   config.cache_store = :memory_store
 
   # Store uploaded files on the local file system (see config/storage.yml for options).

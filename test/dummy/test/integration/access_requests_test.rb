@@ -210,10 +210,9 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
     disabled = create_user("disabled-requester@example.com")
     disabled.confirm if disabled.respond_to?(:confirm)
-    account = RecordingStudioAccessible::AccessRequestAccount
-    original = account.method(:active_account?)
-    account.define_singleton_method(:active_account?) { |_user| false }
-    post email_path, params: { email: disabled.email, name: "Pat Disabled" }
+    with_inactive_email(disabled.email) do
+      post email_path, params: { email: disabled.email, name: "Pat Disabled" }
+    end
 
     assert_response :redirect
     follow_redirect!
@@ -221,8 +220,21 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     refute_match "can&#39;t be used", response.body
     refute_match "can't be used", response.body
     assert_equal 1, User.where(email: disabled.email).count
-  ensure
-    account.define_singleton_method(:active_account?, original) if defined?(original) && original
+    assert_nil open_otp_challenge(disabled)
+  end
+
+  test "a throttled new email shows the rate limit and creates no user" do
+    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
+
+    email = "throttled-new@example.com"
+    digest = RecordingStudioUser::Services::OtpRateLimiter.email_key(email)
+    RecordingStudioUser::Services::OtpRateLimiter.allow_request!(scope: :issue, key: digest)
+
+    post email_path, params: { email: email, name: "Ada Lovelace" }
+
+    assert_response :unprocessable_entity
+    assert_match "Wait a minute", response.body
+    assert_nil User.find_by(email: email)
   end
 
   test "locked screen helper renders a modal and a page link" do
@@ -334,5 +346,26 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
   def otp_code
     intent = RecordingStudioAccessible::AccessRequestIntent.order(:created_at).last
     RecordingStudioUser.otp_message(intent.otp_challenge_id).fetch(:body)[/\d{6}/]
+  end
+
+  def open_otp_challenge(user)
+    RecordingStudioUser::OtpChallenge.find_by(user: user, consumed_at: nil, revoked_at: nil)
+  end
+
+  def with_inactive_email(email)
+    User.class_eval do
+      alias_method :active_for_authentication_without_test_disable, :active_for_authentication?
+      define_method(:active_for_authentication?) do
+        return false if self.email == email
+
+        active_for_authentication_without_test_disable
+      end
+    end
+    yield
+  ensure
+    User.class_eval do
+      alias_method :active_for_authentication?, :active_for_authentication_without_test_disable
+      remove_method :active_for_authentication_without_test_disable
+    end
   end
 end

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "securerandom"
+
 module RecordingStudioAccessible
   module AccessRequestIntake
     class Error < RecordingStudioAccessible::Error; end
@@ -42,30 +44,42 @@ module RecordingStudioAccessible
       def open_intent(recording, email, role, action, request, session, name)
         normalized = AccessRequestAccount.normalize_email(email)
         submitted = AccessRequestAccount.normalize_name(name)
-        account = AccessRequestAccount.lookup(normalized)
-        issued = issue_account(account, request, session)
-        create_intent(recording, account.user, issued, normalized, submitted, role, action)
+        result = request_code(normalized, request, session)
+        create_intent(recording, normalized, submitted, role, action, result)
       end
 
-      def issue_account(account, request, session)
-        AccessRequestOtpGuard.issue(account, request, session) do
-          AccessRequestOtpGuard.issue_otp!(
-            user: account.user, purpose: account.purpose, request: request, session: session
-          )
-        end
-      end
+      def request_code(email, request, session)
+        purpose = AccessRequestAccount.purpose_for(email)
+        raise Error, Copy.t("requests.errors.users_required") unless
+          AccessRequestAccount.purpose_enabled?(purpose)
 
-      def create_intent(recording, user, issued, email, submitted_name, role, action)
-        AccessRequestIntent.create!(
-          recording_id: recording.id,
-          user_id: user.id,
-          otp_challenge_id: issued.challenge_id,
-          email: email,
-          submitted_name: submitted_name,
-          role: role.to_s.strip.presence,
-          action: action.to_s.strip.presence,
-          expires_at: AccessRequestIntent::LIFETIME.from_now
+        accept_code(
+          RecordingStudioUser.request_otp!(email: email, purpose: purpose, request: request, session: session)
         )
+      end
+
+      def accept_code(result)
+        raise Error, Copy.t("requests.errors.rate_limited") if result.throttled?
+
+        result
+      end
+
+      def create_intent(recording, email, submitted_name, role, action, result)
+        AccessRequestIntent.create!(intent_row(recording, email, submitted_name, role, action, result))
+      end
+
+      def intent_row(recording, email, submitted_name, role, action, result)
+        {
+          recording_id: recording.id, user_id: intent_user_id(email, result),
+          otp_challenge_id: result.challenge_id || SecureRandom.uuid, email: email,
+          submitted_name: submitted_name, role: role.to_s.strip.presence,
+          action: action.to_s.strip.presence, expires_at: AccessRequestIntent::LIFETIME.from_now
+        }
+      end
+
+      def intent_user_id(email, result)
+        result.challenge&.user_id || AccessRequestAccount.user_id_for(email) ||
+          raise(Error, Copy.t("requests.errors.email_unavailable"))
       end
 
       def verified_user(intent, code, session)
@@ -86,19 +100,24 @@ module RecordingStudioAccessible
       end
 
       def replace_challenge(intent, request, session)
-        issued = reissue_otp(intent, request, session)
-        intent.update!(otp_challenge_id: issued.challenge_id)
+        result = accept_code(send_again(intent, request, session))
+        intent.update!(otp_challenge_id: result.challenge_id || intent.otp_challenge_id)
         intent
       end
 
-      def reissue_otp(intent, request, session)
-        user = RecordingStudioUser.config.user_class.find(intent.user_id)
+      def send_again(intent, request, session)
         proof = RecordingStudioUser.otp_proof(intent.otp_challenge_id)
-        return AccessRequestOtpGuard.quiet_resend(intent, request, session) if proof.nil?
+        return request_again(intent, request, session) if proof.nil?
 
-        AccessRequestOtpGuard.call_users do
-          RecordingStudioUser.resend_otp!(user: user, purpose: proof.purpose, request: request, session: session)
-        end
+        user = RecordingStudioUser.config.user_class.find(intent.user_id)
+        RecordingStudioUser.resend_otp!(user: user, purpose: proof.purpose, request: request, session: session)
+      end
+
+      def request_again(intent, request, session)
+        RecordingStudioUser.request_otp!(
+          email: intent.email, purpose: AccessRequestAccount.purpose_for(intent.email),
+          request: request, session: session
+        )
       end
 
       def verify_code(intent, code, session)
@@ -106,10 +125,7 @@ module RecordingStudioAccessible
         raise Error, Copy.t("requests.errors.code_mismatch") if proof.nil?
 
         RecordingStudioUser.verify_otp!(
-          challenge_id: intent.otp_challenge_id,
-          code: code,
-          purpose: proof.purpose,
-          session: session
+          challenge_id: intent.otp_challenge_id, code: code, purpose: proof.purpose, session: session
         )
       end
     end

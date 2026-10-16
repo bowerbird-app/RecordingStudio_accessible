@@ -46,7 +46,9 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Replace the default in-process memory cache store with a durable alternative.
+  # One-time codes count through Rails.cache. The store has to be shared and
+  # atomic across processes. Redis or Memcached is that store. An in-process
+  # memory store cannot enforce the limit when more than one process runs.
   # config.cache_store = :mem_cache_store
 
   # Replace the default in-process and non-durable queuing backend for Active Job.

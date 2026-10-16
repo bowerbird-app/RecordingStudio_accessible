@@ -15,7 +15,10 @@ All notable changes to this project will be documented in this file.
 - A manager can grant a role they hold or a weaker ranked role. An admin can
   grant any role that recording accepts.
 - Unexpected service errors are logged and shown as a generic message.
-- A disabled email gets the same code page as any other email.
+- A disabled email gets the same code page as any other email. Visitor
+  codes go through `RecordingStudioUser.request_otp!`. A throttled result
+  shows the rate-limit message. Issued and suppressed results show the same
+  code page.
 
 ### Added
 - `RecordingStudio::AccessRequest`, a child recordable of the target. Submit,
@@ -40,7 +43,7 @@ All notable changes to this project will be documented in this file.
   snapshot at submit and re-submit, and managers see them beside the note.
   The name is required only when the user model requires one. A signed-in
   person skips the email code. Visitors get an account through Recording
-  Studio Users (`issue_otp!`, `verify_otp!`, `complete_email_proof!`). There
+  Studio Users (`request_otp!`, `verify_otp!`, `complete_email_proof!`). There
   is no guest path.
 - `access_request_modal` for locked screens. Approval sends the existing
   access-granted email. Managers get `AccessRequestSubmittedMailer`. Hooks:
@@ -68,8 +71,10 @@ All notable changes to this project will be documented in this file.
   `recording_studio_access_requests`.
 - Accessible does not depend on Users in the gemspec. Users already depends
   on Accessible, and a gemspec dependency would cycle. Hosts that want the
-  email-code screens add `recording_studio_user` (with notifications and
-  cache) the same way Messages does. Without it, `request_access` still works
+  email-code screens add `recording_studio_user` 0.24.0 (with notifications
+  and cache) the same way Messages does. Visitor codes call `request_otp!`.
+  Point `Rails.cache` at a shared atomic store, and add a case-insensitive
+  unique index on `users.email`. Without Users, `request_access` still works
   for an existing signed-in actor; the email step tells the visitor that
   codes are unavailable.
 - The approve role picker uses Flatpack `RadioGroup` `variant: :inline`

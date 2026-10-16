@@ -208,14 +208,24 @@ One open request per person and target. Asking again revises that request.
 A partial unique index on the live pending row enforces the same limit in the database.
 A person who already has the role gets a no-op success.
 
-The email-code screens use Recording Studio Users: `issue_otp!`, `verify_otp!`,
-and `complete_email_proof!`. The email step collects a name and passes
-`first_name` and `last_name` into `complete_email_proof!`, the same way
-Messages does for public contact. The field is required when the user model
-validates `name` or `first_name`, and optional otherwise. Accessible cannot
-list Users as a gem dependency, because Users already depends on Accessible.
-Add Users in the host app, with OTP enabled. Signed-in actors can call
-`request_access` without that stack.
+The email-code screens use Recording Studio Users `request_otp!`. A throttled
+result shows the rate-limit message. An issued result and a suppressed result
+both show the same code page. `verify_otp!` and `complete_email_proof!` finish
+the proof. The email step collects a name and passes `first_name` and
+`last_name` into `complete_email_proof!`, the same way Messages does for
+public contact. The field is required when the user model validates `name` or
+`first_name`, and optional otherwise. Accessible cannot list Users as a gem
+dependency, because Users already depends on Accessible. Add Users in the host
+app, with OTP enabled. Signed-in actors can call `request_access` without that
+stack.
+
+One-time codes count through `Rails.cache`. The store has to be shared and
+atomic across processes. Redis or Memcached is that store. The dummy test and
+development environments use an in-process memory store. Its increments are
+atomic inside one process, which is enough for the test suite, and they do
+not enforce the limit across processes. The host users table needs a
+case-insensitive unique index on `email`. A unique index on `LOWER(email)`
+is the usual shape.
 
 Routes live under the mounted engine:
 

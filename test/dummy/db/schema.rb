@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_16_000030) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_16_213120) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -299,6 +299,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_000030) do
     t.datetime "verified_at"
     t.index ["expires_at"], name: "index_recording_studio_user_otp_challenges_on_expires_at"
     t.index ["user_id", "purpose"], name: "idx_on_user_id_purpose_2b7c2a59c4"
+    t.index ["user_id", "purpose"], name: "index_rs_user_otp_challenges_open_purpose", unique: true, where: "((consumed_at IS NULL) AND (revoked_at IS NULL))"
     t.index ["user_id"], name: "index_recording_studio_user_otp_challenges_on_user_id"
   end
 
@@ -329,6 +330,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_000030) do
     t.string "reset_password_token"
     t.string "unconfirmed_email"
     t.datetime "updated_at", null: false
+    t.index "lower((email)::text)", name: "index_users_on_lower_email", unique: true
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
