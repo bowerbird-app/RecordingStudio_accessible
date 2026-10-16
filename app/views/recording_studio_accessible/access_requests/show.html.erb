@@ -5,7 +5,7 @@
 <div class="mt-6 grid gap-4">
   <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
     <% card.body(class: "grid gap-3") do %>
-      <p><%= request_record.actor.try(:email) %></p>
+      <p><%= access_request_person_label(request_record.actor) %></p>
       <p><%= accessible_role_name(request_record.role) %></p>
       <% if request_record.message.present? %>
         <p><%= request_record.message %></p>

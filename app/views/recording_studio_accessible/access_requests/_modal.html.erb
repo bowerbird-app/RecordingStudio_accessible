@@ -11,7 +11,7 @@
   size: :md,
   data: { modal_id: modal_id, turbo_frame: access_request_frame_id }
 ) %>
-<%= render FlatPack::Modal::Component.new(id: modal_id, title: label, size: :sm) do |modal| %>
+<%= render FlatPack::Modal::Component.new(id: modal_id, size: :sm) do |modal| %>
   <% modal.body do %>
     <%= turbo_frame_tag access_request_frame_id %>
   <% end %>

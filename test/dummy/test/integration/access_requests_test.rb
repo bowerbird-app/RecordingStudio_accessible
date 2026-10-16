@@ -19,6 +19,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     get new_request_path
     assert_response :success
     assert_match "Ask for access", response.body
+    assert_match @workspace.name, response.body
     assert_match "<html", response.body
 
     post request_path, params: { access_request: { role: "view", message: "From the page", action: "read" } }
@@ -35,21 +36,52 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
 
     get new_request_path
-    assert_match "Tell us where to send the code", response.body
+    assert_email_step
 
-    post email_path, params: { email: "new-requester@example.com", role: "view", access_action: "read" }
+    post email_path, params: {
+      email: "new-requester@example.com", name: "Ada Lovelace", role: "view", access_action: "read"
+    }
     follow_redirect!
     assert_match "Check your email", response.body
+    assert_match @workspace.name, response.body
 
     post verify_path, params: { code: otp_code }
     follow_redirect!
     assert_match "Ask for access", response.body
+    assert_match @workspace.name, response.body
     assert_match "read", response.body
+
+    requester = User.find_by!(email: "new-requester@example.com")
+    assert_equal "Ada Lovelace", RecordingStudioUser.display_name_for(requester)
 
     post request_path, params: { access_request: { role: "view", message: "Hello", action: "read" } }
     follow_redirect!
     assert_match "Request sent", response.body
+    assert_match @workspace.name, response.body
     assert_equal 1, RecordingStudio::AccessRequest.where(status: "pending").count
+
+    sign_in @manager
+    get requests_path
+    assert_match "Ada Lovelace", response.body
+  end
+
+  test "email step keeps a blank name when the account does not require one" do
+    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
+
+    refute RecordingStudioAccessible::AccessRequestIntake.name_required?
+
+    post email_path, params: { email: "blank-name@example.com", name: "", role: "view", access_action: "read" }
+    follow_redirect!
+    assert_match "Check your email", response.body
+    assert_nil RecordingStudioAccessible::AccessRequestIntent.order(:created_at).last.submitted_name
+  end
+
+  test "email step rejects a name that is too long" do
+    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
+
+    post email_path, params: { email: "long-name@example.com", name: "A" * 121, role: "view" }
+    assert_response :unprocessable_entity
+    assert_match "Name is too long", response.body
   end
 
   test "email step inside a modal frame has no document layout" do
@@ -57,7 +89,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "turbo-frame#access_request"
-    assert_match "Tell us where to send the code", response.body
+    assert_email_step
     refute_match(/<html/i, response.body)
   end
 
@@ -87,6 +119,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_match "Request access", response.body
+    assert_select "h2", text: "Request access", count: 0
     assert_match "data-modal-id", response.body
     assert_match "access_request", response.body
     assert_match "presentation=modal", response.body
@@ -124,6 +157,18 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
   def approve_path(request_recording)
     recording_studio_accessible.approve_recording_access_request_path(@recording, request_recording)
+  end
+
+  def assert_email_step
+    assert_match "Request access", response.body
+    assert_match @workspace.name, response.body
+    assert_match "Next", response.body
+    assert_select "input[name=name]"
+    assert_select "input[name=name][required]", count: 0
+    assert_select "h1", text: "Request access"
+    assert_select "h2", text: "Request access", count: 0
+    refute_match "Tell us where to send the code", response.body
+    refute_match "Send code", response.body
   end
 
   def otp_code

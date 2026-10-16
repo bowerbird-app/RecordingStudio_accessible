@@ -125,7 +125,7 @@ module RecordingStudioAccessible
 
     def intake_args
       {
-        recording: @recording, email: params[:email], role: requested_role,
+        recording: @recording, email: params[:email], name: params[:name], role: requested_role,
         action: requested_action, request: request, session: session
       }
     end

@@ -1,7 +1,7 @@
 <% content_for :title, accessible_t("requests.sent_title") %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
   <div class="flex flex-col gap-[var(--stack-gap-lg)] text-center" data-access-request-step="sent">
-    <h1 class="text-xl font-semibold"><%= accessible_t("requests.sent_title") %></h1>
+    <%= render "recording_studio_accessible/access_requests/heading", title: accessible_t("requests.sent_title") %>
     <p><%= accessible_t("requests.sent_body") %></p>
     <% if @request_recording&.recordable&.pending? %>
       <%= form_with url: withdraw_recording_access_request_path(@recording, @request_recording), method: :post,

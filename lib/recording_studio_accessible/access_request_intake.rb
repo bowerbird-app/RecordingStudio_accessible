@@ -7,12 +7,16 @@ module RecordingStudioAccessible
     SESSION_KEY = :recording_studio_accessible_access_request_intent_id
 
     class << self
-      def start!(recording:, email:, role:, action:, request:, session:)
+      def start!(recording:, email:, role:, action:, request:, session:, name: nil)
         raise Error, Copy.t("requests.errors.users_required") unless users_ready?
 
-        intent = open_intent(recording, email, role, action, request, session)
+        intent = open_intent(recording, email, role, action, request, session, name)
         session[SESSION_KEY] = intent.id
         intent
+      end
+
+      def name_required?
+        AccessRequestAccount.name_required?
       end
 
       def verify!(intent:, code:, session:)
@@ -35,19 +39,21 @@ module RecordingStudioAccessible
         defined?(::RecordingStudioUser) && RecordingStudioUser.config.otp_enabled?
       end
 
-      def open_intent(recording, email, role, action, request, session)
+      def open_intent(recording, email, role, action, request, session, name)
         normalized = AccessRequestAccount.normalize_email(email)
+        submitted = AccessRequestAccount.normalize_name(name)
         user, purpose = AccessRequestAccount.lookup(normalized)
         issued = issue_otp!(user: user, purpose: purpose, request: request, session: session)
-        create_intent(recording, user, issued, normalized, role, action)
+        create_intent(recording, user, issued, normalized, submitted, role, action)
       end
 
-      def create_intent(recording, user, issued, email, role, action)
+      def create_intent(recording, user, issued, email, submitted_name, role, action)
         AccessRequestIntent.create!(
           recording_id: recording.id,
           user_id: user.id,
           otp_challenge_id: issued.challenge_id,
           email: email,
+          submitted_name: submitted_name,
           role: role.to_s.strip.presence,
           action: action.to_s.strip.presence,
           expires_at: AccessRequestIntent::LIFETIME.from_now
@@ -63,7 +69,9 @@ module RecordingStudioAccessible
 
       def fulfill(intent, user)
         RecordingStudioUser.complete_email_proof!(
-          user: user, challenge_id: intent.otp_challenge_id, profile_attributes: {}
+          user: user,
+          challenge_id: intent.otp_challenge_id,
+          profile_attributes: AccessRequestAccount.profile_attributes(intent.submitted_name)
         )
         intent.update!(fulfilled_at: Time.current)
         user

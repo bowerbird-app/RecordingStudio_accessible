@@ -19,6 +19,28 @@ module RecordingStudioAccessible
         unavailable
       end
 
+      def normalize_name(name)
+        value = name.to_s.strip
+        return required_name if value.blank?
+        raise AccessRequestIntake::Error, Copy.t("requests.errors.name_too_long") if name_too_long?(value)
+
+        value
+      end
+
+      def name_required?
+        return false unless defined?(::RecordingStudioUser)
+
+        user_class = RecordingStudioUser.config.user_class
+        attribute_required?(user_class, :name) || attribute_required?(user_class, :first_name)
+      end
+
+      def profile_attributes(submitted_name)
+        first_name, last_name = submitted_name.to_s.strip.split(/\s+/, 2)
+        return {} if first_name.blank?
+
+        { first_name: first_name, last_name: last_name }
+      end
+
       private
 
       def new_registration(email)
@@ -56,6 +78,22 @@ module RecordingStudioAccessible
 
       def unavailable
         raise AccessRequestIntake::Error, Copy.t("requests.errors.email_unavailable")
+      end
+
+      def required_name
+        raise AccessRequestIntake::Error, Copy.t("requests.errors.enter_name") if name_required?
+
+        nil
+      end
+
+      def name_too_long?(value)
+        value.length > AccessRequestIntent::NAME_MAX
+      end
+
+      def attribute_required?(model, attribute)
+        return false unless model.respond_to?(:validators_on)
+
+        model.validators_on(attribute).any? { |validator| validator.kind == :presence }
       end
     end
   end

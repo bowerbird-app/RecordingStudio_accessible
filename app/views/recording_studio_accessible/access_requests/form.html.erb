@@ -3,10 +3,7 @@
 <% role_options = RecordingStudioAccessible.roles_for(@recording).map { |role| { value: role, label: accessible_role_name(role) } } %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
   <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="form">
-    <div class="flex flex-col gap-[var(--stack-gap-sm)]">
-      <h1 class="text-xl font-semibold"><%= accessible_t("requests.form_title") %></h1>
-      <p><%= accessible_t("requests.form_intro") %></p>
-    </div>
+    <%= render "recording_studio_accessible/access_requests/heading", title: accessible_t("requests.form_title") %>
     <%= form_with url: recording_access_requests_path(@recording), method: :post,
                   class: "flex flex-col gap-[var(--stack-gap-lg)]", **access_request_form_options do %>
       <%= access_request_modal_fields %>

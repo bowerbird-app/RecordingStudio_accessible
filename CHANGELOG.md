@@ -15,9 +15,12 @@ All notable changes to this project will be documented in this file.
   person and target. Approval revises the request and grants access in one
   transaction. Revoking the grant later leaves the request history alone.
 - Visitor screens for email, code, the request, and the confirmation. Each
-  works as a full page and inside a Flatpack modal. A signed-in person skips
-  the email code. Visitors get an account through Recording Studio Users
-  (`issue_otp!`, `verify_otp!`, `complete_email_proof!`). There is no guest path.
+  works as a full page and inside a Flatpack modal. The email step asks for a
+  name and passes it to `complete_email_proof!` when the account is created.
+  The name is required only when the user model requires one. A signed-in
+  person skips the email code. Visitors get an account through Recording
+  Studio Users (`issue_otp!`, `verify_otp!`, `complete_email_proof!`). There
+  is no guest path.
 - `access_request_modal` for locked screens. Approval sends the existing
   access-granted email. Managers get `AccessRequestSubmittedMailer`. Hooks:
   `:access_request_submitted`, `:access_request_approved`, `:access_request_denied`.

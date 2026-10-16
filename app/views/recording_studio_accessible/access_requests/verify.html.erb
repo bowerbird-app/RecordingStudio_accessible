@@ -1,10 +1,8 @@
 <% content_for :title, accessible_t("requests.verify_title") %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
   <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="verify">
-    <div class="flex flex-col gap-[var(--stack-gap-sm)]">
-      <h1 class="text-xl font-semibold"><%= accessible_t("requests.verify_title") %></h1>
-      <p><%= accessible_t("requests.verify_intro", email: @intent.email) %></p>
-    </div>
+    <%= render "recording_studio_accessible/access_requests/heading", title: accessible_t("requests.verify_title") %>
+    <p><%= accessible_t("requests.verify_intro", email: @intent.email) %></p>
     <%= form_with url: verify_recording_access_requests_path(@recording), method: :post,
                   class: "flex flex-col gap-[var(--stack-gap-lg)]", **access_request_form_options do %>
       <%= access_request_modal_fields %>

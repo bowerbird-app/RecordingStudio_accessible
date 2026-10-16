@@ -198,10 +198,13 @@ One open request per person and target. Asking again revises that request.
 A person who already has the role gets a no-op success.
 
 The email-code screens use Recording Studio Users: `issue_otp!`, `verify_otp!`,
-and `complete_email_proof!`. Accessible cannot list Users as a gem dependency,
-because Users already depends on Accessible. Add Users in the host app, with
-OTP enabled, the same way Messages does for public contact. Signed-in actors
-can call `request_access` without that stack.
+and `complete_email_proof!`. The email step collects a name and passes
+`first_name` and `last_name` into `complete_email_proof!`, the same way
+Messages does for public contact. The field is required when the user model
+validates `name` or `first_name`, and optional otherwise. Accessible cannot
+list Users as a gem dependency, because Users already depends on Accessible.
+Add Users in the host app, with OTP enabled. Signed-in actors can call
+`request_access` without that stack.
 
 Routes live under the mounted engine:
 

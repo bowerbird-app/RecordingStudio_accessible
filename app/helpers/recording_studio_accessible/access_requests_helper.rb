@@ -62,7 +62,36 @@ module RecordingStudioAccessible
       { "approved" => :success, "denied" => :danger, "withdrawn" => :default }.fetch(action.to_s, :warning)
     end
 
+    def access_request_target_label
+      AccessGrantedMailer.recordable_label_for(@recording).presence
+    end
+
+    def access_request_name_required?
+      AccessRequestIntake.name_required?
+    end
+
+    def access_request_person_label(actor)
+      return if actor.blank?
+
+      email = actor.try(:email).to_s
+      name = requester_name(actor, email)
+      return email if name.blank?
+
+      safe_join([name, tag.div(email, class: muted_person_class)])
+    end
+
     private
+
+    def requester_name(actor, email)
+      return unless defined?(::RecordingStudioUser) && RecordingStudioUser.respond_to?(:display_name_for)
+
+      name = RecordingStudioUser.display_name_for(actor).to_s.strip
+      name.presence unless name.casecmp?(email)
+    end
+
+    def muted_person_class
+      "text-sm text-[var(--surface-muted-content-color)]"
+    end
 
     def access_request_routes
       respond_to?(:new_recording_access_request_path) ? self : recording_studio_accessible

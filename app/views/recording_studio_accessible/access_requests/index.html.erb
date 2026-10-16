@@ -8,7 +8,7 @@
   <div class="mt-6">
     <%= render FlatPack::Table::Component.new(data: @requests) do |table| %>
       <% table.column(title: accessible_t("requests.columns.who")) do |request_recording| %>
-        <%= request_recording.recordable.actor.try(:email) %>
+        <%= access_request_person_label(request_recording.recordable.actor) %>
       <% end %>
       <% table.column(title: accessible_t("requests.columns.role")) do |request_recording| %>
         <%= accessible_role_name(request_recording.recordable.role) %>
