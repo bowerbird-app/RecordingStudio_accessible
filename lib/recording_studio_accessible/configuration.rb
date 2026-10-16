@@ -61,6 +61,7 @@ module RecordingStudioAccessible
                   :access_notification_locale,
                   :access_management_authorizer,
                   :access_request_submitted_notifier,
+                  :access_request_index_recordings,
                   :mounted_page_authorizer,
                   :authorize_actor_through
     attr_reader :hooks, :access_actor_types, :action_audiences, :access_request_gates
@@ -160,6 +161,13 @@ module RecordingStudioAccessible
 
     def missing_actor_error_for_email(email:)
       default_missing_actor_error_for_email(email: email)
+    end
+
+    def access_request_index_recordings_for(actor:, controller:)
+      resolver = access_request_index_recordings
+      return if resolver.blank?
+
+      resolver.call(**filtered_keyword_arguments(resolver, actor: actor, controller: controller))
     end
 
     def authorize_access_management?(recording:, actor: nil, controller: nil)

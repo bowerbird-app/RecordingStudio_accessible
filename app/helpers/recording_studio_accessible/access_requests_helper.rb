@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
 require_relative "access_request_flow_helper"
+require_relative "access_request_list_helper"
 
 module RecordingStudioAccessible
   module AccessRequestsHelper
     include AccessRequestFlowHelper
+    include AccessRequestListHelper
 
     FRAME_ID = "access_request"
     MODAL = "modal"

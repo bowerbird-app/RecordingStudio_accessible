@@ -212,7 +212,33 @@ Routes live under the mounted engine:
 /recordings/:recording_id/access_requests/new
 /recordings/:recording_id/access_requests
 /recordings/:recording_id/access_requests/:id
+/access_requests
 ```
+
+### Access request index
+
+The manager list is one slice. Mount it on a single recording, or across many.
+Both routes render it. A host page can render the same partial.
+
+```erb
+<%= access_requests_index(recordings: press_kit) %>
+<%= access_requests_index(recordings: press_kits, url: press_kit_requests_path) %>
+```
+
+`recordings` is one recording or a relation of them. Rows are limited to
+recordings the actor may manage through `AccessManagementPolicy`. The
+collection route uses `config.access_request_index_recordings` when it is
+set, and otherwise every recording that already has a request.
+
+```ruby
+config.access_request_index_recordings = ->(actor:, controller:) { press_kits }
+```
+
+`url` is where the status filters and the next page return. It should render
+this helper again. Pending is the default. `status` is `pending`, `approved`,
+`denied`, `withdrawn`, or `all`. A long list appends the next page with
+Flatpack infinite scroll. The cursor is the last row's time and id. The page
+size is 10.
 
 `new` is the email step, the code step, or the request form. The email step
 shows the recording's name or title under the heading. Later steps do not.

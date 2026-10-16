@@ -137,7 +137,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match @person.email, response.body
     assert_match "Pending", response.body
-    assert_match "I edit", response.body
+    assert_access_request_table("I edit")
 
     get request_show_path(request_recording)
     assert_match "Asked for access", response.body
@@ -196,6 +196,16 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
   def modal_headers
     { "Turbo-Frame" => "access_request" }
+  end
+
+  def assert_access_request_table(note)
+    headers = css_select("table thead th").map { |node| node.text.squish }
+    assert_equal [ "Who", "Role", "Note", "Status", "Actions" ], headers
+    assert_select "table tbody tr", count: 1
+    assert_select "table tbody td", text: note
+    assert response.body.index("<thead") < response.body.index("<tbody")
+    assert response.body.index("<tbody") < response.body.index(note)
+    assert response.body.index(note) < response.body.index("</tbody>")
   end
 
   def refute_recording_subtitle

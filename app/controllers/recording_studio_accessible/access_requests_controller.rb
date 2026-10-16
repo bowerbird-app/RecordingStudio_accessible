@@ -17,7 +17,8 @@ module RecordingStudioAccessible
     def index
       return head :forbidden unless manager?
 
-      @requests = AccessRequestQuery.for_parent(@recording)
+      @list_url = recording_access_requests_path(@recording)
+      @page = access_request_index_page
     end
 
     def show
@@ -107,6 +108,13 @@ module RecordingStudioAccessible
     end
 
     private
+
+    def access_request_index_page
+      AccessRequestIndex.page(
+        recordings: @recording, actor: current_actor, controller: self,
+        status: params[:status], cursor: params[:cursor]
+      )
+    end
 
     def access_request_layout
       return false if modal_frame_request?

@@ -131,6 +131,106 @@ def delete_orphaned_access(access_id)
   RecordingStudio::Access.where(id: access_id).delete_all
 end
 
+def reset_seeded_access_requests!
+  type = "RecordingStudio::AccessRequest"
+  recordings = RecordingStudio::Recording.unscoped.where(recordable_type: type)
+  recording_ids = recordings.pluck(:id)
+  recordable_ids = recordings.pluck(:recordable_id)
+  recordable_ids |= access_request_event_recordable_ids(recording_ids, type)
+  delete_access_request_events(recording_ids)
+  recordings.delete_all
+  RecordingStudio::AccessRequest.where(id: recordable_ids.compact).delete_all
+end
+
+def access_request_event_recordable_ids(recording_ids, type)
+  return [] unless ActiveRecord::Base.connection.data_source_exists?("recording_studio_events")
+
+  events = RecordingStudio::Event.where(recording_id: recording_ids)
+  events.where(recordable_type: type).pluck(:recordable_id) +
+    events.where(previous_recordable_type: type).pluck(:previous_recordable_id)
+end
+
+def delete_access_request_events(recording_ids)
+  return if recording_ids.empty?
+  return unless ActiveRecord::Base.connection.data_source_exists?("recording_studio_events")
+
+  RecordingStudio::Event.where(recording_id: recording_ids).delete_all
+end
+
+def seed_demo_access_requests!(restricted_root:, workspace_root:, users:)
+  seed_restricted_requests!(restricted_root, users)
+  seed_other_requests!(workspace_root, users)
+end
+
+def seed_restricted_requests!(recording, users)
+  [
+    [ users[:outsider], "I need the private planning notes for a story.", "pending" ],
+    [ users[:viewer], "Can I look at the launch checklist?", "pending" ],
+    [ users[:page_owner], "Please share the embargoed brief.", "pending" ],
+    [ users[:editor], "I need the release timing before we lock the page.", "pending" ],
+    [ users[:access_user_1], "Can I download the raw files?", "denied" ],
+    [ users[:access_user_2], "I requested this by mistake.", "withdrawn" ]
+  ].each do |actor, message, status|
+    seed_access_request!(recording: recording, actor: actor, message: message, status: status, why: "I cover the embargoed launch.")
+  end
+end
+
+def seed_other_requests!(recording, users)
+  notes = [
+    "Can I see the welcome steps before they go out?",
+    "I am checking the contrast notes for the launch.",
+    "Please open the keyboard testing page.",
+    "I need the starter account details.",
+    "Can I review the first-week tasks?",
+    "I write the public version after launch.",
+    "Who owns the escalation path?",
+    "I need the on-call owners."
+  ]
+  notes.each_with_index do |message, index|
+    seed_access_request!(recording: recording, actor: users[:"access_user_#{index + 3}"], message: message)
+  end
+  seed_access_request!(
+    recording: recording, actor: users[:viewer], message: "I already reviewed the welcome pack.", status: "approved"
+  )
+end
+
+def seed_access_request!(recording:, actor:, message:, status: "pending", why: nil)
+  result = RecordingStudioAccessible.request_access(
+    recording: recording, actor: actor, message: message, controller: seed_gate_controller(recording, actor, why)
+  )
+  raise result.error if result.failure?
+
+  close_seeded_request!(result.value, actor, status)
+end
+
+def close_seeded_request!(request_recording, actor, status)
+  case status
+  when "approved"
+    approve = RecordingStudioAccessible.approve_access_request(
+      request_recording: request_recording, manager_actor: User.find_by!(email: "admin@admin.com"), role: "view"
+    )
+    raise approve.error if approve.failure?
+  when "denied"
+    deny = RecordingStudioAccessible.deny_access_request(
+      request_recording: request_recording, manager_actor: User.find_by!(email: "admin@admin.com"),
+      review_note: "Not for this round."
+    )
+    raise deny.error if deny.failure?
+  when "withdrawn"
+    withdrawn = RecordingStudioAccessible.withdraw_access_request(request_recording: request_recording, actor: actor)
+    raise withdrawn.error if withdrawn.failure?
+  end
+end
+
+def seed_gate_controller(recording, actor, why)
+  return if why.blank?
+
+  session = {}
+  AccessRequestReasonGate.remember(session, recording, actor, why)
+  request = Struct.new(:session).new(session)
+  Struct.new(:request).new(request)
+end
+
 def delete_recording_and_orphaned_access(recording)
   access_id = recording.recordable_type == "RecordingStudio::Access" ? recording.recordable_id : nil
 
@@ -493,6 +593,13 @@ sync_access_recordings(
   root_recording: restricted_root_recording,
   manager_actor: users[:admin],
   grants: []
+)
+
+reset_seeded_access_requests!
+seed_demo_access_requests!(
+  restricted_root: restricted_root_recording,
+  workspace_root: root_recording,
+  users: users
 )
 
 puts "Seeded folder direct access: #{client_onboarding.name} (editor)"

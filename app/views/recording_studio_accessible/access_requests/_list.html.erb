@@ -1,0 +1,64 @@
+<%= render FlatPack::PageTitle::Component.new(
+  title: accessible_t("requests.list_title"),
+  subtitle: access_request_list_subtitle(page),
+  variant: :h1
+) %>
+
+<%= turbo_frame_tag RecordingStudioAccessible::AccessRequestIndex::FRAME_ID do %>
+  <div class="mb-6">
+    <%= render FlatPack::SegmentedButtons::Component.new(size: :sm, style: :primary) do |buttons| %>
+      <% RecordingStudioAccessible::AccessRequestIndex::STATUSES.each do |status| %>
+        <% buttons.button(
+             text: access_request_filter_label(status),
+             selected: page.status == status,
+             href: RecordingStudioAccessible::AccessRequestIndex.filter_url(list_url, status),
+             data: { turbo_frame: RecordingStudioAccessible::AccessRequestIndex::FRAME_ID }
+           ) %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <% if page.requests.any? %>
+    <%= render FlatPack::Table::Component.new(
+      data: page.requests,
+      tbody_data: { pagination_content: true }
+    ) do |table| %>
+      <% table.column(title: accessible_t("requests.columns.who")) do |request_recording| %>
+        <% access_request_person_label(request_recording.recordable.actor) %>
+      <% end %>
+      <% if page.multiple %>
+        <% table.column(title: accessible_t("requests.columns.recording")) do |request_recording| %>
+          <% access_request_recording_label(request_recording) %>
+        <% end %>
+      <% end %>
+      <% table.column(title: accessible_t("requests.columns.role")) do |request_recording| %>
+        <% access_request_role_label(request_recording.recordable.role) %>
+      <% end %>
+      <% table.column(title: accessible_t("requests.columns.message")) do |request_recording| %>
+        <% request_recording.recordable.message %>
+      <% end %>
+      <% table.column(title: accessible_t("requests.columns.status")) do |request_recording| %>
+        <% access_request_status_badge(request_recording) %>
+      <% end %>
+      <% table.column(title: accessible_t("requests.columns.actions")) do |request_recording| %>
+        <% access_request_actions_cell(request_recording) %>
+      <% end %>
+    <% end %>
+
+    <% if page.has_more %>
+      <%= render FlatPack::PaginationInfinite::Component.new(
+        url: RecordingStudioAccessible::AccessRequestIndex.next_url(list_url, page.status, page.next_cursor),
+        has_more: true,
+        loading_variant: :table,
+        cursor_selector: "tr:last-child [data-pagination-cursor]",
+        cursor_param: "cursor",
+        observe_root_selector: "body"
+      ) %>
+    <% end %>
+  <% else %>
+    <%= render FlatPack::EmptyState::Component.new(
+      title: access_request_empty_title(page),
+      description: accessible_t("requests.list_empty_subtitle")
+    ) %>
+  <% end %>
+<% end %>

@@ -33,6 +33,10 @@ All notable changes to this project will be documented in this file.
 - `access_request_modal` for locked screens. Approval sends the existing
   access-granted email. Managers get `AccessRequestSubmittedMailer`. Hooks:
   `:access_request_submitted`, `:access_request_approved`, `:access_request_denied`.
+- Manager index for one recording or many. `access_requests_index` embeds the
+  same slice the engine routes render. The host passes the recordings.
+  `AccessManagementPolicy` decides which rows are visible. Pending is the
+  default status filter. Further pages load with Flatpack infinite scroll.
 
 ### Upgrade notes
 - Run `rails generate recording_studio_accessible:migrations` and migrate.

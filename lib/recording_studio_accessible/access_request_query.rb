@@ -12,10 +12,18 @@ module RecordingStudioAccessible
       def for_parent(recording)
         return RecordingStudio::Recording.none if recording.blank?
 
-        active_recordings
-          .where(parent_recording_id: recording.id, recordable_type: TYPE)
-          .joins(JOIN_SQL)
-          .order(created_at: :desc, id: :desc)
+        for_parents([recording.id])
+      end
+
+      def for_parents(parent_ids)
+        return RecordingStudio::Recording.none if Array(parent_ids).empty?
+
+        request_recordings.where(parent_recording_id: parent_ids)
+      end
+
+      def parent_recordings
+        ids = active_recordings.where(recordable_type: TYPE).distinct.pluck(:parent_recording_id)
+        RecordingStudio::Recording.unscoped.where(id: ids)
       end
 
       def pending_for(recording:, actor:)
@@ -49,6 +57,14 @@ module RecordingStudioAccessible
         return false unless owner.respond_to?(:id) && actor.respond_to?(:id)
 
         ActorType.for(owner) == ActorType.for(actor) && owner.id == actor.id
+      end
+
+      def request_recordings
+        active_recordings.where(recordable_type: TYPE).joins(JOIN_SQL).order(order_sql)
+      end
+
+      def order_sql
+        "recording_studio_recordings.created_at DESC, recording_studio_recordings.id DESC"
       end
 
       def active_recordings

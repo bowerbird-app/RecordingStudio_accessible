@@ -9,6 +9,8 @@ RecordingStudioAccessible::Engine.routes.draw do
   get "workspaces/:workspace_id/actor_access_points", to: "actor_access_points#index",
                                                       as: :workspace_actor_access_points
 
+  get "access_requests", to: "access_request_lists#index", as: :access_requests
+
   resources :recordings, only: [] do
     resources :accesses, only: %i[index new create edit update destroy], controller: "recording_accesses"
     resources :access_requests, only: %i[index show new create], controller: "access_requests" do
