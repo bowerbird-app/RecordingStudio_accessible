@@ -161,6 +161,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_role_buttons("edit")
     assert_select "input[name=status][value=approved]"
     assert_select "textarea[name=review_note]"
+    assert_select "label", text: "Reply message (optional)"
     assert_access_request_screen("show", page: true)
 
     get request_show_path(request_recording, presentation: "modal"), headers: modal_headers

@@ -159,7 +159,7 @@ en:
         note_label: "Note"
         role_unset: "Not chosen yet"
         deny: "Deny"
-        deny_note: "Note for them"
+        deny_note: "Reply message (optional)"
         save: "Save"
         show_heading: "%{name} requested access to %{recording}"
         requested_on: "Requested %{date}"
