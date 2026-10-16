@@ -64,7 +64,7 @@ class TrashableTrashedAtParityTest < Minitest::Test
 
   def test_query_entry_point_is_loaded_without_engine
     assert defined?(RecordingStudioTrashable)
-    assert_equal "0.10.0", RecordingStudioTrashable::VERSION
+    assert_equal "0.11.0", RecordingStudioTrashable::VERSION
     refute defined?(RecordingStudioTrashable::Engine)
   end
 

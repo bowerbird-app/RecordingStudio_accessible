@@ -8,7 +8,7 @@ gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"
 # Query-only trash helpers (Accessible gemspec "~> 0.10"; pin by tag).
 # require: false — Accessible loads recording_studio_trashable/query only.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",
-                                  tag: "v0.10.0", require: false
+                                  tag: "v0.11.0", require: false
 gem "recording_studio_root_switchable", github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.8.0"
 # Required by root_switchable >= 0.7 and trashable gemspec (git-only; not on RubyGems).
 gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.2.0"
