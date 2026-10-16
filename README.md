@@ -214,9 +214,10 @@ Routes live under the mounted engine:
 /recordings/:recording_id/access_requests/:id
 ```
 
-`new` is the email step, the code step, or the request form. Pass
-`presentation=modal` and load it in the `access_request` Turbo frame to use
-the modal. The same URLs without that param are full pages.
+`new` is the email step, the code step, or the request form. The email step
+shows the recording's name or title under the heading. Later steps do not.
+Pass `presentation=modal` and load it in the `access_request` Turbo frame to
+use the modal. The same URLs without that param are full pages.
 
 Locked screens:
 

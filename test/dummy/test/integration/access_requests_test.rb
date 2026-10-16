@@ -19,16 +19,18 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     get new_request_path
     assert_response :success
     assert_match "Ask for access", response.body
-    assert_match @workspace.name, response.body
+    refute_recording_subtitle
     assert_match "<html", response.body
 
     post request_path, params: { access_request: { role: "view", message: "From the page", action: "read" } }
     follow_redirect!
     assert_match "Request sent", response.body
+    refute_recording_subtitle
 
-    get new_request_path(presentation: "modal"), headers: { "Turbo-Frame" => "access_request" }
+    get new_request_path(presentation: "modal"), headers: modal_headers
     assert_response :success
     assert_select "turbo-frame#access_request"
+    refute_recording_subtitle
     refute_match(/<html/i, response.body)
   end
 
@@ -43,13 +45,19 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     }
     follow_redirect!
     assert_match "Check your email", response.body
-    assert_match @workspace.name, response.body
+    refute_recording_subtitle
+    get verify_path(presentation: "modal"), headers: modal_headers
+    assert_match "Check your email", response.body
+    refute_recording_subtitle
 
     post verify_path, params: { code: otp_code }
     follow_redirect!
     assert_match "Ask for access", response.body
-    assert_match @workspace.name, response.body
     assert_match "read", response.body
+    refute_recording_subtitle
+    get new_request_path(presentation: "modal"), headers: modal_headers
+    assert_match "Ask for access", response.body
+    refute_recording_subtitle
 
     requester = User.find_by!(email: "new-requester@example.com")
     assert_equal "Ada Lovelace", RecordingStudioUser.display_name_for(requester)
@@ -57,7 +65,10 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     post request_path, params: { access_request: { role: "view", message: "Hello", action: "read" } }
     follow_redirect!
     assert_match "Request sent", response.body
-    assert_match @workspace.name, response.body
+    refute_recording_subtitle
+    get sent_path(presentation: "modal"), headers: modal_headers
+    assert_match "Request sent", response.body
+    refute_recording_subtitle
     assert_equal 1, RecordingStudio::AccessRequest.where(status: "pending").count
 
     sign_in @manager
@@ -73,6 +84,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     post email_path, params: { email: "blank-name@example.com", name: "", role: "view", access_action: "read" }
     follow_redirect!
     assert_match "Check your email", response.body
+    refute_recording_subtitle
     assert_nil RecordingStudioAccessible::AccessRequestIntent.order(:created_at).last.submitted_name
   end
 
@@ -147,8 +159,20 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     recording_studio_accessible.email_recording_access_requests_path(@recording)
   end
 
-  def verify_path
-    recording_studio_accessible.verify_recording_access_requests_path(@recording)
+  def verify_path(**params)
+    recording_studio_accessible.verify_recording_access_requests_path(@recording, **params)
+  end
+
+  def sent_path(**params)
+    recording_studio_accessible.sent_recording_access_requests_path(@recording, **params)
+  end
+
+  def modal_headers
+    { "Turbo-Frame" => "access_request" }
+  end
+
+  def refute_recording_subtitle
+    refute_match @workspace.name, response.body
   end
 
   def request_show_path(request_recording)

@@ -1,7 +1,9 @@
 <% content_for :title, accessible_t("requests.email_title") %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
   <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="email">
-    <%= render "recording_studio_accessible/access_requests/heading", title: accessible_t("requests.email_title") %>
+    <%= render "recording_studio_accessible/access_requests/heading",
+               title: accessible_t("requests.email_title"),
+               subtitle: access_request_target_label %>
     <%= form_with url: email_recording_access_requests_path(@recording), method: :post,
                   class: "flex flex-col gap-[var(--stack-gap-lg)]", **access_request_form_options do %>
       <%= access_request_modal_fields %>
