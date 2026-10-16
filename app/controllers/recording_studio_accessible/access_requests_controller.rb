@@ -130,7 +130,11 @@ module RecordingStudioAccessible
     end
 
     def manager?
-      AccessManagementPolicy.allowed?(recording: @recording, actor: current_actor, controller: self)
+      AccessManagementPolicy.allowed?(recording: access_request_parent, actor: current_actor, controller: self)
+    end
+
+    def access_request_parent
+      @request_recording&.parent_recording || @recording
     end
 
     def current_actor
@@ -221,7 +225,7 @@ module RecordingStudioAccessible
     end
 
     def find_request
-      RecordingStudio::Recording.unscoped.find(params[:id])
+      RecordingStudio::Recording.unscoped.where(parent_recording_id: @recording.id).find(params[:id])
     end
 
     def review(result, notice_key)

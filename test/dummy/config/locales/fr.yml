@@ -120,6 +120,8 @@ fr:
         access_recording_required: "L’accès est obligatoire"
         access_recording_invalid: "L’accès n’est pas valide"
         role_invalid: "Le rôle n’est pas valide"
+        role_exceeds_manager: "Vous ne pouvez accorder qu’un rôle que vous détenez déjà."
+        unexpected: "Un problème est survenu. Réessayez."
         actor_type_not_allowed: "Ce type de personne n’est pas autorisé pour l’accès"
         email_required: "L’e-mail est obligatoire"
         email_invalid: "L’e-mail n’est pas valide"

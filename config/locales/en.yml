@@ -80,6 +80,8 @@ en:
         access_recording_required: "Access recording is required"
         access_recording_invalid: "Access recording is invalid"
         role_invalid: "Role is invalid"
+        role_exceeds_manager: "You can only grant a role you already hold."
+        unexpected: "Something went wrong. Try again."
         actor_type_not_allowed: "Actor type is not allowed for access"
         email_required: "Email is required"
         email_invalid: "Email is invalid"

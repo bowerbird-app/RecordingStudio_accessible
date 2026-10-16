@@ -24,8 +24,8 @@ module RecordingStudioAccessible
           controller: @controller
         )
         return authorization_result unless authorization_result == true
-        return failure(copy("errors.access_recording_invalid")) unless valid_access_recording_for_parent?(recording: @recording,
-                                                                                                          access_recording: @access_recording)
+        return failure(copy("errors.access_recording_invalid")) unless revocable_access_recording?(recording: @recording,
+                                                                                                   access_recording: @access_recording)
 
         ensure_current_impersonator_accessor!
 
@@ -37,7 +37,7 @@ module RecordingStudioAccessible
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
       rescue StandardError => e
-        failure(e)
+        unexpected_failure(e)
       end
 
       def service_args

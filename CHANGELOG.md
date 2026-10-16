@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ## [0.20.0] - 2026-10-16
 
+### Fixed
+- An unregistered access-request action uses the `:default` gate on the form
+  and again when the request is created.
+- One pending request per person and target is enforced inside the row lock
+  and by a partial unique index on the live pending row.
+- Leaving approved revokes the grant even when that grant recording is trashed.
+- A manager can grant a role they hold or a weaker ranked role. An admin can
+  grant any role that recording accepts.
+- Unexpected service errors are logged and shown as a generic message.
+- A disabled email gets the same code page as any other email, and a rate
+  limited signup does not leave an unconfirmed user behind.
+
 ### Added
 - `RecordingStudio::AccessRequest`, a child recordable of the target. Submit,
   re-submit, approve, deny, and reopen each revise the snapshot and append
@@ -22,7 +34,7 @@ All notable changes to this project will be documented in this file.
   not ask for a role. The manager chooses the role when approving. Visitor
   copy can be overridden per flow with `copy:` or an I18n scope.
 - Optional pre-request gate, `register_access_request_gate`, keyed by the
-  requested action or `:default` when there is no action. The step sits after
+  requested action. An unregistered action uses the `:default` gate. The step sits after
   the email code and before the note. `create` checks it again. Continuation
   URLs must stay on the same host. A raising gate shows an alert and does not
   record the request. Sanitized answers are stored as `gate_metadata` on the

@@ -20,10 +20,20 @@ module RecordingStudioAccessible
       end
 
       def valid_access_recording_for_parent?(recording:, access_recording:)
+        matching_access_recording?(recording: recording, access_recording: access_recording) &&
+          active_recording?(access_recording)
+      end
+
+      # Revoke must also destroy a trashed grant. Leaving it in place lets a
+      # later restore authorize the person after the request forgot the id.
+      def revocable_access_recording?(recording:, access_recording:)
+        matching_access_recording?(recording: recording, access_recording: access_recording)
+      end
+
+      def matching_access_recording?(recording:, access_recording:)
         access_recording.parent_recording_id == recording.id &&
           access_recording.recordable_type == "RecordingStudio::Access" &&
-          same_root?(recording, access_recording) &&
-          active_recording?(access_recording)
+          same_root?(recording, access_recording)
       end
 
       def destroy_access_recording!(access_recording, manager_actor:)

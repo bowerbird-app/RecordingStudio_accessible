@@ -42,9 +42,17 @@ module RecordingStudioAccessible
       def open_intent(recording, email, role, action, request, session, name)
         normalized = AccessRequestAccount.normalize_email(email)
         submitted = AccessRequestAccount.normalize_name(name)
-        user, purpose = AccessRequestAccount.lookup(normalized)
-        issued = issue_otp!(user: user, purpose: purpose, request: request, session: session)
-        create_intent(recording, user, issued, normalized, submitted, role, action)
+        account = AccessRequestAccount.lookup(normalized)
+        issued = issue_account(account, request, session)
+        create_intent(recording, account.user, issued, normalized, submitted, role, action)
+      end
+
+      def issue_account(account, request, session)
+        AccessRequestOtpGuard.issue(account, request, session) do
+          AccessRequestOtpGuard.issue_otp!(
+            user: account.user, purpose: account.purpose, request: request, session: session
+          )
+        end
       end
 
       def create_intent(recording, user, issued, email, submitted_name, role, action)
@@ -86,22 +94,10 @@ module RecordingStudioAccessible
       def reissue_otp(intent, request, session)
         user = RecordingStudioUser.config.user_class.find(intent.user_id)
         proof = RecordingStudioUser.otp_proof(intent.otp_challenge_id)
-        raise Error, Copy.t("requests.errors.code_mismatch") if proof.nil?
+        return AccessRequestOtpGuard.quiet_resend(intent, request, session) if proof.nil?
 
-        call_users_otp do
+        AccessRequestOtpGuard.call_users do
           RecordingStudioUser.resend_otp!(user: user, purpose: proof.purpose, request: request, session: session)
-        end
-      end
-
-      def issue_otp!(user:, purpose:, request:, session:)
-        call_users_otp do
-          RecordingStudioUser.issue_otp!(
-            user: user,
-            purpose: purpose,
-            request: request,
-            session: session,
-            rate_limit_scope: :issue
-          )
         end
       end
 
@@ -115,12 +111,6 @@ module RecordingStudioAccessible
           purpose: proof.purpose,
           session: session
         )
-      end
-
-      def call_users_otp
-        yield
-      rescue RecordingStudioUser::RateLimited
-        raise Error, Copy.t("requests.errors.rate_limited")
       end
     end
   end

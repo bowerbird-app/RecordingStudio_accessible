@@ -124,7 +124,8 @@ module RecordingStudioAccessible
               result = service.send(:perform)
 
               assert result.failure?
-              assert_equal "boom", result.error
+              assert_equal "Something went wrong. Try again.", result.error
+              refute_equal "boom", result.error
             end
           end
         end
@@ -161,14 +162,16 @@ module RecordingStudioAccessible
 
         RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
           service.stub(:existing_access_recordings, []) do
-            RecordingStudioAccessible::DependentAccess.stub(
-              :grant_error,
-              RecordingStudioAccessible::DependentAccess::NOT_ACCESS_SAME_ROOT_MESSAGE
-            ) do
-              result = service.send(:perform)
+            RecordingStudioAccessible::RoleCeiling.stub(:allowed?, true) do
+              RecordingStudioAccessible::DependentAccess.stub(
+                :grant_error,
+                RecordingStudioAccessible::DependentAccess::NOT_ACCESS_SAME_ROOT_MESSAGE
+              ) do
+                result = service.send(:perform)
 
-              assert result.failure?
-              assert_equal RecordingStudioAccessible::DependentAccess::NOT_ACCESS_SAME_ROOT_MESSAGE, result.error
+                assert result.failure?
+                assert_equal RecordingStudioAccessible::DependentAccess::NOT_ACCESS_SAME_ROOT_MESSAGE, result.error
+              end
             end
           end
         end
@@ -224,11 +227,13 @@ module RecordingStudioAccessible
 
         RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
           service.stub(:valid_access_recording_for_parent?, true) do
-            RecordingStudio.stub(:root_recording_or_self, root) do
-              result = service.send(:perform)
+            RecordingStudioAccessible::RoleCeiling.stub(:allowed?, true) do
+              RecordingStudio.stub(:root_recording_or_self, root) do
+                result = service.send(:perform)
 
-              assert result.success?
-              assert_equal :updated_recording, result.value
+                assert result.success?
+                assert_equal :updated_recording, result.value
+              end
             end
           end
         end
@@ -254,7 +259,7 @@ module RecordingStudioAccessible
         service = RevokeRecordingAccess.new(recording: recording, access_recording: access_recording,
                                             manager_actor: :manager)
 
-        service.stub(:valid_access_recording_for_parent?, true) do
+        service.stub(:revocable_access_recording?, true) do
           service.stub(:destroy_access_recording!, true) do
             result = service.send(:perform)
 

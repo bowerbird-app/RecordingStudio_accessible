@@ -44,12 +44,26 @@ module RecordingStudio
       status == "pending"
     end
 
+    def release_pending_key!
+      return if pending_key.blank?
+
+      self.class.where(id: id).update_all(pending_key: nil)
+      self.pending_key = nil
+    end
+
     def self.recordable_type_label
       RecordingStudioAccessible::Copy.t("recordables.access_request.label")
     end
 
     class << self
       alias recording_studio_type_label recordable_type_label
+
+      def pending_key_for(target_id:, actor:)
+        return if target_id.blank? || actor.blank?
+        return unless actor.respond_to?(:id) && actor.id.present?
+
+        [target_id, RecordingStudioAccessible::ActorType.for(actor), actor.id].join(":")
+      end
     end
 
     def recordable_name

@@ -28,7 +28,7 @@ module RecordingStudioAccessible
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
       rescue StandardError => e
-        failure(e)
+        unexpected_failure(e)
       end
 
       def validate_request
@@ -43,6 +43,7 @@ module RecordingStudioAccessible
         return access_validation unless access_validation == true
         return failure(copy("errors.actor_type_not_allowed")) unless allowed_access_actor_type?
         return failure(copy("errors.role_invalid")) unless RecordingStudioAccessible.role_valid_for?(@recording, @role)
+        return failure(copy("errors.role_exceeds_manager")) unless role_within_manager?
 
         dependency_result = validate_dependent_grant
         return dependency_result unless dependency_result == true
@@ -84,6 +85,10 @@ module RecordingStudioAccessible
 
       def manager_actor
         @manager_actor ||= effective_manager_actor(manager_actor: @manager_actor, controller: @controller)
+      end
+
+      def role_within_manager?
+        RoleCeiling.allowed?(recording: @recording, manager: manager_actor, role: @role)
       end
 
       def allowed_access_actor_type?

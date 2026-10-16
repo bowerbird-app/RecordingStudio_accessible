@@ -27,8 +27,10 @@ module RecordingStudioAccessible
         success(revised)
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
+      rescue ActiveRecord::RecordNotUnique
+        failure(copy("errors.duplicate_access_request"))
       rescue StandardError => e
-        failure(e)
+        unexpected_failure(e)
       end
 
       def validate_request
@@ -36,6 +38,7 @@ module RecordingStudioAccessible
         return failure(copy("errors.access_request_transition")) if transition_blocked?
         return failure(copy("errors.not_authorized")) unless manager_allowed?
         return failure(copy("errors.role_invalid")) if role_rejected?
+        return failure(copy("errors.role_exceeds_manager")) if role_above_manager?
         return failure(copy("errors.review_note_too_long")) if note_too_long?
         return failure(copy("errors.duplicate_access_request")) if pending_conflict?
 
@@ -62,7 +65,10 @@ module RecordingStudioAccessible
       end
 
       def locked_failure
-        copy("errors.access_request_transition") if transition_blocked?
+        return copy("errors.access_request_transition") if transition_blocked?
+        return copy("errors.duplicate_access_request") if pending_conflict?
+
+        nil
       end
 
       def apply_effects!
@@ -74,7 +80,7 @@ module RecordingStudioAccessible
 
       def release_grant!
         recording = current_grant
-        return if recording.blank? || !active_recording?(recording)
+        return if recording.blank?
 
         result = RevokeRecordingAccess.call(**revoke_args(recording))
         result.error unless result.success?
@@ -97,6 +103,7 @@ module RecordingStudioAccessible
       end
 
       def revise_request!
+        snapshot.release_pending_key!
         revised = nil
         AccessRequestCreationContext.allow do
           revised = root_recording.revise(@request_recording, actor: manager) { |request| apply_snapshot(request) }
@@ -110,6 +117,11 @@ module RecordingStudioAccessible
         request.role = next_role(request)
         request.review_note = denying? ? @review_note : nil
         request.access_recording_id = approving? ? @access_recording.id : nil
+        request.pending_key = reopening? ? pending_key_for(request) : nil
+      end
+
+      def pending_key_for(request)
+        RecordingStudio::AccessRequest.pending_key_for(target_id: request.target_recording_id, actor: request.actor)
       end
 
       def finish_transition(revised)
@@ -157,6 +169,10 @@ module RecordingStudioAccessible
 
       def role_rejected?
         approving? && !AccessRequestRoles.allowed?(recording: target, action: snapshot.action, role: @role)
+      end
+
+      def role_above_manager?
+        approving? && !RoleCeiling.allowed?(recording: target, manager: manager, role: @role)
       end
 
       def note_too_long?

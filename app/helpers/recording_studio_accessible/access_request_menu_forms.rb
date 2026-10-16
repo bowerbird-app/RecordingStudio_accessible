@@ -33,9 +33,15 @@ module RecordingStudioAccessible
       end
     end
 
+    def access_request_manager
+      RecordingStudioAccessible.configuration.current_actor_for(controller: controller)
+    end
+
     def access_request_role_options(request_recording)
       record = request_recording.recordable
-      AccessRequestRoles.options_for(recording: request_recording.parent_recording, action: record.action)
+      AccessRequestRoles.options_for(
+        recording: request_recording.parent_recording, action: record.action, manager: access_request_manager
+      )
     end
 
     def access_request_form_id(request_recording, status, role = nil)

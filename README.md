@@ -205,6 +205,7 @@ clears the role, the review note, and the grant id, and runs
 does not rewrite the request.
 
 One open request per person and target. Asking again revises that request.
+A partial unique index on the live pending row enforces the same limit in the database.
 A person who already has the role gets a no-op success.
 
 The email-code screens use Recording Studio Users: `issue_otp!`, `verify_otp!`,
@@ -294,7 +295,7 @@ The overrides follow every step of that flow.
 
 ### Access request gate
 
-A host can pause the request until its own step is done. Accessible does not know the question. An action with no registered gate skips the step. When the visitor did not pass an action, the gate registered under `:default` is used.
+A host can pause the request until its own step is done. Accessible does not know the question. An action with no registered gate uses the gate registered under `:default`, including a blank action. When that gate is missing too, the step is skipped. A raise still fails closed on the form and on create.
 
 ```ruby
 RecordingStudioAccessible.configure do |config|

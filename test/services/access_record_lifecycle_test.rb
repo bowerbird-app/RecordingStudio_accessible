@@ -78,6 +78,7 @@ module RecordingStudioAccessible
 
         RecordingStudio.stub(:root_recording_id_for, lambda(&:root_id)) do
           refute @harness.send(:valid_access_recording_for_parent?, recording: parent, access_recording: trashed)
+          assert @harness.send(:revocable_access_recording?, recording: parent, access_recording: trashed)
         end
       end
 

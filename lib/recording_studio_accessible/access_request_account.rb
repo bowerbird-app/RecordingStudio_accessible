@@ -2,6 +2,8 @@
 
 module RecordingStudioAccessible
   module AccessRequestAccount
+    Account = Struct.new(:user, :purpose, :created, :hold, keyword_init: true)
+
     class << self
       def normalize_email(email)
         normalized = email.to_s.strip.downcase
@@ -11,12 +13,23 @@ module RecordingStudioAccessible
       end
 
       def lookup(email)
-        existing = RecordingStudioUser.config.user_class.find_by(email: email)
+        existing = user_class.find_by(email: email)
         return new_registration(email) if existing.nil?
-        return registration(existing) unless existing.confirmed?
-        return login(existing) if existing.active_for_authentication?
 
-        unavailable
+        account_for(existing)
+      end
+
+      def account_for(existing)
+        return registration(existing) unless existing.confirmed?
+        return login(existing) if active_account?(existing)
+
+        hold(existing)
+      end
+
+      def active_account?(user)
+        return true unless user.respond_to?(:active_for_authentication?)
+
+        user.active_for_authentication?
       end
 
       def normalize_name(name)
@@ -30,8 +43,8 @@ module RecordingStudioAccessible
       def name_required?
         return false unless defined?(::RecordingStudioUser)
 
-        user_class = RecordingStudioUser.config.user_class
-        attribute_required?(user_class, :name) || attribute_required?(user_class, :first_name)
+        user = user_class
+        attribute_required?(user, :name) || attribute_required?(user, :first_name)
       end
 
       def profile_attributes(submitted_name)
@@ -45,19 +58,42 @@ module RecordingStudioAccessible
 
       def new_registration(email)
         require_otp!(:registration)
-        [RecordingStudioUser.create_unconfirmed_user!(email: email), "registration"]
+        account(create_user!(email), "registration", created: true)
       rescue ActiveRecord::RecordNotUnique
+        raced(email)
+      end
+
+      def create_user!(email)
+        RecordingStudioUser.create_unconfirmed_user!(email: email)
+      end
+
+      def raced(email)
+        existing = user_class.find_by(email: email)
+        return account_for(existing) if existing
+
         unavailable
       end
 
       def registration(user)
         require_otp!(:registration)
-        [user, "registration"]
+        account(user, "registration")
       end
 
       def login(user)
         require_otp!(:login)
-        [user, "login"]
+        account(user, "login")
+      end
+
+      def hold(user)
+        account(user, "login", hold: true)
+      end
+
+      def account(user, purpose, created: false, hold: false)
+        Account.new(user: user, purpose: purpose, created: created, hold: hold)
+      end
+
+      def user_class
+        RecordingStudioUser.config.user_class
       end
 
       def require_otp!(kind)

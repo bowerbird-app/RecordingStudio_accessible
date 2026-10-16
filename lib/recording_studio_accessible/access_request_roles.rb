@@ -4,19 +4,23 @@ module RecordingStudioAccessible
   module AccessRequestRoles
     module_function
 
-    def options_for(recording:, action: nil)
+    def options_for(recording:, action: nil, manager: nil)
+      RoleCeiling.cap(candidate_names(recording, action), recording: recording, manager: manager)
+    end
+
+    def allowed?(recording:, action:, role:, manager: nil)
+      name = role.to_s.strip
+      name.present? && options_for(recording: recording, action: action, manager: manager).include?(name)
+    end
+
+    def candidate_names(recording, action)
       allowed = RecordingStudioAccessible.roles_for(recording).map(&:to_s)
       granted = granted_for(action) & allowed
       granted.presence || allowed
     end
 
-    def allowed?(recording:, action:, role:)
-      name = role.to_s.strip
-      name.present? && options_for(recording: recording, action: action).include?(name)
-    end
-
-    def default_for(recording:, action: nil, suggested: nil)
-      options = options_for(recording: recording, action: action)
+    def default_for(recording:, action: nil, suggested: nil, manager: nil)
+      options = options_for(recording: recording, action: action, manager: manager)
       suggestion = suggested.to_s
       return suggestion if suggestion.present? && options.include?(suggestion)
 

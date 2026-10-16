@@ -56,14 +56,17 @@ module RecordingStudioAccessible
     end
 
     def access_request_approval_options(request_record)
-      AccessRequestRoles.options_for(recording: @recording, action: request_record.action).map do |role|
+      AccessRequestRoles.options_for(
+        recording: @recording, action: request_record.action, manager: access_request_manager
+      ).map do |role|
         { value: role, label: accessible_role_name(role), icon: access_request_role_icon(role) }
       end
     end
 
     def access_request_approval_default(request_record)
       AccessRequestRoles.default_for(
-        recording: @recording, action: request_record.action, suggested: request_record.role.presence || "view"
+        recording: @recording, action: request_record.action, manager: access_request_manager,
+        suggested: request_record.role.presence || "view"
       )
     end
 
@@ -78,6 +81,10 @@ module RecordingStudioAccessible
     end
 
     private
+
+    def access_request_manager
+      RecordingStudioAccessible.configuration.current_actor_for(controller: controller)
+    end
 
     def requester_name(actor, email)
       return unless defined?(::RecordingStudioUser) && RecordingStudioUser.respond_to?(:display_name_for)

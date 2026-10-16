@@ -190,6 +190,57 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     refute RecordingStudioAccessible.authorized?(actor: @person, recording: @recording, role: "edit")
   end
 
+  test "a request cannot be opened under another recording" do
+    other = create_root_recording(Workspace.create!(name: "Other Request Workspace"))
+    create_direct_access_recording(actor: @manager, role: :admin, parent_recording: other)
+    note = "hidden-note-#{SecureRandom.hex(8)}"
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: other, actor: @manager, message: note
+    ).value
+
+    sign_in @manager
+    get recording_studio_accessible.recording_access_request_path(@recording, request_recording)
+
+    assert_response :not_found
+    refute_match note, response.body
+  end
+
+  test "a disabled email gets the same code page as any other email" do
+    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
+
+    disabled = create_user("disabled-requester@example.com")
+    disabled.confirm if disabled.respond_to?(:confirm)
+    account = RecordingStudioAccessible::AccessRequestAccount
+    original = account.method(:active_account?)
+    account.define_singleton_method(:active_account?) { |_user| false }
+    post email_path, params: { email: disabled.email, name: "Pat Disabled" }
+
+    assert_response :redirect
+    follow_redirect!
+    assert_match "Check your email", response.body
+    refute_match "can&#39;t be used", response.body
+    refute_match "can't be used", response.body
+    assert_equal 1, User.where(email: disabled.email).count
+  ensure
+    account.define_singleton_method(:active_account?, original) if defined?(original) && original
+  end
+
+  test "a rate limited new email does not leave an unconfirmed user" do
+    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
+
+    email = "rate-limited-new@example.com"
+    limiter = RecordingStudioUser::Services::OtpRateLimiter
+    original = limiter.method(:allow_request!)
+    limiter.define_singleton_method(:allow_request!) { |**| raise RecordingStudioUser::RateLimited, :issue }
+    post email_path, params: { email: email, name: "Ada Lovelace" }
+
+    assert_response :unprocessable_entity
+    assert_match "Wait a minute", response.body
+    assert_nil User.find_by(email: email)
+  ensure
+    limiter.define_singleton_method(:allow_request!, original) if defined?(original) && original
+  end
+
   test "locked screen helper renders a modal and a page link" do
     get access_request_demo_path(recording_id: @recording.id)
 

@@ -267,7 +267,11 @@ module RecordingStudioAccessible
     end
 
     def access_request_gate_for(action)
-      access_request_gates[action.blank? ? FALLBACK_ACCESS_REQUEST_GATE : action.to_sym]
+      access_request_gates[gate_key(action)] || access_request_gates[FALLBACK_ACCESS_REQUEST_GATE]
+    end
+
+    def gate_key(action)
+      action.blank? ? FALLBACK_ACCESS_REQUEST_GATE : action.to_sym
     end
 
     def notify_access_request_submitted(controller:, request_recording:, recording:, actor:, role:)

@@ -93,6 +93,31 @@ class AccessRequestGateTest < ActionDispatch::IntegrationTest
     assert_equal 0, RecordingStudio::AccessRequest.count
   end
 
+  test "an unregistered action uses the default gate and fails closed" do
+    previous = @config.access_request_gates[:default]
+    @config.register_access_request_gate(:default, ExampleAccessRequestGate)
+    ExampleAccessRequestGate.open = false
+
+    get new_request_path(access_action: "skip")
+
+    assert_response :redirect
+    assert_includes response.redirect_url, "/continue-gate"
+
+    assert_no_difference -> { RecordingStudio::AccessRequest.count } do
+      post request_path, params: { access_request: { message: "Please", action: "skip" } }
+    end
+    assert_response :redirect
+    assert_includes response.redirect_url, "/continue-gate"
+
+    result = RecordingStudioAccessible.request_access(
+      recording: @recording, actor: @person, action: "skip", message: "Please"
+    )
+    refute result.success?
+    assert_equal "We couldn't open the next step. Try again.", result.error
+  ensure
+    @config.access_request_gates[:default] = previous
+  end
+
   test "a raising gate fails closed with an alert" do
     ExampleAccessRequestGate.explode = true
 

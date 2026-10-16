@@ -35,8 +35,10 @@ module RecordingStudioAccessible
         success(request_recording)
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
+      rescue ActiveRecord::RecordNotUnique
+        failure(copy("errors.duplicate_access_request"))
       rescue StandardError => e
-        failure(e)
+        unexpected_failure(e)
       end
 
       def validate_request
@@ -104,6 +106,7 @@ module RecordingStudioAccessible
       end
 
       def revise_pending!(request_recording)
+        request_recording.recordable.release_pending_key!
         revised = nil
         AccessRequestCreationContext.allow do
           revised = root_recording.revise(request_recording, actor: @actor) do |request|
@@ -121,6 +124,8 @@ module RecordingStudioAccessible
         request.action = @action
         request.message = @message
         request.status = "pending"
+        request.target_recording_id = @recording.id
+        request.pending_key = RecordingStudio::AccessRequest.pending_key_for(target_id: @recording.id, actor: @actor)
         request.gate_metadata = gate_metadata
       end
 

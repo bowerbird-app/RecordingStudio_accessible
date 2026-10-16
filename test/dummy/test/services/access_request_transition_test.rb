@@ -148,6 +148,73 @@ class AccessRequestTransitionTest < ActiveSupport::TestCase
     assert_equal 0, grants
   end
 
+  test "approval cannot grant a role above the manager" do
+    previous = @configuration.access_management_authorizer
+    editor = create_user("transition-editor@example.com")
+    create_direct_access_recording(actor: editor, role: :edit, parent_recording: @recording)
+    @configuration.access_management_authorizer = ->(**) { true }
+    request_recording = ask
+
+    result = RecordingStudioAccessible.approve_access_request(
+      request_recording: request_recording, manager_actor: editor, role: "admin"
+    )
+
+    refute result.success?
+    assert_equal "You can only grant a role you already hold.", result.error
+    assert_equal "pending", request_recording.reload.recordable.status
+    assert_equal 0, grants
+  ensure
+    @configuration.access_management_authorizer = previous
+  end
+
+  test "reopening checks for another pending request inside the lock" do
+    denied = deny(ask)
+    ask
+    real = RecordingStudioAccessible::AccessRequestQuery.method(:pending_for)
+    calls = 0
+    RecordingStudioAccessible::AccessRequestQuery.define_singleton_method(:pending_for) do |**kwargs|
+      calls += 1
+      next RecordingStudio::Recording.none if calls == 1
+
+      real.call(**kwargs)
+    end
+
+    result = transition(denied, "pending")
+
+    refute result.success?
+    assert_equal "Only one open request is allowed per person.", result.error
+    assert_equal "denied", denied.reload.recordable.status
+    assert_equal 1, RecordingStudioAccessible::AccessRequestQuery.pending_for(recording: @recording, actor: @person).count
+  ensure
+    RecordingStudioAccessible::AccessRequestQuery.define_singleton_method(:pending_for, real) if real
+  end
+
+  test "the database allows only one pending request per person and target" do
+    request_recording = ask
+    assert_equal @recording.id, request_recording.recordable.target_recording_id
+
+    assert_raises(ActiveRecord::RecordNotUnique) do
+      RecordingStudioAccessible::AccessRequestCreationContext.allow do
+        RecordingStudio::AccessRequest.create!(
+          actor: @person, status: "pending", target_recording_id: @recording.id,
+          pending_key: request_recording.recordable.pending_key
+        )
+      end
+    end
+  end
+
+  test "leaving approved revokes a trashed grant" do
+    request_recording = approve(ask)
+    access_recording = RecordingStudio::Recording.unscoped.find(request_recording.recordable.access_recording_id)
+    access_recording.update!(trashed_at: Time.current)
+
+    result = transition(request_recording, "denied", review_note: "No longer")
+
+    assert result.success?
+    assert_nil result.value.recordable.access_recording_id
+    assert_nil RecordingStudio::Recording.unscoped.find_by(id: access_recording.id)
+  end
+
   test "leaving approved still clears the stamp when the grant is already gone" do
     request_recording = approve(ask)
     access_recording = RecordingStudio::Recording.unscoped.find(request_recording.recordable.access_recording_id)

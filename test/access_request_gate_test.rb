@@ -24,6 +24,7 @@ class AccessRequestGateTest < Minitest::Test
     assert_same gate, @configuration.access_request_gate_for(nil)
     assert_same gate, @configuration.access_request_gate_for("")
     assert_same other, @configuration.access_request_gate_for("read")
+    assert_same gate, @configuration.access_request_gate_for("skip")
   end
 
   def test_continuation_keeps_same_host_urls_and_presentation

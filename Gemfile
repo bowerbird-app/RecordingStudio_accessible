@@ -18,7 +18,7 @@ gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics",
 gem "devise"
 gem "importmap-rails"
 gem "pg"
-gem "puma"
+gem "puma", "~> 7.2.1"
 gem "sprockets-rails"
 gem "tailwindcss-rails"
 

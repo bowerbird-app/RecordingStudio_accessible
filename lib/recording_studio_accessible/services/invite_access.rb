@@ -59,6 +59,7 @@ module RecordingStudioAccessible
         target = validate_access_management_target!(@recording, manager_actor: manager, controller: @controller)
         return target unless target == true
         return failure(copy("errors.role_invalid")) unless grantable_role?
+        return failure(copy("errors.role_exceeds_manager")) unless role_within_manager?(manager)
 
         nil
       end
@@ -69,6 +70,10 @@ module RecordingStudioAccessible
 
       def grantable_role?
         RecordingStudioAccessible.role_valid_for?(@recording, @role)
+      end
+
+      def role_within_manager?(manager)
+        RoleCeiling.allowed?(recording: @recording, manager: manager, role: @role)
       end
 
       def deliver_invitation(manager, raw_token)
