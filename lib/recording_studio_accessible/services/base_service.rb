@@ -120,6 +120,19 @@ module RecordingStudioAccessible
         Result.new(success: false, value: value, error: error_message, errors: errors)
       end
 
+      # Unexpected failures are logged and shown as generic copy. Callers that
+      # pass a String keep that message, including the gem's own validation copy.
+      def unexpected_failure(error)
+        log_unexpected(error)
+        failure(copy("errors.unexpected"))
+      end
+
+      def log_unexpected(error)
+        return unless defined?(Rails) && Rails.respond_to?(:logger) && Rails.logger
+
+        Rails.logger.error("[RecordingStudioAccessible] #{self.class}: #{error.class}: #{error.message}")
+      end
+
       # Run before_service hooks
       def run_before_hooks
         return unless hooks_enabled?

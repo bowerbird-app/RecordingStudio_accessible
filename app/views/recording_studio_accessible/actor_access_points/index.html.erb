@@ -16,7 +16,7 @@
     <% table.column(title: accessible_t("actor_access_points.columns.access_recording")) { |row| "##{row[:recording_id]}" } %>
   <% end %>
 <% else %>
-  <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+  <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
     <% card.body(class: "grid gap-3 justify-items-start") do %>
       <%= render FlatPack::SectionTitle::Component.new(
         title: accessible_t("actor_access_points.empty_title"),

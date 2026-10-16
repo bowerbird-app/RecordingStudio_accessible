@@ -30,7 +30,7 @@ module RecordingStudioAccessible
 
         success(voided)
       rescue StandardError => e
-        failure(e)
+        unexpected_failure(e)
       end
 
       def dependents

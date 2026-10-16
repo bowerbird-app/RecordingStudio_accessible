@@ -101,7 +101,8 @@ module RecordingStudioAccessible
           result = service.send(:perform)
 
           assert result.failure?
-          assert_equal "boom", result.error
+          assert_equal "Something went wrong. Try again.", result.error
+          refute_equal "boom", result.error
         end
       end
 

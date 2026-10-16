@@ -1,0 +1,4 @@
+<% if @recording %>
+  <%= render FlatPack::PageNav::Component.new(class: "mb-4", anchor_href: recording_accesses_path(@recording)) %>
+<% end %>
+<%= render "recording_studio_accessible/access_requests/list", page: @page, list_url: @list_url %>

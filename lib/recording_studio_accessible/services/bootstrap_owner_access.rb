@@ -35,7 +35,7 @@ module RecordingStudioAccessible
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
       rescue StandardError => e
-        failure(e)
+        unexpected_failure(e)
       end
 
       def validate_request

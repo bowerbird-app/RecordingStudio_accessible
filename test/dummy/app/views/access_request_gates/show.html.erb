@@ -1,0 +1,31 @@
+<%= turbo_frame_tag "access_request", class: "block w-full" do %>
+  <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="gate">
+    <h1 class="text-xl font-semibold">Why do you want access?</h1>
+    <%= form_with url: access_request_gate_path, method: :patch,
+                  class: "flex flex-col gap-[var(--stack-gap-lg)]", **gate_form_options do %>
+      <%= hidden_field_tag :recording_id, @recording.id %>
+      <%= hidden_field_tag :role, params[:role] %>
+      <%= hidden_field_tag :access_action, params[:access_action] %>
+      <% if params[:presentation].to_s == "modal" %>
+        <%= hidden_field_tag :presentation, "modal" %>
+      <% end %>
+      <% if modal_frame? && flash[:alert].present? %>
+        <%= render FlatPack::Alert::Component.new(description: flash[:alert], style: :danger) %>
+      <% end %>
+      <%= render FlatPack::TextArea::Component.new(
+        name: "why",
+        label: "Why do you want access?",
+        rows: 4,
+        required: true,
+        value: params[:why]
+      ) %>
+      <%= render FlatPack::Button::Component.new(
+        text: "Continue",
+        style: :primary,
+        size: :md,
+        type: "submit",
+        class: "w-full"
+      ) %>
+    <% end %>
+  </div>
+<% end %>

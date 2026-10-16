@@ -2,6 +2,7 @@
 
 require_relative "../../app/helpers/recording_studio_accessible/copy_helper"
 require_relative "../../app/helpers/recording_studio_accessible/avatars_helper"
+require_relative "../../app/helpers/recording_studio_accessible/access_requests_helper"
 
 module RecordingStudioAccessible
   class Engine < ::Rails::Engine
@@ -17,6 +18,7 @@ module RecordingStudioAccessible
       ActiveSupport.on_load(:action_view) do
         include RecordingStudioAccessible::CopyHelper
         include RecordingStudioAccessible::AvatarsHelper
+        include RecordingStudioAccessible::AccessRequestsHelper
       end
     end
 
@@ -84,6 +86,7 @@ module RecordingStudioAccessible
 
       parameters = app.config.filter_parameters
       parameters << :token if parameters.respond_to?(:<<)
+      parameters << :code if parameters.respond_to?(:<<)
     end
   end
 end

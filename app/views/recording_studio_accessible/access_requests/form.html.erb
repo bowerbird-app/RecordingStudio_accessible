@@ -1,0 +1,26 @@
+<% content_for :title, access_request_t("form_title") %>
+<%= render layout: "recording_studio_accessible/access_requests/step" do %>
+  <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="form">
+    <%= render "recording_studio_accessible/access_requests/heading", title: access_request_t("form_title") %>
+    <%= form_with url: recording_access_requests_path(@recording), method: :post,
+                  class: "flex flex-col gap-[var(--stack-gap-lg)]", **access_request_form_options do %>
+      <%= access_request_modal_fields %>
+      <%= access_request_copy_fields %>
+      <%= hidden_field_tag "access_request[role]", params[:role] %>
+      <%= hidden_field_tag "access_request[action]", params[:access_action] %>
+      <%= render FlatPack::TextArea::Component.new(
+        name: "access_request[message]",
+        label: access_request_t("message"),
+        rows: 4,
+        max_characters: RecordingStudio::AccessRequest::MESSAGE_MAX
+      ) %>
+      <%= render FlatPack::Button::Component.new(
+        text: access_request_t("submit"),
+        style: :primary,
+        size: :md,
+        type: "submit",
+        class: "w-full"
+      ) %>
+    <% end %>
+  </div>
+<% end %>

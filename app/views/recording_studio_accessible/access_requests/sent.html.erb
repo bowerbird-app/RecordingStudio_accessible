@@ -1,0 +1,7 @@
+<% content_for :title, access_request_t("sent_title") %>
+<%= render layout: "recording_studio_accessible/access_requests/step" do %>
+  <div class="flex flex-col gap-[var(--stack-gap-lg)] text-center" data-access-request-step="sent">
+    <%= render "recording_studio_accessible/access_requests/heading", title: access_request_t("sent_title") %>
+    <p><%= access_request_t("sent_body") %></p>
+  </div>
+<% end %>

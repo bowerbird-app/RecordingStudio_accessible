@@ -26,7 +26,7 @@
         <% end %>
       <% end %>
 
-      <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+      <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
         <% card.body(class: "grid gap-3 justify-items-start") do %>
           <%= render FlatPack::SectionTitle::Component.new(
             title: "Start a workspace",
@@ -73,7 +73,7 @@
         <% end %>
 
         <% section[:pages].each do |page_section| %>
-          <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+          <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
             <% card.body(class: "grid gap-3 justify-items-start") do %>
               <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= page_section[:page].title %></h3>
               <%= render FlatPack::Badge::Component.new(text: page_section[:page].class.name, style: :default, size: :sm) %>
@@ -105,7 +105,7 @@
             <% table.column(title: "Effective role") { |row| row[:role].to_s.humanize } %>
           <% end %>
         <% else %>
-          <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+          <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
             <% card.body(class: "grid gap-3 justify-items-start") do %>
               <%= render FlatPack::SectionTitle::Component.new(
                 title: "No message groups yet",
@@ -145,7 +145,7 @@
             <% table.column(title: "Actions") { |row| link_to("View", access_action_path(row[:action]), class: "text-primary-600 underline text-sm") } %>
           <% end %>
         <% else %>
-          <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+          <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
             <% card.body(class: "grid gap-3 justify-items-start") do %>
               <%= render FlatPack::SectionTitle::Component.new(
                 title: "No actions",

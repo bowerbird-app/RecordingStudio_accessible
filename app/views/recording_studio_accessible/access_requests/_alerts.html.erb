@@ -1,0 +1,6 @@
+<% if modal_frame_request? && flash[:notice].present? %>
+  <%= render FlatPack::Alert::Component.new(description: flash[:notice], style: :success, class: "mb-[var(--stack-gap-lg)]") %>
+<% end %>
+<% if modal_frame_request? && flash[:alert].present? %>
+  <%= render FlatPack::Alert::Component.new(description: flash[:alert], style: :danger, class: "mb-[var(--stack-gap-lg)]") %>
+<% end %>

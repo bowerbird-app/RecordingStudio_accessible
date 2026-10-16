@@ -36,6 +36,11 @@ RecordingStudioAccessible.configure do |config|
   end
 end
 
+Rails.application.config.to_prepare do
+  RecordingStudioAccessible.configuration.register_access_request_gate(:read, AccessRequestReasonGate)
+  RecordingStudioAccessible.configuration.register_access_request_gate(:default, AccessRequestReasonGate)
+end
+
 # -- Demo: action authorization registry -----------------------------------
 # Two example actions registered to demo the ActionRegistry:
 # - :manage_workspace — allowed for the current demo admin

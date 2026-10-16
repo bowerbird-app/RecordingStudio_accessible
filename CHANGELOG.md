@@ -4,6 +4,82 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-16
+
+### Fixed
+- An unregistered access-request action uses the `:default` gate on the form
+  and again when the request is created.
+- One pending request per person and target is enforced inside the row lock
+  and by a partial unique index on the live pending row.
+- Leaving approved revokes the grant even when that grant recording is trashed.
+- A manager can grant a role they hold or a weaker ranked role. An admin can
+  grant any role that recording accepts.
+- Unexpected service errors are logged and shown as a generic message.
+- A disabled email gets the same code page as any other email. Visitor
+  codes go through `RecordingStudioUser.request_otp!`. A throttled result
+  shows the rate-limit message. Issued and suppressed results show the same
+  code page.
+
+### Added
+- `RecordingStudio::AccessRequest`, a child recordable of the target. Submit,
+  re-submit, approve, deny, and reopen each revise the snapshot and append
+  an event, so who did it and when stay on the history.
+- `RecordingStudioAccessible.request_access`, `transition_access_request`,
+  `approve_access_request`, and `deny_access_request`. One open request per
+  person and target. A manager can move a request among pending, approved,
+  and denied. Approval grants access in the same transaction. Leaving approved
+  revokes that grant. Returning to pending clears the review stamps.
+- Visitor screens for email, code, the request, and the confirmation. Each
+  works as a full page and inside a Flatpack modal. The email step shows the
+  recording's name or title, asks for a name, and passes that name to
+  `complete_email_proof!` when the account is created. The request form does
+  not ask for a role. The manager chooses the role when approving. Visitor
+  copy can be overridden per flow with `copy:` or an I18n scope.
+- Optional pre-request gate, `register_access_request_gate`, keyed by the
+  requested action. An unregistered action uses the `:default` gate. The step sits after
+  the email code and before the note. `create` checks it again. Continuation
+  URLs must stay on the same host. A raising gate shows an alert and does not
+  record the request. Sanitized answers are stored as `gate_metadata` on the
+  snapshot at submit and re-submit, and managers see them beside the note.
+  The name is required only when the user model requires one. A signed-in
+  person skips the email code. Visitors get an account through Recording
+  Studio Users (`request_otp!`, `verify_otp!`, `complete_email_proof!`). There
+  is no guest path.
+- `access_request_modal` for locked screens. Approval sends the existing
+  access-granted email. Managers get `AccessRequestSubmittedMailer`. Hooks:
+  `:access_request_submitted`, `:access_request_approved`, `:access_request_denied`,
+  `:access_request_reopened`. Denial mail is sent only when
+  `access_request_denied_notifier` is set.
+- Manager index for one recording or many. `access_requests_index` embeds the
+  same slice the engine routes render. The host passes the recordings.
+  `AccessManagementPolicy` decides which rows are visible. Pending is the
+  default status filter. The name column shows the requester, with the email
+  underneath, or the email alone when there is no name. Notes stay on one line.
+  Several recordings add a linked recording column. The row menu moves the
+  request to another status.
+  Further pages load with Flatpack infinite scroll.
+- The request page names who asked and which recording, then the message and
+  the date. Gate answers sit flush with that text. Approve and Deny are underline tabs.
+  Approve picks a role with inline radios and icons. Save runs that status transition.
+  The page, the email step, the code step, and the request form each work as
+  a full page and inside the access request modal.
+
+### Upgrade notes
+- Run `rails generate recording_studio_accessible:migrations` and migrate.
+  New tables: `recording_studio_access_requests` and
+  `recording_studio_access_request_intents`. `gate_metadata` is added to
+  `recording_studio_access_requests`.
+- Accessible does not depend on Users in the gemspec. Users already depends
+  on Accessible, and a gemspec dependency would cycle. Hosts that want the
+  email-code screens add `recording_studio_user` 0.24.0 (with notifications
+  and cache) the same way Messages does. Visitor codes call `request_otp!`.
+  Point `Rails.cache` at a shared atomic store, and add a case-insensitive
+  unique index on `users.email`. Without Users, `request_access` still works
+  for an existing signed-in actor; the email step tells the visitor that
+  codes are unavailable.
+- The approve role picker uses Flatpack `RadioGroup` `variant: :inline`
+  (Flatpack 0.1.212 or newer). The dummy pins Flatpack `v0.1.248`.
+
 ## [0.19.0] - 2026-10-14
 
 ### Added

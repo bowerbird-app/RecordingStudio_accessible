@@ -1,0 +1,36 @@
+<%
+  html_attributes = accessible_document_attributes(
+    "data-theme" => "rounded"
+  )
+%>
+<!DOCTYPE html>
+<html <%= tag.attributes(html_attributes) %>>
+  <head>
+    <title><%= content_for(:title) || accessible_t("requests.cta") %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "flat_pack/variables", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "flat_pack/application", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+  <body class="bg-[var(--surface-page-background-color)] text-[var(--surface-content-color)]">
+    <%= render "layouts/icon_sprite" %>
+    <main class="flex min-h-dvh items-center justify-center p-6">
+      <div class="w-full max-w-sm">
+        <% flash.each do |level, message| %>
+          <% next if message.blank? %>
+          <div class="mb-4">
+            <%= render FlatPack::Alert::Component.new(
+              description: message,
+              style: recording_studio_accessible_flash_style(level)
+            ) %>
+          </div>
+        <% end %>
+        <%= yield %>
+      </div>
+    </main>
+  </body>
+</html>

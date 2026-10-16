@@ -66,7 +66,7 @@
 
 <% if show_recording_card %>
   <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md, align: :start) do %>
-    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+    <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
       <% card.body do %>
         <%= render FlatPack::SectionTitle::Component.new(
           title: accessible_t("form.recording"),

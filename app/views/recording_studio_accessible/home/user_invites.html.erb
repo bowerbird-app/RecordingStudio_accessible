@@ -14,7 +14,7 @@
       ) %>
 
       <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md, align: :start, class: "w-full") do %>
-        <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+        <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <%= render FlatPack::Badge::Component.new(text: accessible_t("home.user_invites.default_badge"), style: :default, size: :sm) %>
             <p class="text-base leading-7 text-[var(--surface-content-color)]">

@@ -177,13 +177,193 @@ config.current_actor_method = :current_user
 Accessible still owns permission checks (`authorize_recording!`, root helpers,
 `RecordingStudioAccessible.authorized?`). It does not resolve sign-in itself.
 
+## Access requests
+
+Someone without access can ask for a role. The request is a child recording
+on the target, `RecordingStudio::AccessRequest`. Writes go through:
+
+```ruby
+RecordingStudioAccessible.request_access(recording:, actor:, role:, action: nil, message: nil, controller: nil)
+RecordingStudioAccessible.transition_access_request(
+  request_recording:, status:, manager_actor:, role: nil, review_note: nil, controller: nil
+)
+RecordingStudioAccessible.approve_access_request(request_recording:, manager_actor:, role:, controller: nil)
+RecordingStudioAccessible.deny_access_request(request_recording:, manager_actor:, review_note: nil, controller: nil)
+```
+
+`transition_access_request` is the state machine. A manager can move a request
+from pending, approved, or denied to either of the other two. The same move
+revises the snapshot and appends `approved`, `denied`, or `reopened`.
+Approving calls `grant_access` with the chosen role, stores that grant on the
+request, sends the access-granted email, and runs `:access_request_approved`.
+Denying runs `:access_request_denied`. It also calls
+`config.access_request_denied_notifier` when one is set. Moving away from
+approved revokes the grant that approval created. Moving back to pending
+clears the role, the review note, and the grant id, and runs
+`:access_request_reopened`. Submit and re-submit still append
+`access_request_submitted` and `resubmitted`. Revoking the grant on its own
+does not rewrite the request.
+
+One open request per person and target. Asking again revises that request.
+A partial unique index on the live pending row enforces the same limit in the database.
+A person who already has the role gets a no-op success.
+
+The email-code screens use Recording Studio Users `request_otp!`. A throttled
+result shows the rate-limit message. An issued result and a suppressed result
+both show the same code page. `verify_otp!` and `complete_email_proof!` finish
+the proof. The email step collects a name and passes `first_name` and
+`last_name` into `complete_email_proof!`, the same way Messages does for
+public contact. The field is required when the user model validates `name` or
+`first_name`, and optional otherwise. Accessible cannot list Users as a gem
+dependency, because Users already depends on Accessible. Add Users in the host
+app, with OTP enabled. Signed-in actors can call `request_access` without that
+stack.
+
+One-time codes count through `Rails.cache`. The store has to be shared and
+atomic across processes. Redis or Memcached is that store. The dummy test and
+development environments use an in-process memory store. Its increments are
+atomic inside one process, which is enough for the test suite, and they do
+not enforce the limit across processes. The host users table needs a
+case-insensitive unique index on `email`. A unique index on `LOWER(email)`
+is the usual shape.
+
+Routes live under the mounted engine:
+
+```
+/recordings/:recording_id/access_requests/new
+/recordings/:recording_id/access_requests
+/recordings/:recording_id/access_requests/:id
+/access_requests
+```
+
+### Access request index
+
+The manager list is one slice. Mount it on a single recording, or across many.
+Both routes render it. A host page can render the same partial.
+
+```erb
+<%= access_requests_index(recordings: press_kit) %>
+<%= access_requests_index(recordings: press_kits, url: press_kit_requests_path) %>
+```
+
+`recordings` is one recording or a relation of them. Rows are limited to
+recordings the actor may manage through `AccessManagementPolicy`. The
+collection route uses `config.access_request_index_recordings` when it is
+set, and otherwise every recording that already has a request.
+
+```ruby
+config.access_request_index_recordings = ->(actor:, controller:) { press_kits }
+```
+
+`url` is where the status filters and the next page return. It should render
+this helper again. Pending is the default. `status` is `pending`, `approved`,
+`denied`, or `all`. A long list appends the next page with Flatpack infinite
+scroll. The cursor is the last row's time and id. The page size is 10.
+
+The name column shows the requester's name, from the profile collected at the
+email step or already on the user record, with the email underneath. A person
+with no name is shown by email alone. The note is one truncated line, with the
+full text on the request page and in the cell's title. A single recording hides
+the recording column. More than one shows the recording's name or title, linked
+when the host can route to that recordable. Each row's actions are the Flatpack
+three-dot menu: View, and the statuses that request can move to. Approve lists
+one item per role.
+
+`new` is the email step, the code step, or the request form. The email step
+shows the recording's name or title under the heading. Later steps do not.
+Visitors do not pick a role. Pass an optional `role:` or `action:` when the
+caller already knows a suggestion. The request page heading names who asked
+and which recording, then shows the message and the date they asked. Gate
+answers are labelled rows, flush with that heading. A manager uses Approve
+and Deny underline tabs. Approve lists the allowed roles as inline radios with icons.
+Deny has an
+optional note. Each tab saves through `transition_access_request`. An
+approved request opens on Approve, and a denied request opens on Deny. The
+role choice defaults to the suggestion when it is allowed, then to the
+action's granted roles, then to `roles_for`. Events stay on the recordable.
+The page does not list them.
+
+The email, code, and request steps, and the request page, each render as a
+full page and inside the `access_request` Turbo frame. Pass
+`presentation=modal` and load that frame to use the modal.
+
+Visitor copy defaults to `recording_studio.accessible.requests`. Override one
+flow with `copy:` or an I18n `scope:`. Scope keys match the relative request
+keys, such as `cta` and `email_title`. A missing key falls back to the default.
+The overrides follow every step of that flow.
+
+```erb
+<%= access_request_modal(recording, copy: {
+  cta: "Request early access",
+  email_title: "Request early access",
+  form_title: "Ask for early access"
+}) %>
+<%= access_request_modal(recording, scope: "press_kit.early_access", role: "view") %>
+```
+
+`label:` still sets the button when `copy[:cta]` is absent.
+
+### Access request gate
+
+A host can pause the request until its own step is done. Accessible does not know the question. An action with no registered gate uses the gate registered under `:default`, including a blank action. When that gate is missing too, the step is skipped. A raise still fails closed on the form and on create.
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.register_access_request_gate(:read, Presskits::AccessRequestGate)
+  config.register_access_request_gate(:default, Presskits::AccessRequestGate)
+end
+```
+
+Register a class or any object. Every method is optional:
+
+| Method | Role |
+| --- | --- |
+| `satisfied?(recording:, actor:, request:)` | `true` when the host step is done. Omit it and the gate does not block. A raise fails closed. |
+| `continuation_url(recording:, actor:, request:)` | Where the visitor goes while the gate is still open. Same host only. A modal keeps `presentation=modal` and the `access_request` frame. |
+| `component` | Optional ViewComponent class. Accessible does not render it; the continuation page is the form. |
+| `metadata_for(recording:, actor:)` | Flat hash copied onto the request when it is submitted or submitted again. |
+| `metadata_labels` | Optional key to label hash for the manager review list. |
+
+The check runs after the email code, and again for a signed-in visitor opening the form. `create` checks `satisfied?` again before it writes. While the gate is open, the visitor is redirected to `continuation_url` with the presentation params. A modal redirect stays in the `access_request` Turbo frame. A full page redirect stays a full page.
+
+A continuation URL on another host is not followed. If `satisfied?` or `continuation_url` raises, or the URL is missing, the visitor sees a Flatpack alert and the request is not recorded.
+
+In-progress answers stay with the host. Accessible does not open a draft row for them.
+
+`gate_metadata` is `jsonb`, default `{}`, with no GIN index. Submit and re-submit keep a flat snapshot on that version of the recordable, so it stays with the history:
+
+- at most 32 keys
+- each key matches `[a-z0-9_]{1,40}`
+- values are scalars: string, number, boolean, or null
+- strings at most 200 characters
+- the JSON document at most 2KB
+
+Dropped data is reported. A metadata failure stores `{}` and the request still proceeds when the gate is satisfied. Accessible does not interpret the keys.
+
+Managers who pass `AccessManagementPolicy` see the answers as a read-only labelled list beside the note. Labels come from `metadata_labels` when the gate provides them, otherwise the key is humanized. The requester does not see that list.
+
+Locked screens:
+
+```erb
+<%= access_request_modal(recording, role: "view", action: "read") %>
+<%= link_to "Request access on a page", access_request_page_path(recording, role: "view", action: "read") %>
+```
+
+Hooks: `:access_request_submitted`, `:access_request_approved`,
+`:access_request_denied`, `:access_request_reopened`. Approval sends the
+access-granted email. Denial sends mail only when
+`config.access_request_denied_notifier` is set. A submitted
+request emails direct admins on the target and its parents. Replace that with
+`config.access_request_submitted_notifier`.
+
 ## Compatibility with RecordingStudio 4.2
 
 Recording Studio Accessible targets RecordingStudio `4.2` (currently tested with
 `4.2.0`) and its capability-owned child recordable contract. RecordingStudio core
 no longer ships built-in access control, so this addon provides
-`RecordingStudio::Access`, declares it as a child-only recordable, and registers
-it as metadata for the `:accessible` capability.
+`RecordingStudio::Access` and `RecordingStudio::AccessRequest`, declares them
+as child-only recordables, and registers them as metadata for the `:accessible`
+capability.
 
 On load, the addon registers:
 
@@ -191,7 +371,7 @@ On load, the addon registers:
 RecordingStudio.register_capability(
   :accessible,
   source: "recording_studio_accessible",
-  child_recordables: ["RecordingStudio::Access"]
+  child_recordables: ["RecordingStudio::Access", "RecordingStudio::AccessRequest"]
 )
 ```
 
@@ -658,7 +838,7 @@ Useful RecordingStudio 4 introspection helpers:
 
 ```ruby
 RecordingStudio.capability_child_recordables_for(:accessible)
-# => ["RecordingStudio::Access"]
+# => ["RecordingStudio::Access", "RecordingStudio::AccessRequest"]
 
 RecordingStudio.capability_child_recordables_for(:action_audiences)
 # => ["RecordingStudio::AccessConstraint", "RecordingStudio::AccessRule"]
@@ -1456,7 +1636,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v4.5.0`, RecordingStudioRootSwitchable `v0.8.0`, FlatPack `v0.1.208`, and (dummy only) Recording Studio Internationalization `v0.1.2`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v4.5.0`, RecordingStudioRootSwitchable `v0.8.0`, FlatPack `v0.1.248`, and (dummy only) Recording Studio Internationalization `v0.1.2`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

@@ -1,0 +1,37 @@
+<% content_for :title, access_request_t("email_title") %>
+<%= render layout: "recording_studio_accessible/access_requests/step" do %>
+  <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="email">
+    <%= render "recording_studio_accessible/access_requests/heading",
+               title: access_request_t("email_title"),
+               subtitle: access_request_target_label %>
+    <%= form_with url: email_recording_access_requests_path(@recording), method: :post,
+                  class: "flex flex-col gap-[var(--stack-gap-lg)]", **access_request_form_options do %>
+      <%= access_request_modal_fields %>
+      <%= access_request_copy_fields %>
+      <%= hidden_field_tag :role, params[:role] %>
+      <%= hidden_field_tag :access_action, params[:access_action] %>
+      <%= render FlatPack::TextInput::Component.new(
+        name: "name",
+        label: access_request_t("name"),
+        required: access_request_name_required?,
+        autocomplete: "name",
+        maxlength: RecordingStudioAccessible::AccessRequestIntent::NAME_MAX,
+        value: params[:name]
+      ) %>
+      <%= render FlatPack::EmailInput::Component.new(
+        name: "email",
+        label: access_request_t("email_label"),
+        required: true,
+        autocomplete: "email",
+        value: params[:email]
+      ) %>
+      <%= render FlatPack::Button::Component.new(
+        text: access_request_t("email_submit"),
+        style: :primary,
+        size: :md,
+        type: "submit",
+        class: "w-full"
+      ) %>
+    <% end %>
+  </div>
+<% end %>

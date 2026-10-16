@@ -16,6 +16,12 @@
     size: :md,
     href: new_recording_access_path_with_back_url(@recording)
   ) %>
+  <%= render FlatPack::Button::Component.new(
+    text: accessible_t("requests.list_title"),
+    style: :secondary,
+    size: :md,
+    href: recording_access_requests_path(@recording)
+  ) %>
 </div>
 
 <% show_actor_type_column = show_access_actor_type_column?(@direct_access_rows, @inherited_access_rows) %>
@@ -64,7 +70,7 @@
     <% end %>
   </div>
 <% else %>
-  <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+  <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
     <% card.body(class: "grid gap-3 justify-items-start") do %>
       <%= render FlatPack::SectionTitle::Component.new(
         title: accessible_t("manage.empty_title"),

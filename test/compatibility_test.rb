@@ -40,6 +40,7 @@ class CompatibilityTest < Minitest::Test
     assert RecordingStudioAccessible::Compatibility.core_access_present?
     assert_equal :core, RecordingStudioAccessible::Compatibility.integration_mode
     assert_equal [
+      "recording_studio_accessible/extracted/recording_studio/access_request",
       "recording_studio_accessible/extracted/recording_studio/access_constraint",
       "recording_studio_accessible/extracted/recording_studio/access_rule"
     ], RecordingStudioAccessible::Compatibility.missing_constant_paths
@@ -54,6 +55,7 @@ class CompatibilityTest < Minitest::Test
 
     expected = [
       "recording_studio_accessible/extracted/recording_studio/access",
+      "recording_studio_accessible/extracted/recording_studio/access_request",
       "recording_studio_accessible/extracted/recording_studio/access_constraint",
       "recording_studio_accessible/extracted/recording_studio/access_rule"
     ]
@@ -75,6 +77,7 @@ class CompatibilityTest < Minitest::Test
     end
 
     assert_includes registered, "RecordingStudio::Access"
+    assert_includes registered, "RecordingStudio::AccessRequest"
     assert_includes registered, "RecordingStudio::AccessConstraint"
     assert_includes registered, "RecordingStudio::AccessRule"
   ensure
@@ -202,8 +205,10 @@ class CompatibilityTest < Minitest::Test
       end
     end
 
-    assert_equal [[[:accessible], { source: "recording_studio_accessible", child_recordables: ["RecordingStudio::Access"] }]],
-                 registered
+    assert_equal [[[:accessible], {
+      source: "recording_studio_accessible",
+      child_recordables: ["RecordingStudio::Access", "RecordingStudio::AccessRequest"]
+    }]], registered
   end
 
   def test_register_access_capability_skips_compatible_core_capability

@@ -1,0 +1,78 @@
+<% request_record = @request_recording.recordable %>
+<%= render layout: "recording_studio_accessible/access_requests/step" do %>
+  <% unless modal_frame_request? %>
+    <%= render FlatPack::PageNav::Component.new(class: "mb-8", anchor_href: recording_access_requests_path(@recording)) %>
+  <% end %>
+
+  <div class="grid max-w-2xl gap-8" data-access-request-step="show">
+    <div class="grid gap-3">
+      <%= render FlatPack::PageTitle::Component.new(
+        title: access_request_show_heading(request_record),
+        variant: :h1
+      ) %>
+      <% if request_record.message.present? %>
+        <p><%= request_record.message %></p>
+      <% end %>
+      <p class="text-sm text-[var(--surface-muted-content-color)]">
+        <%= accessible_t("requests.requested_on", date: access_request_requested_on(@request_recording)) %>
+      </p>
+    </div>
+
+    <% if manager? && access_request_gate_answers(request_record).any? %>
+      <div class="grid gap-4">
+        <% access_request_gate_answers(request_record).each do |label, value| %>
+          <div>
+            <p class="text-sm text-[var(--surface-muted-content-color)]"><%= label %></p>
+            <p class="mt-1"><%= value %></p>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if manager? %>
+      <%= render FlatPack::Tabs::Component.new(
+        variant: :underline,
+        size: :sm,
+        default_tab: access_request_decision_tab(request_record)
+      ) do |tabs| %>
+        <% tabs.tab(label: accessible_t("requests.approve"), id: "access-request-approve") do %>
+          <%= form_with url: transition_recording_access_request_path(@recording, @request_recording),
+                        method: :post,
+                        class: "grid max-w-md gap-8 [&_fieldset]:m-0 [&_fieldset]:min-w-0 [&_fieldset]:border-0 [&_fieldset]:p-0",
+                        **access_request_form_options do %>
+            <%= access_request_modal_fields %>
+            <%= hidden_field_tag :status, "approved" %>
+            <%= render FlatPack::RadioGroup::Component.new(
+              name: "role",
+              variant: :inline,
+              size: :sm,
+              label: accessible_t("requests.approve_role"),
+              options: access_request_approval_options(request_record),
+              value: access_request_approval_default(request_record),
+              required: true
+            ) %>
+            <%= render FlatPack::Button::Component.new(
+              text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
+            ) %>
+          <% end %>
+        <% end %>
+        <% tabs.tab(label: accessible_t("requests.deny"), id: "access-request-deny") do %>
+          <%= form_with url: transition_recording_access_request_path(@recording, @request_recording),
+                        method: :post, class: "grid max-w-md gap-8", **access_request_form_options do %>
+            <%= access_request_modal_fields %>
+            <%= hidden_field_tag :status, "denied" %>
+            <%= render FlatPack::TextArea::Component.new(
+              name: "review_note",
+              label: accessible_t("requests.deny_note"),
+              value: request_record.review_note,
+              rows: 3
+            ) %>
+            <%= render FlatPack::Button::Component.new(
+              text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
+            ) %>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

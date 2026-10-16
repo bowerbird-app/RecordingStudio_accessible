@@ -20,7 +20,10 @@ Rails.application.configure do
 
   # Show full error reports.
   config.consider_all_requests_local = true
-  config.cache_store = :null_store
+  # MemoryStore increments are atomic inside this process, so OTP rate limits
+  # work in the test suite. A null store would not count requests. This store
+  # is not shared across processes; a host uses Redis or Memcached for that.
+  config.cache_store = :memory_store
 
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable

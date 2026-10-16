@@ -1,0 +1,26 @@
+<%= render FlatPack::PageTitle::Component.new(
+  title: "Private workspace",
+  subtitle: "You need access to see this.",
+  variant: :h1
+) %>
+
+<div class="mt-6 flex flex-wrap items-center gap-3">
+  <%= access_request_modal(@recording, action: "read") %>
+  <%= render FlatPack::Button::Component.new(
+    text: accessible_t("requests.page_link"),
+    href: access_request_page_path(@recording, action: "read"),
+    style: :secondary,
+    size: :md
+  ) %>
+  <%= render FlatPack::Button::Component.new(
+    text: "Request early access",
+    href: access_request_page_path(@recording, copy: {
+      cta: "Request early access",
+      email_title: "Request early access",
+      form_title: "Ask for early access",
+      submit: "Send early access request"
+    }),
+    style: :secondary,
+    size: :md
+  ) %>
+</div>

@@ -16,6 +16,28 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     Current.actor = nil if defined?(Current) && Current.respond_to?(:actor=)
   end
 
+  test "a manager cannot grant a role above their own" do
+    configuration = RecordingStudioAccessible.configuration
+    previous = configuration.access_management_authorizer
+    editor = create_user("grant-editor@example.com")
+    create_legacy_direct_access_recording(editor, :edit, @recording)
+    configuration.access_management_authorizer = ->(**) { true }
+
+    refused = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: @user, role: :admin, manager_actor: editor
+    )
+    allowed = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: @user, role: :view, manager_actor: editor
+    )
+
+    refute refused.success?
+    assert_equal "You can only grant a role you already hold.", refused.error
+    assert allowed.success?
+    assert_equal "view", allowed.value.recordable.role
+  ensure
+    configuration.access_management_authorizer = previous
+  end
+
   test "service creates access grants internally" do
     assert_difference -> { RecordingStudio::Access.count }, 1 do
       assert_difference -> { RecordingStudio::Recording.unscoped.count }, 1 do
