@@ -45,8 +45,10 @@ All notable changes to this project will be documented in this file.
   request to another status.
   Further pages load with Flatpack infinite scroll.
 - The request page names who asked and which recording, then the message and
-  the date. Approve and Deny are pills. Save runs that status transition.
-  History lists the action, who, and when.
+  the date. Gate answers sit flush with that text. Approve and Deny are pills.
+  Approve picks a role with icon buttons. Save runs that status transition.
+  The page, the email step, the code step, and the request form each work as
+  a full page and inside the access request modal.
 
 ### Upgrade notes
 - Run `rails generate recording_studio_accessible:migrations` and migrate.

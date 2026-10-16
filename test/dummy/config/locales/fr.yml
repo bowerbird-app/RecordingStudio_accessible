@@ -204,7 +204,6 @@ fr:
         show_heading: "%{name} a demandé l’accès à %{recording}"
         requested_on: "Demandée le %{date}"
         show_title: "Demande"
-        history: "Ce qui s’est passé"
         page_link: "Demander l’accès sur une page"
         menu:
           view: "Voir"
@@ -221,12 +220,6 @@ fr:
           pending: "En attente"
           approved: "Approuvée"
           denied: "Refusée"
-        events:
-          access_request_submitted: "A demandé l’accès"
-          resubmitted: "A mis à jour la demande"
-          approved: "Approuvée"
-          denied: "Refusée"
-          reopened: "Rouverte"
         flashes:
           submitted: "Demande envoyée."
           approved: "Demande approuvée."

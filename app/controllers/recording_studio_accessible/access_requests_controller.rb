@@ -23,11 +23,9 @@ module RecordingStudioAccessible
 
     def show
       @request_recording = find_request
-      return head :not_found unless AccessRequestQuery.visible?(
+      head :not_found unless AccessRequestQuery.visible?(
         request_recording: @request_recording, actor: current_actor, controller: self
       )
-
-      @events = request_events(@request_recording)
     end
 
     def new
@@ -228,7 +226,7 @@ module RecordingStudioAccessible
 
     def review(result, notice_key)
       options = result.success? ? { notice: Copy.t(notice_key) } : { alert: result.error }
-      redirect_to recording_access_request_path(@recording, find_request), options
+      redirect_to recording_access_request_path(@recording, find_request, **presentation_params), options
     end
 
     def review_args
@@ -245,12 +243,6 @@ module RecordingStudioAccessible
 
     def transition_flash
       AccessRequestTransitions.flash_key(params[:status]) || "approved"
-    end
-
-    def request_events(recording)
-      return [] unless recording.respond_to?(:events)
-
-      recording.events.where(action: RecordingStudio::AccessRequest::EVENTS).reorder(occurred_at: :asc, id: :asc)
     end
 
     def presentation_params

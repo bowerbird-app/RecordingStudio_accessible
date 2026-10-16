@@ -164,7 +164,6 @@ en:
         show_heading: "%{name} requested access to %{recording}"
         requested_on: "Requested %{date}"
         show_title: "Request"
-        history: "What happened"
         page_link: "Request access on a page"
         menu:
           view: "View"
@@ -181,12 +180,6 @@ en:
           pending: "Pending"
           approved: "Approved"
           denied: "Denied"
-        events:
-          access_request_submitted: "Asked for access"
-          resubmitted: "Updated the request"
-          approved: "Approved"
-          denied: "Denied"
-          reopened: "Reopened"
         flashes:
           submitted: "Request sent."
           approved: "Request approved."

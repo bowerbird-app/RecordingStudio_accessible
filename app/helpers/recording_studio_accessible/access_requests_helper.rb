@@ -41,10 +41,6 @@ module RecordingStudioAccessible
       { "pending" => :warning, "approved" => :success, "denied" => :danger }.fetch(status.to_s, :default)
     end
 
-    def access_request_event_style(action)
-      { "approved" => :success, "denied" => :danger, "reopened" => :warning }.fetch(action.to_s, :warning)
-    end
-
     def access_request_target_label
       AccessGrantedMailer.recordable_label_for(@recording).presence
     end
@@ -69,10 +65,6 @@ module RecordingStudioAccessible
       AccessRequestRoles.default_for(
         recording: @recording, action: request_record.action, suggested: request_record.role
       )
-    end
-
-    def access_request_event_description(event)
-      access_request_actor_name(event.actor)
     end
 
     def access_request_person_label(actor)

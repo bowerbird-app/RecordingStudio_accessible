@@ -263,15 +263,17 @@ shows the recording's name or title under the heading. Later steps do not.
 Visitors do not pick a role. Pass an optional `role:` or `action:` when the
 caller already knows a suggestion. The request page heading names who asked
 and which recording, then shows the message and the date they asked. Gate
-answers are labelled rows. A manager uses Approve and Deny pills. Approve
-lists the allowed roles. Deny has an optional note. Each pill saves through
-`transition_access_request`. An approved request opens on Approve, and a
-denied request opens on Deny. The role choice defaults to the suggestion when
-it is allowed, then to the action's granted roles, then to `roles_for`.
-History lists the action, who did it, and when.
+answers are labelled rows, flush with that heading. A manager uses Approve
+and Deny pills. Approve lists the allowed roles as icon buttons. Deny has an
+optional note. Each pill saves through `transition_access_request`. An
+approved request opens on Approve, and a denied request opens on Deny. The
+role choice defaults to the suggestion when it is allowed, then to the
+action's granted roles, then to `roles_for`. Events stay on the recordable.
+The page does not list them.
 
-Pass `presentation=modal` and load it in the `access_request` Turbo frame to
-use the modal. The same URLs without that param are full pages.
+The email, code, and request steps, and the request page, each render as a
+full page and inside the `access_request` Turbo frame. Pass
+`presentation=modal` and load that frame to use the modal.
 
 Visitor copy defaults to `recording_studio.accessible.requests`. Override one
 flow with `copy:` or an I18n `scope:`. Scope keys match the relative request

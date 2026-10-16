@@ -22,18 +22,18 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_match "Add a note", response.body
     refute_role_picker
     refute_recording_subtitle
-    assert_match "<html", response.body
+    assert_access_request_screen("form", page: true)
 
     post request_path, params: { access_request: { message: "From the page", action: "read" } }
     follow_redirect!
     assert_match "Request sent", response.body
     refute_recording_subtitle
+    assert_access_request_screen("sent", page: true)
 
     get new_request_path(presentation: "modal"), headers: modal_headers
     assert_response :success
-    assert_select "turbo-frame#access_request"
     refute_recording_subtitle
-    refute_match(/<html/i, response.body)
+    assert_access_request_screen("form", page: false)
   end
 
   test "visitor verifies an email code then sends a request" do
@@ -41,6 +41,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
     get new_request_path
     assert_email_step
+    assert_access_request_screen("email", page: true)
 
     post email_path, params: {
       email: "new-requester@example.com", name: "Ada Lovelace", role: "view", access_action: "read"
@@ -48,9 +49,11 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_match "Check your email", response.body
     refute_recording_subtitle
+    assert_access_request_screen("verify", page: true)
     get verify_path(presentation: "modal"), headers: modal_headers
     assert_match "Check your email", response.body
     refute_recording_subtitle
+    assert_access_request_screen("verify", page: false)
 
     post verify_path, params: { code: otp_code }
     follow_redirect!
@@ -58,10 +61,12 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_match "Add a note", response.body
     refute_role_picker
     refute_recording_subtitle
+    assert_access_request_screen("form", page: true)
     get new_request_path(presentation: "modal"), headers: modal_headers
     assert_match "Ask for access", response.body
     refute_role_picker
     refute_recording_subtitle
+    assert_access_request_screen("form", page: false)
 
     requester = User.find_by!(email: "new-requester@example.com")
     assert_equal "Ada Lovelace", RecordingStudioUser.display_name_for(requester)
@@ -73,6 +78,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     get sent_path(presentation: "modal"), headers: modal_headers
     assert_match "Request sent", response.body
     refute_recording_subtitle
+    assert_access_request_screen("sent", page: false)
     assert_equal 1, RecordingStudio::AccessRequest.where(status: "pending").count
 
     sign_in @manager
@@ -124,9 +130,8 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     get new_request_path(presentation: "modal"), headers: { "Turbo-Frame" => "access_request" }
 
     assert_response :success
-    assert_select "turbo-frame#access_request"
     assert_email_step
-    refute_match(/<html/i, response.body)
+    assert_access_request_screen("email", page: false)
   end
 
   test "manager reviews and approves a request" do
@@ -146,26 +151,37 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_match "I edit", response.body
     assert_equal 1, response.body.scan("I edit").size
     assert_match "Requested", response.body
-    assert_match "Asked for access", response.body
+    refute_match "What happened", response.body
+    refute_match "Asked for access", response.body
     assert_select "[role=tab][aria-selected=true]", text: "Approve"
     assert_select "[role=tab]", text: "Deny"
     assert_select "form[action=?]", transition_path(request_recording), count: 2
-    assert_select "input[type=radio][name=role][value=edit]"
+    assert_role_buttons("edit")
     assert_select "input[name=status][value=approved]"
     assert_select "textarea[name=review_note]"
-    assert_match "<html", response.body
+    assert_access_request_screen("show", page: true)
+
+    get request_show_path(request_recording, presentation: "modal"), headers: modal_headers
+    assert_match "I edit", response.body
+    assert_role_buttons("edit")
+    assert_access_request_screen("show", page: false)
 
     post transition_path(request_recording), params: { status: "approved", role: "edit" }
     follow_redirect!
-    assert_match "Approved", response.body
-    assert_match "What happened", response.body
+    assert_match "Request approved.", response.body
+    refute_match "What happened", response.body
     assert_select "[role=tab][aria-selected=true]", text: "Approve"
     assert RecordingStudioAccessible.authorized?(actor: @person, recording: @recording, role: "edit")
 
-    post transition_path(request_recording), params: { status: "denied", review_note: "Not this round" }
-    follow_redirect!
+    post transition_path(request_recording),
+         params: { status: "denied", review_note: "Not this round", presentation: "modal" },
+         headers: modal_headers
+    assert_response :redirect
+    assert_includes response.redirect_url, "presentation=modal"
+    follow_redirect!(headers: modal_headers)
     assert_match "Request denied.", response.body
     assert_select "[role=tab][aria-selected=true]", text: "Deny"
+    assert_access_request_screen("show", page: false)
     refute RecordingStudioAccessible.authorized?(actor: @person, recording: @recording, role: "edit")
   end
 
@@ -234,12 +250,33 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     refute_match "What do you need?", response.body
   end
 
-  def request_show_path(request_recording)
-    recording_studio_accessible.recording_access_request_path(@recording, request_recording)
+  def request_show_path(request_recording, **params)
+    recording_studio_accessible.recording_access_request_path(@recording, request_recording, **params)
   end
 
   def transition_path(request_recording)
     recording_studio_accessible.transition_recording_access_request_path(@recording, request_recording)
+  end
+
+  def assert_access_request_screen(step, page:)
+    assert_select "turbo-frame#access_request"
+    assert_select "[data-access-request-step=?]", step
+    if page
+      assert_match "<html", response.body
+    else
+      refute_match(/<html/i, response.body)
+    end
+  end
+
+  def assert_role_buttons(selected)
+    assert_select "input[type=radio][name=role]", count: 0
+    assert_select "input[name=role][value=?]", selected
+    { "view" => "eye", "edit" => "pencil", "admin" => "shield-check" }.each do |role, icon|
+      assert_select "button[name=role][value=?]", role do |buttons|
+        assert_select buttons, "[data-flat-pack--icon-name-value=?]", icon
+      end
+    end
+    assert_select "button[name=role][value=?][data-fp-style=primary]", selected
   end
 
   def assert_email_step
