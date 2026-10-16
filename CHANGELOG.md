@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-16
+
+### Added
+- `RecordingStudio::AccessRequest`, a child recordable of the target. Submit,
+  re-submit, approve, deny, and withdraw each revise the snapshot and append
+  an event, so who did it and when stay on the history.
+- `RecordingStudioAccessible.request_access`, `approve_access_request`,
+  `deny_access_request`, and `withdraw_access_request`. One open request per
+  person and target. Approval revises the request and grants access in one
+  transaction. Revoking the grant later leaves the request history alone.
+- Visitor screens for email, code, the request, and the confirmation. Each
+  works as a full page and inside a Flatpack modal. A signed-in person skips
+  the email code. Visitors get an account through Recording Studio Users
+  (`issue_otp!`, `verify_otp!`, `complete_email_proof!`). There is no guest path.
+- `access_request_modal` for locked screens. Approval sends the existing
+  access-granted email. Managers get `AccessRequestSubmittedMailer`. Hooks:
+  `:access_request_submitted`, `:access_request_approved`, `:access_request_denied`.
+
+### Upgrade notes
+- Run `rails generate recording_studio_accessible:migrations` and migrate.
+  New tables: `recording_studio_access_requests` and
+  `recording_studio_access_request_intents`.
+- Accessible does not depend on Users in the gemspec. Users already depends
+  on Accessible, and a gemspec dependency would cycle. Hosts that want the
+  email-code screens add `recording_studio_user` (with notifications and
+  cache) the same way Messages does. Without it, `request_access` still works
+  for an existing signed-in actor; the email step tells the visitor that
+  codes are unavailable.
+
 ## [0.19.0] - 2026-10-14
 
 ### Added

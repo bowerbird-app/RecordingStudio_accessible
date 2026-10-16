@@ -1,0 +1,29 @@
+<% content_for :title, accessible_t("requests.email_title") %>
+<%= render layout: "recording_studio_accessible/access_requests/step" do %>
+  <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="email">
+    <div class="flex flex-col gap-[var(--stack-gap-sm)]">
+      <h1 class="text-xl font-semibold"><%= accessible_t("requests.email_title") %></h1>
+      <p><%= accessible_t("requests.email_intro") %></p>
+    </div>
+    <%= form_with url: email_recording_access_requests_path(@recording), method: :post,
+                  class: "flex flex-col gap-[var(--stack-gap-lg)]", **access_request_form_options do %>
+      <%= access_request_modal_fields %>
+      <%= hidden_field_tag :role, params[:role] %>
+      <%= hidden_field_tag :access_action, params[:access_action] %>
+      <%= render FlatPack::EmailInput::Component.new(
+        name: "email",
+        label: accessible_t("requests.email_label"),
+        required: true,
+        autocomplete: "email",
+        value: params[:email]
+      ) %>
+      <%= render FlatPack::Button::Component.new(
+        text: accessible_t("requests.email_submit"),
+        style: :primary,
+        size: :md,
+        type: "submit",
+        class: "w-full"
+      ) %>
+    <% end %>
+  </div>
+<% end %>

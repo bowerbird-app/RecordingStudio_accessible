@@ -14,6 +14,11 @@ require "recording_studio_accessible/shared_root_access"
 require "recording_studio_accessible/access_creation_context"
 require "recording_studio_accessible/access_creation_guard"
 require "recording_studio_accessible/access_recording_creation_guard"
+require "recording_studio_accessible/access_request_creation_context"
+require "recording_studio_accessible/access_request_creation_guard"
+require "recording_studio_accessible/access_request_recording_creation_guard"
+require "recording_studio_accessible/access_request_query"
+require "recording_studio_accessible/access_request_reviewers"
 require "recording_studio_accessible/access_recording_dependent_lifecycle"
 require "recording_studio_accessible/dependent_access"
 require "recording_studio_accessible/access_management_policy"
@@ -54,16 +59,26 @@ require "recording_studio_accessible/services/revoke_access_invitation"
 require "recording_studio_accessible/services/void_dependent_accesses"
 require "recording_studio_accessible/services/set_audience"
 require "recording_studio_accessible/services/set_audience_constraint"
+require "recording_studio_accessible/services/request_access"
+require "recording_studio_accessible/services/approve_access_request"
+require "recording_studio_accessible/services/deny_access_request"
+require "recording_studio_accessible/services/withdraw_access_request"
 require_relative "../app/jobs/recording_studio_accessible/void_dependent_accesses_job"
 require_relative "../app/helpers/recording_studio_accessible/copy_helper"
 require_relative "../app/mailers/recording_studio_accessible/access_granted_mailer"
 require_relative "../app/mailers/recording_studio_accessible/access_invitation_mailer"
+require_relative "../app/mailers/recording_studio_accessible/access_request_submitted_mailer"
+require "recording_studio_accessible/access_request_submitted_notifier"
+require "recording_studio_accessible/access_request_intake"
+require "recording_studio_accessible/access_request_account"
+require "recording_studio_accessible/access_request_api"
 require_relative "../app/controllers/concerns/recording_studio_accessible/controller_auth"
 
 require "recording_studio_accessible/engine"
 
 module RecordingStudioAccessible
   extend RegistryClassMethods
+  extend AccessRequestApi
 
   class << self
     def configuration

@@ -11,6 +11,18 @@ RecordingStudioAccessible::Engine.routes.draw do
 
   resources :recordings, only: [] do
     resources :accesses, only: %i[index new create edit update destroy], controller: "recording_accesses"
+    resources :access_requests, only: %i[index show new create], controller: "access_requests" do
+      collection do
+        post :email, action: :submit_email
+        get :verify
+        post :verify, action: :submit_verification
+        post :resend
+        get :sent
+      end
+      member { post :approve }
+      member { post :deny }
+      member { post :withdraw }
+    end
     resources :access_invitations, only: [:destroy], controller: "recording_access_invitations" do
       member { post :resend }
     end

@@ -1,0 +1,54 @@
+<% request_record = @request_recording.recordable %>
+<%= render FlatPack::PageNav::Component.new(class: "mb-4", anchor_href: recording_access_requests_path(@recording)) %>
+<%= render FlatPack::PageTitle::Component.new(title: accessible_t("requests.show_title"), variant: :h1) %>
+
+<div class="mt-6 grid gap-4">
+  <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+    <% card.body(class: "grid gap-3") do %>
+      <p><%= request_record.actor.try(:email) %></p>
+      <p><%= accessible_role_name(request_record.role) %></p>
+      <% if request_record.message.present? %>
+        <p><%= request_record.message %></p>
+      <% end %>
+      <%= render FlatPack::Badge::Component.new(
+        text: accessible_t("requests.statuses.#{request_record.status}"),
+        style: access_request_status_style(request_record.status),
+        size: :sm
+      ) %>
+    <% end %>
+  <% end %>
+
+  <% if request_record.pending? && manager? %>
+    <div class="flex flex-wrap items-center gap-3">
+      <%= form_with url: approve_recording_access_request_path(@recording, @request_recording), method: :post do %>
+        <%= render FlatPack::Button::Component.new(
+          text: accessible_t("requests.approve"), style: :primary, size: :md, type: "submit"
+        ) %>
+      <% end %>
+    </div>
+    <%= form_with url: deny_recording_access_request_path(@recording, @request_recording), method: :post,
+                  class: "grid max-w-lg gap-3" do %>
+      <%= render FlatPack::TextArea::Component.new(
+        name: "review_note",
+        label: accessible_t("requests.deny_note"),
+        rows: 3
+      ) %>
+      <%= render FlatPack::Button::Component.new(
+        text: accessible_t("requests.deny"), style: :secondary, size: :md, type: "submit"
+      ) %>
+    <% end %>
+  <% end %>
+
+  <%= render FlatPack::SectionTitle::Component.new(title: accessible_t("requests.history")) %>
+  <%= render FlatPack::Timeline::Component.new do %>
+    <% @events.each_with_index do |event, index| %>
+      <%= render FlatPack::Timeline::Item.new(
+        title: accessible_t("requests.events.#{event.action}"),
+        timestamp: l(event.occurred_at, format: :short),
+        description: event.actor.try(:email),
+        style: access_request_event_style(event.action),
+        last: index == @events.size - 1
+      ) %>
+    <% end %>
+  <% end %>
+</div>

@@ -177,13 +177,64 @@ config.current_actor_method = :current_user
 Accessible still owns permission checks (`authorize_recording!`, root helpers,
 `RecordingStudioAccessible.authorized?`). It does not resolve sign-in itself.
 
+## Access requests
+
+Someone without access can ask for a role. The request is a child recording
+on the target, `RecordingStudio::AccessRequest`. Writes go through:
+
+```ruby
+RecordingStudioAccessible.request_access(recording:, actor:, role:, action: nil, message: nil, controller: nil)
+RecordingStudioAccessible.approve_access_request(request_recording:, manager_actor:, controller: nil)
+RecordingStudioAccessible.deny_access_request(request_recording:, manager_actor:, review_note: nil, controller: nil)
+RecordingStudioAccessible.withdraw_access_request(request_recording:, actor:, controller: nil)
+```
+
+Each change revises the snapshot and appends an event (`access_request_submitted`,
+`resubmitted`, `approved`, `denied`, `withdrawn`). Approval also calls
+`grant_access` in the same transaction and stores that grant's recording id
+on the request. Revoking the grant later does not rewrite the request.
+
+One open request per person and target. Asking again revises that request.
+A person who already has the role gets a no-op success.
+
+The email-code screens use Recording Studio Users: `issue_otp!`, `verify_otp!`,
+and `complete_email_proof!`. Accessible cannot list Users as a gem dependency,
+because Users already depends on Accessible. Add Users in the host app, with
+OTP enabled, the same way Messages does for public contact. Signed-in actors
+can call `request_access` without that stack.
+
+Routes live under the mounted engine:
+
+```
+/recordings/:recording_id/access_requests/new
+/recordings/:recording_id/access_requests
+/recordings/:recording_id/access_requests/:id
+```
+
+`new` is the email step, the code step, or the request form. Pass
+`presentation=modal` and load it in the `access_request` Turbo frame to use
+the modal. The same URLs without that param are full pages.
+
+Locked screens:
+
+```erb
+<%= access_request_modal(recording, role: "view", action: "read") %>
+<%= link_to "Request access on a page", access_request_page_path(recording, role: "view", action: "read") %>
+```
+
+Hooks: `:access_request_submitted`, `:access_request_approved`,
+`:access_request_denied`. Approval sends the access-granted email. A submitted
+request emails direct admins on the target and its parents. Replace that with
+`config.access_request_submitted_notifier`.
+
 ## Compatibility with RecordingStudio 4.2
 
 Recording Studio Accessible targets RecordingStudio `4.2` (currently tested with
 `4.2.0`) and its capability-owned child recordable contract. RecordingStudio core
 no longer ships built-in access control, so this addon provides
-`RecordingStudio::Access`, declares it as a child-only recordable, and registers
-it as metadata for the `:accessible` capability.
+`RecordingStudio::Access` and `RecordingStudio::AccessRequest`, declares them
+as child-only recordables, and registers them as metadata for the `:accessible`
+capability.
 
 On load, the addon registers:
 
@@ -191,7 +242,7 @@ On load, the addon registers:
 RecordingStudio.register_capability(
   :accessible,
   source: "recording_studio_accessible",
-  child_recordables: ["RecordingStudio::Access"]
+  child_recordables: ["RecordingStudio::Access", "RecordingStudio::AccessRequest"]
 )
 ```
 
@@ -658,7 +709,7 @@ Useful RecordingStudio 4 introspection helpers:
 
 ```ruby
 RecordingStudio.capability_child_recordables_for(:accessible)
-# => ["RecordingStudio::Access"]
+# => ["RecordingStudio::Access", "RecordingStudio::AccessRequest"]
 
 RecordingStudio.capability_child_recordables_for(:action_audiences)
 # => ["RecordingStudio::AccessConstraint", "RecordingStudio::AccessRule"]

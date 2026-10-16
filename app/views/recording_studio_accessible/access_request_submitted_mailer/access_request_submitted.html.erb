@@ -1,0 +1,17 @@
+<% if @greeting_email.present? %>
+  <p><%= accessible_t("mailers.hello", email: @greeting_email) %></p>
+<% else %>
+  <p><%= accessible_t("mailers.hello_there") %></p>
+<% end %>
+
+<% if @recording_label.present? %>
+  <p><%= accessible_t("mailers.access_request.body_html", requester: @requester, role: @role_label, recording: @recording_label) %></p>
+<% else %>
+  <p><%= accessible_t("mailers.access_request.body_html_without_recording", requester: @requester, role: @role_label) %></p>
+<% end %>
+<% if @message.present? %>
+  <p><%= accessible_t("mailers.access_request.note", message: @message) %></p>
+<% end %>
+<% if @review_url.present? %>
+  <p><a href="<%= @review_url %>"><%= accessible_t("mailers.access_request.review") %></a></p>
+<% end %>

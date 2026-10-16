@@ -5,15 +5,18 @@ module RecordingStudioAccessible
   module Compatibility
     EXTRACTED_FILES = {
       "RecordingStudio::Access" => "recording_studio_accessible/extracted/recording_studio/access",
+      "RecordingStudio::AccessRequest" => "recording_studio_accessible/extracted/recording_studio/access_request",
       "RecordingStudio::AccessConstraint" => "recording_studio_accessible/extracted/recording_studio/access_constraint",
       "RecordingStudio::AccessRule" => "recording_studio_accessible/extracted/recording_studio/access_rule"
     }.freeze
     RECORDABLE_TYPES = [
       "RecordingStudio::Access",
+      "RecordingStudio::AccessRequest",
       "RecordingStudio::AccessConstraint",
       "RecordingStudio::AccessRule"
     ].freeze
     ACCESS_RECORDABLE_TYPE = "RecordingStudio::Access"
+    ACCESS_REQUEST_RECORDABLE_TYPE = "RecordingStudio::AccessRequest"
     ACCESS_CONSTRAINT_RECORDABLE_TYPE = "RecordingStudio::AccessConstraint"
     ACCESS_RULE_RECORDABLE_TYPE = "RecordingStudio::AccessRule"
     ACCESS_CAPABILITY = :accessible
@@ -60,6 +63,7 @@ module RecordingStudioAccessible
           RecordingStudio.register_recordable_type(type_name) if constant_defined_path?(type_name)
         end
         ensure_access_recordable_declaration!
+        ensure_access_request_recordable_declaration!
         ensure_audience_recordable_declarations!
       end
 
@@ -70,7 +74,7 @@ module RecordingStudioAccessible
         RecordingStudio.register_capability(
           ACCESS_CAPABILITY,
           source: ACCESS_CAPABILITY_SOURCE,
-          child_recordables: [ACCESS_RECORDABLE_TYPE]
+          child_recordables: [ACCESS_RECORDABLE_TYPE, ACCESS_REQUEST_RECORDABLE_TYPE]
         )
       end
 
@@ -86,9 +90,11 @@ module RecordingStudioAccessible
 
       def ensure_creation_guards!
         include_guard("RecordingStudio::Access", RecordingStudioAccessible::AccessCreationGuard)
+        include_guard("RecordingStudio::AccessRequest", RecordingStudioAccessible::AccessRequestCreationGuard)
         include_guard("RecordingStudio::AccessConstraint", RecordingStudioAccessible::AudienceCreationGuard)
         include_guard("RecordingStudio::AccessRule", RecordingStudioAccessible::AudienceCreationGuard)
         include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AccessRecordingCreationGuard)
+        include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AccessRequestRecordingCreationGuard)
         include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AudienceRecordingCreationGuard)
         include_guard("RecordingStudio::Recording", RecordingStudioAccessible::AccessRecordingDependentLifecycle)
       end
@@ -121,6 +127,27 @@ module RecordingStudioAccessible
 
         RecordingStudio.parent_allowed?(
           child_type: child_type,
+          parent_recording: recording
+        )
+      rescue RecordingStudio::InvalidRecordableDeclaration, RecordingStudio::MissingRecordableDeclaration
+        false
+      end
+
+      def ensure_access_request_recordable_declaration!
+        return unless defined?(::RecordingStudio)
+
+        request_class = constant_for_path(ACCESS_REQUEST_RECORDABLE_TYPE)
+        return unless request_class.respond_to?(:recording_studio_recordable)
+
+        request_class.recording_studio_recordable(label: "Access request", root: false)
+      end
+
+      def access_request_parent_allowed?(recording)
+        return false unless defined?(::RecordingStudio)
+        return false if recording.blank?
+
+        RecordingStudio.parent_allowed?(
+          child_type: ACCESS_REQUEST_RECORDABLE_TYPE,
           parent_recording: recording
         )
       rescue RecordingStudio::InvalidRecordableDeclaration, RecordingStudio::MissingRecordableDeclaration
@@ -182,8 +209,9 @@ module RecordingStudioAccessible
       def load_priority
         {
           "RecordingStudio::Access" => 1,
-          "RecordingStudio::AccessConstraint" => 2,
-          "RecordingStudio::AccessRule" => 3
+          "RecordingStudio::AccessRequest" => 2,
+          "RecordingStudio::AccessConstraint" => 3,
+          "RecordingStudio::AccessRule" => 4
         }
       end
 

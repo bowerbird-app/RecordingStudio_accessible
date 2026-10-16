@@ -60,6 +60,7 @@ module RecordingStudioAccessible
                   :access_invitation_sign_in_url_resolver,
                   :access_notification_locale,
                   :access_management_authorizer,
+                  :access_request_submitted_notifier,
                   :mounted_page_authorizer,
                   :authorize_actor_through
     attr_reader :hooks, :access_actor_types, :action_audiences
@@ -85,6 +86,7 @@ module RecordingStudioAccessible
       @access_invitation_sign_in_url_resolver = nil
       @access_notification_locale = nil
       @access_management_authorizer = method(:default_access_management_authorizer)
+      @access_request_submitted_notifier = method(:default_access_request_submitted_notifier)
       @mounted_page_authorizer = method(:default_mounted_page_authorizer)
       @access_actor_types = nil
       @authorize_actor_through = method(:default_authorize_actor_through)
@@ -242,6 +244,17 @@ module RecordingStudioAccessible
 
     def registered_audiences
       RecordingStudioAccessible.registered_audiences
+    end
+
+    def notify_access_request_submitted(controller:, request_recording:, recording:, actor:, role:)
+      resolve_configurable(
+        access_request_submitted_notifier,
+        controller: controller,
+        request_recording: request_recording,
+        recording: recording,
+        actor: actor,
+        role: role
+      )
     end
 
     def notify_access_granted(controller:, recording:, actor:, role:, manager_actor:)
@@ -459,6 +472,16 @@ module RecordingStudioAccessible
       MissingActorResolution.unresolved
     rescue StandardError
       MissingActorResolution.invalid(error: default_missing_actor_error_for_email(email: email))
+    end
+
+    def default_access_request_submitted_notifier(controller:, request_recording:, recording:, actor:, role:)
+      AccessRequestSubmittedNotifier.call(
+        controller: controller,
+        request_recording: request_recording,
+        recording: recording,
+        actor: actor,
+        role: role
+      )
     end
 
     def default_access_management_access_granted_notifier(controller:, recording:, actor:, role:, manager_actor:)

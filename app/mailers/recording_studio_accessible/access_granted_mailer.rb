@@ -12,14 +12,9 @@ module RecordingStudioAccessible
       def display_label_for(actor)
         return Copy.t("mailers.someone") unless actor.present?
 
-        %i[full_name name display_name].each do |method_name|
-          next unless actor.respond_to?(method_name)
-
-          value = actor.public_send(method_name)
-          return value if value.present?
-        end
-
         email = actor.email if actor.respond_to?(:email)
+        name = named_label(actor, email)
+        return name if name.present?
         return humanized_email_label(email) if email.present?
 
         Copy.t("mailers.someone")
@@ -49,6 +44,23 @@ module RecordingStudioAccessible
         end
 
         nil
+      end
+
+      def named_label(actor, email)
+        %i[full_name name display_name].each do |method_name|
+          next unless actor.respond_to?(method_name)
+
+          value = actor.public_send(method_name).to_s.strip
+          next if value.blank? || email_label?(value, email)
+
+          return value
+        end
+
+        nil
+      end
+
+      def email_label?(value, email)
+        email.present? && value.casecmp?(email.to_s)
       end
 
       def humanized_email_label(email)

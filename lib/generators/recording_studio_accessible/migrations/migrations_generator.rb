@@ -58,7 +58,8 @@ module RecordingStudioAccessible
           name = File.basename(path)
           name.include?("access_invitation") ||
             name.include?("access_constraints") ||
-            name.include?("access_rules")
+            name.include?("access_rules") ||
+            name.include?("access_request")
         end
       end
 

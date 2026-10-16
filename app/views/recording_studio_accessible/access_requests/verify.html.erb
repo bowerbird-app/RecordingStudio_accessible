@@ -1,0 +1,35 @@
+<% content_for :title, accessible_t("requests.verify_title") %>
+<%= render layout: "recording_studio_accessible/access_requests/step" do %>
+  <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="verify">
+    <div class="flex flex-col gap-[var(--stack-gap-sm)]">
+      <h1 class="text-xl font-semibold"><%= accessible_t("requests.verify_title") %></h1>
+      <p><%= accessible_t("requests.verify_intro", email: @intent.email) %></p>
+    </div>
+    <%= form_with url: verify_recording_access_requests_path(@recording), method: :post,
+                  class: "flex flex-col gap-[var(--stack-gap-lg)]", **access_request_form_options do %>
+      <%= access_request_modal_fields %>
+      <%= render FlatPack::TextInput::Component.new(
+        name: "code",
+        label: accessible_t("requests.code"),
+        required: true,
+        inputmode: "numeric",
+        autocomplete: "one-time-code",
+        maxlength: 6
+      ) %>
+      <%= render FlatPack::Button::Component.new(
+        text: accessible_t("requests.confirm"),
+        style: :primary,
+        size: :md,
+        type: "submit",
+        class: "w-full"
+      ) %>
+    <% end %>
+    <%= render FlatPack::Link::Component.new(
+      href: resend_recording_access_requests_path(@recording, **(modal_presentation? ? { presentation: "modal" } : {})),
+      class: "self-center underline",
+      data: { turbo_method: :post, turbo_frame: modal_frame_request? ? access_request_frame_id : "_top" }
+    ) do %>
+      <%= accessible_t("requests.resend") %>
+    <% end %>
+  </div>
+<% end %>

@@ -26,28 +26,25 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
     assert_includes RecordingStudio.configuration.recordable_types, "RecordingStudio::Access"
     refute RecordingStudio.root_allowed?(RecordingStudio::Access)
     assert_equal [], RecordingStudio.declared_allowed_parent_types_for(RecordingStudio::Access)
-    assert_equal [ "RecordingStudio::Access" ], RecordingStudio.capability_child_recordables_for(:accessible)
-    assert_equal [ "Folder", "MessageGroup", "Workspace" ], RecordingStudio.capability_allowed_parent_types_for(RecordingStudio::Access)
-    assert_equal [ "Folder", "MessageGroup", "Workspace" ], RecordingStudio.allowed_parent_types_for(RecordingStudio::Access)
-    assert_equal [ "Folder", "MessageGroup", "Workspace" ],
+    assert_equal [ "RecordingStudio::Access", "RecordingStudio::AccessRequest" ],
+                 RecordingStudio.capability_child_recordables_for(:accessible)
+    access_parents = [ "Folder", "MessageGroup", "RecordingStudioUser::Profile", "Workspace" ]
+    assert_equal access_parents, RecordingStudio.capability_allowed_parent_types_for(RecordingStudio::Access)
+    assert_equal access_parents, RecordingStudio.allowed_parent_types_for(RecordingStudio::Access)
+    assert_equal access_parents,
                  RecordingStudio.recordable_parent_allowances_for(RecordingStudio::Access)
                                 .fetch("recording_studio_accessible")
-    assert_equal [
+    access_children = [
       "RecordingStudio::Access",
       "RecordingStudio::AccessConstraint",
+      "RecordingStudio::AccessRequest",
       "RecordingStudio::AccessRule"
-    ], RecordingStudio.child_recordable_types_for(Workspace)
-    assert_equal [
-      "RecordingStudio::Access",
-      "RecordingStudio::AccessConstraint",
-      "RecordingStudio::AccessRule"
-    ], RecordingStudio.child_recordable_types_for(Folder)
+    ]
+    assert_equal access_children, RecordingStudio.child_recordable_types_for(Workspace)
+    assert_equal access_children, RecordingStudio.child_recordable_types_for(Folder)
     refute_includes RecordingStudio.child_recordable_types_for(MessageRoot), "RecordingStudio::Access"
-    assert_equal [
-      "RecordingStudio::Access",
-      "RecordingStudio::AccessConstraint",
-      "RecordingStudio::AccessRule"
-    ], RecordingStudio.child_recordable_types_for(MessageGroup)
+    refute_includes RecordingStudio.child_recordable_types_for(MessageRoot), "RecordingStudio::AccessRequest"
+    assert_equal access_children, RecordingStudio.child_recordable_types_for(MessageGroup)
     assert_empty RecordingStudio.child_recordable_types_for(Page)
     assert_empty RecordingStudio.child_recordable_types_for(Card)
   end

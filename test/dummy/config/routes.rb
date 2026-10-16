@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   mount RecordingStudioAccessible::Engine, at: "/recording_studio_accessible"
 
   get "tree", to: "home#tree"
+  get "access_request_demo", to: "access_request_demos#show"
 
   resource :controller_auth_demo, only: [ :show ], controller: "controller_auth_demos" do
     get :authorize

@@ -9,6 +9,12 @@ class AccessGrantedMailerLabelTest < Minitest::Test
     assert_equal "Ada Lovelace", RecordingStudioAccessible::AccessGrantedMailer.display_label_for(actor)
   end
 
+  def test_display_label_for_humanizes_email_when_display_name_is_the_email
+    actor = Struct.new(:display_name, :email).new("ada.lovelace@example.com", "ada.lovelace@example.com")
+
+    assert_equal "Ada Lovelace", RecordingStudioAccessible::AccessGrantedMailer.display_label_for(actor)
+  end
+
   def test_recordable_label_returns_nil_without_recordable
     recording = Struct.new(:recordable).new(nil)
 

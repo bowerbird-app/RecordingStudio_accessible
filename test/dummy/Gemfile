@@ -43,6 +43,14 @@ gem "tailwindcss-rails"
 # FlatPack UI component library [https://github.com/bowerbird-app/flatpack]
 gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.208"
 
+# Email-code accounts for access requests. Accessible soft-requires Users
+# because Users already depends on Accessible.
+gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.2"
+gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.10.0"
+gem "recording_studio_cache", github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.1"
+gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.7.2"
+gem "recording_studio_user", github: "bowerbird-app/RecordingStudio_users", tag: "v0.22.0"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 

@@ -1,0 +1,40 @@
+<%= render FlatPack::PageNav::Component.new(class: "mb-4", anchor_href: recording_accesses_path(@recording)) %>
+<%= render FlatPack::PageTitle::Component.new(
+  title: accessible_t("requests.list_title"),
+  variant: :h1
+) %>
+
+<% if @requests.any? %>
+  <div class="mt-6">
+    <%= render FlatPack::Table::Component.new(data: @requests) do |table| %>
+      <% table.column(title: accessible_t("requests.columns.who")) do |request_recording| %>
+        <%= request_recording.recordable.actor.try(:email) %>
+      <% end %>
+      <% table.column(title: accessible_t("requests.columns.role")) do |request_recording| %>
+        <%= accessible_role_name(request_recording.recordable.role) %>
+      <% end %>
+      <% table.column(title: accessible_t("requests.columns.message")) do |request_recording| %>
+        <%= request_recording.recordable.message %>
+      <% end %>
+      <% table.column(title: accessible_t("requests.columns.status")) do |request_recording| %>
+        <%= render FlatPack::Badge::Component.new(
+          text: accessible_t("requests.statuses.#{request_recording.recordable.status}"),
+          style: access_request_status_style(request_recording.recordable.status),
+          size: :sm
+        ) %>
+      <% end %>
+      <% table.column(title: accessible_t("requests.columns.actions")) do |request_recording| %>
+        <%= render FlatPack::Link::Component.new(href: recording_access_request_path(@recording, request_recording)) do %>
+          <%= accessible_t("requests.show_title") %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+<% else %>
+  <div class="mt-6">
+    <%= render FlatPack::EmptyState::Component.new(
+      title: accessible_t("requests.list_empty_title"),
+      description: accessible_t("requests.list_empty_subtitle")
+    ) %>
+  </div>
+<% end %>

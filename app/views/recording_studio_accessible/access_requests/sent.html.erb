@@ -1,0 +1,20 @@
+<% content_for :title, accessible_t("requests.sent_title") %>
+<%= render layout: "recording_studio_accessible/access_requests/step" do %>
+  <div class="flex flex-col gap-[var(--stack-gap-lg)] text-center" data-access-request-step="sent">
+    <h1 class="text-xl font-semibold"><%= accessible_t("requests.sent_title") %></h1>
+    <p><%= accessible_t("requests.sent_body") %></p>
+    <% if @request_recording&.recordable&.pending? %>
+      <%= form_with url: withdraw_recording_access_request_path(@recording, @request_recording), method: :post,
+                    **access_request_form_options do %>
+        <%= access_request_modal_fields %>
+        <%= render FlatPack::Button::Component.new(
+          text: accessible_t("requests.withdraw"),
+          style: :secondary,
+          size: :md,
+          type: "submit",
+          class: "w-full"
+        ) %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

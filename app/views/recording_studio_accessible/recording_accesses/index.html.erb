@@ -16,6 +16,12 @@
     size: :md,
     href: new_recording_access_path_with_back_url(@recording)
   ) %>
+  <%= render FlatPack::Button::Component.new(
+    text: accessible_t("requests.list_title"),
+    style: :secondary,
+    size: :md,
+    href: recording_access_requests_path(@recording)
+  ) %>
 </div>
 
 <% show_actor_type_column = show_access_actor_type_column?(@direct_access_rows, @inherited_access_rows) %>

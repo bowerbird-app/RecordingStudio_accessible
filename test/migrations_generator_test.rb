@@ -45,10 +45,12 @@ class MigrationsGeneratorTest < Minitest::Test
       assert_includes messages,
                       ["RecordingStudio already provides access tables; skipping addon-owned access migrations.", :yellow]
       copied = Dir.glob(File.join(dir, "db/migrate/*.rb")).map { |path| File.basename(path) }
-      assert_equal 3, copied.length
+      assert_equal 5, copied.length
       assert(copied.any? { |name| name.include?("create_recording_studio_access_invitations") })
       assert(copied.any? { |name| name.include?("create_recording_studio_access_constraints") })
       assert(copied.any? { |name| name.include?("create_recording_studio_access_rules") })
+      assert(copied.any? { |name| name.include?("create_recording_studio_access_requests") })
+      assert(copied.any? { |name| name.include?("create_recording_studio_access_request_intents") })
       refute(copied.any? { |name| name.include?("create_recording_studio_accesses.rb") })
       refute(copied.any? { |name| name.include?("add_indexes_for_access_container_lookup") })
       refute(copied.any? { |name| name.include?("depends_on_recording_id") })
@@ -59,7 +61,7 @@ class MigrationsGeneratorTest < Minitest::Test
     with_temp_app do |dir|
       generator = build_generator(dir)
       messages = []
-      numbers = %w[20260101000000 20260101000001 20260101000002 20260101000003 20260101000004 20260101000005 20260101000006]
+      numbers = %w[20260101000000 20260101000001 20260101000002 20260101000003 20260101000004 20260101000005 20260101000006 20260101000007 20260101000008]
       generator.stub(:say, ->(message, color = nil) { messages << [message, color] }) do
         generator.stub(:next_migration_number, -> { numbers.shift }) do
           RecordingStudioAccessible::Compatibility.stub(:core_access_present?, false) do
@@ -76,6 +78,8 @@ class MigrationsGeneratorTest < Minitest::Test
       assert_includes copied, "20260101000004_change_recording_studio_accesses_role_to_string.rb"
       assert_includes copied, "20260101000005_create_recording_studio_access_constraints.rb"
       assert_includes copied, "20260101000006_create_recording_studio_access_rules.rb"
+      assert_includes copied, "20260101000007_create_recording_studio_access_requests.rb"
+      assert_includes copied, "20260101000008_create_recording_studio_access_request_intents.rb"
       assert_includes messages, ["Run 'bin/rails db:migrate' to apply the migrations.", :green]
     end
   end
