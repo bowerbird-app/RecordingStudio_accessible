@@ -264,9 +264,9 @@ Visitors do not pick a role. Pass an optional `role:` or `action:` when the
 caller already knows a suggestion. The request page heading names who asked
 and which recording, then shows the message and the date they asked. Gate
 answers are labelled rows, flush with that heading. A manager uses Approve
-and Deny pills. Approve lists the allowed roles as inline radios with icons.
+and Deny underline tabs. Approve lists the allowed roles as inline radios with icons.
 Deny has an
-optional note. Each pill saves through `transition_access_request`. An
+optional note. Each tab saves through `transition_access_request`. An
 approved request opens on Approve, and a denied request opens on Deny. The
 role choice defaults to the suggestion when it is allowed, then to the
 action's granted roles, then to `roles_for`. Events stay on the recordable.
