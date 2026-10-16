@@ -261,9 +261,14 @@ one item per role.
 `new` is the email step, the code step, or the request form. The email step
 shows the recording's name or title under the heading. Later steps do not.
 Visitors do not pick a role. Pass an optional `role:` or `action:` when the
-caller already knows a suggestion. The manager chooses the role when approving.
-The select defaults to that suggestion when it is allowed, then to the action's
-granted roles, then to `roles_for`.
+caller already knows a suggestion. The request page heading names who asked
+and which recording, then shows the message and the date they asked. Gate
+answers are labelled rows. A manager uses Approve and Deny pills. Approve
+lists the allowed roles. Deny has an optional note. Each pill saves through
+`transition_access_request`. An approved request opens on Approve, and a
+denied request opens on Deny. The role choice defaults to the suggestion when
+it is allowed, then to the action's granted roles, then to `roles_for`.
+History lists the action, who did it, and when.
 
 Pass `presentation=modal` and load it in the `access_request` Turbo frame to
 use the modal. The same URLs without that param are full pages.

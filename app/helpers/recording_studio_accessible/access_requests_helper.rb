@@ -2,11 +2,13 @@
 
 require_relative "access_request_flow_helper"
 require_relative "access_request_list_helper"
+require_relative "access_request_show_helper"
 
 module RecordingStudioAccessible
   module AccessRequestsHelper
     include AccessRequestFlowHelper
     include AccessRequestListHelper
+    include AccessRequestShowHelper
 
     FRAME_ID = "access_request"
     MODAL = "modal"
@@ -70,12 +72,7 @@ module RecordingStudioAccessible
     end
 
     def access_request_event_description(event)
-      note = event_note(event)
-      email = event.actor.try(:email).to_s
-      return email if note.blank?
-      return note if email.blank?
-
-      safe_join([note, email], " — ")
+      access_request_actor_name(event.actor)
     end
 
     def access_request_person_label(actor)
@@ -89,12 +86,6 @@ module RecordingStudioAccessible
     end
 
     private
-
-    def event_note(event)
-      return unless %w[access_request_submitted resubmitted].include?(event.action.to_s)
-
-      event.recordable.try(:message).to_s.strip.presence
-    end
 
     def requester_name(actor, email)
       return unless defined?(::RecordingStudioUser) && RecordingStudioUser.respond_to?(:display_name_for)

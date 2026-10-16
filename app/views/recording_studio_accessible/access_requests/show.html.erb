@@ -1,74 +1,84 @@
 <% request_record = @request_recording.recordable %>
-<%= render FlatPack::PageNav::Component.new(class: "mb-4", anchor_href: recording_access_requests_path(@recording)) %>
-<%= render FlatPack::PageTitle::Component.new(title: accessible_t("requests.show_title"), variant: :h1) %>
+<%= render FlatPack::PageNav::Component.new(class: "mb-8", anchor_href: recording_access_requests_path(@recording)) %>
 
-<div class="mt-6 grid gap-4">
-  <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
-    <% card.body(class: "grid gap-3") do %>
-      <p><%= access_request_person_label(request_record.actor) %></p>
-      <% if request_record.role.present? && !request_record.pending? %>
-        <p><%= accessible_role_name(request_record.role) %></p>
-      <% end %>
-      <% if request_record.message.present? %>
-        <div class="grid gap-1">
-          <p class="font-medium"><%= accessible_t("requests.note_label") %></p>
-          <p><%= request_record.message %></p>
-        </div>
-      <% end %>
-      <% if manager? && access_request_gate_answers(request_record).any? %>
-        <%= render FlatPack::List::Component.new(divider: true) do %>
-          <% access_request_gate_answers(request_record).each do |label, value| %>
-            <%= render FlatPack::List::Item.new(leading: label, class: "px-0 py-2") do %>
-              <%= value %>
-            <% end %>
-          <% end %>
+<div class="grid max-w-2xl gap-8">
+  <div class="grid gap-3">
+    <%= render FlatPack::PageTitle::Component.new(
+      title: access_request_show_heading(request_record),
+      variant: :h1
+    ) %>
+    <% if request_record.message.present? %>
+      <p><%= request_record.message %></p>
+    <% end %>
+    <p class="text-sm text-[var(--surface-muted-content-color)]">
+      <%= accessible_t("requests.requested_on", date: access_request_requested_on(@request_recording, @events)) %>
+    </p>
+  </div>
+
+  <% if manager? && access_request_gate_answers(request_record).any? %>
+    <%= render FlatPack::List::Component.new(spacing: :dense, divider: true) do %>
+      <% access_request_gate_answers(request_record).each do |label, value| %>
+        <%= render FlatPack::List::Item.new(class: "px-0 py-3") do %>
+          <p class="text-sm text-[var(--surface-muted-content-color)]"><%= label %></p>
+          <p class="mt-1"><%= value %></p>
         <% end %>
       <% end %>
-      <%= render FlatPack::Badge::Component.new(
-        text: accessible_t("requests.statuses.#{request_record.status}"),
-        style: access_request_status_style(request_record.status),
-        size: :sm
-      ) %>
     <% end %>
   <% end %>
 
-  <% if request_record.pending? && manager? %>
-    <%= form_with url: approve_recording_access_request_path(@recording, @request_recording), method: :post,
-                  class: "grid max-w-lg gap-3" do %>
-      <%= render FlatPack::Select::Component.new(
-        name: "role",
-        label: accessible_t("requests.approve_role"),
-        options: access_request_approval_options(request_record),
-        value: access_request_approval_default(request_record),
-        required: true
-      ) %>
-      <%= render FlatPack::Button::Component.new(
-        text: accessible_t("requests.approve"), style: :primary, size: :md, type: "submit"
-      ) %>
-    <% end %>
-    <%= form_with url: deny_recording_access_request_path(@recording, @request_recording), method: :post,
-                  class: "grid max-w-lg gap-3" do %>
-      <%= render FlatPack::TextArea::Component.new(
-        name: "review_note",
-        label: accessible_t("requests.deny_note"),
-        rows: 3
-      ) %>
-      <%= render FlatPack::Button::Component.new(
-        text: accessible_t("requests.deny"), style: :secondary, size: :md, type: "submit"
-      ) %>
+  <% if manager? %>
+    <%= render FlatPack::Tabs::Component.new(
+      variant: :pills,
+      style: :default,
+      size: :sm,
+      default_tab: access_request_decision_tab(request_record)
+    ) do |tabs| %>
+      <% tabs.tab(label: accessible_t("requests.approve"), id: "access-request-approve") do %>
+        <%= form_with url: transition_recording_access_request_path(@recording, @request_recording), method: :post,
+                      class: "grid max-w-md gap-4" do %>
+          <%= hidden_field_tag :status, "approved" %>
+          <%= render FlatPack::RadioGroup::Component.new(
+            name: "role",
+            label: accessible_t("requests.approve_role"),
+            options: access_request_approval_options(request_record),
+            value: access_request_approval_default(request_record),
+            required: true
+          ) %>
+          <%= render FlatPack::Button::Component.new(
+            text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
+          ) %>
+        <% end %>
+      <% end %>
+      <% tabs.tab(label: accessible_t("requests.deny"), id: "access-request-deny") do %>
+        <%= form_with url: transition_recording_access_request_path(@recording, @request_recording), method: :post,
+                      class: "grid max-w-md gap-4" do %>
+          <%= hidden_field_tag :status, "denied" %>
+          <%= render FlatPack::TextArea::Component.new(
+            name: "review_note",
+            label: accessible_t("requests.deny_note"),
+            value: request_record.review_note,
+            rows: 3
+          ) %>
+          <%= render FlatPack::Button::Component.new(
+            text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
+          ) %>
+        <% end %>
+      <% end %>
     <% end %>
   <% end %>
 
-  <%= render FlatPack::SectionTitle::Component.new(title: accessible_t("requests.history")) %>
-  <%= render FlatPack::Timeline::Component.new do %>
-    <% @events.each_with_index do |event, index| %>
-      <%= render FlatPack::Timeline::Item.new(
-        title: accessible_t("requests.events.#{event.action}"),
-        timestamp: l(event.occurred_at, format: :short),
-        description: access_request_event_description(event),
-        style: access_request_event_style(event.action),
-        last: index == @events.size - 1
-      ) %>
+  <div class="grid gap-3">
+    <%= render FlatPack::SectionTitle::Component.new(title: accessible_t("requests.history")) %>
+    <%= render FlatPack::Timeline::Component.new do %>
+      <% @events.each_with_index do |event, index| %>
+        <%= render FlatPack::Timeline::Item.new(
+          title: accessible_t("requests.events.#{event.action}"),
+          timestamp: l(event.occurred_at, format: :short),
+          description: access_request_event_description(event),
+          style: access_request_event_style(event.action),
+          last: index == @events.size - 1
+        ) %>
+      <% end %>
     <% end %>
-  <% end %>
+  </div>
 </div>

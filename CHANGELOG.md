@@ -44,6 +44,9 @@ All notable changes to this project will be documented in this file.
   Several recordings add a linked recording column. The row menu moves the
   request to another status.
   Further pages load with Flatpack infinite scroll.
+- The request page names who asked and which recording, then the message and
+  the date. Approve and Deny are pills. Save runs that status transition.
+  History lists the action, who, and when.
 
 ### Upgrade notes
 - Run `rails generate recording_studio_accessible:migrations` and migrate.

@@ -179,7 +179,7 @@ class AccessRequestGateTest < ActionDispatch::IntegrationTest
     assert_match "Why do you want access?", response.body
     assert_match "Embargo review", response.body
     assert_match "Please", response.body
-    assert_match "Note", response.body
+    assert_match "requested access to", response.body
   end
 
   test "the example gate asks why in a modal and on a page, then shows the answer to a manager" do

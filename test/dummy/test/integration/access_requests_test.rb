@@ -142,16 +142,31 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_access_request_table("I edit")
 
     get request_show_path(request_recording)
-    assert_match "Asked for access", response.body
+    assert_match "#{@person.email} requested access to #{@workspace.name}", response.body
     assert_match "I edit", response.body
-    assert_match "Note", response.body
-    assert_select "select[name=role]"
+    assert_equal 1, response.body.scan("I edit").size
+    assert_match "Requested", response.body
+    assert_match "Asked for access", response.body
+    assert_select "[role=tab][aria-selected=true]", text: "Approve"
+    assert_select "[role=tab]", text: "Deny"
+    assert_select "form[action=?]", transition_path(request_recording), count: 2
+    assert_select "input[type=radio][name=role][value=edit]"
+    assert_select "input[name=status][value=approved]"
+    assert_select "textarea[name=review_note]"
+    assert_match "<html", response.body
 
-    post approve_path(request_recording), params: { role: "edit" }
+    post transition_path(request_recording), params: { status: "approved", role: "edit" }
     follow_redirect!
     assert_match "Approved", response.body
     assert_match "What happened", response.body
+    assert_select "[role=tab][aria-selected=true]", text: "Approve"
     assert RecordingStudioAccessible.authorized?(actor: @person, recording: @recording, role: "edit")
+
+    post transition_path(request_recording), params: { status: "denied", review_note: "Not this round" }
+    follow_redirect!
+    assert_match "Request denied.", response.body
+    assert_select "[role=tab][aria-selected=true]", text: "Deny"
+    refute RecordingStudioAccessible.authorized?(actor: @person, recording: @recording, role: "edit")
   end
 
   test "locked screen helper renders a modal and a page link" do
@@ -223,8 +238,8 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     recording_studio_accessible.recording_access_request_path(@recording, request_recording)
   end
 
-  def approve_path(request_recording)
-    recording_studio_accessible.approve_recording_access_request_path(@recording, request_recording)
+  def transition_path(request_recording)
+    recording_studio_accessible.transition_recording_access_request_path(@recording, request_recording)
   end
 
   def assert_email_step
