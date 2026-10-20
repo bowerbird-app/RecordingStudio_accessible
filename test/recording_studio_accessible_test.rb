@@ -4,12 +4,12 @@ require "test_helper"
 
 class RecordingStudioAccessibleTest < Minitest::Test
   def test_version_matches_the_current_release
-    assert_equal "0.20.0", RecordingStudioAccessible::VERSION
+    assert_equal "0.20.1", RecordingStudioAccessible::VERSION
   end
 
   def test_recording_studio_version_is_at_least_4_7
-    assert_operator Gem::Version.new(RecordingStudio::VERSION), :>=, Gem::Version.new("4.7.0")
-    assert_operator Gem.loaded_specs.fetch("recording_studio").version, :>=, Gem::Version.new("4.7.0")
+    assert_operator Gem::Version.new(RecordingStudio::VERSION), :>=, Gem::Version.new("4.7.1")
+    assert_operator Gem.loaded_specs.fetch("recording_studio").version, :>=, Gem::Version.new("4.7.1")
   end
 
   def test_engine_exists

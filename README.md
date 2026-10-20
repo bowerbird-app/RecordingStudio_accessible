@@ -31,7 +31,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", "~> 4.2"
+gem "recording_studio", "~> 4.7"
 gem "recording_studio_accessible"
 # Query-only trash helpers used by Accessible (pin by tag or host equivalent).
 # Prefer require: false; Accessible loads recording_studio_trashable/query.
@@ -70,6 +70,25 @@ initializer and share-email templates, and it can optionally add
 `config/recording_studio_accessible.yml` for simple environment-specific
 settings such as `warn_on_core_conflict`. Proc-based hooks still belong in the
 initializer.
+
+## Configuration
+
+`config.layout` chooses the layout for engine screens. Leave it unset and each
+screen keeps the layout it uses today. Mounted docs stay on the host layout.
+Manage access, invitations, actor access points, and access-request pages stay
+on the engine layouts.
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.layout = "admin"
+  # config.layout = ->(controller:) { "admin" }
+end
+```
+
+A callable receives `controller:` and returns a layout name. It runs when the
+screen renders, after authentication and access checks. A denied actor stays
+denied when the callable raises. Access-request modal frames still render
+without a document layout.
 
 ## Controller auth for sibling engines
 
@@ -356,11 +375,11 @@ access-granted email. Denial sends mail only when
 request emails direct admins on the target and its parents. Replace that with
 `config.access_request_submitted_notifier`.
 
-## Compatibility with RecordingStudio 4.2
+## Compatibility with RecordingStudio 4.7.1
 
-Recording Studio Accessible targets RecordingStudio `4.2` (currently tested with
-`4.2.0`) and its capability-owned child recordable contract. RecordingStudio core
-no longer ships built-in access control, so this addon provides
+Recording Studio Accessible targets RecordingStudio `~> 4.7` (currently tested
+with `4.7.1`) and its capability-owned child recordable contract. RecordingStudio
+core no longer ships built-in access control, so this addon provides
 `RecordingStudio::Access` and `RecordingStudio::AccessRequest`, declares them
 as child-only recordables, and registers them as metadata for the `:accessible`
 capability.
@@ -386,6 +405,29 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.20.1
+
+No migration.
+
+1. Install Accessible `0.20.1` with RecordingStudio `~> 4.7` (this repo tests `4.7.1`) and Flatpack `0.1.275`. The gemspec floors stay `recording_studio ~> 4.7` and `recording_studio_trashable ~> 0.10`. Do not add `recording_studio_user` to the Accessible gemspec.
+2. If you override an engine page nav view, replace the old PageNav keywords with `with_back`, `with_link`, `with_close`, `with_action`, or `with_item`. Flatpack 0.1.274 removed the old keywords and they raise. Close and back hrefs must be a known route or a validated same-origin path.
+3. Leave `config.layout` unset to keep the current layouts. Set it only when engine screens should render inside a host layout.
+
+#### Upgrading to 0.20.0
+
+Access requests are new. Run the migrations.
+
+1. Install Accessible `0.20.0`.
+2. Copy the migrations and run them.
+
+```bash
+bin/rails generate recording_studio_accessible:migrations
+bin/rails db:migrate
+```
+
+3. New tables are `recording_studio_access_requests` and `recording_studio_access_request_intents`. `gate_metadata` is added to `recording_studio_access_requests`.
+4. Accessible does not depend on Users in the gemspec. Hosts that want the email-code screens add `recording_studio_user` the same way Messages does. Without Users, `request_access` still works for a signed-in actor.
 
 #### Upgrading to 0.14.0
 
@@ -1636,7 +1678,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v4.5.0`, RecordingStudioRootSwitchable `v0.8.0`, FlatPack `v0.1.248`, and (dummy only) Recording Studio Internationalization `v0.1.2`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v4.7.1`, RecordingStudioRootSwitchable `v0.9.6`, FlatPack `v0.1.275`, and (dummy only) Recording Studio Internationalization `v0.1.7`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

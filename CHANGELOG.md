@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-10-20
+
+### Added
+- `config.layout`, a layout name or a callable (`controller:` keyword). When it
+  is unset, each engine screen keeps the layout it uses today. Mounted docs
+  stay on the host layout. Manage access, invitations, actor access points,
+  and access-request pages stay on the engine layouts.
+
+### Changed
+- Development and dummy pins move to `recording_studio` `v4.7.1`, `flat_pack`
+  `v0.1.275`, `recording_studio_trashable` `v0.11.2`, and the other Recording
+  Studio release tags named in the Gemfiles. The gemspec floors stay
+  `recording_studio ~> 4.7` and `recording_studio_trashable ~> 0.10`.
+  `recording_studio_user` stays out of the gemspec.
+- Engine page nav uses Flatpack's ordered rows (`with_close`). The close href
+  is still a known route or the validated same-origin navigation helper.
+
+### Upgrade notes
+- No migration.
+- Hosts that override an engine page nav view need `with_back`, `with_link`,
+  `with_close`, `with_action`, or `with_item`. Flatpack 0.1.274 removed the
+  old PageNav keywords, and they now raise. This repo pins Flatpack `v0.1.275`.
+- Leave `config.layout` unset to keep current layouts. Set a layout name, or a
+  callable, when engine screens should use a host layout. The callable runs
+  while the screen renders. It does not replace authentication or access
+  checks. A denied actor stays denied when the callable raises. Access-request
+  modal frames still render without a document layout.
+
 ## [0.20.0] - 2026-10-16
 
 ### Fixed
@@ -79,6 +107,15 @@ All notable changes to this project will be documented in this file.
   codes are unavailable.
 - The approve role picker uses Flatpack `RadioGroup` `variant: :inline`
   (Flatpack 0.1.212 or newer). The dummy pins Flatpack `v0.1.248`.
+
+## [0.19.1] - 2026-10-16
+
+### Changed
+- Development and dummy Gemfiles pin `recording_studio_trashable` at `v0.11.0`.
+  The gemspec constraint stays `~> 0.10`.
+
+### Upgrade notes
+- No migration. Hosts that resolve Trashable `~> 0.10` need no change.
 
 ## [0.19.0] - 2026-10-14
 
@@ -452,8 +489,7 @@ tracked. A warm snapshot skips provision and still fetches skills.
   `AccessCreationContext.allow` workaround.
 - Dummy companion pins: RecordingStudio `v4.2.0`, Root Switchable `v0.5.0`,
   FlatPack `v0.1.133`. FlatPack 0.1.133 buttons use `href:` (not `url:`),
-  sidebar items use `text:` (not `label:`), and PageNav close uses
-  `anchor_href:`.
+  sidebar items use `text:` (not `label:`), and PageNav close took an href.
 
 ## [0.6.1] - 2026-08-20
 
@@ -643,7 +679,10 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.20.1...HEAD
+[0.20.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.20.0...v0.20.1
+[0.20.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.19.1...v0.20.0
+[0.19.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.18.1...v0.19.0
 [0.18.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.17.0...v0.18.0
