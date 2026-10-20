@@ -16,7 +16,7 @@ gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics",
                                 require: false
 # Email-code accounts. Soft-required: Users already depends on Accessible.
 # Users' gemspec deps are git-only; pin them so Bundler can resolve.
-gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.5.0",
+gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.5.1",
                               require: false
 gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.20.1",
                                    require: false

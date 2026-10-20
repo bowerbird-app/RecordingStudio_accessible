@@ -31,7 +31,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", "~> 4.7"
+gem "recording_studio", "~> 4.7", ">= 4.7.1"
 gem "recording_studio_accessible"
 # Query-only trash helpers used by Accessible (pin by tag or host equivalent).
 # Prefer require: false; Accessible loads recording_studio_trashable/query.
@@ -377,8 +377,8 @@ request emails direct admins on the target and its parents. Replace that with
 
 ## Compatibility with RecordingStudio 4.7.1
 
-Recording Studio Accessible targets RecordingStudio `~> 4.7` (currently tested
-with `4.7.1`) and its capability-owned child recordable contract. RecordingStudio
+Recording Studio Accessible targets RecordingStudio `~> 4.7, >= 4.7.1` (currently
+tested with `4.7.1`) and its capability-owned child recordable contract. RecordingStudio
 core no longer ships built-in access control, so this addon provides
 `RecordingStudio::Access` and `RecordingStudio::AccessRequest`, declares them
 as child-only recordables, and registers them as metadata for the `:accessible`
@@ -410,7 +410,7 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 No migration.
 
-1. Install Accessible `0.20.1` with RecordingStudio `~> 4.7` (this repo tests `4.7.1`) and Flatpack `0.1.275`. The gemspec floors stay `recording_studio ~> 4.7` and `recording_studio_trashable ~> 0.10`. Do not add `recording_studio_user` to the Accessible gemspec.
+1. Install Accessible `0.20.1` with RecordingStudio `~> 4.7, >= 4.7.1` (this repo tests `4.7.1`) and Flatpack `0.1.275`. Trashable stays `recording_studio_trashable ~> 0.10`. Do not add `recording_studio_user` to the Accessible gemspec.
 2. If you override an engine page nav view, replace the old PageNav keywords with `with_back`, `with_link`, `with_close`, `with_action`, or `with_item`. Flatpack 0.1.274 removed the old keywords and they raise. Close and back hrefs must be a known route or a validated same-origin path.
 3. Leave `config.layout` unset to keep the current layouts. Set it only when engine screens should render inside a host layout.
 

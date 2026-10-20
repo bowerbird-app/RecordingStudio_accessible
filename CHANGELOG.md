@@ -14,9 +14,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Development and dummy pins move to `recording_studio` `v4.7.1`, `flat_pack`
-  `v0.1.275`, `recording_studio_trashable` `v0.11.2`, and the other Recording
-  Studio release tags named in the Gemfiles. The gemspec floors stay
-  `recording_studio ~> 4.7` and `recording_studio_trashable ~> 0.10`.
+  `v0.1.275`, `recording_studio_trashable` `v0.11.2`, `recording_studio_admin`
+  `v2.5.1`, and the other Recording Studio release tags named in the Gemfiles.
+  The core gemspec floor is `~> 4.7, >= 4.7.1`. Trashable stays `~> 0.10`.
   `recording_studio_user` stays out of the gemspec.
 - Engine page nav uses Flatpack's ordered rows (`with_close`). The close href
   is still a known route or the validated same-origin navigation helper.
@@ -489,7 +489,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
   `AccessCreationContext.allow` workaround.
 - Dummy companion pins: RecordingStudio `v4.2.0`, Root Switchable `v0.5.0`,
   FlatPack `v0.1.133`. FlatPack 0.1.133 buttons use `href:` (not `url:`),
-  sidebar items use `text:` (not `label:`), and PageNav close took an href.
+  sidebar items use `text:` (not `label:`), and PageNav close uses
+  `anchor_href:`.
 
 ## [0.6.1] - 2026-08-20
 
