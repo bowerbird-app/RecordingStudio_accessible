@@ -5,6 +5,7 @@ module RecordingStudioAccessible
     helper RecordingStudioAccessible::ApplicationHelper
 
     class_attribute :builtin_accessible_layout, instance_accessor: false, default: :host
+    class_attribute :inherit_host_layout_conditions, instance_accessor: false, default: true
 
     layout :recording_studio_accessible_layout
 
@@ -21,20 +22,24 @@ module RecordingStudioAccessible
       return configured.call(controller: self) if configured.respond_to?(:call)
       return configured if configured.present?
 
-      default == :host ? inherited_host_layout : default
+      default == :host ? nil : default
     end
 
-    def inherited_host_layout
-      return unless defined?(::ApplicationController)
+    def _conditional_layout?
+      return true unless self.class.inherit_host_layout_conditions
+      return true unless defined?(::ApplicationController)
 
-      case (specification = ::ApplicationController._layout)
-      when Symbol
-        send(specification)
-      when Proc
-        specification.arity.zero? ? specification.call : specification.call(self)
-      when String
-        specification
-      end
+      host_layout_includes_action?
+    end
+
+    def host_layout_includes_action?
+      conditions = ::ApplicationController._layout_conditions
+      return true if conditions.blank?
+
+      only = Array(conditions[:only]).map(&:to_s)
+      return only.include?(action_name) if only.any?
+
+      Array(conditions[:except]).map(&:to_s).exclude?(action_name)
     end
   end
 end

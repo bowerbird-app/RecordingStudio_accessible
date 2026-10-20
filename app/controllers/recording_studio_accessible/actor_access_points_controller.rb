@@ -7,6 +7,7 @@ module RecordingStudioAccessible
     ACTOR_TYPE_PATTERN = /\A[A-Z][A-Za-z0-9_:]{0,120}\z/
     UUID_PATTERN = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
     self.builtin_accessible_layout = "recording_studio_accessible/blank"
+    self.inherit_host_layout_conditions = false
 
     before_action :load_workspace!
     before_action :load_workspace_root_recording!

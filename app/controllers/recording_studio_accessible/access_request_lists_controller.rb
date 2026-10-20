@@ -4,6 +4,7 @@ module RecordingStudioAccessible
   class AccessRequestListsController < ApplicationController
     helper AccessRequestsHelper
     self.builtin_accessible_layout = "recording_studio_accessible/blank"
+    self.inherit_host_layout_conditions = false
 
     def index
       return head :forbidden if current_actor.blank?

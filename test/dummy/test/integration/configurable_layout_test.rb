@@ -79,6 +79,49 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, "Manage access"
   end
 
+  test "an unset layout keeps a host lambda that calls an instance method" do
+    assert_nil RecordingStudioAccessible.configuration.layout
+    with_host_layout("application") do
+      sign_in @admin
+
+      get "/recording_studio_accessible"
+
+      assert_response :success
+      assert_includes @response.body, "Recording Studio Accessible Demo"
+      assert_includes @response.body, 'content="Dummy"'
+      refute_includes @response.body, "Main navigation"
+
+      get "/recording_studio_accessible/overview"
+
+      assert_response :success
+      assert_includes @response.body, 'content="Dummy"'
+      refute_includes @response.body, "Main navigation"
+
+      get root_recording_accesses_path
+
+      assert_response :success
+      assert_includes @response.body, "Manage access"
+      assert_includes @response.body, 'content="Recording Studio Accessible"'
+    end
+  end
+
+  test "an unset layout keeps the host only and except conditions" do
+    assert_nil RecordingStudioAccessible.configuration.layout
+    with_host_layout("flat_pack_sidebar", except: :index) do
+      sign_in @admin
+
+      get "/recording_studio_accessible/overview"
+
+      assert_response :success
+      assert_includes @response.body, "Main navigation"
+
+      get "/recording_studio_accessible"
+
+      assert_response :success
+      refute_includes @response.body, "Main navigation"
+    end
+  end
+
   test "a layout callable that raises is not used for an access request modal" do
     RecordingStudioAccessible.configuration.layout = ->(**) { raise "layout failed closed" }
 
@@ -103,5 +146,16 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
 
   def root_recording_accesses_path
     "/recording_studio_accessible/recordings/#{@root_recording.id}/accesses"
+  end
+
+  def with_host_layout(layout_name, conditions = {})
+    previous_layout = ApplicationController._layout
+    previous_conditions = ApplicationController._layout_conditions
+    ApplicationController.define_method(:layout_name_from_instance) { layout_name }
+    ApplicationController.layout(-> { layout_name_from_instance }, conditions)
+    yield
+  ensure
+    ApplicationController.layout(previous_layout, previous_conditions || {})
+    ApplicationController.remove_method(:layout_name_from_instance)
   end
 end

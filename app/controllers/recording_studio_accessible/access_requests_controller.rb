@@ -12,6 +12,7 @@ module RecordingStudioAccessible
     before_action :set_recording
     before_action :require_request_parent!
     before_action :remember_access_request_copy
+    self.inherit_host_layout_conditions = false
     layout :access_request_layout
 
     def index
