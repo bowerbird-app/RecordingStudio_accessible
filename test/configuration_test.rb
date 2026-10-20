@@ -25,6 +25,10 @@ class ConfigurationTest < Minitest::Test
     assert_equal true, @configuration.warn_on_core_conflict
   end
 
+  def test_layout_defaults_to_nil
+    assert_nil @configuration.layout
+  end
+
   def test_action_audiences_defaults_empty
     assert_predicate @configuration.action_audiences, :empty?
     assert_equal({}, @configuration.action_audiences.to_h)

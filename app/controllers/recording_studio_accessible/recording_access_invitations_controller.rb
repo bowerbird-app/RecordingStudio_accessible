@@ -4,7 +4,7 @@ module RecordingStudioAccessible
   class RecordingAccessInvitationsController < ApplicationController
     include RecordingStudioAccessible::NavigationUrlSafety
 
-    layout "recording_studio_accessible/blank"
+    self.builtin_accessible_layout = "recording_studio_accessible/blank"
 
     before_action :set_recording
     before_action :ensure_access_children_enabled!
