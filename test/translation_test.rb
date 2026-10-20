@@ -9,7 +9,7 @@ class TranslationTest < Minitest::Test
   GEM_EN_YML = File.expand_path("../config/locales/en.yml", __dir__)
   SAMPLE_KEYS = {
     "recording_studio.accessible.manage.title" => "Manage access",
-    "recording_studio.accessible.manage.add" => "Add access",
+    "recording_studio.accessible.manage.add" => "+ Access",
     "recording_studio.accessible.flashes.access_granted" => "Access granted.",
     "recording_studio.accessible.layout.title" => "Recording Studio Accessible",
     "recording_studio.accessible.errors.unknown_actor" => "Unknown actor",

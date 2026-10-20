@@ -38,7 +38,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Manage access"
     assert_includes @response.body, "Integration Workspace"
     assert_includes @response.body, @editor.email
-    assert_includes @response.body, "Add access"
+    assert_includes @response.body, "+ Access"
     assert_includes @response.body, @admin.email
     assert_includes @response.body, "Integration Workspace"
     assert_includes @response.body, "People with access"
@@ -168,8 +168,16 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     get "#{root_recording_accesses_path}/new"
 
     assert_response :success
-    assert_includes @response.body, "New access"
-    assert_includes @response.body, "Create access"
+    assert_includes @response.body, "Share access"
+    assert_includes @response.body, "Give access"
+    assert_includes @response.body, 'name="access[role]"'
+    assert_includes @response.body, 'value="view"'
+    assert_includes @response.body, 'value="edit"'
+    assert_includes @response.body, 'value="admin"'
+    assert_includes @response.body, "max-w-xl"
+    assert_includes @response.body, 'data-flat-pack--icon-name-value="eye"'
+    assert_includes @response.body, 'data-flat-pack--icon-name-value="pencil"'
+    assert_includes @response.body, 'data-flat-pack--icon-name-value="shield-check"'
     assert_includes @response.body, "User email"
     assert_includes @response.body, 'placeholder="email@example.com"'
     refute_includes @response.body, "Select an actor"

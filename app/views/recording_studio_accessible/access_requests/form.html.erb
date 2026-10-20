@@ -1,6 +1,6 @@
 <% content_for :title, access_request_t("form_title") %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
-  <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="form">
+  <div class="flex w-full max-w-xl flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="form">
     <%= render "recording_studio_accessible/access_requests/heading", title: access_request_t("form_title") %>
     <%= form_with url: recording_access_requests_path(@recording), method: :post,
                   class: "flex flex-col gap-[var(--stack-gap-lg)]", **access_request_form_options do %>

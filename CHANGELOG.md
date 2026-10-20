@@ -20,6 +20,13 @@ All notable changes to this project will be documented in this file.
   `recording_studio_user` stays out of the gemspec.
 - Engine page nav uses Flatpack's ordered rows (`with_close`). The close href
   is still a known route or the validated same-origin navigation helper.
+- The manage-access primary button says `+ Access`. The new-access page is
+  titled `Share access`, and its submit button says `Give access`. The role
+  field is Flatpack's button radio group, with an icon on each role. The
+  param stays `access[role]` and the role values are unchanged.
+- Engine forms use Flatpack's medium width (`max-w-xl`, the same cap as a
+  medium Flatpack modal). Phone screens stay full width of their container
+  because that cap is wider than a phone.
 
 ### Upgrade notes
 - No migration.
@@ -31,6 +38,9 @@ All notable changes to this project will be documented in this file.
   while the screen renders. It does not replace authentication or access
   checks. A denied actor stays denied when the callable raises. Access-request
   modal frames still render without a document layout.
+- Hosts and tests that assert the old labels need the new copy. `Add access`
+  is `+ Access`. `New access` is `Share access`. `Create access` is
+  `Give access`.
 
 ## [0.20.0] - 2026-10-16
 

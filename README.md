@@ -413,6 +413,7 @@ No migration.
 1. Install Accessible `0.20.1` with RecordingStudio `~> 4.7, >= 4.7.1` (this repo tests `4.7.1`) and Flatpack `0.1.275`. Trashable stays `recording_studio_trashable ~> 0.10`. Do not add `recording_studio_user` to the Accessible gemspec.
 2. If you override an engine page nav view, replace the old PageNav keywords with `with_back`, `with_link`, `with_close`, `with_action`, or `with_item`. Flatpack 0.1.274 removed the old keywords and they raise. Close and back hrefs must be a known route or a validated same-origin path.
 3. Leave `config.layout` unset to keep the current layouts. Set it only when engine screens should render inside a host layout.
+4. Update assertions on the old screen labels. The manage-access primary button is `+ Access`. The new-access title is `Share access` and the submit button is `Give access`. The role field is still `access[role]`.
 
 #### Upgrading to 0.20.0
 

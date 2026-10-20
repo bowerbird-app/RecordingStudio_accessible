@@ -2,6 +2,7 @@
   <% page_nav.with_close(href: recording_access_anchor_url) %>
 <% end %>
 
+<div class="w-full max-w-xl">
 <%= render FlatPack::PageTitle::Component.new(
   title: title,
   subtitle: @recording_label,
@@ -50,6 +51,7 @@
         options: access_role_options(@recording),
         value: @selected_role,
         label: accessible_t("form.role"),
+        variant: :inline,
         required: true
       ) %>
 
@@ -96,3 +98,4 @@
 <% else %>
   <%= form_content %>
 <% end %>
+</div>

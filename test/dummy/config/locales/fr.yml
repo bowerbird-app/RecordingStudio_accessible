@@ -66,7 +66,7 @@ fr:
           expired: "expirée"
       manage:
         title: "Gérer l’accès"
-        add: "Ajouter un accès"
+        add: "+ Accès"
         add_access: "+ Accès"
         people: "Personnes avec accès"
         empty_title: "Pas encore d’accès direct"
@@ -90,9 +90,9 @@ fr:
           actions: "Actions"
           access_point: "Point d’accès"
       form:
-        new_title: "Nouvel accès"
+        new_title: "Partager l’accès"
         edit_title: "Modifier l’accès"
-        create: "Créer l’accès"
+        create: "Donner l’accès"
         update: "Mettre à jour l’accès"
         user_email: "E-mail de la personne"
         email_placeholder: "email@example.com"

@@ -1,6 +1,6 @@
 <% content_for :title, access_request_t("verify_title") %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
-  <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="verify">
+  <div class="flex w-full max-w-xl flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="verify">
     <%= render "recording_studio_accessible/access_requests/heading", title: access_request_t("verify_title") %>
     <p><%= access_request_t("verify_intro", email: @intent.email) %></p>
     <%= form_with url: verify_recording_access_requests_path(@recording), method: :post,

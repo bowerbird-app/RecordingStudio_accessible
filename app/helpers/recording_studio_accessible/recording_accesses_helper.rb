@@ -5,6 +5,13 @@ module RecordingStudioAccessible
     include RecordingStudioAccessible::NavigationUrlSafety
     include RecordingStudioAccessible::CopyHelper
 
+    ROLE_OPTION_ICONS = {
+      "view" => "eye",
+      "edit" => "pencil",
+      "admin" => "shield-check",
+      "download" => "arrow-down-tray"
+    }.freeze
+
     def recording_access_index_back_url
       safe_local_navigation_url(params[:back_url], fallback: host_root_path)
     end
@@ -34,7 +41,14 @@ module RecordingStudioAccessible
     end
 
     def access_role_options(recording = nil)
-      RecordingStudioAccessible.roles_for(recording).map { |name| [accessible_role_name(name), name] }
+      RecordingStudioAccessible.roles_for(recording).map do |name|
+        role = name.to_s
+        {
+          label: accessible_role_name(name),
+          value: name,
+          icon: ROLE_OPTION_ICONS.fetch(role, "user")
+        }
+      end
     end
 
     def show_access_actor_type_column?(direct_rows, inherited_rows = [])

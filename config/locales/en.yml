@@ -26,7 +26,7 @@ en:
           expired: "expired"
       manage:
         title: "Manage access"
-        add: "Add access"
+        add: "+ Access"
         add_access: "+ Access"
         people: "People with access"
         empty_title: "No direct access yet"
@@ -50,9 +50,9 @@ en:
           actions: "Actions"
           access_point: "Access point"
       form:
-        new_title: "New access"
+        new_title: "Share access"
         edit_title: "Edit access"
-        create: "Create access"
+        create: "Give access"
         update: "Update access"
         user_email: "User email"
         email_placeholder: "email@example.com"
