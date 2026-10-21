@@ -28,8 +28,8 @@ All notable changes to this project will be documented in this file.
   medium Flatpack modal). Phone screens stay full width of their container
   because that cap is wider than a phone.
 - Share access, edit access, and access-request submit buttons have `pt-6`
-  above them. The edit-access form card uses Flatpack `border: :none`. Width
-  stays `max-w-xl`.
+  above them. Edit access is not wrapped in a card, so the form lines up with
+  the title the same way Share access does. Width stays `max-w-xl`.
 
 ### Upgrade notes
 - No migration.
