@@ -25,11 +25,35 @@ module RecordingStudioAccessible
       )
     end
 
+    def recording_studio_accessible_access_menu_item(recording, dropdown, label: Copy::UNSET, scope: :direct)
+      return unless recording_studio_accessible_access_menu_available?(dropdown)
+      return unless recording
+      return unless recording_studio_accessible_manage_access?(recording)
+
+      path = recording_studio_accessible_access_management_path(recording)
+      return if path.blank?
+
+      dropdown.menu_item(
+        text: recording_studio_accessible_access_menu_label(label),
+        href: path,
+        badge: recording_studio_accessible_access_holders(recording, scope: scope).size.to_s
+      )
+    end
+
     private
 
     def recording_studio_accessible_flatpack_available?
       defined?(::FlatPack::AvatarGroup::Component) &&
         defined?(::FlatPack::Button::Component)
+    end
+
+    def recording_studio_accessible_access_menu_available?(dropdown)
+      defined?(::FlatPack::Button::Dropdown::Component) && dropdown.respond_to?(:menu_item)
+    end
+
+    def recording_studio_accessible_access_menu_label(label)
+      text = Copy.value(label, "manage.access_menu")
+      text.presence || Copy.t("manage.access_menu")
     end
 
     def recording_studio_accessible_avatar_items(recording, scope: :direct)

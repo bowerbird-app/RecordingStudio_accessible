@@ -30,6 +30,14 @@ module FlatPack
   end
 
   module Button
+    module Dropdown
+      class Component # :nodoc:
+        def self.available?
+          true
+        end
+      end
+    end
+
     class Component
       attr_reader :system_arguments
 
@@ -46,6 +54,19 @@ class AvatarsHelperTest < Minitest::Test
   AccessRecording = Struct.new(:recordable)
   Actor = Struct.new(:name, :avatar_url)
   Recording = Struct.new(:id, :to_param, :parent_recording)
+
+  class Menu
+    attr_reader :items
+
+    def initialize
+      @items = []
+    end
+
+    def menu_item(**item)
+      @items << item
+      item
+    end
+  end
 
   class ViewContext
     include ActionView::Helpers::TagHelper
@@ -316,6 +337,135 @@ class AvatarsHelperTest < Minitest::Test
     end
 
     assert_equal "", html
+  end
+
+  def test_access_menu_item_links_to_manage_access_with_a_people_count
+    recording = Recording.new(42, "42")
+    menu = Menu.new
+
+    with_access_recordings(recording, [
+                             access_recording_for(Actor.new("Ada", nil)),
+                             access_recording_for(Actor.new("Grace", nil))
+                           ]) do
+      ViewContext.new.recording_studio_accessible_access_menu_item(recording, menu)
+    end
+
+    item = menu.items.fetch(0)
+
+    assert_equal 1, menu.items.size
+    assert_equal "Access", item[:text]
+    assert_equal "/recordings/42/accesses", item[:href]
+    assert_equal "2", item[:badge]
+    refute_includes item[:text], "+"
+  end
+
+  def test_access_menu_item_label_override_replaces_the_i18n_label
+    recording = Recording.new(42, "42")
+    menu = Menu.new
+
+    with_access_recordings(recording, []) do
+      ViewContext.new.recording_studio_accessible_access_menu_item(recording, menu, label: "Share")
+    end
+
+    assert_equal "Share", menu.items.fetch(0)[:text]
+    assert_equal "0", menu.items.fetch(0)[:badge]
+  end
+
+  def test_access_menu_item_blank_label_falls_back_to_access
+    recording = Recording.new(42, "42")
+    menu = Menu.new
+
+    with_access_recordings(recording, []) do
+      ViewContext.new.recording_studio_accessible_access_menu_item(recording, menu, label: "  ")
+    end
+
+    assert_equal "Access", menu.items.fetch(0)[:text]
+  end
+
+  def test_access_menu_item_follows_a_locale_override
+    recording = Recording.new(42, "42")
+    menu = Menu.new
+    I18n.backend.store_translations(:en, { recording_studio: { accessible: { manage: { access_menu: "People" } } } })
+
+    with_access_recordings(recording, [access_recording_for(Actor.new("Ada", nil))]) do
+      ViewContext.new.recording_studio_accessible_access_menu_item(recording, menu)
+    end
+
+    assert_equal "People", menu.items.fetch(0)[:text]
+  ensure
+    I18n.backend.store_translations(:en, { recording_studio: { accessible: { manage: { access_menu: "Access" } } } })
+  end
+
+  def test_access_menu_item_scope_all_counts_inherited_people_once
+    direct_actor = Actor.new("Ada Lovelace", nil)
+    inherited_actor = Actor.new("Grace Hopper", nil)
+    duplicate_actor = Actor.new("Katherine Johnson", nil)
+    parent_recording = Recording.new(7, "7")
+    recording = Recording.new(42, "42", parent_recording)
+    menu = Menu.new
+
+    resolver = lambda do |queried_recording|
+      case queried_recording
+      when recording
+        [access_recording_for(direct_actor), access_recording_for(duplicate_actor)]
+      when parent_recording
+        [access_recording_for(inherited_actor), access_recording_for(duplicate_actor)]
+      else
+        flunk("unexpected recording lookup: #{queried_recording.inspect}")
+      end
+    end
+
+    RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for, resolver) do
+      ViewContext.new.recording_studio_accessible_access_menu_item(recording, menu, scope: :all)
+    end
+
+    assert_equal "3", menu.items.fetch(0)[:badge]
+    assert_equal "/recordings/42/accesses", menu.items.fetch(0)[:href]
+  end
+
+  def test_access_menu_item_renders_nothing_when_actor_cannot_manage_access
+    recording = Recording.new(42, "42")
+    menu = Menu.new
+    RecordingStudioAccessible.configuration.access_management_authorizer = ->(**) { false }
+
+    result = with_access_recordings(recording, [access_recording_for(Actor.new("Ada", nil))], expected_calls: []) do
+      ViewContext.new.recording_studio_accessible_access_menu_item(recording, menu)
+    end
+
+    assert_nil result
+    assert_empty menu.items
+  end
+
+  def test_access_menu_item_renders_nothing_without_a_dropdown_builder
+    recording = Recording.new(42, "42")
+
+    result = with_access_recordings(recording, [], expected_calls: []) do
+      ViewContext.new.recording_studio_accessible_access_menu_item(recording, Object.new)
+    end
+
+    assert_nil result
+  end
+
+  def test_access_menu_item_renders_nothing_without_the_flatpack_dropdown
+    recording = Recording.new(42, "42")
+    menu = Menu.new
+    dropdown_component = FlatPack::Button::Dropdown.send(:remove_const, :Component)
+
+    result = with_access_recordings(recording, [], expected_calls: []) do
+      ViewContext.new.recording_studio_accessible_access_menu_item(recording, menu)
+    end
+
+    assert_nil result
+    assert_empty menu.items
+  ensure
+    FlatPack::Button::Dropdown.const_set(:Component, dropdown_component) if dropdown_component
+  end
+
+  def test_access_menu_item_renders_nothing_without_a_recording
+    menu = Menu.new
+
+    assert_nil ViewContext.new.recording_studio_accessible_access_menu_item(nil, menu)
+    assert_empty menu.items
   end
 
   def test_renders_nothing_when_flatpack_components_are_unavailable

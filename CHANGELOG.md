@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-10-21
+
+### Added
+- `recording_studio_accessible_access_menu_item(recording, dropdown)` adds an
+  Access row to a Flatpack `Button::Dropdown`. The label is
+  `recording_studio.accessible.manage.access_menu` ("Access"). Pass `label:`
+  to override it for one call. The row links to the same manage-access path
+  as `recording_studio_accessible_avatars`. A badge shows how many people
+  have access (`scope:` defaults to `:direct`, same as the avatar helper).
+
+### Upgrade notes
+- No migration. The avatar-group button is unchanged, including the `+ Access`
+  label when nobody has an avatar yet.
+- Hosts that copy `config/locales/en.yml` into another locale should add
+  `manage.access_menu`. A missing translation still falls back to English
+  through `Copy.t`.
+- Flatpack dropdown items have a leading icon and a trailing badge. They do
+  not have an avatar slot, so this row uses the badge for the count.
+
 ## [0.20.1] - 2026-10-20
 
 ### Added
