@@ -175,6 +175,8 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, 'value="edit"'
     assert_includes @response.body, 'value="admin"'
     assert_includes @response.body, "max-w-xl"
+    assert_select "form .pt-6 button[type=submit]", text: "Give access"
+    refute_includes @response.body, "fp-card"
     assert_includes @response.body, 'data-flat-pack--icon-name-value="eye"'
     assert_includes @response.body, 'data-flat-pack--icon-name-value="pencil"'
     assert_includes @response.body, 'data-flat-pack--icon-name-value="shield-check"'
@@ -211,6 +213,11 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Edit access"
     assert_includes @response.body, @editor.email
     assert_includes @response.body, "Update access"
+    assert_includes @response.body, "max-w-xl"
+    assert_includes @response.body, "fp-card"
+    assert_select "form .pt-6 button[type=submit]", text: "Update access"
+    refute_includes @response.body, "border border-[var(--card-border-color)]"
+    refute_includes @response.body, "border-2 border-[var(--card-border-color)]"
     refute_includes @response.body, "Edit role"
     refute_includes @response.body, "Change the role or delete this direct access entry"
     refute_includes @response.body, "<h2>Recording</h2>"

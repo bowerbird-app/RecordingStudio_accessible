@@ -14,13 +14,15 @@
         rows: 4,
         max_characters: RecordingStudio::AccessRequest::MESSAGE_MAX
       ) %>
-      <%= render FlatPack::Button::Component.new(
-        text: access_request_t("submit"),
-        style: :primary,
-        size: :md,
-        type: "submit",
-        class: "w-full"
-      ) %>
+      <div class="pt-6">
+        <%= render FlatPack::Button::Component.new(
+          text: access_request_t("submit"),
+          style: :primary,
+          size: :md,
+          type: "submit",
+          class: "w-full"
+        ) %>
+      </div>
     <% end %>
   </div>
 <% end %>

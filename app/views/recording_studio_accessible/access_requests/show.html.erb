@@ -53,9 +53,11 @@
               value: access_request_approval_default(request_record),
               required: true
             ) %>
-            <%= render FlatPack::Button::Component.new(
-              text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
-            ) %>
+            <div class="pt-6">
+              <%= render FlatPack::Button::Component.new(
+                text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
+              ) %>
+            </div>
           <% end %>
         <% end %>
         <% tabs.tab(label: accessible_t("requests.deny"), id: "access-request-deny") do %>
@@ -69,9 +71,11 @@
               value: request_record.review_note,
               rows: 3
             ) %>
-            <%= render FlatPack::Button::Component.new(
-              text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
-            ) %>
+            <div class="pt-6">
+              <%= render FlatPack::Button::Component.new(
+                text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
+              ) %>
+            </div>
           <% end %>
         <% end %>
       <% end %>

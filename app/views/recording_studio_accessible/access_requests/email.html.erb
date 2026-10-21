@@ -25,13 +25,15 @@
         autocomplete: "email",
         value: params[:email]
       ) %>
-      <%= render FlatPack::Button::Component.new(
-        text: access_request_t("email_submit"),
-        style: :primary,
-        size: :md,
-        type: "submit",
-        class: "w-full"
-      ) %>
+      <div class="pt-6">
+        <%= render FlatPack::Button::Component.new(
+          text: access_request_t("email_submit"),
+          style: :primary,
+          size: :md,
+          type: "submit",
+          class: "w-full"
+        ) %>
+      </div>
     <% end %>
   </div>
 <% end %>

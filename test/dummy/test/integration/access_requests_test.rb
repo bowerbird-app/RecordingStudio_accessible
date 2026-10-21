@@ -23,6 +23,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     refute_role_picker
     refute_recording_subtitle
     assert_access_request_screen("form", page: true)
+    assert_select "[data-access-request-step=form] form .pt-6 button[type=submit]", text: "Send request"
 
     post request_path, params: { access_request: { message: "From the page", action: "read" } }
     follow_redirect!
@@ -50,6 +51,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_match "Check your email", response.body
     refute_recording_subtitle
     assert_access_request_screen("verify", page: true)
+    assert_select "[data-access-request-step=verify] form .pt-6 button[type=submit]", text: "Confirm"
     get verify_path(presentation: "modal"), headers: modal_headers
     assert_match "Check your email", response.body
     refute_recording_subtitle
@@ -157,6 +159,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_select "[role=tab][aria-selected=true]", text: "Approve"
     assert_select "[role=tab]", text: "Deny"
     assert_select "form.gap-8", count: 2
+    assert_select "form.gap-8 .pt-6 button[type=submit]", count: 2
     assert_select "form[action=?]", transition_path(request_recording), count: 2
     assert_role_buttons("edit")
     assert_select "input[name=status][value=approved]"
@@ -168,6 +171,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_match "I edit", response.body
     assert_select "[role=tablist].border-b"
     assert_select "form.gap-8", count: 2
+    assert_select "form.gap-8 .pt-6 button[type=submit]", count: 2
     assert_role_buttons("edit")
     assert_access_request_screen("show", page: false)
 
@@ -337,6 +341,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_match "Next", response.body
     assert_select "input[name=name]"
     assert_select "input[name=name][required]", count: 0
+    assert_select "form .pt-6 button[type=submit]", text: "Next"
     assert_select "h1", text: "Request access"
     assert_select "h2", text: "Request access", count: 0
     refute_match "Tell us where to send the code", response.body

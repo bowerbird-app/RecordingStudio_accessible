@@ -15,13 +15,15 @@
         autocomplete: "one-time-code",
         maxlength: 6
       ) %>
-      <%= render FlatPack::Button::Component.new(
-        text: access_request_t("confirm"),
-        style: :primary,
-        size: :md,
-        type: "submit",
-        class: "w-full"
-      ) %>
+      <div class="pt-6">
+        <%= render FlatPack::Button::Component.new(
+          text: access_request_t("confirm"),
+          style: :primary,
+          size: :md,
+          type: "submit",
+          class: "w-full"
+        ) %>
+      </div>
     <% end %>
     <%= render FlatPack::Link::Component.new(
       href: resend_recording_access_requests_path(@recording, **(modal_presentation? ? { presentation: "modal" } : {})),
