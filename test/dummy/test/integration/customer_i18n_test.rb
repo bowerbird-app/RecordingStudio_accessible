@@ -44,7 +44,7 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Manage access"
     assert_includes response.body, "Pending invitation"
     assert_includes response.body, "People with access"
-    assert_includes response.body, "Add access"
+    assert_includes response.body, "+ Access"
     assert_select "html[lang='en']"
 
     delivery = ActionMailer::Base.deliveries.last
@@ -66,9 +66,9 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     sign_in @admin
     get "/recording_studio_accessible/recordings/#{@recording.id}/accesses/new"
     assert_response :success
-    assert_includes response.body, "New access"
+    assert_includes response.body, "Share access"
     assert_includes response.body, "User email"
-    assert_includes response.body, "Create access"
+    assert_includes response.body, "Give access"
   end
 
   test "dummy French locale renders invitee page, mailer and manage-access copy" do
@@ -84,7 +84,7 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Gérer l’accès"
     assert_includes response.body, "Invitation en attente"
     assert_includes response.body, "Personnes avec accès"
-    assert_includes response.body, "Ajouter un accès"
+    assert_includes response.body, "+ Accès"
     refute_includes response.body, "Pending invitation"
     refute_includes response.body, "Manage access"
     assert_select "html[lang='fr']"
@@ -114,10 +114,10 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     sign_in @admin
     get "/recording_studio_accessible/recordings/#{@recording.id}/accesses/new"
     assert_response :success
-    assert_includes response.body, "Nouvel accès"
+    assert_includes response.body, "Partager l’accès"
     assert_includes response.body, "E-mail de la personne"
-    assert_includes response.body, "Créer l’accès"
-    refute_includes response.body, "New access"
+    assert_includes response.body, "Donner l’accès"
+    refute_includes response.body, "Share access"
   end
 
   test "config subject override still wins over French locale" do

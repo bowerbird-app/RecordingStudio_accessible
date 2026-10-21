@@ -1,10 +1,12 @@
 <% request_record = @request_recording.recordable %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
   <% unless modal_frame_request? %>
-    <%= render FlatPack::PageNav::Component.new(class: "mb-8", anchor_href: recording_access_requests_path(@recording)) %>
+    <%= render FlatPack::PageNav::Component.new(class: "mb-8") do |page_nav| %>
+      <% page_nav.with_close(href: recording_access_requests_path(@recording)) %>
+    <% end %>
   <% end %>
 
-  <div class="grid max-w-2xl gap-8" data-access-request-step="show">
+  <div class="grid w-full max-w-xl gap-8" data-access-request-step="show">
     <div class="grid gap-3">
       <%= render FlatPack::PageTitle::Component.new(
         title: access_request_show_heading(request_record),
@@ -51,9 +53,11 @@
               value: access_request_approval_default(request_record),
               required: true
             ) %>
-            <%= render FlatPack::Button::Component.new(
-              text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
-            ) %>
+            <div class="pt-6">
+              <%= render FlatPack::Button::Component.new(
+                text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
+              ) %>
+            </div>
           <% end %>
         <% end %>
         <% tabs.tab(label: accessible_t("requests.deny"), id: "access-request-deny") do %>
@@ -67,9 +71,11 @@
               value: request_record.review_note,
               rows: 3
             ) %>
-            <%= render FlatPack::Button::Component.new(
-              text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
-            ) %>
+            <div class="pt-6">
+              <%= render FlatPack::Button::Component.new(
+                text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
+              ) %>
+            </div>
           <% end %>
         <% end %>
       <% end %>

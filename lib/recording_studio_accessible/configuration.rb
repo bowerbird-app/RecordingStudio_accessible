@@ -64,7 +64,8 @@ module RecordingStudioAccessible
                   :access_request_denied_notifier,
                   :access_request_index_recordings,
                   :mounted_page_authorizer,
-                  :authorize_actor_through
+                  :authorize_actor_through,
+                  :layout
     attr_reader :hooks, :access_actor_types, :action_audiences, :access_request_gates
 
     def initialize
@@ -93,6 +94,7 @@ module RecordingStudioAccessible
       @mounted_page_authorizer = method(:default_mounted_page_authorizer)
       @access_actor_types = nil
       @authorize_actor_through = method(:default_authorize_actor_through)
+      @layout = nil
       @hooks = Hooks.new
       @access_request_gates = {}
       @action_audiences = ActionAudiences.new

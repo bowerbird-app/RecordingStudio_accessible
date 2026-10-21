@@ -52,7 +52,7 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_match %r{<html[^>]*data-theme="rounded"}, @response.body
-    assert_includes @response.body, 'data-controller="flat-pack--page-nav"'
+    assert_includes @response.body, 'aria-label="Page navigation"'
     assert_includes @response.body, "#{@actor.email} access points"
     assert_includes @response.body, "Workspace: #{@workspace.name}"
     assert_includes @response.body, "<table"

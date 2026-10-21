@@ -290,11 +290,18 @@ class RecordingAccessesHelperTest < Minitest::Test
     end
     recording = Struct.new(:recordable).new(context_class.new)
 
-    assert_equal [%w[View view], %w[Download download]], ViewContext.new.access_role_options(recording)
+    assert_equal [
+      { label: "View", value: "view", icon: "eye" },
+      { label: "Download", value: "download", icon: "arrow-down-tray" }
+    ], ViewContext.new.access_role_options(recording)
   end
 
   def test_access_role_options_use_the_default_roles_without_a_declaration
-    assert_equal [%w[View view], %w[Edit edit], %w[Admin admin]], ViewContext.new.access_role_options(nil)
+    assert_equal [
+      { label: "View", value: "view", icon: "eye" },
+      { label: "Edit", value: "edit", icon: "pencil" },
+      { label: "Admin", value: "admin", icon: "shield-check" }
+    ], ViewContext.new.access_role_options(nil)
   end
 
   def test_recording_access_anchor_url_rejects_backslashes_and_control_characters

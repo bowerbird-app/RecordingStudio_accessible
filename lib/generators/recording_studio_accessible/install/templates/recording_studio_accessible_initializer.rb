@@ -123,6 +123,16 @@ RecordingStudioAccessible.configure do |config|
   #   )
   # end
 
+  # Optional: wrap engine screens in one host layout. Pass a layout name, or a
+  # callable that receives `controller:` and returns a layout name. Leave this
+  # unset and each screen keeps the layout it uses today. Authentication and
+  # access checks still run first. A callable that raises does not let a denied
+  # actor through. Access-request modal frames stay without a document layout.
+  # config.layout = "admin"
+  # config.layout = lambda do |controller:|
+  #   "admin"
+  # end
+
   # Optional: customize who can view the mounted addon overview/docs/email-preview
   # pages under /recording_studio_accessible. The default is fail-closed unless
   # the current actor has admin access to the resolved demo root recording.

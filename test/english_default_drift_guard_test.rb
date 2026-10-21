@@ -64,7 +64,7 @@ class EnglishDefaultDriftGuardTest < Minitest::Test
       Copy.t("manage.title", default: 'Manage access')
       Copy.t(
         "manage.add",
-        default: "Add access"
+        default: "+ Access"
       )
       accessible_t "layout.title", default: "Recording Studio Accessible"
       I18n.translate("recording_studio.accessible.flashes.access_granted", default: "Access granted.")
@@ -83,7 +83,7 @@ class EnglishDefaultDriftGuardTest < Minitest::Test
     end
 
     assert_includes hits, "Manage access"
-    assert_includes hits, "Add access"
+    assert_includes hits, "+ Access"
     assert_includes hits, "Recording Studio Accessible"
     assert_includes hits, "Access granted."
     assert_includes hits, "Unknown actor"

@@ -46,7 +46,7 @@ class EnglishFallbackTest < ActionDispatch::IntegrationTest
 
       assert_response :success
       assert_includes @response.body, "Manage access"
-      assert_includes @response.body, "Add access"
+      assert_includes @response.body, "+ Access"
       assert_includes @response.body, "People with access"
       refute_match(/translation missing/i, @response.body)
     end

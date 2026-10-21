@@ -12,6 +12,7 @@ module RecordingStudioAccessible
     before_action :set_recording
     before_action :require_request_parent!
     before_action :remember_access_request_copy
+    self.inherit_host_layout_conditions = false
     layout :access_request_layout
 
     def index
@@ -112,9 +113,13 @@ module RecordingStudioAccessible
 
     def access_request_layout
       return false if modal_frame_request?
-      return "recording_studio_accessible/blank" if %w[index show].include?(action_name)
 
-      "recording_studio_accessible/access_request"
+      default = if %w[index show].include?(action_name)
+                  "recording_studio_accessible/blank"
+                else
+                  "recording_studio_accessible/access_request"
+                end
+      recording_studio_accessible_layout_or(default)
     end
 
     def set_recording

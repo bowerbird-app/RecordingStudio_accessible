@@ -1,8 +1,8 @@
-<%= render FlatPack::PageNav::Component.new(
-  class: "mb-4",
-  anchor_href: recording_access_anchor_url
-) %>
+<%= render FlatPack::PageNav::Component.new(class: "mb-4") do |page_nav| %>
+  <% page_nav.with_close(href: recording_access_anchor_url) %>
+<% end %>
 
+<div class="w-full max-w-xl">
 <%= render FlatPack::PageTitle::Component.new(
   title: title,
   subtitle: @recording_label,
@@ -51,15 +51,18 @@
         options: access_role_options(@recording),
         value: @selected_role,
         label: accessible_t("form.role"),
+        variant: :inline,
         required: true
       ) %>
 
-      <%= render FlatPack::Button::Component.new(
-        text: submit_label,
-        style: :primary,
-        size: :md,
-        type: "submit"
-      ) %>
+      <div class="pt-6">
+        <%= render FlatPack::Button::Component.new(
+          text: submit_label,
+          style: :primary,
+          size: :md,
+          type: "submit"
+        ) %>
+      </div>
     </div>
   <% end %>
 <% end %>
@@ -97,3 +100,4 @@
 <% else %>
   <%= form_content %>
 <% end %>
+</div>

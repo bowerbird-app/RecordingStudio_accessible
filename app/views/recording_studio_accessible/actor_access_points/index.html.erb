@@ -1,7 +1,6 @@
-<%= render FlatPack::PageNav::Component.new(
-  class: "mb-4",
-  anchor_href: actor_access_points_anchor_url
-) %>
+<%= render FlatPack::PageNav::Component.new(class: "mb-4") do |page_nav| %>
+  <% page_nav.with_close(href: actor_access_points_anchor_url) %>
+<% end %>
 
 <%= render FlatPack::PageTitle::Component.new(
   title: accessible_t("actor_access_points.title", actor: @actor_label),

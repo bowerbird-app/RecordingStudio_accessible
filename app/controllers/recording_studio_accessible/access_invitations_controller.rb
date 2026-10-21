@@ -6,7 +6,8 @@ module RecordingStudioAccessible
   class AccessInvitationsController < ApplicationController
     include RecordingStudioAccessible::NavigationUrlSafety
 
-    layout "recording_studio_accessible/blank"
+    self.builtin_accessible_layout = "recording_studio_accessible/blank"
+    self.inherit_host_layout_conditions = false
 
     skip_before_action :authenticate_user!, raise: false
 

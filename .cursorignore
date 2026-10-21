@@ -1,0 +1,42 @@
+# Vendored copies of this gem and Bundler install trees.
+# test/dummy/vendor/flat_pack is a snapshot. Edit app/, lib/, and docs/ at the repo root.
+test/dummy/vendor/**
+test/dummy-rails-7/vendor/**
+vendor/bundle/
+**/vendor/bundle/
+.bundle/
+**/.bundle/
+
+# Installed packages
+node_modules/
+**/node_modules/
+
+# Temp, logs, coverage
+tmp/
+**/tmp/
+log/
+**/log/
+coverage/
+**/coverage/
+
+# Built assets (source CSS/JS under app/assets/stylesheets and app/javascript stays indexed)
+app/assets/builds/
+**/app/assets/builds/
+public/assets/
+**/public/assets/
+
+# Screenshot and artifact folders (docs/components stays indexed)
+docs/pr-screenshots/
+docs/demo/
+docs/review/
+doc/review/
+docs/dummy-screenshots/
+vendor/recording_studio_*/
+test-results/
+**/test-results/
+
+# Large generated files
+*.sqlite3
+*.sqlite3-*
+dump.rdb
+*.gem

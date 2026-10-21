@@ -41,6 +41,9 @@ test/dummy/vendor/bundle/
 test/dummy/app/assets/builds/
 test/dummy/public/assets/
 
+# Screenshots
+docs/dummy-screenshots/
+
 # Credentials
 config/master.key
 config/credentials/*.key
