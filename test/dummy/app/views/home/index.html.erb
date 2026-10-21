@@ -21,6 +21,13 @@
             <%= render FlatPack::Badge::Component.new(text: @workspace.class.name, style: :default, size: :sm) %>
             <% if @root_recording && @root_access_management_enabled %>
               <%= recording_studio_accessible_avatars(@root_recording, button_style: :default, scope: :all) %>
+              <%= render FlatPack::Button::Dropdown::Component.new(
+                    text: "More",
+                    style: :default,
+                    size: :sm
+                  ) do |dropdown| %>
+                <% recording_studio_accessible_access_menu_item(@root_recording, dropdown, scope: :all) %>
+              <% end %>
             <% end %>
           <% end %>
         <% end %>

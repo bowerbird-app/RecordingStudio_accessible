@@ -73,6 +73,11 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@root_recording.id}/accesses"
     assert_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@folder_recording.id}/accesses"
     refute_includes @response.body, "href=\"/recording_studio_accessible/recordings/#{@page_recording.id}/accesses\""
+    access_item = css_select("a[role=menuitem]").find { |node| node.text.include?("Access") }
+    assert access_item, "expected an Access menu item"
+    assert_includes access_item["href"], "/recording_studio_accessible/recordings/#{@root_recording.id}/accesses"
+    assert_includes access_item.text, "3"
+    refute_includes access_item.text, "+"
     refute_includes @response.body, "Recording Studio addon template"
     refute_includes @response.body, "href=\"/recording_studio\""
     refute_includes @response.body, "href=\"/up\""

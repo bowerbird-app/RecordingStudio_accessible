@@ -406,6 +406,15 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.21.0
+
+No migration. `recording_studio_accessible_avatars` is unchanged.
+
+1. Install Accessible `0.21.0`.
+2. To put access inside a Flatpack dropdown, call `recording_studio_accessible_access_menu_item` from the dropdown block. The label comes from `recording_studio.accessible.manage.access_menu` (`Access`). Pass `label:` to override that one item. `scope:` matches the avatar helper (`:direct` by default, or `:all` for inherited people too).
+3. Host locale files that mirror the gem keys need `manage.access_menu`. Missing keys still fall back to English.
+4. The menu row shows a count badge. Flatpack's menu item has no avatar slot, so the faces stay on `recording_studio_accessible_avatars`.
+
 #### Upgrading to 0.20.1
 
 No migration.
@@ -1219,6 +1228,16 @@ end
 ```
 
 When no access holders exist, or no holders resolve to avatar data, the helper renders a `"+ Access"` FlatPack button. Pass `button_style:` to customize that fallback button.
+
+The same manage-access path can sit inside a Flatpack dropdown. The menu label is `Access` (no plus). A badge shows how many people have access. Flatpack menu items do not render avatars, so use the avatar helper when the faces should stay on the toolbar.
+
+```erb
+<%= render FlatPack::Button::Dropdown::Component.new(text: "More", style: :default, size: :sm) do |dropdown| %>
+  <% recording_studio_accessible_access_menu_item(recording, dropdown, scope: :all) %>
+<% end %>
+```
+
+`label:` replaces the item text for that call. `scope:` is `:direct` unless you pass `:all` or `:effective`. The item is omitted unless the current actor may manage access for that recording.
 
 The missing-actor handler may return an actor, or a `RecordingStudioAccessible::MissingActorResolution`. An actor or `MissingActorResolution.created(...)` grants immediately. `:unresolved` asks the controller to call `invite_access`. `:invited` means the host already handled the invitation, and the addon stores nothing. `:invalid` and `:redirect` keep their previous behavior. Edit the copied templates under `app/views/recording_studio_accessible/access_granted_mailer/` when the grant mail is close. Replace `config.access_management_access_granted_notifier` when delivery has to change.
 
