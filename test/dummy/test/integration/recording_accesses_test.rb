@@ -44,7 +44,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_nil add_access.at_css("svg")
     assert_includes @response.body, @admin.email
     assert_includes @response.body, "Integration Workspace"
-    assert_includes @response.body, "People with access"
+    refute_includes @response.body, "People with access"
     refute_includes @response.body, "No direct access yet"
     refute_includes @response.body, "Direct access entries granted on this recording"
     assert_includes @response.body, "<table"

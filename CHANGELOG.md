@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Page titles come from `content_for :title` and `content_for :subtitle`.
   Back and close use `flat_pack_page_nav`. Manage-access actions use
   `register_page_nav`. The `+ Access` label is the button text, with no extra plus icon.
+  The direct-access table has no "People with access" section title.
 - Access-request modal frames still render with no document layout. On a
   full page, the same step shows one heading from the layout.
 - Development pins move to `recording_studio` `v6.1.0` and `flat_pack`

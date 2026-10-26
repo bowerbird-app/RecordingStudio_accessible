@@ -21,14 +21,7 @@
 <% people_rows = people_with_access_rows(@direct_access_rows, @pending_invitation_rows) %>
 
 <% if people_rows.any? %>
-  <div class="grid gap-4">
-    <%= render FlatPack::SectionTitle::Component.new(
-      title: accessible_t("manage.people"),
-      anchor_link: true,
-      anchor_id: "people-with-access"
-    ) %>
-
-    <%= render FlatPack::Table::Component.new(data: people_rows) do |table| %>
+  <%= render FlatPack::Table::Component.new(data: people_rows) do |table| %>
       <% table.column(title: accessible_t("manage.columns.who")) do |row| %>
         <% if row[:kind] == :invitation %>
           <% pending_invitation_person_cell(row) %>
@@ -59,8 +52,7 @@
           <% access_actions_cell(@recording, row) %>
         <% end %>
       <% end %>
-    <% end %>
-  </div>
+  <% end %>
 <% else %>
   <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
     <% card.body(class: "grid gap-3 justify-items-start") do %>

@@ -43,7 +43,7 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_includes response.body, "Manage access"
     assert_includes response.body, "Pending invitation"
-    assert_includes response.body, "People with access"
+    refute_includes response.body, "People with access"
     assert_includes response.body, "+ Access"
 
     delivery = ActionMailer::Base.deliveries.last
@@ -81,7 +81,7 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_includes response.body, "Gérer l’accès"
     assert_includes response.body, "Invitation en attente"
-    assert_includes response.body, "Personnes avec accès"
+    refute_includes response.body, "Personnes avec accès"
     assert_includes response.body, "+ Accès"
     refute_includes response.body, "Pending invitation"
     refute_includes response.body, "Manage access"
