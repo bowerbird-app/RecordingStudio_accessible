@@ -35,7 +35,7 @@
 
     <% if manager? %>
       <%= render FlatPack::Tabs::Component.new(
-        variant: :pills,
+        variant: :underline,
         size: :sm,
         default_tab: access_request_decision_tab(request_record)
       ) do |tabs| %>

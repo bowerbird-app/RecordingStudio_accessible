@@ -155,8 +155,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_match "Requested", response.body
     refute_match "What happened", response.body
     refute_match "Asked for access", response.body
-    assert_select "[role=tablist].fp-pill-style"
-    assert_select "[role=tablist].border-b", count: 0
+    assert_select "[role=tablist].border-b"
     assert_select "[role=tab][aria-selected=true]", text: "Approve"
     assert_select "[role=tab]", text: "Deny"
     assert_select "form.gap-8", count: 2
@@ -170,8 +169,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
     get request_show_path(request_recording, presentation: "modal"), headers: modal_headers
     assert_match "I edit", response.body
-    assert_select "[role=tablist].fp-pill-style"
-    assert_select "[role=tablist].border-b", count: 0
+    assert_select "[role=tablist].border-b"
     assert_select "form.gap-8", count: 2
     assert_select "form.gap-8 .pt-6 button[type=submit]", count: 2
     assert_role_buttons("edit")
