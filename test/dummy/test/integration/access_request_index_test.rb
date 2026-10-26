@@ -33,6 +33,16 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert_equal [ "Name", "Note", "Status", "Actions" ], header_labels
     assert_select "span.truncate[title='Please open the notes']"
     assert_select "[aria-label='Request actions']"
+    assert_select "a[data-turbo-frame='access_requests_index'][aria-current='page']", text: "Pending"
+    assert_select "a[data-turbo-frame='access_requests_index']", text: "Approved"
+    assert_select "a[data-turbo-frame='access_requests_index']", text: "Denied"
+    assert_select "a[data-turbo-frame='access_requests_index']", text: "All"
+    assert_select ".fp-pill-button-slots", count: 0
+    assert_select "span", text: "Pending" do |badges|
+      classes = badges.map { |badge| badge["class"].to_s }
+      assert classes.any? { |css| css.include?("badge-primary-background-color") }
+      assert classes.none? { |css| css.include?("badge-warning-background-color") }
+    end
     assert_select "[role=menuitem]", text: "View"
     assert_select "[role=menuitem]", text: "Approve as View"
     assert_select "[role=menuitem]", text: "Deny"
@@ -41,6 +51,13 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     get recording_requests_path(status: "approved")
     assert_match "I can edit this", response.body
     refute_match "Please open the notes", response.body
+    assert_select "a[data-turbo-frame='access_requests_index'][aria-current='page']", text: "Approved"
+    assert_select "span", text: "Approved" do |badges|
+      classes = badges.map { |badge| badge["class"].to_s }
+      assert classes.any? { |css| css.include?("badge-default-background-color") }
+      assert classes.none? { |css| css.include?("badge-success-background-color") }
+      assert classes.none? { |css| css.include?("badge-primary-background-color") }
+    end
     assert_select "[role=menuitem]", text: "Pending"
     assert_select "[role=menuitem]", text: "Deny"
     assert_select "[role=menuitem]", text: "Approve as View", count: 0
@@ -58,6 +75,11 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     )
     get recording_requests_path(status: "denied")
     assert_match "Please open the notes", response.body
+    assert_select "span", text: "Denied" do |badges|
+      classes = badges.map { |badge| badge["class"].to_s }
+      assert classes.any? { |css| css.include?("badge-default-background-color") }
+      assert classes.none? { |css| css.include?("badge-danger-background-color") }
+    end
     assert_select "[role=menuitem]", text: "Pending"
     assert_select "[role=menuitem]", text: "Approve as Edit"
   end

@@ -280,9 +280,12 @@ config.access_request_index_recordings = ->(actor:, controller:) { press_kits }
 ```
 
 `url` is where the status filters and the next page return. It should render
-this helper again. Pending is the default. `status` is `pending`, `approved`,
-`denied`, or `all`. A long list appends the next page with Flatpack infinite
-scroll. The cursor is the last row's time and id. The page size is 10.
+this helper again. The filters are Flatpack pills. The active one is the grey
+pill. Pending is the default, and a pending row uses the primary badge.
+Approved and denied rows use the default badge.
+`status` is `pending`, `approved`, `denied`, or `all`. A long list appends the
+next page with Flatpack infinite scroll. The cursor is the last row's time and
+id. The page size is 10.
 
 The name column shows the requester's name, from the profile collected at the
 email step or already on the user record, with the email underneath. A person

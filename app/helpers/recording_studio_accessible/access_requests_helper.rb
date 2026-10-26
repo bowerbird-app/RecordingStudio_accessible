@@ -38,7 +38,7 @@ module RecordingStudioAccessible
     end
 
     def access_request_status_style(status)
-      { "pending" => :warning, "approved" => :success, "denied" => :danger }.fetch(status.to_s, :default)
+      status.to_s == "pending" ? :primary : :default
     end
 
     def access_request_target_label

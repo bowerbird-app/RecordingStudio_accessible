@@ -3,16 +3,17 @@
 
 <%= turbo_frame_tag RecordingStudioAccessible::AccessRequestIndex::FRAME_ID do %>
   <div class="mb-6">
-    <%= render FlatPack::SegmentedButtons::Component.new(size: :sm, style: :primary) do |buttons| %>
-      <% RecordingStudioAccessible::AccessRequestIndex::STATUSES.each do |status| %>
-        <% buttons.button(
-             text: access_request_filter_label(status),
-             selected: page.status == status,
-             href: RecordingStudioAccessible::AccessRequestIndex.filter_url(list_url, status),
-             data: { turbo_frame: RecordingStudioAccessible::AccessRequestIndex::FRAME_ID }
-           ) %>
-      <% end %>
-    <% end %>
+    <%= render FlatPack::Button::Pill::Component.new(
+          size: :sm,
+          items: RecordingStudioAccessible::AccessRequestIndex::STATUSES.map { |status|
+            {
+              text: access_request_filter_label(status),
+              href: RecordingStudioAccessible::AccessRequestIndex.filter_url(list_url, status),
+              active: page.status == status,
+              data: { turbo_frame: RecordingStudioAccessible::AccessRequestIndex::FRAME_ID }
+            }
+          }
+        ) %>
   </div>
 
   <% if page.requests.any? %>

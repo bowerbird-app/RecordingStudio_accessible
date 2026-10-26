@@ -17,6 +17,9 @@ All notable changes to this project will be documented in this file.
   actions use the default button style. Pending
   access requests on that recording add a count on `Access requests`.
   The direct-access table has no "People with access" section title.
+  Access request filters are Flatpack pills. The active filter is the grey
+  pill. A pending request badge uses the primary style. Approved and denied
+  badges use the default style.
 - Access-request modal frames still render with no document layout. On a
   full page, the same step shows one heading from the layout.
 - Development pins move to `recording_studio` `v6.1.0` and `flat_pack`
