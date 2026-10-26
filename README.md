@@ -31,7 +31,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", "~> 4.7", ">= 4.7.1"
+gem "recording_studio", "~> 6.1", ">= 6.1.0"
 gem "recording_studio_accessible"
 # Query-only trash helpers used by Accessible (pin by tag or host equivalent).
 # Prefer require: false; Accessible loads recording_studio_trashable/query.
@@ -380,10 +380,10 @@ access-granted email. Denial sends mail only when
 request emails direct admins on the target and its parents. Replace that with
 `config.access_request_submitted_notifier`.
 
-## Compatibility with RecordingStudio 4.7.1
+## Compatibility with RecordingStudio 6.1
 
-Recording Studio Accessible targets RecordingStudio `~> 4.7, >= 4.7.1` (currently
-tested with `4.7.1`) and its capability-owned child recordable contract. RecordingStudio
+Recording Studio Accessible targets RecordingStudio `~> 6.1`, `>= 6.1.0` (currently
+tested with `v6.1.0`) and its capability-owned child recordable contract. RecordingStudio
 core no longer ships built-in access control, so this addon provides
 `RecordingStudio::Access` and `RecordingStudio::AccessRequest`, declares them
 as child-only recordables, and registers them as metadata for the `:accessible`
