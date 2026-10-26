@@ -39,6 +39,9 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Integration Workspace"
     assert_includes @response.body, @editor.email
     assert_includes @response.body, "+ Access"
+    add_access = Nokogiri::HTML(@response.body).at_xpath('//a[contains(normalize-space(.), "+ Access")]')
+    assert_equal "+ Access", add_access.text.squish
+    assert_nil add_access.at_css("svg")
     assert_includes @response.body, @admin.email
     assert_includes @response.body, "Integration Workspace"
     assert_includes @response.body, "People with access"
