@@ -5,16 +5,32 @@
      style: :default,
      anchor_href: recording_access_anchor_url
    ) %>
-<% register_page_nav(
-     accessible_t("manage.add"),
-     new_recording_access_path_with_back_url(@recording),
-     role: :primary
-   ) %>
-<% register_page_nav(
-     accessible_t("requests.list_title"),
-     recording_access_requests_path(@recording),
-     role: :secondary
-   ) %>
+<% recording_studio_page_nav_right do %>
+  <div class="flex items-center gap-2">
+    <%= render FlatPack::Button::Component.new(
+          text: accessible_t("manage.add"),
+          href: new_recording_access_path_with_back_url(@recording),
+          style: :primary,
+          size: :sm
+        ) %>
+    <%= render FlatPack::Button::Component.new(
+          text: accessible_t("requests.list_title"),
+          href: recording_access_requests_path(@recording),
+          style: :default,
+          size: :sm
+        ) do |button| %>
+      <% if @pending_access_requests_count.to_i.positive? %>
+        <% button.with_trailing do %>
+          <%= render FlatPack::Badge::Component.new(
+                text: @pending_access_requests_count.to_s,
+                size: :sm,
+                style: :primary
+              ) %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>
 
 <% show_actor_type_column = show_access_actor_type_column?(@direct_access_rows, @inherited_access_rows) %>
 

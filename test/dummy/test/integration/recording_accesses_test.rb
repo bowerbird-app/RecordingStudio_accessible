@@ -39,9 +39,15 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Integration Workspace"
     assert_includes @response.body, @editor.email
     assert_includes @response.body, "+ Access"
-    add_access = Nokogiri::HTML(@response.body).at_xpath('//a[contains(normalize-space(.), "+ Access")]')
+    add_access = top_nav_action("+ Access")
+    requests = top_nav_action("Access requests")
     assert_equal "+ Access", add_access.text.squish
     assert_nil add_access.at_css("svg")
+    assert_equal "Access requests", requests.text.squish
+    assert_nil requests.at_css('[class*="badge-primary"]')
+    assert_nil top_nav_right.at_css(".fp-button-group-menu")
+    assert_includes add_access["href"], recording_studio_accessible.new_recording_access_path(@root_recording)
+    assert_includes requests["href"], recording_studio_accessible.recording_access_requests_path(@root_recording)
     assert_includes @response.body, @admin.email
     assert_includes @response.body, "Integration Workspace"
     refute_includes @response.body, "People with access"
@@ -149,6 +155,45 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, 'href="/"'
     refute_match(/href="[^"]*evil\.example/i, @response.body)
     refute_match(/href="javascript:/i, @response.body)
+  end
+
+  test "manage access badges only this recording's pending access requests" do
+    sign_in @admin
+
+    pending = RecordingStudioAccessible.request_access(
+      recording: @root_recording, actor: @new_user, message: "Need the workspace"
+    )
+    assert pending.success?, pending.error
+
+    elsewhere = RecordingStudioAccessible.request_access(
+      recording: @folder_recording, actor: create_user("folder-requester@admin.com"), message: "Need the folder"
+    )
+    assert elsewhere.success?, elsewhere.error
+
+    approved = RecordingStudioAccessible.request_access(
+      recording: @root_recording, actor: create_user("approved-requester@admin.com"), message: "Already reviewed"
+    )
+    assert approved.success?, approved.error
+    decision = RecordingStudioAccessible.approve_access_request(
+      request_recording: approved.value, manager_actor: @admin, role: "view"
+    )
+    assert decision.success?, decision.error
+
+    get root_recording_accesses_path
+
+    assert_response :success
+    requests = top_nav_action("Access requests")
+    add_access = top_nav_action("+ Access")
+    assert_equal "+ Access", add_access.text.squish
+    assert_nil top_nav_right.at_css(".fp-button-group-menu")
+    badge = requests.at_css('[class*="badge-primary"]')
+    assert_equal "1", badge.text.squish
+
+    get recording_accesses_path
+
+    assert_response :success
+    folder_requests = top_nav_action("Access requests")
+    assert_equal "1", folder_requests.at_css('[class*="badge-primary"]').text.squish
   end
 
   test "recording access page add access links preserve stable back_url and anchor_url" do
@@ -534,6 +579,16 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
 
   def direct_access_recording_for(user)
     direct_access_recordings_for(user).first
+  end
+
+  def top_nav_right
+    Nokogiri::HTML(@response.body).at_css(".fp-top-nav__right") ||
+      flunk("expected the top nav right slot")
+  end
+
+  def top_nav_action(label)
+    top_nav_right.css("a").find { |link| link.text.squish.include?(label) } ||
+      flunk("expected #{label} in the top nav right slot")
   end
 
   def people_access_row(email)

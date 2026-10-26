@@ -11,8 +11,10 @@ All notable changes to this project will be documented in this file.
   `nil` until a host sets it. `nil` uses `RecordingStudio.configuration.layout`,
   then `recording_studio/default_layout`.
 - Page titles come from `content_for :title` and `content_for :subtitle`.
-  Back and close use `flat_pack_page_nav`. Manage-access actions use
-  `register_page_nav`. The `+ Access` label is the button text, with no extra plus icon.
+  Back and close use `flat_pack_page_nav`. Manage access puts `+ Access`
+  and `Access requests` in `recording_studio_page_nav_right`. The
+  `+ Access` label is the button text, with no extra plus icon. Pending
+  access requests on that recording add a count on `Access requests`.
   The direct-access table has no "People with access" section title.
 - Access-request modal frames still render with no document layout. On a
   full page, the same step shows one heading from the layout.
@@ -45,6 +47,11 @@ All notable changes to this project will be documented in this file.
 - Delete host copies of the blank and access-request layouts. Replace an
   inline page title with `content_for`. Replace an inline page nav with
   `flat_pack_page_nav`. `FlatPack::Card` no longer accepts `style:`.
+- Manage access no longer registers `+ Access` or `Access requests` with
+  `register_page_nav`. Those actions render in
+  `recording_studio_page_nav_right`. A host layout must render
+  `:page_nav_right` or the buttons stay hidden. A copied
+  `recording_accesses/index` view needs the same move.
 - Sibling gems that still require `recording_studio` below 5 need a Bundler
   widen (see `test/support/widen_recording_studio_requirement.rb`) until
   those gems declare `>= 6.1.0`.

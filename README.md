@@ -419,6 +419,7 @@ No migration.
 2. Leave `config.layout` unset to use `RecordingStudio.configuration.layout`, then `recording_studio/default_layout`. Set the Accessible layout only when these screens should differ from the core layout. A callable is `->(controller:) { "name" }` and returns a layout name, `nil`, or `false`.
 3. Delete host copies of `recording_studio_accessible/blank` and `recording_studio_accessible/access_request`. Page titles belong in `content_for :title` and `content_for :subtitle`. Close and back belong in `flat_pack_page_nav`. `FlatPack::Card` no longer accepts `style:`.
 4. Access-request modal frames still have no document layout. A denied actor still fails closed before a layout callable runs.
+5. Manage access shows `+ Access` and `Access requests` in the top-right slot. A host layout must render `:page_nav_right`. Pending access requests on that recording add a count on `Access requests`.
 
 #### Upgrading to 0.21.0
 
