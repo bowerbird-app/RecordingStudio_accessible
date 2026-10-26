@@ -302,7 +302,7 @@ Visitors do not pick a role. Pass an optional `role:` or `action:` when the
 caller already knows a suggestion. The request page heading names who asked
 and which recording, then shows the message and the date they asked. Gate
 answers are labelled rows, flush with that heading. A manager uses Approve
-and Deny underline tabs. Approve lists the allowed roles as inline radios with icons.
+and Deny pills. Approve lists the allowed roles as inline radios with icons.
 Deny has an
 optional note. Each tab saves through `transition_access_request`. An
 approved request opens on Approve, and a denied request opens on Deny. The

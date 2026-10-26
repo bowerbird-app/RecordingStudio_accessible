@@ -19,7 +19,8 @@ All notable changes to this project will be documented in this file.
   The direct-access table has no "People with access" section title.
   Access request filters are Flatpack pills. The active filter is the grey
   pill. A pending request badge uses the primary style. Approved and denied
-  badges use the default style.
+  badges use the default style. Approve and Deny on the request page are
+  small Flatpack pills.
 - Access-request modal frames still render with no document layout. On a
   full page, the same step shows one heading from the layout.
 - Development pins move to `recording_studio` `v6.1.0` and `flat_pack`
@@ -46,6 +47,9 @@ All notable changes to this project will be documented in this file.
   layout. Access-request Turbo frames still skip the layout, and they do
   not call a layout callable.
 - A denied actor still fails closed before a layout callable runs.
+- Approve and Deny on the request page are pills. A copied
+  `access_requests/show` view that still sets `variant: :underline` keeps
+  the underline tabs.
 - Host `layout` `only` / `except` conditions no longer wrap these screens.
   The default shell does not set `html lang`. A host layout can.
 - Delete host copies of the blank and access-request layouts. Replace an
