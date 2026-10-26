@@ -118,8 +118,8 @@ module RecordingStudioAccessible
       return 0 if @recording.blank?
 
       AccessRequestQuery.for_parent(@recording)
-        .where(recording_studio_access_requests: { status: "pending" })
-        .count
+                        .where(recording_studio_access_requests: { status: "pending" })
+                        .count
     end
 
     def access_params
