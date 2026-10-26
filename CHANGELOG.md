@@ -13,7 +13,8 @@ All notable changes to this project will be documented in this file.
 - Page titles come from `content_for :title` and `content_for :subtitle`.
   Back and close use `flat_pack_page_nav`. Manage access puts `+ Access`
   and `Access requests` in `recording_studio_page_nav_right`. The
-  `+ Access` label is the button text, with no extra plus icon. Pending
+  `+ Access` label is the button text, with no extra plus icon. Both
+  actions use the default button style. Pending
   access requests on that recording add a count on `Access requests`.
   The direct-access table has no "People with access" section title.
 - Access-request modal frames still render with no document layout. On a

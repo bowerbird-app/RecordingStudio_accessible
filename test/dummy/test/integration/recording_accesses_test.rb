@@ -42,6 +42,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     add_access = top_nav_action("+ Access")
     requests = top_nav_action("Access requests")
     assert_equal "+ Access", add_access.text.squish
+    assert_equal "default", add_access["data-fp-style"]
     assert_nil add_access.at_css("svg")
     assert_equal "Access requests", requests.text.squish
     assert_nil requests.at_css('[class*="badge-primary"]')
