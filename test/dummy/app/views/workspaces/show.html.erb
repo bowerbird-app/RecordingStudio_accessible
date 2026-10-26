@@ -21,7 +21,7 @@
       <% end %>
     <% end %>
 
-    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+    <%= render FlatPack::Card::Component.new(border: :default) do |card| %>
       <% card.header do %>
         <%= render FlatPack::SectionTitle::Component.new(
           title: "Pages",

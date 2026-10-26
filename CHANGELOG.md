@@ -4,6 +4,50 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-10-26
+
+### Changed
+- Engine screens use Recording Studio's layout lookup. `config.layout` is
+  `nil` until a host sets it. `nil` uses `RecordingStudio.configuration.layout`,
+  then `recording_studio/default_layout`.
+- Page titles come from `content_for :title` and `content_for :subtitle`.
+  Back and close use `flat_pack_page_nav`. Manage-access actions use
+  `register_page_nav`. The `+ Access` label is unchanged.
+- Access-request modal frames still render with no document layout. On a
+  full page, the same step shows one heading from the layout.
+- Development pins move to `recording_studio` `v6.1.0` and `flat_pack`
+  `0.1.319`. The gemspec floor is `~> 6.1`, `>= 6.1.0`.
+
+### Removed
+- `recording_studio_accessible/blank` and
+  `recording_studio_accessible/access_request` layouts.
+- `accessible_document_attributes` and
+  `recording_studio_accessible_flash_style`.
+
+### Upgrade notes
+- No migration. Install Accessible `0.22.0` with Recording Studio `>= 6.1.0`
+  (this repo tests `v6.1.0`) and Flatpack `0.1.319`. Trashable stays
+  `recording_studio_trashable ~> 0.10`. Do not add `recording_studio_user`
+  to the Accessible gemspec.
+- Leave `config.layout` unset to use the core layout, then the default
+  shell. Set `RecordingStudio.configuration.layout` for every gem, or set
+  `RecordingStudioAccessible.configuration.layout` for these screens only.
+  A callable is `->(controller:) { "admin" }` and must return a layout name,
+  `nil`, or `false`. A blank name or a positional parameter raises when you
+  assign it. A bad return value raises when the screen renders.
+- `false` skips the document layout and does not fall through to the core
+  layout. Access-request Turbo frames still skip the layout, and they do
+  not call a layout callable.
+- A denied actor still fails closed before a layout callable runs.
+- Host `layout` `only` / `except` conditions no longer wrap these screens.
+  The default shell does not set `html lang`. A host layout can.
+- Delete host copies of the blank and access-request layouts. Replace an
+  inline page title with `content_for`. Replace an inline page nav with
+  `flat_pack_page_nav`. `FlatPack::Card` no longer accepts `style:`.
+- Sibling gems that still require `recording_studio` below 5 need a Bundler
+  widen (see `test/support/widen_recording_studio_requirement.rb`) until
+  those gems declare `>= 6.1.0`.
+
 ## [0.21.0] - 2026-10-21
 
 ### Added

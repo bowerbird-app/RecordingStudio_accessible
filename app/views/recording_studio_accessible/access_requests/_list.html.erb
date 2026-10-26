@@ -1,8 +1,5 @@
-<%= render FlatPack::PageTitle::Component.new(
-  title: accessible_t("requests.list_title"),
-  subtitle: access_request_list_subtitle(page),
-  variant: :h1
-) %>
+<% content_for :title, accessible_t("requests.list_title") %>
+<% content_for :subtitle, access_request_list_subtitle(page) %>
 
 <%= turbo_frame_tag RecordingStudioAccessible::AccessRequestIndex::FRAME_ID do %>
   <div class="mb-6">

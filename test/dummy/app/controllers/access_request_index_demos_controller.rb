@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class AccessRequestIndexDemosController < ApplicationController
-  layout "recording_studio_accessible/blank"
+  recording_studio_layout { nil }
 
   def show
     @recordings = RecordingStudio::Recording.unscoped.where(id: params[:recording_ids].to_s.split(","))

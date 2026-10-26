@@ -10,13 +10,15 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
     @root_recording = create_root_recording(workspace)
     grant_access(@admin, :admin, @root_recording)
     @previous_layout = RecordingStudioAccessible.configuration.layout
+    @previous_core_layout = RecordingStudio.configuration.layout
   end
 
   teardown do
     RecordingStudioAccessible.configuration.layout = @previous_layout
+    RecordingStudio.configuration.layout = @previous_core_layout
   end
 
-  test "default layout stays the blank engine layout for manage access and the host layout for docs" do
+  test "default layout is the recording studio shell for manage access and docs" do
     assert_nil RecordingStudioAccessible.configuration.layout
 
     sign_in @admin
@@ -24,14 +26,30 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
     get root_recording_accesses_path
 
     assert_response :success
-    assert_includes @response.body, "Manage access"
-    assert_includes @response.body, 'content="Recording Studio Accessible"'
+    assert_select "body[data-recording-studio-default-layout='true']", count: 1
+    assert_select "h1", text: "Manage access", count: 1
+    assert_includes @response.body, "+ Access"
     refute_includes @response.body, "Main navigation"
 
     get "/recording_studio_accessible"
 
     assert_response :success
-    assert_includes @response.body, "Main navigation"
+    assert_select "body[data-recording-studio-default-layout='true']", count: 1
+    assert_select "h1", text: "Recording Studio Accessible Demo", count: 1
+    refute_includes @response.body, "Main navigation"
+  end
+
+  test "the core layout applies when the accessible layout is nil" do
+    assert_nil RecordingStudioAccessible.configuration.layout
+    RecordingStudio.configuration.layout = "application"
+    sign_in @admin
+
+    get root_recording_accesses_path
+
+    assert_response :success
+    assert_includes @response.body, "Manage access"
+    assert_includes @response.body, 'content="Dummy"'
+    assert_select "body[data-recording-studio-default-layout]", count: 0
   end
 
   test "a layout name wraps an allowed actor and still denies an actor with no access" do
@@ -43,6 +61,7 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "Manage access"
     assert_includes @response.body, "Main navigation"
+    assert_select "body[data-recording-studio-default-layout]", count: 0
 
     sign_in @outsider
 
@@ -68,69 +87,59 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, "Main navigation"
   end
 
+  test "a false layout renders the screen without a document layout" do
+    RecordingStudioAccessible.configuration.layout = false
+    RecordingStudio.configuration.layout = "recording_studio/default_layout"
+    sign_in @admin
+
+    get root_recording_accesses_path
+
+    assert_response :success
+    assert_includes @response.body, "People with access"
+    refute_match(/<html/i, @response.body)
+    assert_select "body[data-recording-studio-default-layout]", count: 0
+  end
+
+  test "a layout callable that returns a non-layout raises" do
+    RecordingStudioAccessible.configuration.layout = ->(controller:) { 1 }
+    sign_in @admin
+
+    error = assert_raises(ArgumentError) { get root_recording_accesses_path }
+
+    assert_match "layout callable must return", error.message
+  end
+
   test "a layout callable that raises still denies an actor with no access" do
-    RecordingStudioAccessible.configuration.layout = ->(**) { raise "layout failed closed" }
+    calls = 0
+    RecordingStudioAccessible.configuration.layout = lambda do |**|
+      calls += 1
+      raise "layout failed closed"
+    end
     sign_in @outsider
 
     get root_recording_accesses_path
 
     assert_response :forbidden
+    assert_equal 0, calls
     refute_includes @response.body, "layout failed closed"
     refute_includes @response.body, "Manage access"
   end
 
-  test "an unset layout keeps a host lambda that calls an instance method" do
-    assert_nil RecordingStudioAccessible.configuration.layout
-    with_host_layout("application") do
-      sign_in @admin
-
-      get "/recording_studio_accessible"
-
-      assert_response :success
-      assert_includes @response.body, "Recording Studio Accessible Demo"
-      assert_includes @response.body, 'content="Dummy"'
-      refute_includes @response.body, "Main navigation"
-
-      get "/recording_studio_accessible/overview"
-
-      assert_response :success
-      assert_includes @response.body, 'content="Dummy"'
-      refute_includes @response.body, "Main navigation"
-
-      get root_recording_accesses_path
-
-      assert_response :success
-      assert_includes @response.body, "Manage access"
-      assert_includes @response.body, 'content="Recording Studio Accessible"'
-    end
-  end
-
-  test "an unset layout keeps the host only and except conditions" do
-    assert_nil RecordingStudioAccessible.configuration.layout
-    with_host_layout("flat_pack_sidebar", except: :index) do
-      sign_in @admin
-
-      get "/recording_studio_accessible/overview"
-
-      assert_response :success
-      assert_includes @response.body, "Main navigation"
-
-      get "/recording_studio_accessible"
-
-      assert_response :success
-      refute_includes @response.body, "Main navigation"
-    end
-  end
-
   test "a layout callable that raises is not used for an access request modal" do
-    RecordingStudioAccessible.configuration.layout = ->(**) { raise "layout failed closed" }
+    calls = 0
+    RecordingStudioAccessible.configuration.layout = lambda do |**|
+      calls += 1
+      raise "layout failed closed"
+    end
 
     get "/recording_studio_accessible/recordings/#{@root_recording.id}/access_requests/new",
         params: { presentation: "modal" },
         headers: { "Turbo-Frame" => "access_request" }
 
     assert_response :success
+    assert_equal 0, calls
     assert_select "turbo-frame#access_request"
+    assert_select "h1", text: "Request access"
     refute_match(/<html/i, @response.body)
   end
 
@@ -146,16 +155,5 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
 
   def root_recording_accesses_path
     "/recording_studio_accessible/recordings/#{@root_recording.id}/accesses"
-  end
-
-  def with_host_layout(layout_name, conditions = {})
-    previous_layout = ApplicationController._layout
-    previous_conditions = ApplicationController._layout_conditions
-    ApplicationController.define_method(:layout_name_from_instance) { layout_name }
-    ApplicationController.layout(-> { layout_name_from_instance }, conditions)
-    yield
-  ensure
-    ApplicationController.layout(previous_layout, previous_conditions || {})
-    ApplicationController.remove_method(:layout_name_from_instance)
   end
 end

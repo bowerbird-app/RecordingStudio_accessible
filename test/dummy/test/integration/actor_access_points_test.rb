@@ -91,8 +91,8 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :success
-    assert_includes @response.body, "href=\"/users/#{@actor.id}\""
-    refute_includes @response.body, "evil.example"
+    assert_select "a[aria-label=Close][href=?]", "/users/#{@actor.id}"
+    refute_match(/href="[^"]*evil\.example/i, @response.body)
   end
 
   test "configured access actor types constrain actor access point lookup" do

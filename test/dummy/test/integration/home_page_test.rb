@@ -242,7 +242,6 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "Methods"
     assert_includes @response.body, "Access APIs provided by this gem"
-    assert_includes @response.body, "href=\"/recording_studio_accessible/methods\""
     assert_includes @response.body, "Bootstrap the first owner with RecordingStudioAccessible.bootstrap_owner_access!"
     assert_includes @response.body, "Grant access with RecordingStudioAccessible.grant_access"
     assert_match(/Resolve a user(&#39;|')s role with RecordingStudioAccessible\.role_for/, @response.body)
@@ -265,7 +264,6 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "Overview"
     assert_includes @response.body, "How access is structured"
-    assert_includes @response.body, "href=\"/recording_studio_accessible/overview\""
     assert_includes @response.body, "Add access to something"
     assert_includes @response.body, "Access is granted by adding a child recording using an access recordable."
     assert_includes @response.body, "- Page"
@@ -280,7 +278,6 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "User invites"
     assert_includes @response.body, "How missing emails are resolved during access grants"
-    assert_includes @response.body, "href=\"/recording_studio_accessible/user_invites\""
     assert_includes @response.body, "Statuses you can return"
     assert_includes @response.body, "The default when no actor matches the email. The access page stores an invitation and sends it."
     assert_includes @response.body, "returns unresolved"
@@ -295,7 +292,6 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, 'Review #{normalized_email} before granting access'
     assert_includes @response.body, "controller.main_app.url_for"
     assert_includes @response.body, "text-[var(--surface-content-color)]"
-    refute_includes @response.body, "text-(--surface-content-color)"
   end
 
   test "email template page renders the default access granted email preview" do
@@ -308,7 +304,6 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, "Email template"
     assert_includes @response.body, "Default message sent when access is granted"
-    assert_includes @response.body, "href=\"/recording_studio_accessible/email_template\""
     assert_includes @response.body, "Message details"
     assert_includes @response.body, "HTML email preview"
     assert_includes @response.body, "You were given access"

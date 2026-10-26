@@ -1,27 +1,21 @@
-<%= render FlatPack::PageNav::Component.new(class: "mb-4") do |page_nav| %>
-  <% page_nav.with_close(href: recording_access_anchor_url) %>
-<% end %>
-
-<%= render FlatPack::PageTitle::Component.new(
-  title: accessible_t("manage.title"),
-  subtitle: @recording_label,
-  variant: :h1
-) %>
-
-<div class="mb-6 flex flex-wrap items-center gap-3">
-  <%= render FlatPack::Button::Component.new(
-    text: accessible_t("manage.add"),
-    style: :primary,
-    size: :md,
-    href: new_recording_access_path_with_back_url(@recording)
-  ) %>
-  <%= render FlatPack::Button::Component.new(
-    text: accessible_t("requests.list_title"),
-    style: :secondary,
-    size: :md,
-    href: recording_access_requests_path(@recording)
-  ) %>
-</div>
+<% content_for :title, accessible_t("manage.title") %>
+<% content_for :subtitle, @recording_label %>
+<% flat_pack_page_nav(
+     round: true,
+     style: :default,
+     anchor_href: recording_access_anchor_url
+   ) %>
+<% register_page_nav(
+     accessible_t("manage.add"),
+     new_recording_access_path_with_back_url(@recording),
+     role: :primary,
+     icon: "plus"
+   ) %>
+<% register_page_nav(
+     accessible_t("requests.list_title"),
+     recording_access_requests_path(@recording),
+     role: :secondary
+   ) %>
 
 <% show_actor_type_column = show_access_actor_type_column?(@direct_access_rows, @inherited_access_rows) %>
 

@@ -73,22 +73,27 @@ initializer.
 
 ## Configuration
 
-`config.layout` chooses the layout for engine screens. Leave it unset and each
-screen keeps the layout it uses today. Mounted docs stay on the host layout.
-Manage access, invitations, actor access points, and access-request pages stay
-on the engine layouts.
+`config.layout` chooses the layout for engine screens. Leave it unset and
+the screens use `RecordingStudio.configuration.layout`, then
+`recording_studio/default_layout`.
 
 ```ruby
+RecordingStudio.configure do |config|
+  config.layout = "admin"
+end
+
 RecordingStudioAccessible.configure do |config|
   config.layout = "admin"
   # config.layout = ->(controller:) { "admin" }
+  # config.layout = false
 end
 ```
 
-A callable receives `controller:` and returns a layout name. It runs when the
-screen renders, after authentication and access checks. A denied actor stays
-denied when the callable raises. Access-request modal frames still render
-without a document layout.
+A callable receives `controller:` and returns a layout name, `nil`, or
+`false`. It runs when the screen renders, after authentication and access
+checks. A denied actor stays denied when the callable raises. `false` renders
+the screen with no document layout. Access-request modal frames still render
+without a document layout, and they do not call the layout callable.
 
 ## Controller auth for sibling engines
 
@@ -405,6 +410,15 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.22.0
+
+No migration.
+
+1. Install Accessible `0.22.0` with Recording Studio `~> 6.1`, `>= 6.1.0` (this repo tests `v6.1.0`) and Flatpack `0.1.319`. Trashable stays `recording_studio_trashable ~> 0.10`. Do not add `recording_studio_user` to the Accessible gemspec.
+2. Leave `config.layout` unset to use `RecordingStudio.configuration.layout`, then `recording_studio/default_layout`. Set the Accessible layout only when these screens should differ from the core layout. A callable is `->(controller:) { "name" }` and returns a layout name, `nil`, or `false`.
+3. Delete host copies of `recording_studio_accessible/blank` and `recording_studio_accessible/access_request`. Page titles belong in `content_for :title` and `content_for :subtitle`. Close and back belong in `flat_pack_page_nav`. `FlatPack::Card` no longer accepts `style:`.
+4. Access-request modal frames still have no document layout. A denied actor still fails closed before a layout callable runs.
 
 #### Upgrading to 0.21.0
 
@@ -1109,7 +1123,8 @@ scoped access management pages at:
 /recording_studio_accessible/recordings/:recording_id/accesses
 ```
 
-Those pages use a blank layout, render FlatPack-based UI, and let authorized
+Those pages use the Recording Studio default layout unless you set
+`config.layout`, render FlatPack-based UI, and let authorized
 users add, update, and remove direct grants for the target recording.
 
 The mounted engine also exposes workspace-scoped actor access-point pages at:
@@ -1698,7 +1713,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v4.7.1`, RecordingStudioRootSwitchable `v0.9.6`, FlatPack `v0.1.275`, and (dummy only) Recording Studio Internationalization `v0.1.7`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v6.1.0`, RecordingStudioRootSwitchable `v0.9.6`, FlatPack `0.1.319`, and (dummy only) Recording Studio Internationalization `v0.1.7`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

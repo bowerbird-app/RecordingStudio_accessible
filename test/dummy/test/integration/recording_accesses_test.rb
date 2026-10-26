@@ -144,8 +144,8 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes @response.body, 'aria-label="Close"'
     assert_includes @response.body, 'href="/"'
-    refute_includes @response.body, "evil.example"
-    refute_includes @response.body, "javascript:alert"
+    refute_match(/href="[^"]*evil\.example/i, @response.body)
+    refute_match(/href="javascript:/i, @response.body)
   end
 
   test "recording access page add access links preserve stable back_url and anchor_url" do

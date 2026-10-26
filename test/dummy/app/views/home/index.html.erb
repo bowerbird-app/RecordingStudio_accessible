@@ -15,7 +15,7 @@
 
     <%= render FlatPack::Grid::Component.new(cols: 3, gap: :md, align: :start, class: "mb-6 w-full") do %>
       <% if @workspace %>
-        <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+        <%= render FlatPack::Card::Component.new(border: :default) do |card| %>
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= @workspace.name %></h3>
             <%= render FlatPack::Badge::Component.new(text: @workspace.class.name, style: :default, size: :sm) %>
@@ -69,7 +69,7 @@
 
     <%= render FlatPack::Grid::Component.new(cols: 3, gap: :md, align: :start, class: "w-full") do %>
       <% @demo_sections.each do |section| %>
-        <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+        <%= render FlatPack::Card::Component.new(border: :default) do |card| %>
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= section[:folder].name %></h3>
             <%= render FlatPack::Badge::Component.new(text: section[:folder].class.name, style: :default, size: :sm) %>

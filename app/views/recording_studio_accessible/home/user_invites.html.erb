@@ -1,9 +1,6 @@
+<% content_for :title, accessible_t("home.user_invites.title") %>
+<% content_for :subtitle, accessible_t("home.user_invites.subtitle") %>
 <div class="mx-auto w-full max-w-6xl">
-  <%= render FlatPack::PageTitle::Component.new(
-    title: accessible_t("home.user_invites.title"),
-    subtitle: accessible_t("home.user_invites.subtitle"),
-    variant: :h1
-  ) %>
 
   <div class="mt-6 grid gap-8">
     <section>
@@ -23,7 +20,7 @@
           <% end %>
         <% end %>
 
-        <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+        <%= render FlatPack::Card::Component.new(border: :default) do |card| %>
           <% card.body(class: "grid gap-3 justify-items-start") do %>
             <%= render FlatPack::Badge::Component.new(text: accessible_t("home.user_invites.dummy_badge"), style: :info, size: :sm) %>
             <p class="text-base leading-7 text-[var(--surface-content-color)]">

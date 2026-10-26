@@ -25,8 +25,32 @@ class ConfigurationTest < Minitest::Test
     assert_equal true, @configuration.warn_on_core_conflict
   end
 
-  def test_layout_defaults_to_nil
+  def test_layout_defaults_to_nil_and_rejects_invalid_values
     assert_nil @configuration.layout
+
+    @configuration.layout = false
+    assert_equal false, @configuration.layout
+
+    @configuration.layout = "admin"
+    assert_equal "admin", @configuration.layout
+
+    callable = ->(controller:) { controller }
+    @configuration.layout = callable
+    assert_equal callable, @configuration.layout
+
+    assert_raises(ArgumentError) { @configuration.layout = "  " }
+    assert_equal callable, @configuration.layout
+    assert_raises(ArgumentError) { @configuration.layout = ->(c) { c } }
+    assert_equal callable, @configuration.layout
+
+    @configuration.layout = ->(controller:) { controller.nil? ? :nope : 1 }
+    assert_raises(ArgumentError) do
+      RecordingStudio::Layout.resolve(@configuration.layout, controller: Object.new)
+    end
+  end
+
+  def test_controllers_do_not_hardcode_a_recording_studio_layout
+    assert_empty RecordingStudio::Layout.hardcoded_layout_paths(RecordingStudioAccessible::Engine.root)
   end
 
   def test_action_audiences_defaults_empty

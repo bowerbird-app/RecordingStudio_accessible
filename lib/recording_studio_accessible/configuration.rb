@@ -64,9 +64,8 @@ module RecordingStudioAccessible
                   :access_request_denied_notifier,
                   :access_request_index_recordings,
                   :mounted_page_authorizer,
-                  :authorize_actor_through,
-                  :layout
-    attr_reader :hooks, :access_actor_types, :action_audiences, :access_request_gates
+                  :authorize_actor_through
+    attr_reader :hooks, :access_actor_types, :action_audiences, :access_request_gates, :layout
 
     def initialize
       @warn_on_core_conflict = true
@@ -104,6 +103,10 @@ module RecordingStudioAccessible
 
         RecordingStudioAccessible.install_action_audience_policy!(action)
       end
+    end
+
+    def layout=(value)
+      @layout = RecordingStudio::Layout.accept(value)
     end
 
     def action_audiences=(value)

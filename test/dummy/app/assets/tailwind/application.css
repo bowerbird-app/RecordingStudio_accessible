@@ -10,6 +10,10 @@
 @source "../../../../../../usr/local/bundle/**/bundler/gems/flatpack-*/app/components/**/*.erb";
 @source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/components/**/*.rb";
 @source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/components/**/*.erb";
+@source "../../../vendor/bundle/**/bundler/gems/flatpack-*/app/helpers/**/*.{rb,erb}";
+@source "../../../../../vendor/bundle/**/bundler/gems/flatpack-*/app/helpers/**/*.{rb,erb}";
+@source "../../../../../../usr/local/bundle/**/bundler/gems/flatpack-*/app/helpers/**/*.{rb,erb}";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/helpers/**/*.{rb,erb}";
 
 /* Scan companion engine views used by the dummy app. */
 @source "../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
@@ -24,12 +28,22 @@
 @source "../../../../../../home/*/.rbenv/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
 @source "../../../../../../home/*/.rbenv/**/bundler/gems/recording_studio_root_switchable-*/app/views/**/*.erb";
 @source "../../../../../../home/*/.rbenv/**/bundler/gems/RecordingStudio_root_switchable*/app/views/**/*.erb";
+@source "../../../vendor/bundle/**/bundler/gems/RecordingStudio-*/app/helpers/**/*.{rb,erb}";
+@source "../../../vendor/bundle/**/bundler/gems/RecordingStudio-*/app/components/**/*.{rb,erb}";
+@source "../../../../../vendor/bundle/**/bundler/gems/RecordingStudio-*/app/helpers/**/*.{rb,erb}";
+@source "../../../../../vendor/bundle/**/bundler/gems/RecordingStudio-*/app/components/**/*.{rb,erb}";
+@source "../../../../../../usr/local/bundle/**/bundler/gems/RecordingStudio-*/app/helpers/**/*.{rb,erb}";
+@source "../../../../../../usr/local/bundle/**/bundler/gems/RecordingStudio-*/app/components/**/*.{rb,erb}";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/RecordingStudio-*/app/helpers/**/*.{rb,erb}";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/RecordingStudio-*/app/components/**/*.{rb,erb}";
 
 /* Dummy app and this engine. */
 @source "../../views/**/*.erb";
 @source "../../components/**/*.{rb,erb}";
 @source "../../../../../app/views/**/*.erb";
 @source "../../../../../app/components/**/*.{rb,erb}";
+@source "../../helpers/**/*.{rb,erb}";
+@source "../../../../../app/helpers/**/*.{rb,erb}";
 
 /* Color, radius, and shadow tokens come from flat_pack/variables.css.
    Layouts set data-theme="rounded". An unlayered :root rule in this

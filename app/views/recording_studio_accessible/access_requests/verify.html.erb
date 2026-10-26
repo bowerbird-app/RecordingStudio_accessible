@@ -1,7 +1,9 @@
 <% content_for :title, access_request_t("verify_title") %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
   <div class="flex w-full max-w-xl flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="verify">
-    <%= render "recording_studio_accessible/access_requests/heading", title: access_request_t("verify_title") %>
+    <% if modal_frame_request? %>
+      <%= render "recording_studio_accessible/access_requests/heading", title: access_request_t("verify_title") %>
+    <% end %>
     <p><%= access_request_t("verify_intro", email: @intent.email) %></p>
     <%= form_with url: verify_recording_access_requests_path(@recording), method: :post,
                   class: "flex flex-col gap-[var(--stack-gap-lg)]", **access_request_form_options do %>

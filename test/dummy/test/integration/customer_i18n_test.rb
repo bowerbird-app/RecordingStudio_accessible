@@ -45,7 +45,6 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Pending invitation"
     assert_includes response.body, "People with access"
     assert_includes response.body, "+ Access"
-    assert_select "html[lang='en']"
 
     delivery = ActionMailer::Base.deliveries.last
     assert_equal "You were invited to I18n Workspace", delivery.subject
@@ -60,7 +59,6 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Accept invitation"
     assert_includes response.body, "State pending"
-    assert_select "html[lang='en']"
 
     sign_out :user
     sign_in @admin
@@ -87,7 +85,6 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "+ Accès"
     refute_includes response.body, "Pending invitation"
     refute_includes response.body, "Manage access"
-    assert_select "html[lang='fr']"
     assert_includes response.body, "I18n Workspace"
     assert_includes response.body, @editor.email
 
@@ -108,7 +105,6 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Accepter l’invitation"
     assert_includes response.body, "État en attente"
     refute_includes response.body, "Accept invitation"
-    assert_select "html[lang='fr']"
 
     sign_out :user
     sign_in @admin

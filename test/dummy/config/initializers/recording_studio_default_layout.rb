@@ -1,11 +1,14 @@
 # frozen_string_literal: true
 
-# Ensure RecordingStudio engine pages use the shared default layout (back/close,
-# rounded FlatPack theme). Host dummy screens keep the sidebar layout.
-Rails.application.config.to_prepare do
-  next unless defined?(RecordingStudio::ApplicationController)
-  next unless defined?(RecordingStudio::UsesDefaultLayout)
-  next if RecordingStudio::ApplicationController.included_modules.include?(RecordingStudio::UsesDefaultLayout)
+# Trashable v0.11.2 still includes this module. Recording Studio 6.1 removed
+# it. Defining it here lets that engine load. Accessible controllers use
+# recording_studio_layout and do not include this module.
+module RecordingStudio
+  module UsesDefaultLayout
+    extend ActiveSupport::Concern
 
-  RecordingStudio::ApplicationController.include(RecordingStudio::UsesDefaultLayout)
+    included do
+      recording_studio_layout { nil }
+    end
+  end
 end

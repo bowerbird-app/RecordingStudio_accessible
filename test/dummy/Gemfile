@@ -1,10 +1,12 @@
 source "https://rubygems.org"
 
+require_relative "../support/widen_recording_studio_requirement"
+
 # Use the recording_studio_accessible engine
 gem "recording_studio_accessible", path: "../.."
 
 # RecordingStudio engine
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.1"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.1.0"
 # Query-only trash helpers (Accessible gemspec "~> 0.10"; pin by tag).
 # require: false — Accessible loads recording_studio_trashable/query only.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",
@@ -41,7 +43,10 @@ gem "jbuilder"
 gem "tailwindcss-rails"
 
 # FlatPack UI component library [https://github.com/bowerbird-app/flatpack]
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.275"
+# VERSION 0.1.319 on main. The v0.1.319 tag is not published yet.
+gem "flat_pack", github: "bowerbird-app/flatpack", ref: "1fcbafe94f8eb118f0a22182f63f5110fcc97a56"
+gem "minitest", ">= 5.26", "< 6"
+gem "view_component", "4.19.0"
 
 # Email-code accounts for access requests. Accessible soft-requires Users
 # because Users already depends on Accessible.
