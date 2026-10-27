@@ -4,6 +4,12 @@ require "test_helper"
 require "cgi"
 
 class RecordingAccessesHelperTest < Minitest::Test
+  def setup
+    FlatPack::Button::Dropdown::Component
+    FlatPack::Button::DropdownItem::Component
+    FlatPack::Button::Component
+  end
+
   class ViewContext
     include ActionView::Helpers::TagHelper
     include ActionView::Helpers::UrlHelper
@@ -24,7 +30,7 @@ class RecordingAccessesHelperTest < Minitest::Test
         block&.call(component)
 
         items_html = Array(component.menu).map do |item|
-          slot = item.respond_to?(:[]) ? (item[:item] || item[:html] || item) : item
+          slot = dropdown_menu_slot(item)
           text = ERB::Util.html_escape(slot.instance_variable_get(:@text).to_s)
           href = slot.instance_variable_get(:@href)
           system_arguments = slot.instance_variable_get(:@system_arguments).to_h
@@ -84,6 +90,17 @@ class RecordingAccessesHelperTest < Minitest::Test
     end
 
     private
+
+    def dropdown_menu_slot(item)
+      return item[:item] || item[:html] || item if item.is_a?(Hash)
+      return item if item.is_a?(FlatPack::Button::DropdownItem::Component)
+
+      item.instance_variables.each do |ivar|
+        nested = item.instance_variable_get(ivar)
+        return nested if nested.is_a?(FlatPack::Button::DropdownItem::Component)
+      end
+      item
+    end
 
     def append_query_string(path, options)
       query = options.compact.map do |key, value|

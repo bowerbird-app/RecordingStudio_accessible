@@ -164,7 +164,7 @@ class TrashableTrashedAtParityTest < Minitest::Test
 
   def test_accessible_does_not_soft_void_on_destroy_path
     source = File.read(
-      File.expand_path("../lib/recording_studio_accessible/services/access_record_lifecycle.rb", __dir__)
+      RecordingStudioAccessible::Engine.root.join("lib/recording_studio_accessible/services/access_record_lifecycle.rb")
     )
 
     assert_includes source, "access_recording.destroy!"
@@ -173,7 +173,7 @@ class TrashableTrashedAtParityTest < Minitest::Test
   end
 
   def test_lib_requires_query_entry_point_not_full_gem
-    source = File.read(File.expand_path("../lib/recording_studio_accessible.rb", __dir__))
+    source = File.read(RecordingStudioAccessible::Engine.root.join("lib/recording_studio_accessible.rb"))
 
     assert_includes source, 'require "recording_studio_trashable/query"'
     refute_match(/require ["']recording_studio_trashable["']/, source)
@@ -189,7 +189,7 @@ class TrashableTrashedAtParityTest < Minitest::Test
     ]
 
     paths.each do |relative|
-      source = File.read(File.expand_path("../#{relative}", __dir__))
+      source = File.read(RecordingStudioAccessible::Engine.root.join(relative))
       assert_includes source, "recording_studio_trashable_kept_sql", relative
       refute_includes source, ".recording_studio_trashable_active", relative
     end

@@ -114,10 +114,12 @@ class AuthorizationClassMethodsTest < Minitest::Test
     access_scope = Relation.new
     root_access_scope = Relation.new(pluck_values: [10, 20])
 
-    RecordingStudio::Access.stub(:where, access_scope) do
-      RecordingStudio::Recording.stub(:unscoped, root_access_scope) do
-        RecordingStudio::Recording.stub(:column_names, []) do
-          assert_equal [10, 20], Subject.root_recording_ids_for(actor: actor, minimum_role: :edit)
+    RecordingStudioAccessible::DependentAccess.stub(:column_available?, false) do
+      RecordingStudio::Access.stub(:where, access_scope) do
+        RecordingStudio::Recording.stub(:unscoped, root_access_scope) do
+          RecordingStudio::Recording.stub(:column_names, []) do
+            assert_equal [10, 20], Subject.root_recording_ids_for(actor: actor, minimum_role: :edit)
+          end
         end
       end
     end
@@ -132,10 +134,12 @@ class AuthorizationClassMethodsTest < Minitest::Test
     access_scope = Relation.new
     root_access_scope = Relation.new(exists_value: true, to_a_values: [:root_recording])
 
-    RecordingStudio::Access.stub(:where, access_scope) do
-      RecordingStudio::Recording.stub(:unscoped, root_access_scope) do
-        RecordingStudio::Recording.stub(:column_names, []) do
-          assert_equal [:root_recording], Subject.root_recordings_for(actor: actor)
+    RecordingStudioAccessible::DependentAccess.stub(:column_available?, false) do
+      RecordingStudio::Access.stub(:where, access_scope) do
+        RecordingStudio::Recording.stub(:unscoped, root_access_scope) do
+          RecordingStudio::Recording.stub(:column_names, []) do
+            assert_equal [:root_recording], Subject.root_recordings_for(actor: actor)
+          end
         end
       end
     end

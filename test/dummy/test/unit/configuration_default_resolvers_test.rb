@@ -25,7 +25,7 @@ class ConfigurationDefaultResolversTest < ActiveSupport::TestCase
   end
 
   test "default actor email resolver uses a normalized email" do
-    user = create_user("resolver-person@example.com")
+    user = create_user("person@example.com")
 
     assert_equal user, @configuration.resolve_actor_for_email(
       controller: :controller,

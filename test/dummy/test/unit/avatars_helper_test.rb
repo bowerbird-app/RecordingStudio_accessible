@@ -91,6 +91,10 @@ class AvatarsHelperTest < Minitest::Test
   end
 
   def setup
+    FlatPack::AvatarGroup::Component
+    FlatPack::Button::Component
+    FlatPack::Button::Dropdown::Component
+    FlatPack::Tooltip::Component
     @original_configuration = RecordingStudioAccessible.instance_variable_get(:@configuration)
     RecordingStudioAccessible.instance_variable_set(:@configuration, RecordingStudioAccessible::Configuration.new)
     RecordingStudioAccessible.configuration.access_management_authorizer = ->(**) { true }
