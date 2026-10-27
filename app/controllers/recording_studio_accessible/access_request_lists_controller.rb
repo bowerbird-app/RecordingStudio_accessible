@@ -3,7 +3,6 @@
 module RecordingStudioAccessible
   class AccessRequestListsController < ApplicationController
     helper AccessRequestsHelper
-    helper_method :manager?
 
     def index
       return head :forbidden if current_actor.blank?
@@ -33,10 +32,6 @@ module RecordingStudioAccessible
 
     def current_actor
       RecordingStudioAccessible.configuration.current_actor_for(controller: self)
-    end
-
-    def manager?
-      current_actor.present?
     end
   end
 end

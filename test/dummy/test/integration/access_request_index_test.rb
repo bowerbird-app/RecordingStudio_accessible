@@ -33,7 +33,7 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert_equal [ "Name", "Note", "Status", "Actions" ], header_labels
     assert_select "span.truncate[title='Please open the notes']"
     assert_select "a[href=?]", recording_request_path(pending), text: @person.email
-    assert_request_decisions(pending, approve: true, deny: true)
+    assert_review_button(pending, status: "pending")
     assert_select "a[data-turbo-frame='access_requests_index'][aria-current='page']", text: "Pending"
     assert_select "a[data-turbo-frame='access_requests_index']", text: "Approved"
     assert_select "a[data-turbo-frame='access_requests_index']", text: "Denied"
@@ -56,7 +56,7 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
       assert classes.none? { |css| css.include?("badge-success-background-color") }
       assert classes.none? { |css| css.include?("badge-primary-background-color") }
     end
-    assert_request_decisions(approved, approve: false, deny: true)
+    assert_review_button(approved, status: "approved")
 
     get recording_requests_path(status: "all")
     assert_match "Please open the notes", response.body
@@ -76,7 +76,7 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
       assert classes.any? { |css| css.include?("badge-default-background-color") }
       assert classes.none? { |css| css.include?("badge-danger-background-color") }
     end
-    assert_request_decisions(pending, approve: true, deny: false)
+    assert_review_button(pending, status: "denied")
   end
 
   test "the name column shows the profile name and falls back to the email" do
@@ -168,23 +168,26 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert response.body.index("<tbody") < response.body.index("page-note-10")
   end
 
-  test "list modals approve and deny and return to the current filter" do
+  test "review opens the request and a save returns to the current filter" do
     request_recording = ask(@person, @recording, "Please open the notes")
     sign_in @manager
 
     get recording_requests_path
     assert_select "[data-pagination-cursor]"
-    assert_select "[id=?] input[type=radio][name=?][value=view][checked]",
-                  decision_modal_id(request_recording, "approved"), "role_#{request_recording.id}"
-    assert_select "[id=?] textarea[name=review_note]", decision_modal_id(request_recording, "denied")
-    assert_select "[id=?] label", decision_modal_id(request_recording, "denied"), text: "Reply message (optional)"
-    assert_select "[id=?]", decision_modal_id(request_recording, "denied"), text: /Please open the notes/
+    get review_link(request_recording)["href"], headers: { "Turbo-Frame" => "access_request" }
+    assert_match "Please open the notes", response.body
+    assert_select "[data-access-request-step=show] h1"
+    assert_select "[role=tab]", text: "Approve"
+    assert_select "[role=tab]", text: "Deny"
+    assert_select "input[type=radio][name=role][value=view][checked]"
+    assert_select "textarea[name=review_note]"
+    assert_select "label", text: "Reply message (optional)"
     assert_select "input[name=return_to][value=list]"
     assert_select "input[name=list_status][value=pending]"
     assert_select "input[name=list_scope][value=recording]"
+    assert_select "form[data-turbo-frame=_top]", count: 2
 
-    post transition_path(request_recording),
-         params: list_decision("approved", "pending", "role_#{request_recording.id}" => "view")
+    post transition_path(request_recording), params: list_decision("approved", "pending", role: "view")
     assert_redirected_to recording_requests_path
     follow_redirect!
     assert_match "Request approved.", response.body
@@ -199,7 +202,7 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     refute RecordingStudioAccessible.authorized?(actor: @person, recording: @recording, role: "view")
 
     get recording_requests_path(status: "denied")
-    assert_request_decisions(request_recording, approve: true, deny: false)
+    assert_review_button(request_recording, status: "denied")
 
     post transition_path(request_recording), params: { status: "approved", role: "edit" }
     assert_redirected_to recording_request_path(request_recording)
@@ -229,7 +232,7 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     sign_in @manager
 
     get collection_path
-    assert_select "input[name=list_scope][value=collection]"
+    assert_includes review_link(request_recording)["href"], "list_scope=collection"
 
     post transition_path(request_recording), params: list_decision("denied", "pending", review_note: "Later", scope: "collection")
     assert_redirected_to collection_path
@@ -272,21 +275,27 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     recording_studio_accessible.transition_recording_access_request_path(@recording, request_recording)
   end
 
-  def decision_modal_id(request_recording, status)
-    "access-request-#{status}-#{request_recording.id}"
+  def review_link(request_recording)
+    css_select("a[data-modal-id=access-request-review]").find do |link|
+      link["href"].include?(request_recording.id)
+    end
   end
 
-  def assert_request_decisions(request_recording, approve:, deny:)
-    assert_decision_button(request_recording, "approved", "Approve", approve)
-    assert_decision_button(request_recording, "denied", "Deny", deny)
+  def assert_review_button(request_recording, status:)
+    link = review_link(request_recording)
+    assert link, "missing Review link for #{request_recording.id}"
+    assert_equal "Review", link.text.squish
+    assert_equal "default", link["data-fp-style"]
+    assert_equal "access_request", link["data-turbo-frame"]
+    assert_includes link["class"], "text-xs"
+    assert_includes link["href"], "presentation=modal"
+    assert_includes link["href"], "return_to=list"
+    assert_includes link["href"], "list_status=#{status}"
+    assert_includes link["href"], "list_scope=recording"
+    assert_select "#access-request-review turbo-frame#access_request", count: 1
     assert_select "[role=menuitem]", count: 0
-  end
-
-  def assert_decision_button(request_recording, status, label, shown)
-    modal_id = decision_modal_id(request_recording, status)
-    count = shown ? 1 : 0
-    assert_select "button[data-modal-id=?]", modal_id, text: label, count: count
-    assert_select "[id=?] [role=dialog]", modal_id, count: count
+    assert_select "button", text: "Approve", count: 0
+    assert_select "button", text: "Deny", count: 0
   end
 
   def list_decision(status, filter, review_note: nil, scope: "recording", **extra)

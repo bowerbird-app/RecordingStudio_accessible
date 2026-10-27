@@ -165,6 +165,7 @@ en:
         save: "Save"
         show_heading: "%{name} requested access to %{recording}"
         requested_on: "Requested %{date}"
+        review: "Review"
         show_title: "Request"
         page_link: "Request access on a page"
         columns:

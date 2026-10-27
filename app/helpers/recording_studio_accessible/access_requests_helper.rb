@@ -26,15 +26,19 @@ module RecordingStudioAccessible
     end
 
     def access_request_form_options
+      return { data: { turbo_frame: "_top" } } if access_request_list_return?
       return { data: { turbo_frame: access_request_frame_id } } if modal_frame_request?
 
       { local: true, data: { turbo: false } }
     end
 
     def access_request_modal_fields
-      return unless modal_presentation?
+      fields = [access_request_presentation_field, *access_request_list_return_fields].compact
+      safe_join(fields) if fields.any?
+    end
 
-      hidden_field_tag(:presentation, MODAL)
+    def access_request_list_return?
+      modal_frame_request? && params[:return_to].to_s == "list"
     end
 
     def access_request_status_style(status)
@@ -55,19 +59,35 @@ module RecordingStudioAccessible
       accessible_role_name(role)
     end
 
-    def access_request_approval_options(request_record, recording: @recording)
+    def access_request_approval_options(request_record)
       AccessRequestRoles.options_for(
-        recording: recording, action: request_record.action, manager: access_request_manager
+        recording: @recording, action: request_record.action, manager: access_request_manager
       ).map do |role|
         { value: role, label: accessible_role_name(role), icon: access_request_role_icon(role) }
       end
     end
 
-    def access_request_approval_default(request_record, recording: @recording)
+    def access_request_approval_default(request_record)
       AccessRequestRoles.default_for(
-        recording: recording, action: request_record.action, manager: access_request_manager,
+        recording: @recording, action: request_record.action, manager: access_request_manager,
         suggested: request_record.role.presence || "view"
       )
+    end
+
+    def access_request_presentation_field
+      return unless modal_presentation?
+
+      hidden_field_tag(:presentation, MODAL)
+    end
+
+    def access_request_list_return_fields
+      return [] unless params[:return_to].to_s == "list"
+
+      [
+        hidden_field_tag(:return_to, "list"),
+        hidden_field_tag(:list_status, params[:list_status].to_s),
+        hidden_field_tag(:list_scope, params[:list_scope].to_s)
+      ]
     end
 
     def access_request_person_label(actor)

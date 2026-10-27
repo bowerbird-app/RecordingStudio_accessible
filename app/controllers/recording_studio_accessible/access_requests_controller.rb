@@ -256,11 +256,7 @@ module RecordingStudioAccessible
     end
 
     def transition_params
-      { status: params[:status], role: submitted_role, review_note: params[:review_note] }
-    end
-
-    def submitted_role
-      params[:role].presence || params["role_#{find_request.id}"].presence
+      { status: params[:status], role: params[:role], review_note: params[:review_note] }
     end
 
     def transition_flash

@@ -293,13 +293,12 @@ with no name is shown by email alone. The note is one truncated line, with the
 full text on the request page and in the cell's title. A single recording hides
 the recording column. More than one shows the recording's name or title, linked
 when the host can route to that recordable. The name links to the request page.
-Pending rows show Approve and Deny. Approved rows show Deny. Denied rows show
-Approve. Each button opens a modal. Approve uses the same inline role radios as
-the request page. Deny has the optional reply. The note and any gate answers
-sit in the modal. A save from the list returns to that list and keeps the
-filter. A save from the request page stays on the request page. A list rendered
-on the collection route returns there. Any other list URL returns to that
-recording's request list.
+Every row has a Review button. Review opens that same request page in a modal:
+the heading, the date, the message, any gate answers, and the Approve and Deny
+tabs. A save from the modal returns to the list and keeps the filter. A save
+from the full request page stays on that page. A list rendered on the
+collection route returns there. Any other list URL returns to that recording's
+request list.
 
 `new` is the email step, the code step, or the request form. The email step
 shows the recording's name or title under the heading. Later steps do not.

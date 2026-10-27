@@ -1,0 +1,20 @@
+<%= render FlatPack::Modal::Component.new(id: access_request_review_modal_id, size: :md) do |modal| %>
+  <% modal.body do %>
+    <%= turbo_frame_tag access_request_frame_id %>
+  <% end %>
+<% end %>
+<%= javascript_tag nonce: true do %>
+  if (!document.documentElement.dataset.recordingStudioAccessibleAccessRequest) {
+    document.documentElement.dataset.recordingStudioAccessibleAccessRequest = "true"
+    document.addEventListener("turbo:before-cache", function () {
+      document.querySelectorAll("[data-controller='flat-pack--modal'][id^='access-request-']").forEach(function (modal) {
+        if (modal.classList.contains("hidden")) return
+
+        modal.classList.add("hidden")
+        modal.classList.remove("flex")
+        modal.setAttribute("aria-hidden", "true")
+        document.body.style.overflow = ""
+      })
+    })
+  }
+<% end %>

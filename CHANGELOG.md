@@ -25,11 +25,11 @@ All notable changes to this project will be documented in this file.
   full page, the same step shows one heading from the layout.
 - Development pins move to `recording_studio` `v6.1.0` and `flat_pack`
   `0.1.319`. The gemspec floor is `~> 6.1`, `>= 6.1.0`.
-- The access request list uses Approve and Deny buttons instead of the actions
-  menu. Each button opens a modal. Approve picks a role. Deny takes an optional
-  reply. Pending rows show both. Approved rows show Deny. Denied rows show
-  Approve. The name links to the request. A save from the list returns to the
-  current filter. A save from the request page stays on that page.
+- The access request list uses one Review button in the Actions column.
+  Review opens the request page in a modal, with the same heading, date,
+  message, gate answers, and Approve and Deny tabs. A save from that modal
+  returns to the current filter. A save from the full request page stays on
+  that page. The name still links to the request.
 
 ### Removed
 - `recording_studio_accessible/blank` and
@@ -68,11 +68,13 @@ All notable changes to this project will be documented in this file.
 - Sibling gems that still require `recording_studio` below 5 need a Bundler
   widen (see `test/support/widen_recording_studio_requirement.rb`) until
   those gems declare `>= 6.1.0`.
-- Host copies of the access request list that still render the actions menu
-  need the Approve and Deny buttons. `requests.menu` and `requests.actions_label`
-  are gone. A decision posted from the collection list returns to that list.
-  A decision posted from any other list URL returns to that recording's
-  request list, on the same filter.
+- Host copies of the access request list that still render an actions menu,
+  or separate Approve and Deny buttons, need one Review button. The label is
+  `requests.review`. Review loads the request page with `presentation=modal`.
+  A save from that modal returns to the list and keeps the filter. A save
+  from the full request page stays on that page. A decision posted from the
+  collection list returns to that list. A decision posted from any other list
+  URL returns to that recording's request list, on the same filter.
 
 ## [0.21.0] - 2026-10-21
 

@@ -208,7 +208,7 @@ class AccessRequestGateTest < ActionDispatch::IntegrationTest
     assert_select ".flat-pack-list-item-marker", count: 0
     assert_select "turbo-frame#access_request"
 
-    get request_path
+    get show_path(request_recording, presentation: "modal"), headers: modal_headers
     assert_match "Why do you want access?", response.body
     assert_match "Embargo review", response.body
     assert_match "Please", response.body
@@ -286,8 +286,8 @@ class AccessRequestGateTest < ActionDispatch::IntegrationTest
     RecordingStudioUser.otp_message(intent.otp_challenge_id).fetch(:body)[/\d{6}/]
   end
 
-  def show_path(request_recording)
-    recording_studio_accessible.recording_access_request_path(@recording, request_recording)
+  def show_path(request_recording, **params)
+    recording_studio_accessible.recording_access_request_path(@recording, request_recording, **params)
   end
 
   def modal_headers
