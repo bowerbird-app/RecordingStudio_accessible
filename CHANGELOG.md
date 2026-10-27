@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.22.2] - 2026-10-27
+
 ### Changed
 - Access request modals use FlatPack Modal. Open access-request dialogs
   still hide on `turbo:before-cache`, so Back/Forward does not restore a
