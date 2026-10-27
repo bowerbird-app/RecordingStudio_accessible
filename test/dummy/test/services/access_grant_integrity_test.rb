@@ -129,12 +129,27 @@ class AccessGrantIntegrityTest < ActiveSupport::TestCase
 
   test "repair prepares the Current impersonator accessor before lifecycle mutations" do
     malformed_duplicate_pair(parent: @root_recording, roles: %i[view admin])
+    original_current = Object.const_defined?(:Current, false) ? Object.const_get(:Current) : nil
+    current_class = Class.new(ActiveSupport::CurrentAttributes) do
+      attribute :actor, :access_request_reason
+    end
+    Object.send(:remove_const, :Current) if Object.const_defined?(:Current, false)
+    Object.const_set(:Current, current_class)
+    Current.clear_all
+
+    refute Current.method_defined?(:impersonator)
 
     result = RecordingStudioAccessible::Services::AccessGrantIntegrity.call(dry_run: false, manager_actor: @manager)
 
     assert result.success?
-    assert Current.respond_to?(:impersonator)
     assert Current.method_defined?(:impersonator)
+    assert Current.respond_to?(:impersonator)
+  ensure
+    if Object.const_defined?(:Current, false)
+      Object.send(:remove_const, :Current)
+    end
+    Object.const_set(:Current, original_current) if original_current
+    original_current.clear_all if original_current.respond_to?(:clear_all)
   end
 
   test "integrity task prints complete partial-failure reports before aborting" do

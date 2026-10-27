@@ -26,11 +26,27 @@ class ConfigurationDefaultResolversTest < ActiveSupport::TestCase
 
   test "default actor email resolver uses a normalized email" do
     user = create_user("person@example.com")
-
-    assert_equal user, @configuration.resolve_actor_for_email(
-      controller: :controller,
-      email: " PERSON@EXAMPLE.COM "
+    mixed_case_email = "Person@Example.com"
+    User.connection.execute(
+      "UPDATE users SET email = #{User.connection.quote(mixed_case_email)} WHERE id = #{User.connection.quote(user.id)}"
     )
+    user.reload
+
+    original_where = User.method(:where)
+    where_queries = []
+
+    User.stub(:where, lambda { |*args|
+      where_queries << args
+      original_where.call(*args)
+    }) do
+      assert_equal user, @configuration.resolve_actor_for_email(
+        controller: :controller,
+        email: " PERSON@EXAMPLE.COM "
+      )
+    end
+
+    assert_equal mixed_case_email, user.email
+    assert_equal [ "LOWER(email) = ?", "person@example.com" ], where_queries.sole
   end
 
   test "default actor email resolver uses find_by when where is unavailable" do
