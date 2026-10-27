@@ -475,13 +475,14 @@ module RecordingStudioAccessible
     end
 
     def default_access_management_current_actor_resolver(controller: nil)
-      current_actor = Current.actor if defined?(Current) && Current.respond_to?(:actor)
-      return current_actor if current_actor.present?
-      return unless controller.respond_to?(:current_user, true)
+      if defined?(Current) && Current.respond_to?(:actor)
+        current_actor = Current.actor
+        return current_actor if current_actor.present?
+      end
 
-      controller.send(:current_user)
-    rescue StandardError
-      nil
+      return unless controller.respond_to?(:recording_studio_actor)
+
+      controller.recording_studio_actor
     end
 
     def default_access_management_actor_email_resolver(controller:, email:)

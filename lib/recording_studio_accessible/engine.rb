@@ -38,13 +38,19 @@ module RecordingStudioAccessible
     end
 
     initializer "recording_studio_accessible.load_config" do |app|
-      if app.respond_to?(:config_for)
-        begin
-          yaml = app.config_for(:recording_studio_accessible)
-          RecordingStudioAccessible.configuration.merge!(yaml) if yaml.respond_to?(:each)
-        rescue StandardError
-          nil
+      config_paths = []
+      if app.respond_to?(:root) && app.root
+        config_paths << app.root.join("config", "recording_studio_accessible.yml")
+      end
+      if app.respond_to?(:paths) && app.paths["config"]
+        Array(app.paths["config"]).each do |dir|
+          config_paths << Pathname(dir).join("recording_studio_accessible.yml")
         end
+      end
+
+      if app.respond_to?(:config_for) && config_paths.any? { |path| File.exist?(path) }
+        yaml = app.config_for(:recording_studio_accessible)
+        RecordingStudioAccessible.configuration.merge!(yaml) if yaml.respond_to?(:each)
       end
 
       if app.config.respond_to?(:x) && app.config.x.respond_to?(:recording_studio_accessible)

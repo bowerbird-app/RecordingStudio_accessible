@@ -683,14 +683,31 @@ class ConfigurationTest < Minitest::Test
     end
   end
 
-  def test_default_current_actor_falls_back_to_controller_current_user
+  def test_default_current_actor_uses_public_hook
+    @configuration.access_management_current_actor_resolver = ->(controller:) { :hook_actor }
+
+    assert_equal :hook_actor, @configuration.current_actor_for(controller: :controller)
+  end
+
+  def test_default_current_actor_uses_controller_auth
+    controller = Class.new do
+      def recording_studio_actor
+        :controller_auth_actor
+      end
+    end.new
+
+    assert_equal :controller_auth_actor, @configuration.current_actor_for(controller: controller)
+  end
+
+  def test_default_current_actor_does_not_fall_back_to_private_current_user
     controller = Class.new do
       def current_user
         :controller_user
       end
+      private :current_user
     end.new
 
-    assert_equal :controller_user, @configuration.current_actor_for(controller: controller)
+    assert_nil @configuration.current_actor_for(controller: controller)
   end
 
   def test_default_access_granted_url_uses_recordable_route_when_available

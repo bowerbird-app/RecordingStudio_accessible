@@ -426,7 +426,7 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 No migration.
 
-1. Install Accessible `0.22.0` with Recording Studio `~> 6.1`, `>= 6.1.0` (this repo tests `v6.1.0`) and Flatpack `0.1.319`. Trashable stays `recording_studio_trashable ~> 0.10`. Do not add `recording_studio_user` to the Accessible gemspec.
+1. Install Accessible `0.22.2` with Recording Studio `~> 6.1`, `>= 6.1.0` (this repo tests `v6.1.0`) and Flatpack `0.1.320`. Trashable stays `recording_studio_trashable ~> 0.10`. Do not add `recording_studio_user` to the Accessible gemspec.
 2. Leave `config.layout` unset to use `RecordingStudio.configuration.layout`, then `recording_studio/default_layout`. Set the Accessible layout only when these screens should differ from the core layout. A callable is `->(controller:) { "name" }` and returns a layout name, `nil`, or `false`.
 3. Delete host copies of `recording_studio_accessible/blank` and `recording_studio_accessible/access_request`. Page titles belong in `content_for :title` and `content_for :subtitle`. Close and back belong in `flat_pack_page_nav`. `FlatPack::Card` no longer accepts `style:`.
 4. Access-request modal frames still have no document layout. A denied actor still fails closed before a layout callable runs.
@@ -1268,7 +1268,7 @@ The same manage-access path can sit inside a Flatpack dropdown. The menu label i
 
 The missing-actor handler may return an actor, or a `RecordingStudioAccessible::MissingActorResolution`. An actor or `MissingActorResolution.created(...)` grants immediately. `:unresolved` asks the controller to call `invite_access`. `:invited` means the host already handled the invitation, and the addon stores nothing. `:invalid` and `:redirect` keep their previous behavior. Edit the copied templates under `app/views/recording_studio_accessible/access_granted_mailer/` when the grant mail is close. Replace `config.access_management_access_granted_notifier` when delivery has to change.
 
-By default, the mounted engine resolves the acting user from `Current.actor` so it follows the same actor source that RecordingStudio uses. If your host app needs a different source, override `config.access_management_current_actor_resolver`. The built-in resolver only falls back to `controller.current_user` when `Current.actor` is unavailable.
+By default, the mounted engine resolves the acting user from `Current.actor` so it follows the same actor source that RecordingStudio uses. If the controller includes ControllerAuth, a public `recording_studio_actor` is next. A private `current_user` is not used. Override `config.access_management_current_actor_resolver` when the host needs a different source.
 
 The mounted create flow works like this:
 
