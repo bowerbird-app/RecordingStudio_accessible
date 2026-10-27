@@ -1,5 +1,6 @@
 <% request_record = @request_recording.recordable %>
 <% content_for :title, access_request_show_heading(request_record) %>
+<% content_for :subtitle, accessible_t("requests.requested_on", date: access_request_requested_on(@request_recording)) %>
 <% unless modal_frame_request? %>
   <% flat_pack_page_nav(
        round: true,
@@ -9,18 +10,18 @@
 <% end %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
   <div class="grid w-full max-w-xl gap-8" data-access-request-step="show">
-    <div class="grid gap-3">
-      <% if modal_frame_request? %>
-        <%= render "recording_studio_accessible/access_requests/heading",
-                   title: access_request_show_heading(request_record) %>
-      <% end %>
-      <% if request_record.message.present? %>
-        <p><%= request_record.message %></p>
-      <% end %>
-      <p class="text-sm text-[var(--surface-muted-content-color)]">
-        <%= accessible_t("requests.requested_on", date: access_request_requested_on(@request_recording)) %>
-      </p>
-    </div>
+    <% if modal_frame_request? || request_record.message.present? %>
+      <div class="grid gap-3">
+        <% if modal_frame_request? %>
+          <%= render "recording_studio_accessible/access_requests/heading",
+                     title: access_request_show_heading(request_record),
+                     subtitle: accessible_t("requests.requested_on", date: access_request_requested_on(@request_recording)) %>
+        <% end %>
+        <% if request_record.message.present? %>
+          <p><%= request_record.message %></p>
+        <% end %>
+      </div>
+    <% end %>
 
     <% if manager? && access_request_gate_answers(request_record).any? %>
       <div class="grid gap-4">

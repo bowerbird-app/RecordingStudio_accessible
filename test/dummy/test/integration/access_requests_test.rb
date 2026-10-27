@@ -149,10 +149,13 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_access_request_table("I edit")
 
     get request_show_path(request_recording)
+    requested_on = "Requested #{I18n.l(request_recording.created_at.to_date, format: :long)}"
     assert_match "#{@person.email} requested access to #{@workspace.name}", response.body
     assert_match "I edit", response.body
     assert_equal 1, response.body.scan("I edit").size
-    assert_match "Requested", response.body
+    assert_select "p.mt-2.text-lg", text: requested_on
+    assert_equal 1, response.body.scan(requested_on).size
+    assert_select "[data-access-request-step=show] p", text: requested_on, count: 0
     refute_match "What happened", response.body
     refute_match "Asked for access", response.body
     assert_select "[role=tablist].border-b"
@@ -169,6 +172,9 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
     get request_show_path(request_recording, presentation: "modal"), headers: modal_headers
     assert_match "I edit", response.body
+    assert_select "[data-access-request-step=show] h1 + p", text: requested_on
+    assert_equal 1, response.body.scan(requested_on).size
+    assert_select "p.mt-2.text-lg", count: 0
     assert_select "[role=tablist].border-b"
     assert_select "form.gap-8", count: 2
     assert_select "form.gap-8 .pt-6 button[type=submit]", count: 2
@@ -192,6 +198,24 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_select "[role=tab][aria-selected=true]", text: "Deny"
     assert_access_request_screen("show", page: false)
     refute RecordingStudioAccessible.authorized?(actor: @person, recording: @recording, role: "edit")
+  end
+
+  test "a request with no message shows the date only as the subtitle" do
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: @recording, actor: @person
+    ).value
+    sign_in @manager
+    requested_on = "Requested #{I18n.l(request_recording.created_at.to_date, format: :long)}"
+
+    get request_show_path(request_recording)
+    assert_select "p.mt-2.text-lg", text: requested_on
+    assert_equal 1, response.body.scan(requested_on).size
+    assert_select "[data-access-request-step=show] > .grid.gap-3", count: 0
+
+    get request_show_path(request_recording, presentation: "modal"), headers: modal_headers
+    assert_select "[data-access-request-step=show] h1 + p", text: requested_on
+    assert_select "[data-access-request-step=show] > .grid.gap-3 > p", count: 0
+    assert_equal 1, response.body.scan(requested_on).size
   end
 
   test "a request cannot be opened under another recording" do

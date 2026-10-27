@@ -300,7 +300,8 @@ one item per role.
 shows the recording's name or title under the heading. Later steps do not.
 Visitors do not pick a role. Pass an optional `role:` or `action:` when the
 caller already knows a suggestion. The request page heading names who asked
-and which recording, then shows the message and the date they asked. Gate
+and which recording. The date they asked is the subtitle under that heading.
+The message stays on the page. Gate
 answers are labelled rows, flush with that heading. A manager uses Approve
 and Deny underline tabs. Approve lists the allowed roles as inline radios with icons.
 Deny has an
