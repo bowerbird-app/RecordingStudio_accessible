@@ -1,6 +1,5 @@
-<div class="flex flex-col gap-[var(--stack-gap-sm)]">
-  <h1 class="text-xl font-semibold"><%= local_assigns.fetch(:title) %></h1>
-  <% if local_assigns[:subtitle].present? %>
-    <p><%= local_assigns[:subtitle] %></p>
-  <% end %>
-</div>
+<%= render FlatPack::PageTitle::Component.new(
+  title: local_assigns.fetch(:title),
+  subtitle: local_assigns[:subtitle].presence,
+  variant: :h1
+) %>

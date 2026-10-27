@@ -10,10 +10,10 @@
       anchor_id: "access-check-snapshot"
     ) %>
 
-    <div class="grid gap-3">
-      <p><strong><%= accessible_t("home.index.integration_mode") %></strong> <%= @integration_mode %></p>
-      <p><strong><%= accessible_t("home.index.workspace") %></strong> <%= @workspace&.name || accessible_t("home.index.not_available") %></p>
-      <p><strong><%= accessible_t("home.index.root_recording") %></strong> <%= @root_recording&.id || accessible_t("home.index.not_available") %></p>
-    </div>
+    <%= render FlatPack::List::Component.new(layout: :key_value, divider: true) do %>
+      <%= render FlatPack::List::Item.new(key: accessible_t("home.index.integration_mode")) { @integration_mode } %>
+      <%= render FlatPack::List::Item.new(key: accessible_t("home.index.workspace")) { @workspace&.name || accessible_t("home.index.not_available") } %>
+      <%= render FlatPack::List::Item.new(key: accessible_t("home.index.root_recording")) { @root_recording&.id || accessible_t("home.index.not_available") } %>
+    <% end %>
   </div>
 </div>

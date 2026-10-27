@@ -149,7 +149,9 @@
             <% table.column(title: "Action") { |row| row[:label] } %>
             <% table.column(title: "Description") { |row| row[:description] } %>
             <% table.column(title: "Access") { |row| row[:allowed] ? "Approved" : "Denied" } %>
-            <% table.column(title: "Actions") { |row| link_to("View", access_action_path(row[:action]), class: "text-primary-600 underline text-sm") } %>
+            <% table.column(title: "Actions") { |row|
+                 render(FlatPack::Link::Component.new(href: access_action_path(row[:action]))) { "View" }
+               } %>
           <% end %>
         <% else %>
           <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>

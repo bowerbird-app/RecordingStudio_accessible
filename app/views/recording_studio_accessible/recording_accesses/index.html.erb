@@ -6,30 +6,32 @@
      anchor_href: recording_access_anchor_url
    ) %>
 <% recording_studio_page_nav_right do %>
-  <div class="flex items-center gap-2">
-    <%= render FlatPack::Button::Component.new(
-          text: accessible_t("manage.add"),
-          href: new_recording_access_path_with_back_url(@recording),
-          style: :default,
-          size: :sm
-        ) %>
-    <%= render FlatPack::Button::Component.new(
-          text: accessible_t("requests.list_title"),
-          href: recording_access_requests_path(@recording),
-          style: :default,
-          size: :sm
-        ) do |button| %>
-      <% if @pending_access_requests_count.to_i.positive? %>
-        <% button.with_trailing do %>
-          <%= render FlatPack::Badge::Component.new(
-                text: @pending_access_requests_count.to_s,
-                size: :sm,
-                style: :primary
-              ) %>
-        <% end %>
+  <%= render FlatPack::ButtonGroup::Component.new(variant: :outlined) do |group| %>
+    <% group.button(
+         FlatPack::Button::Component.new(
+           text: accessible_t("manage.add"),
+           href: new_recording_access_path_with_back_url(@recording),
+           style: :default,
+           size: :sm
+         )
+       ) %>
+    <% requests_button = FlatPack::Button::Component.new(
+         text: accessible_t("requests.list_title"),
+         href: recording_access_requests_path(@recording),
+         style: :default,
+         size: :sm
+       ) %>
+    <% if @pending_access_requests_count.to_i.positive? %>
+      <% requests_button.with_trailing do %>
+        <%= render FlatPack::Badge::Component.new(
+              text: @pending_access_requests_count.to_s,
+              size: :sm,
+              style: :primary
+            ) %>
       <% end %>
     <% end %>
-  </div>
+    <% group.button(requests_button) %>
+  <% end %>
 <% end %>
 
 <% show_actor_type_column = show_access_actor_type_column?(@direct_access_rows, @inherited_access_rows) %>
@@ -48,7 +50,7 @@
       <% if show_actor_type_column %>
         <% table.column(title: accessible_t("manage.columns.type")) do |row| %>
           <% if row[:kind] == :invitation %>
-            <% content_tag(:span, "", class: "text-sm text-[var(--surface-content-color)]") %>
+            <% "" %>
           <% else %>
             <% access_actor_type_cell(row) %>
           <% end %>

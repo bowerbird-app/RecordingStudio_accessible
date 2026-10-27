@@ -18,20 +18,17 @@
                      subtitle: accessible_t("requests.requested_on", date: access_request_requested_on(@request_recording)) %>
         <% end %>
         <% if request_record.message.present? %>
-          <p>"<%= request_record.message %>"</p>
+          <%= render FlatPack::Quote::Component.new(text: request_record.message, size: :sm) %>
         <% end %>
       </div>
     <% end %>
 
     <% if manager? && access_request_gate_answers(request_record).any? %>
-      <div class="grid gap-4">
+      <%= render FlatPack::List::Component.new(layout: :key_value, divider: true) do %>
         <% access_request_gate_answers(request_record).each do |label, value| %>
-          <div>
-            <p class="text-sm text-[var(--surface-muted-content-color)]"><%= label %></p>
-            <p class="mt-1"><%= value %></p>
-          </div>
+          <%= render FlatPack::List::Item.new(key: label) { value } %>
         <% end %>
-      </div>
+      <% end %>
     <% end %>
 
     <% if manager? %>

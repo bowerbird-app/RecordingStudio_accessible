@@ -47,6 +47,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_equal "Access requests", requests.text.squish
     assert_nil requests.at_css('[class*="badge-primary"]')
     assert_nil top_nav_right.at_css(".fp-button-group-menu")
+    refute_nil top_nav_right.at_css(".fp-button-group")
     assert_includes add_access["href"], recording_studio_accessible.new_recording_access_path(@root_recording)
     assert_includes requests["href"], recording_studio_accessible.recording_access_requests_path(@root_recording)
     assert_includes @response.body, @admin.email

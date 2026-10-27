@@ -6,6 +6,15 @@
   ) %>
 
   <div class="mt-6">
-    <%= render FlatPack::Tree::Component.new(nodes: @recording_tree_nodes) %>
+    <% if @recording_tree_nodes.any? %>
+      <%= render FlatPack::Tree::Component.new do |tree| %>
+        <% append_recording_tree_nodes(tree, @recording_tree_nodes) %>
+      <% end %>
+    <% else %>
+      <%= render FlatPack::EmptyState::Component.new(
+        title: "No recordings were found.",
+        description: "Seed the dummy app, then refresh this tree."
+      ) %>
+    <% end %>
   </div>
 </div>

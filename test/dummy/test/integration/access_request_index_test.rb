@@ -175,7 +175,7 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     get recording_requests_path
     assert_select "[data-pagination-cursor]"
     get review_link(request_recording)["href"], headers: { "Turbo-Frame" => "access_request" }
-    assert_select "p", text: "\"Please open the notes\""
+    assert_select "blockquote", text: "Please open the notes"
     assert_select "button[type=submit]", text: "Approve"
     assert_select "button[type=submit]", text: "Deny"
     assert_select "[data-access-request-step=show] h1"

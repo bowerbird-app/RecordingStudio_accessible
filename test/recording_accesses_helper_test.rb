@@ -152,14 +152,14 @@ class RecordingAccessesHelperTest < Minitest::Test
   def test_access_person_cell_renders_only_the_actor_label
     html = ViewContext.new.access_person_cell(actor_label: "Ada Lovelace", actor_type: "User")
 
-    assert_includes html, "Ada Lovelace"
+    assert_equal "Ada Lovelace", html
     refute_includes html, "<span>chip</span>"
   end
 
   def test_access_actor_type_cell_renders_plain_text
     html = ViewContext.new.access_actor_type_cell(actor_type: "User")
 
-    assert_includes html, ">User<"
+    assert_equal "User", html
     refute_includes html, "<span>chip</span>"
     refute_includes html, "<span>badge</span>"
   end
@@ -185,7 +185,7 @@ class RecordingAccessesHelperTest < Minitest::Test
   def test_access_role_cell_renders_plain_text
     html = ViewContext.new.access_role_cell(direct_role: :admin)
 
-    assert_includes html, ">Admin<"
+    assert_equal "Admin", html
     refute_includes html, "<span>chip</span>"
     refute_includes html, "<span>badge</span>"
   end

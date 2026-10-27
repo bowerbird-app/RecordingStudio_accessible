@@ -58,6 +58,7 @@ Home and `/message_groups` both list groups the signed-in person can see.
 ## Useful Routes
 
 - `/` - dummy app demo with seeded folders, pages, cards, message groups, and access results
+- `/tree` - recording hierarchy using FlatPack Tree
 - `/message_groups` - message groups under the shared messages root
 - `/recording_studio_accessible` - addon status/demo page
 - `/users/sign_in` - Devise sign-in page
