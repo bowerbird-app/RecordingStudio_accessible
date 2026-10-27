@@ -33,6 +33,31 @@ class ConfigurationDefaultResolversTest < ActiveSupport::TestCase
     )
   end
 
+  test "default actor email resolver uses find_by when where is unavailable" do
+    user = create_user("person@example.com")
+    original_respond_to = User.method(:respond_to?)
+    original_find_by = User.method(:find_by)
+    find_by_calls = []
+
+    User.stub(:respond_to?, lambda { |name, include_all = false|
+      return false if name.to_sym == :where
+
+      original_respond_to.call(name, include_all)
+    }) do
+      User.stub(:find_by, lambda { |*args, **kwargs|
+        find_by_calls << (kwargs.empty? ? args.first : kwargs)
+        original_find_by.call(*args, **kwargs)
+      }) do
+        assert_equal user, @configuration.resolve_actor_for_email(
+          controller: :controller,
+          email: " PERSON@EXAMPLE.COM "
+        )
+      end
+    end
+
+    assert_equal [{ email: "person@example.com" }], find_by_calls
+  end
+
   test "default current actor prefers Current.actor" do
     user = create_user("resolver-current@example.com")
     Current.actor = user

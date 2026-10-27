@@ -357,8 +357,8 @@ class AudienceRulesTest < ActiveSupport::TestCase
 
     assert_operator calls, :>=, 2
     assert_predicate locked_payloads, :any?
-    locked_ids = locked_payloads.flat_map { |payload| Array(payload[:type_casted_binds]).map(&:to_s) }
-    assert_includes locked_ids, @root.id.to_s
+    first_lock_ids = Array(locked_payloads.first[:type_casted_binds])
+    assert_equal @root.id, first_lock_ids.first
     assert_nil RecordingStudioAccessible::AudienceQuery.rule_recording_for(recording: @folder_recording, action: KIT)
   ensure
     ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber

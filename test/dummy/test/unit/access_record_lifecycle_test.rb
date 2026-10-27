@@ -115,6 +115,33 @@ module RecordingStudioAccessible
 
         assert Current.method_defined?(:impersonator)
       end
+
+      def test_ensure_current_impersonator_accessor_adds_missing_current_attribute
+        current_class = Class.new do
+          class << self
+            attr_reader :attributes
+
+            def attribute(name)
+              (@attributes ||= []) << name
+              define_singleton_method(name) { nil }
+              define_method(name) { nil }
+            end
+          end
+        end
+        original_current = Object.const_defined?(:Current, false) ? Object.const_get(:Current) : nil
+        Object.send(:remove_const, :Current) if original_current
+        Object.const_set(:Current, current_class)
+
+        @harness.send(:ensure_current_impersonator_accessor!)
+
+        assert_includes current_class.attributes, :impersonator
+        assert current_class.method_defined?(:impersonator)
+      ensure
+        if Object.const_defined?(:Current, false) && Object.const_get(:Current) == current_class
+          Object.send(:remove_const, :Current)
+        end
+        Object.const_set(:Current, original_current) if original_current
+      end
     end
   end
 end
