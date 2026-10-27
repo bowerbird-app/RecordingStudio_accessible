@@ -88,7 +88,8 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_match "Ada Lovelace", response.body
     assert_match "Hello from the visitor", response.body
     assert_select "span.truncate[title='Hello from the visitor']"
-    assert_select "[role=menuitem]", text: "Deny"
+    assert_select "button[data-modal-id]", text: "Approve"
+    assert_select "button[data-modal-id]", text: "Deny"
     refute_match "Not chosen yet", response.body
   end
 

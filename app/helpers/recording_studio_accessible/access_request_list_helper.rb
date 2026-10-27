@@ -1,14 +1,20 @@
 # frozen_string_literal: true
 
-require_relative "access_request_menu_helper"
+require_relative "access_request_decisions_helper"
 
 module RecordingStudioAccessible
   module AccessRequestListHelper
-    include AccessRequestMenuHelper
+    include AccessRequestDecisionsHelper
 
     def access_requests_index(recordings:, url: nil)
       render partial: "recording_studio_accessible/access_requests/list",
              locals: access_request_list_locals(recordings, url)
+    end
+
+    def access_request_name_link(request_recording)
+      render(FlatPack::Link::Component.new(href: access_request_review_path(request_recording))) do
+        access_request_person_label(request_recording.recordable.actor)
+      end
     end
 
     def access_request_filter_label(status)

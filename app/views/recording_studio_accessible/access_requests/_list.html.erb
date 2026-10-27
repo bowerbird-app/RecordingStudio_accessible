@@ -22,7 +22,7 @@
       tbody_data: { pagination_content: true }
     ) do |table| %>
       <% table.column(title: accessible_t("requests.columns.name")) do |request_recording| %>
-        <% access_request_person_label(request_recording.recordable.actor) %>
+        <% access_request_name_link(request_recording) %>
       <% end %>
       <% if page.multiple %>
         <% table.column(title: accessible_t("requests.columns.recording")) do |request_recording| %>
@@ -36,7 +36,7 @@
         <% access_request_status_badge(request_recording) %>
       <% end %>
       <% table.column(title: accessible_t("requests.columns.actions")) do |request_recording| %>
-        <% access_request_actions_cell(request_recording) %>
+        <% access_request_actions_cell(request_recording, page: page, list_url: list_url) %>
       <% end %>
     <% end %>
 

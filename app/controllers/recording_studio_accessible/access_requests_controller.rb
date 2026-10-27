@@ -223,7 +223,28 @@ module RecordingStudioAccessible
 
     def review(result, notice_key)
       options = result.success? ? { notice: Copy.t(notice_key) } : { alert: result.error }
-      redirect_to recording_access_request_path(@recording, find_request, **presentation_params), options
+      redirect_to review_location, options
+    end
+
+    def review_location
+      return list_review_location if params[:return_to].to_s == "list"
+
+      recording_access_request_path(@recording, find_request, **presentation_params)
+    end
+
+    def list_review_location
+      args = { status: list_status_param }.compact
+      return access_requests_path(**args) if params[:list_scope].to_s == "collection"
+
+      recording_access_requests_path(@recording, **args)
+    end
+
+    def list_status_param
+      status = params[:list_status].to_s
+      return unless AccessRequestIndex::STATUSES.include?(status)
+      return if status == AccessRequestIndex::DEFAULT_STATUS
+
+      status
     end
 
     def review_args
@@ -235,7 +256,11 @@ module RecordingStudioAccessible
     end
 
     def transition_params
-      { status: params[:status], role: params[:role], review_note: params[:review_note] }
+      { status: params[:status], role: submitted_role, review_note: params[:review_note] }
+    end
+
+    def submitted_role
+      params[:role].presence || params["role_#{find_request.id}"].presence
     end
 
     def transition_flash

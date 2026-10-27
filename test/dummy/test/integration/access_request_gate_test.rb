@@ -207,6 +207,11 @@ class AccessRequestGateTest < ActionDispatch::IntegrationTest
     assert_match "requested access to", response.body
     assert_select ".flat-pack-list-item-marker", count: 0
     assert_select "turbo-frame#access_request"
+
+    get request_path
+    assert_match "Why do you want access?", response.body
+    assert_match "Embargo review", response.body
+    assert_match "Please", response.body
   end
 
   test "the example gate asks why in a modal and on a page, then shows the answer to a manager" do

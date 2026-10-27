@@ -196,7 +196,6 @@ fr:
         list_empty_filtered: "Rien ne correspond à ce filtre."
         list_empty_subtitle: "Quand quelqu’un demande, la demande apparaît ici."
         filter_all: "Toutes"
-        actions_label: "Actions de la demande"
         approve: "Approuver"
         approve_role: "Rôle"
         note_label: "Note"
@@ -208,11 +207,6 @@ fr:
         requested_on: "Demandée le %{date}"
         show_title: "Demande"
         page_link: "Demander l’accès sur une page"
-        menu:
-          view: "Voir"
-          approve_as: "Approuver comme %{role}"
-          denied: "Refuser"
-          pending: "En attente"
         columns:
           name: "Nom"
           recording: "Enregistrement"
