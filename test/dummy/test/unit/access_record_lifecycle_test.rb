@@ -30,14 +30,7 @@ module RecordingStudioAccessible
       end
 
       def setup
-        ensure_recording_class!
-        ensure_access_class!
         @harness = Harness.new
-      end
-
-      def teardown
-        RecordingStudio.send(:remove_const, :Recording) if @created_recording_class
-        RecordingStudio.send(:remove_const, :Access) if @created_access_class
       end
 
       def test_authorize_access_management_returns_true_when_policy_allows
@@ -92,13 +85,35 @@ module RecordingStudioAccessible
           log_calls << [recording, action, actor, metadata]
         end
 
+        deleted_ids = []
+        access_relation = Object.new
+        access_relation.define_singleton_method(:delete_all) { deleted_ids << 99 }
+        recording_relation = Object.new
+        recording_relation.define_singleton_method(:where) { |*| recording_relation }
+        recording_relation.define_singleton_method(:none?) { true }
+
         RecordingStudio.stub(:root_recording_or_self, root) do
-          @harness.send(:destroy_access_recording!, access_recording, manager_actor: :manager)
+          RecordingStudio::Access.stub(:where, ->(id:) { access_relation }) do
+            RecordingStudio::Recording.stub(:unscoped, recording_relation) do
+              @harness.send(:destroy_access_recording!, access_recording, manager_actor: :manager)
+            end
+          end
         end
 
         assert access_recording.destroyed
         assert_equal [[parent, "deleted", :manager, { access_recording_id: 2, access_id: 99 }]], log_calls
-        assert_equal [99], RecordingStudio::Access.deleted_ids
+        assert_equal [99], deleted_ids
+      end
+
+      def test_ensure_current_impersonator_accessor_is_idempotent_on_host_current
+        @harness.send(:ensure_current_impersonator_accessor!)
+
+        assert Current.method_defined?(:impersonator)
+        assert Current.respond_to?(:impersonator)
+
+        @harness.send(:ensure_current_impersonator_accessor!)
+
+        assert Current.method_defined?(:impersonator)
       end
 
       def test_ensure_current_impersonator_accessor_adds_missing_current_attribute
@@ -113,6 +128,8 @@ module RecordingStudioAccessible
             end
           end
         end
+        original_current = Object.const_defined?(:Current, false) ? Object.const_get(:Current) : nil
+        Object.send(:remove_const, :Current) if original_current
         Object.const_set(:Current, current_class)
 
         @harness.send(:ensure_current_impersonator_accessor!)
@@ -123,39 +140,7 @@ module RecordingStudioAccessible
         if Object.const_defined?(:Current, false) && Object.const_get(:Current) == current_class
           Object.send(:remove_const, :Current)
         end
-      end
-
-      private
-
-      def ensure_recording_class!
-        return if RecordingStudio.const_defined?(:Recording, false)
-
-        @created_recording_class = true
-        RecordingStudio.const_set(:Recording, Class.new do
-          def self.unscoped = self
-          def self.where(*) = self
-          def self.none? = true
-        end)
-      end
-
-      def ensure_access_class!
-        return if RecordingStudio.const_defined?(:Access, false)
-
-        @created_access_class = true
-        RecordingStudio.const_set(:Access, Class.new do
-          class << self
-            attr_reader :deleted_ids
-          end
-
-          def self.where(id:)
-            @pending_id = id
-            self
-          end
-
-          def self.delete_all
-            (@deleted_ids ||= []) << @pending_id
-          end
-        end)
+        Object.const_set(:Current, original_current) if original_current
       end
     end
   end

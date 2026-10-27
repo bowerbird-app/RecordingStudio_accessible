@@ -227,22 +227,10 @@ class ControllerAuthTest < ActionDispatch::IntegrationTest
     ControllerAuthDemoConfig.authentication_method = :allow_without_actor!
     ControllerAuthDemoConfig.current_actor_method = :nil_configured_actor
 
-    ControllerAuthSiteSettingsDemosController.class_eval do
-      def nil_configured_actor
-        nil
-      end
-      private :nil_configured_actor
-    end
-
     get controller_auth_site_settings_demo_path
 
     assert_response :success
     assert_match(/actor=$/, response.body.split(" ").first)
-  ensure
-    ControllerAuthSiteSettingsDemosController.class_eval do
-      remove_method :nil_configured_actor if method_defined?(:nil_configured_actor) ||
-                                            private_method_defined?(:nil_configured_actor)
-    end
   end
 
   test "site_settings renamed helpers are private and excluded from action_methods" do

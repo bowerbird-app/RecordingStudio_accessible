@@ -5,14 +5,6 @@ require "test_helper"
 module RecordingStudioAccessible
   module Services
     class VoidDependentAccessesTest < Minitest::Test
-      def setup
-        ensure_recording_class!
-      end
-
-      def teardown
-        RecordingStudio.send(:remove_const, :Recording) if @created_recording_class
-      end
-
       def test_returns_success_with_empty_list_without_a_manager_id
         result = VoidDependentAccesses.call(manager_access_recording_id: nil)
 
@@ -130,19 +122,6 @@ module RecordingStudioAccessible
         end
 
         assert_equal({ manager_access_recording_id: "manager-id", moved: true }, called)
-      end
-
-      private
-
-      def ensure_recording_class!
-        return if RecordingStudio.const_defined?(:Recording, false)
-
-        @created_recording_class = true
-        RecordingStudio.const_set(:Recording, Class.new do
-          def self.transaction
-            yield
-          end
-        end)
       end
     end
   end

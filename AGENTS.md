@@ -1,6 +1,6 @@
 # Recording Studio Accessible agent notes
 
-Recording Studio Accessible is a Rails engine. Controllers, views, helpers, and mailers live in `app/`. The engine, configuration, and version live in `lib/recording_studio_accessible`. Generators live in `lib/generators`. Translations live in `config/locales`. Migrations live in `db/migrate`. Engine tests live in `test/`. `test/dummy` is the host app.
+Recording Studio Accessible is a Rails engine. Controllers, views, helpers, and mailers live in `app/`. The engine, configuration, and version live in `lib/recording_studio_accessible`. Generators live in `lib/generators`. Translations live in `config/locales`. Migrations live in `db/migrate`. Engine tests live in `test/` and do not boot the dummy Rails app. Tests that need real host models (`RecordingStudio::Recording`, `Access`, `User`, `Current`) or FlatPack live under `test/dummy/test/` (including `test/dummy/test/unit/`). `test/dummy` is the host app.
 
 ## Commands
 

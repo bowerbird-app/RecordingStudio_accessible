@@ -54,12 +54,7 @@ class TrashableTrashedAtParityTest < Minitest::Test
   end
 
   def setup
-    ensure_recording_class!
     @relation = RelationSpy.new
-  end
-
-  def teardown
-    RecordingStudio.send(:remove_const, :Recording) if @created_recording_class
   end
 
   def test_query_entry_point_is_loaded_without_engine
@@ -169,7 +164,7 @@ class TrashableTrashedAtParityTest < Minitest::Test
 
   def test_accessible_does_not_soft_void_on_destroy_path
     source = File.read(
-      File.expand_path("../lib/recording_studio_accessible/services/access_record_lifecycle.rb", __dir__)
+      RecordingStudioAccessible::Engine.root.join("lib/recording_studio_accessible/services/access_record_lifecycle.rb")
     )
 
     assert_includes source, "access_recording.destroy!"
@@ -178,7 +173,7 @@ class TrashableTrashedAtParityTest < Minitest::Test
   end
 
   def test_lib_requires_query_entry_point_not_full_gem
-    source = File.read(File.expand_path("../lib/recording_studio_accessible.rb", __dir__))
+    source = File.read(RecordingStudioAccessible::Engine.root.join("lib/recording_studio_accessible.rb"))
 
     assert_includes source, 'require "recording_studio_trashable/query"'
     refute_match(/require ["']recording_studio_trashable["']/, source)
@@ -194,7 +189,7 @@ class TrashableTrashedAtParityTest < Minitest::Test
     ]
 
     paths.each do |relative|
-      source = File.read(File.expand_path("../#{relative}", __dir__))
+      source = File.read(RecordingStudioAccessible::Engine.root.join(relative))
       assert_includes source, "recording_studio_trashable_kept_sql", relative
       refute_includes source, ".recording_studio_trashable_active", relative
     end
@@ -211,14 +206,4 @@ class TrashableTrashedAtParityTest < Minitest::Test
     end
   end
 
-  def ensure_recording_class!
-    return if RecordingStudio.const_defined?(:Recording, false)
-
-    @created_recording_class = true
-    RecordingStudio.const_set(:Recording, Class.new do
-      def self.unscoped = nil
-      def self.column_names = []
-      def self.recording_studio_trashable_kept_sql(*) = '"recording_studio_recordings"."trashed_at" IS NULL'
-    end)
-  end
 end

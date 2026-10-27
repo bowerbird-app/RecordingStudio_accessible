@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Gem-suite tests no longer swap `RecordingStudio::Recording`, `Access`,
+  `User`, `Current`, `ActiveRecord`, or `AccessGrantedMailer` with
+  `const_set`. PORO cases that need those host constants now boot the dummy
+  app under `test/dummy/test/unit/` and stub through Minitest or the public
+  API. Helper tests use the real FlatPack components.
+
 ## [0.22.2] - 2026-10-27
 
 ### Changed

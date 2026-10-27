@@ -19,9 +19,6 @@ module RecordingStudioAccessible
       end
 
       def setup
-        ensure_recording_class!
-        ensure_access_class!
-        ensure_active_record_error_class!
         @original_configuration = RecordingStudioAccessible.instance_variable_get(:@configuration)
         RecordingStudioAccessible.instance_variable_set(:@configuration, RecordingStudioAccessible::Configuration.new)
         RecordingStudioAccessible.configuration.access_actor_types = [Actor]
@@ -29,9 +26,6 @@ module RecordingStudioAccessible
 
       def teardown
         RecordingStudioAccessible.instance_variable_set(:@configuration, @original_configuration)
-        RecordingStudio.send(:remove_const, :Recording) if @created_recording_class
-        RecordingStudio.send(:remove_const, :Access) if @created_access_class
-        Object.send(:remove_const, :ActiveRecord) if @created_active_record_module
       end
 
       def test_validates_required_and_persisted_inputs
@@ -233,48 +227,6 @@ module RecordingStudioAccessible
           assert result.success?
           assert_equal({ recording: :recording, actor: :actor }, called)
         end
-      end
-
-      private
-
-      def ensure_recording_class!
-        return if RecordingStudio.const_defined?(:Recording, false)
-
-        @created_recording_class = true
-        RecordingStudio.const_set(:Recording, Class.new do
-          def self.transaction
-            yield
-          end
-
-          def self.none = []
-        end)
-      end
-
-      def ensure_access_class!
-        return if RecordingStudio.const_defined?(:Access, false)
-
-        @created_access_class = true
-        RecordingStudio.const_set(:Access, Class.new do
-          def self.roles
-            { "view" => 0, "edit" => 1, "admin" => 2 }
-          end
-        end)
-      end
-
-      def ensure_active_record_error_class!
-        return if Object.const_defined?(:ActiveRecord, false)
-
-        @created_active_record_module = true
-        Object.const_set(:ActiveRecord, Module.new do
-          const_set(:RecordInvalid, Class.new(StandardError) do
-            attr_reader :record
-
-            def initialize(record = nil)
-              @record = record
-              super("Record invalid")
-            end
-          end)
-        end)
       end
     end
   end
