@@ -1,6 +1,8 @@
 <% content_for :title, access_request_t("form_title") %>
 <%= render layout: "recording_studio_accessible/access_requests/step" do %>
   <div class="flex flex-col gap-[var(--stack-gap-lg)]" data-access-request-step="gate">
-    <%= render "recording_studio_accessible/access_requests/heading", title: access_request_t("form_title") %>
+    <% if modal_frame_request? %>
+      <%= render "recording_studio_accessible/access_requests/heading", title: access_request_t("form_title") %>
+    <% end %>
   </div>
 <% end %>

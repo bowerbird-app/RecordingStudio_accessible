@@ -156,7 +156,6 @@ en:
         list_empty_filtered: "Nothing matches this filter."
         list_empty_subtitle: "When someone asks, they'll show up here."
         filter_all: "All"
-        actions_label: "Request actions"
         approve: "Approve"
         approve_role: "Role"
         note_label: "Note"
@@ -166,13 +165,9 @@ en:
         save: "Save"
         show_heading: "%{name} requested access to %{recording}"
         requested_on: "Requested %{date}"
+        review: "Review"
         show_title: "Request"
         page_link: "Request access on a page"
-        menu:
-          view: "View"
-          approve_as: "Approve as %{role}"
-          denied: "Deny"
-          pending: "Pending"
         columns:
           name: "Name"
           recording: "Recording"

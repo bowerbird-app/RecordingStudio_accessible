@@ -1,41 +1,43 @@
-<%= render FlatPack::PageNav::Component.new(class: "mb-4") do |page_nav| %>
-  <% page_nav.with_close(href: recording_access_anchor_url) %>
+<% content_for :title, accessible_t("manage.title") %>
+<% content_for :subtitle, @recording_label %>
+<% flat_pack_page_nav(
+     round: true,
+     style: :default,
+     anchor_href: recording_access_anchor_url
+   ) %>
+<% recording_studio_page_nav_right do %>
+  <div class="flex items-center gap-2">
+    <%= render FlatPack::Button::Component.new(
+          text: accessible_t("manage.add"),
+          href: new_recording_access_path_with_back_url(@recording),
+          style: :default,
+          size: :sm
+        ) %>
+    <%= render FlatPack::Button::Component.new(
+          text: accessible_t("requests.list_title"),
+          href: recording_access_requests_path(@recording),
+          style: :default,
+          size: :sm
+        ) do |button| %>
+      <% if @pending_access_requests_count.to_i.positive? %>
+        <% button.with_trailing do %>
+          <%= render FlatPack::Badge::Component.new(
+                text: @pending_access_requests_count.to_s,
+                size: :sm,
+                style: :primary
+              ) %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
 <% end %>
-
-<%= render FlatPack::PageTitle::Component.new(
-  title: accessible_t("manage.title"),
-  subtitle: @recording_label,
-  variant: :h1
-) %>
-
-<div class="mb-6 flex flex-wrap items-center gap-3">
-  <%= render FlatPack::Button::Component.new(
-    text: accessible_t("manage.add"),
-    style: :primary,
-    size: :md,
-    href: new_recording_access_path_with_back_url(@recording)
-  ) %>
-  <%= render FlatPack::Button::Component.new(
-    text: accessible_t("requests.list_title"),
-    style: :secondary,
-    size: :md,
-    href: recording_access_requests_path(@recording)
-  ) %>
-</div>
 
 <% show_actor_type_column = show_access_actor_type_column?(@direct_access_rows, @inherited_access_rows) %>
 
 <% people_rows = people_with_access_rows(@direct_access_rows, @pending_invitation_rows) %>
 
 <% if people_rows.any? %>
-  <div class="grid gap-4">
-    <%= render FlatPack::SectionTitle::Component.new(
-      title: accessible_t("manage.people"),
-      anchor_link: true,
-      anchor_id: "people-with-access"
-    ) %>
-
-    <%= render FlatPack::Table::Component.new(data: people_rows) do |table| %>
+  <%= render FlatPack::Table::Component.new(data: people_rows) do |table| %>
       <% table.column(title: accessible_t("manage.columns.who")) do |row| %>
         <% if row[:kind] == :invitation %>
           <% pending_invitation_person_cell(row) %>
@@ -66,8 +68,7 @@
           <% access_actions_cell(@recording, row) %>
         <% end %>
       <% end %>
-    <% end %>
-  </div>
+  <% end %>
 <% else %>
   <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
     <% card.body(class: "grid gap-3 justify-items-start") do %>

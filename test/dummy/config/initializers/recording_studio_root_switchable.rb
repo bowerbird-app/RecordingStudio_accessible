@@ -5,8 +5,8 @@ RecordingStudioRootSwitchable.configure do |config|
     Current.actor || controller.current_user
   end
 
-  # Optional: render the mounted page inside a host layout instead of the gem blank layout.
-  # config.layout = :application_layout
+  # Optional: render the mounted page inside a host layout.
+  # config.layout = "application"
 
   # For production hosts, enable secure cookies and force SSL in the host app.
   # config.device_key_cookie_options = config.device_key_cookie_options.merge(secure: Rails.env.production?)

@@ -1,13 +1,12 @@
-<%= render FlatPack::PageNav::Component.new(class: "mb-4") do |page_nav| %>
-  <% page_nav.with_close(href: recording_access_anchor_url) %>
-<% end %>
+<% content_for :title, title %>
+<% content_for :subtitle, @recording_label %>
+<% flat_pack_page_nav(
+     round: true,
+     style: :default,
+     anchor_href: recording_access_anchor_url
+   ) %>
 
 <div class="w-full max-w-xl">
-<%= render FlatPack::PageTitle::Component.new(
-  title: title,
-  subtitle: @recording_label,
-  variant: :h1
-) %>
 
 <% show_recording_card = local_assigns.fetch(:show_recording_card, true) %>
 <% wrap_form_card = local_assigns.fetch(:wrap_form_card, true) %>
@@ -82,7 +81,7 @@
     <% end %>
 
     <% if wrap_form_card %>
-      <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+      <%= render FlatPack::Card::Component.new(border: :default) do |card| %>
         <% card.body do %>
           <%= form_content %>
         <% end %>
@@ -92,7 +91,7 @@
     <% end %>
   <% end %>
 <% elsif wrap_form_card %>
-  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+  <%= render FlatPack::Card::Component.new(border: :default) do |card| %>
     <% card.body do %>
       <%= form_content %>
     <% end %>

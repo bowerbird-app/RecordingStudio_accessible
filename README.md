@@ -31,7 +31,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", "~> 4.7", ">= 4.7.1"
+gem "recording_studio", "~> 6.1", ">= 6.1.0"
 gem "recording_studio_accessible"
 # Query-only trash helpers used by Accessible (pin by tag or host equivalent).
 # Prefer require: false; Accessible loads recording_studio_trashable/query.
@@ -73,22 +73,27 @@ initializer.
 
 ## Configuration
 
-`config.layout` chooses the layout for engine screens. Leave it unset and each
-screen keeps the layout it uses today. Mounted docs stay on the host layout.
-Manage access, invitations, actor access points, and access-request pages stay
-on the engine layouts.
+`config.layout` chooses the layout for engine screens. Leave it unset and
+the screens use `RecordingStudio.configuration.layout`, then
+`recording_studio/default_layout`.
 
 ```ruby
+RecordingStudio.configure do |config|
+  config.layout = "admin"
+end
+
 RecordingStudioAccessible.configure do |config|
   config.layout = "admin"
   # config.layout = ->(controller:) { "admin" }
+  # config.layout = false
 end
 ```
 
-A callable receives `controller:` and returns a layout name. It runs when the
-screen renders, after authentication and access checks. A denied actor stays
-denied when the callable raises. Access-request modal frames still render
-without a document layout.
+A callable receives `controller:` and returns a layout name, `nil`, or
+`false`. It runs when the screen renders, after authentication and access
+checks. A denied actor stays denied when the callable raises. `false` renders
+the screen with no document layout. Access-request modal frames still render
+without a document layout, and they do not call the layout callable.
 
 ## Controller auth for sibling engines
 
@@ -275,28 +280,37 @@ config.access_request_index_recordings = ->(actor:, controller:) { press_kits }
 ```
 
 `url` is where the status filters and the next page return. It should render
-this helper again. Pending is the default. `status` is `pending`, `approved`,
-`denied`, or `all`. A long list appends the next page with Flatpack infinite
-scroll. The cursor is the last row's time and id. The page size is 10.
+this helper again. The filters are Flatpack pills. The active one is the grey
+pill. Pending is the default, and a pending row uses the primary badge.
+Approved and denied rows use the default badge.
+`status` is `pending`, `approved`, `denied`, or `all`. A long list appends the
+next page with Flatpack infinite scroll. The cursor is the last row's time and
+id. The page size is 10.
 
 The name column shows the requester's name, from the profile collected at the
 email step or already on the user record, with the email underneath. A person
-with no name is shown by email alone. The note is one truncated line, with the
-full text on the request page and in the cell's title. A single recording hides
-the recording column. More than one shows the recording's name or title, linked
-when the host can route to that recordable. Each row's actions are the Flatpack
-three-dot menu: View, and the statuses that request can move to. Approve lists
-one item per role.
+with no name is shown by email alone. The list has no note column. A single
+recording hides the recording column. More than one shows the recording's name
+or title, linked when the host can route to that recordable. The name links to
+the request page. Every row has a Review button. Review opens that same request
+page in a modal: the heading, the date, the quoted message, any gate answers,
+and the Approve and Deny tabs. The Approve tab submits with Approve. The Deny
+tab submits with Deny. A save from the modal returns to the list and keeps the
+filter. A save from the full request page stays on that page. A list rendered
+on the collection route returns there. Any other list URL returns to that
+recording's request list.
 
 `new` is the email step, the code step, or the request form. The email step
 shows the recording's name or title under the heading. Later steps do not.
 Visitors do not pick a role. Pass an optional `role:` or `action:` when the
 caller already knows a suggestion. The request page heading names who asked
-and which recording, then shows the message and the date they asked. Gate
+and which recording. The date they asked is the subtitle under that heading.
+The message stays on the page, in quotes. Gate
 answers are labelled rows, flush with that heading. A manager uses Approve
 and Deny underline tabs. Approve lists the allowed roles as inline radios with icons.
 Deny has an
-optional note. Each tab saves through `transition_access_request`. An
+optional note. The Approve tab submits with Approve, and the Deny tab submits
+with Deny, both through `transition_access_request`. An
 approved request opens on Approve, and a denied request opens on Deny. The
 role choice defaults to the suggestion when it is allowed, then to the
 action's granted roles, then to `roles_for`. Events stay on the recordable.
@@ -375,10 +389,10 @@ access-granted email. Denial sends mail only when
 request emails direct admins on the target and its parents. Replace that with
 `config.access_request_submitted_notifier`.
 
-## Compatibility with RecordingStudio 4.7.1
+## Compatibility with RecordingStudio 6.1
 
-Recording Studio Accessible targets RecordingStudio `~> 4.7, >= 4.7.1` (currently
-tested with `4.7.1`) and its capability-owned child recordable contract. RecordingStudio
+Recording Studio Accessible targets RecordingStudio `~> 6.1`, `>= 6.1.0` (currently
+tested with `v6.1.0`) and its capability-owned child recordable contract. RecordingStudio
 core no longer ships built-in access control, so this addon provides
 `RecordingStudio::Access` and `RecordingStudio::AccessRequest`, declares them
 as child-only recordables, and registers them as metadata for the `:accessible`
@@ -405,6 +419,16 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.22.0
+
+No migration.
+
+1. Install Accessible `0.22.0` with Recording Studio `~> 6.1`, `>= 6.1.0` (this repo tests `v6.1.0`) and Flatpack `0.1.319`. Trashable stays `recording_studio_trashable ~> 0.10`. Do not add `recording_studio_user` to the Accessible gemspec.
+2. Leave `config.layout` unset to use `RecordingStudio.configuration.layout`, then `recording_studio/default_layout`. Set the Accessible layout only when these screens should differ from the core layout. A callable is `->(controller:) { "name" }` and returns a layout name, `nil`, or `false`.
+3. Delete host copies of `recording_studio_accessible/blank` and `recording_studio_accessible/access_request`. Page titles belong in `content_for :title` and `content_for :subtitle`. Close and back belong in `flat_pack_page_nav`. `FlatPack::Card` no longer accepts `style:`.
+4. Access-request modal frames still have no document layout. A denied actor still fails closed before a layout callable runs.
+5. Manage access shows `+ Access` and `Access requests` in the top-right slot. A host layout must render `:page_nav_right`. Pending access requests on that recording add a count on `Access requests`.
 
 #### Upgrading to 0.21.0
 
@@ -1109,7 +1133,8 @@ scoped access management pages at:
 /recording_studio_accessible/recordings/:recording_id/accesses
 ```
 
-Those pages use a blank layout, render FlatPack-based UI, and let authorized
+Those pages use the Recording Studio default layout unless you set
+`config.layout`, render FlatPack-based UI, and let authorized
 users add, update, and remove direct grants for the target recording.
 
 The mounted engine also exposes workspace-scoped actor access-point pages at:
@@ -1698,7 +1723,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v4.7.1`, RecordingStudioRootSwitchable `v0.9.6`, FlatPack `v0.1.275`, and (dummy only) Recording Studio Internationalization `v0.1.7`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v6.1.0`, RecordingStudioRootSwitchable `v0.9.6`, FlatPack `0.1.319`, and (dummy only) Recording Studio Internationalization `v0.1.7`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

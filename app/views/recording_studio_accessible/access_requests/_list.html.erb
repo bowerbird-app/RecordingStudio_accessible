@@ -1,21 +1,19 @@
-<%= render FlatPack::PageTitle::Component.new(
-  title: accessible_t("requests.list_title"),
-  subtitle: access_request_list_subtitle(page),
-  variant: :h1
-) %>
+<% content_for :title, accessible_t("requests.list_title") %>
+<% content_for :subtitle, access_request_list_subtitle(page) %>
 
 <%= turbo_frame_tag RecordingStudioAccessible::AccessRequestIndex::FRAME_ID do %>
   <div class="mb-6">
-    <%= render FlatPack::SegmentedButtons::Component.new(size: :sm, style: :primary) do |buttons| %>
-      <% RecordingStudioAccessible::AccessRequestIndex::STATUSES.each do |status| %>
-        <% buttons.button(
-             text: access_request_filter_label(status),
-             selected: page.status == status,
-             href: RecordingStudioAccessible::AccessRequestIndex.filter_url(list_url, status),
-             data: { turbo_frame: RecordingStudioAccessible::AccessRequestIndex::FRAME_ID }
-           ) %>
-      <% end %>
-    <% end %>
+    <%= render FlatPack::Button::Pill::Component.new(
+          size: :sm,
+          items: RecordingStudioAccessible::AccessRequestIndex::STATUSES.map { |status|
+            {
+              text: access_request_filter_label(status),
+              href: RecordingStudioAccessible::AccessRequestIndex.filter_url(list_url, status),
+              active: page.status == status,
+              data: { turbo_frame: RecordingStudioAccessible::AccessRequestIndex::FRAME_ID }
+            }
+          }
+        ) %>
   </div>
 
   <% if page.requests.any? %>
@@ -24,21 +22,18 @@
       tbody_data: { pagination_content: true }
     ) do |table| %>
       <% table.column(title: accessible_t("requests.columns.name")) do |request_recording| %>
-        <% access_request_person_label(request_recording.recordable.actor) %>
+        <% access_request_name_link(request_recording) %>
       <% end %>
       <% if page.multiple %>
         <% table.column(title: accessible_t("requests.columns.recording")) do |request_recording| %>
           <% access_request_recording_label(request_recording) %>
         <% end %>
       <% end %>
-      <% table.column(title: accessible_t("requests.columns.message")) do |request_recording| %>
-        <% access_request_note_cell(request_recording) %>
-      <% end %>
       <% table.column(title: accessible_t("requests.columns.status")) do |request_recording| %>
         <% access_request_status_badge(request_recording) %>
       <% end %>
       <% table.column(title: accessible_t("requests.columns.actions")) do |request_recording| %>
-        <% access_request_actions_cell(request_recording) %>
+        <% access_request_actions_cell(request_recording, page: page, list_url: list_url) %>
       <% end %>
     <% end %>
 
@@ -58,4 +53,6 @@
       description: accessible_t("requests.list_empty_subtitle")
     ) %>
   <% end %>
+
+  <%= render "recording_studio_accessible/access_requests/review_modal" %>
 <% end %>

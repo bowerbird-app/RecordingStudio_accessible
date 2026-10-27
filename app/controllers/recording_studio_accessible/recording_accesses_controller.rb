@@ -4,9 +4,6 @@ module RecordingStudioAccessible
   class RecordingAccessesController < ApplicationController
     include RecordingStudioAccessible::NavigationUrlSafety
 
-    self.builtin_accessible_layout = "recording_studio_accessible/blank"
-    self.inherit_host_layout_conditions = false
-
     before_action :set_recording
     before_action :ensure_access_children_enabled!
     before_action :authorize_access_management!
@@ -92,6 +89,7 @@ module RecordingStudioAccessible
       @direct_access_rows = build_direct_access_rows
       @inherited_access_rows = build_inherited_access_rows
       @pending_invitation_rows = RecordingStudioAccessible::AccessInvitation.pending_rows_for(@recording)
+      @pending_access_requests_count = pending_access_requests_count
       prepare_shared_page_state
     end
 
@@ -114,6 +112,14 @@ module RecordingStudioAccessible
       @recording_label = RecordingStudio::Labels.title_for(@recording.recordable)
       @root_label = recordable_label_for(RecordingStudio.root_recording_or_self(@recording).recordable)
       @effective_role = effective_role_for(current_actor)
+    end
+
+    def pending_access_requests_count
+      return 0 if @recording.blank?
+
+      AccessRequestQuery.for_parent(@recording)
+                        .where(recording_studio_access_requests: { status: "pending" })
+                        .count
     end
 
     def access_params

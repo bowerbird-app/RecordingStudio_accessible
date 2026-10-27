@@ -1,14 +1,29 @@
 # frozen_string_literal: true
 
-require_relative "access_request_menu_helper"
-
 module RecordingStudioAccessible
   module AccessRequestListHelper
-    include AccessRequestMenuHelper
+    REVIEW_MODAL_ID = "access-request-review"
 
     def access_requests_index(recordings:, url: nil)
       render partial: "recording_studio_accessible/access_requests/list",
              locals: access_request_list_locals(recordings, url)
+    end
+
+    def access_request_review_modal_id
+      REVIEW_MODAL_ID
+    end
+
+    def access_request_actions_cell(request_recording, page:, list_url:)
+      safe_join([
+                  access_request_review_button(request_recording, page, list_url),
+                  access_request_cursor_marker(request_recording)
+                ])
+    end
+
+    def access_request_name_link(request_recording)
+      render(FlatPack::Link::Component.new(href: access_request_review_path(request_recording))) do
+        access_request_person_label(request_recording.recordable.actor)
+      end
     end
 
     def access_request_filter_label(status)
@@ -39,11 +54,6 @@ module RecordingStudioAccessible
       )
     end
 
-    def access_request_note_cell(request_recording)
-      message = request_recording.recordable.message.to_s
-      tag.span(message, class: "block max-w-sm truncate", title: message)
-    end
-
     def access_request_recording_label(request_recording)
       label = AccessGrantedMailer.recordable_label_for(request_recording.parent_recording).to_s
       href = access_request_recording_href(request_recording)
@@ -67,6 +77,41 @@ module RecordingStudioAccessible
 
     def access_request_index_actor
       RecordingStudioAccessible.configuration.current_actor_for(controller: controller)
+    end
+
+    def access_request_review_button(request_recording, page, list_url)
+      render FlatPack::Button::Component.new(
+        text: accessible_t("requests.review"),
+        style: :default,
+        size: :sm,
+        href: access_request_review_href(request_recording, page, list_url),
+        data: { modal_id: REVIEW_MODAL_ID, turbo_frame: access_request_frame_id }
+      )
+    end
+
+    def access_request_review_href(request_recording, page, list_url)
+      access_request_routes.recording_access_request_path(
+        request_recording.parent_recording, request_recording,
+        presentation: AccessRequestsHelper::MODAL, return_to: "list",
+        list_status: page.status, list_scope: access_request_list_scope(list_url)
+      )
+    end
+
+    def access_request_list_scope(list_url)
+      path = URI.parse(list_url.to_s).path.to_s.chomp("/")
+      path == access_request_routes.access_requests_path.chomp("/") ? "collection" : "recording"
+    rescue URI::InvalidURIError
+      "recording"
+    end
+
+    def access_request_review_path(request_recording)
+      access_request_routes.recording_access_request_path(
+        request_recording.parent_recording, request_recording
+      )
+    end
+
+    def access_request_cursor_marker(request_recording)
+      tag.span(nil, hidden: true, data: { pagination_cursor: AccessRequestIndex.cursor_for(request_recording) })
     end
 
     def access_request_recording_href(request_recording)

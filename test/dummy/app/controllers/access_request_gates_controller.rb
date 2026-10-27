@@ -4,7 +4,7 @@ class AccessRequestGatesController < ApplicationController
   helper RecordingStudioAccessible::ApplicationHelper
 
   skip_before_action :authenticate_user!
-  layout :gate_layout
+  recording_studio_layout { modal_frame? ? false : nil }
 
   def show
     @recording = gated_recording
@@ -44,10 +44,6 @@ class AccessRequestGatesController < ApplicationController
       access_action: params[:access_action].presence,
       presentation: ("modal" if params[:presentation].to_s == "modal")
     }.compact
-  end
-
-  def gate_layout
-    modal_frame? ? false : "recording_studio_accessible/access_request"
   end
 
   def modal_frame?

@@ -4,6 +4,83 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-10-26
+
+### Changed
+- Engine screens use Recording Studio's layout lookup. `config.layout` is
+  `nil` until a host sets it. `nil` uses `RecordingStudio.configuration.layout`,
+  then `recording_studio/default_layout`.
+- Page titles come from `content_for :title` and `content_for :subtitle`.
+  Back and close use `flat_pack_page_nav`. Manage access puts `+ Access`
+  and `Access requests` in `recording_studio_page_nav_right`. The
+  `+ Access` label is the button text, with no extra plus icon. Both
+  actions use the default button style. Pending
+  access requests on that recording add a count on `Access requests`.
+  The direct-access table has no "People with access" section title.
+  Access request filters are Flatpack pills. The active filter is the grey
+  pill. A pending request badge uses the primary style. Approved and denied
+  badges use the default style. On one request, the date is the page
+  subtitle under the heading. The message stays in the page.
+- Access-request modal frames still render with no document layout. On a
+  full page, the same step shows one heading from the layout.
+- Development pins move to `recording_studio` `v6.1.0` and `flat_pack`
+  `0.1.319`. The gemspec floor is `~> 6.1`, `>= 6.1.0`.
+- The access request list uses one Review button in the Actions column.
+  The list has no note column. Review opens the request page in a modal,
+  with the same heading, date, quoted message, gate answers, and Approve
+  and Deny tabs. The Approve tab submits with Approve. The Deny tab submits
+  with Deny. A save from that modal returns to the current filter. A save
+  from the full request page stays on that page. The name still links to
+  the request.
+
+### Removed
+- `recording_studio_accessible/blank` and
+  `recording_studio_accessible/access_request` layouts.
+- `accessible_document_attributes` and
+  `recording_studio_accessible_flash_style`.
+
+### Upgrade notes
+- No migration. Install Accessible `0.22.0` with Recording Studio `>= 6.1.0`
+  (this repo tests `v6.1.0`) and Flatpack `0.1.319`. Trashable stays
+  `recording_studio_trashable ~> 0.10`. Do not add `recording_studio_user`
+  to the Accessible gemspec.
+- Leave `config.layout` unset to use the core layout, then the default
+  shell. Set `RecordingStudio.configuration.layout` for every gem, or set
+  `RecordingStudioAccessible.configuration.layout` for these screens only.
+  A callable is `->(controller:) { "admin" }` and must return a layout name,
+  `nil`, or `false`. A blank name or a positional parameter raises when you
+  assign it. A bad return value raises when the screen renders.
+- `false` skips the document layout and does not fall through to the core
+  layout. Access-request Turbo frames still skip the layout, and they do
+  not call a layout callable.
+- A denied actor still fails closed before a layout callable runs.
+- The date on a request page is the subtitle. A copied `access_requests/show`
+  view that still prints the date in the body shows it twice until that
+  copy moves the line into `content_for :subtitle` and the modal heading.
+- Host `layout` `only` / `except` conditions no longer wrap these screens.
+  The default shell does not set `html lang`. A host layout can.
+- Delete host copies of the blank and access-request layouts. Replace an
+  inline page title with `content_for`. Replace an inline page nav with
+  `flat_pack_page_nav`. `FlatPack::Card` no longer accepts `style:`.
+- Manage access no longer registers `+ Access` or `Access requests` with
+  `register_page_nav`. Those actions render in
+  `recording_studio_page_nav_right`. A host layout must render
+  `:page_nav_right` or the buttons stay hidden. A copied
+  `recording_accesses/index` view needs the same move.
+- Sibling gems that still require `recording_studio` below 5 need a Bundler
+  widen (see `test/support/widen_recording_studio_requirement.rb`) until
+  those gems declare `>= 6.1.0`.
+- Host copies of the access request list that still render an actions menu,
+  or separate Approve and Deny buttons, need one Review button. The label is
+  `requests.review`. Drop the note column from a copied list. Review loads
+  the request page with `presentation=modal`. A copied `access_requests/show`
+  view should quote the requester message and label the submit buttons
+  Approve and Deny. A save from that modal returns to the list and keeps the
+  filter. A save from the full request page stays on that page. A decision
+  posted from the collection list returns to that list. A decision posted
+  from any other list URL returns to that recording's request list, on the
+  same filter.
+
 ## [0.21.0] - 2026-10-21
 
 ### Added

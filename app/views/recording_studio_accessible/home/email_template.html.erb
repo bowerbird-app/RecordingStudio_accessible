@@ -1,9 +1,6 @@
+<% content_for :title, accessible_t("home.email_template.title") %>
+<% content_for :subtitle, accessible_t("home.email_template.subtitle") %>
 <div class="mx-auto w-full max-w-6xl">
-  <%= render FlatPack::PageTitle::Component.new(
-    title: accessible_t("home.email_template.title"),
-    subtitle: accessible_t("home.email_template.subtitle"),
-    variant: :h1
-  ) %>
 
   <section class="mt-6 space-y-4">
     <%= render FlatPack::SectionTitle::Component.new(

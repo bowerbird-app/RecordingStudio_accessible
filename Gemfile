@@ -2,16 +2,24 @@
 
 source "https://rubygems.org"
 
+require_relative "test/support/widen_recording_studio_requirement"
+
 # Specify your gem's dependencies in recording_studio_accessible.gemspec
 gemspec
 
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.1"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.1.0"
 # Query-only trash helpers (pin by tag; gemspec is "~> 0.10"). require: false so
 # Bundler does not auto-load the Trashable engine; lib requires .../query.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",
                                   tag: "v0.11.2", require: false
 # Trashable's gemspec deps are git-only; pin them for Bundler resolution only.
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.275", require: false
+# VERSION 0.1.319 on main. The v0.1.319 tag is not published yet.
+gem "flat_pack", github: "bowerbird-app/flatpack", ref: "1fcbafe94f8eb118f0a22182f63f5110fcc97a56",
+                 require: false
+
+gem "minitest", ">= 5.26", "< 6"
+gem "view_component", "4.19.0"
+
 gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.5.0",
                                 require: false
 # Email-code accounts. Soft-required: Users already depends on Accessible.

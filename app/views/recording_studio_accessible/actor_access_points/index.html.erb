@@ -1,12 +1,10 @@
-<%= render FlatPack::PageNav::Component.new(class: "mb-4") do |page_nav| %>
-  <% page_nav.with_close(href: actor_access_points_anchor_url) %>
-<% end %>
-
-<%= render FlatPack::PageTitle::Component.new(
-  title: accessible_t("actor_access_points.title", actor: @actor_label),
-  subtitle: accessible_t("actor_access_points.workspace", name: @workspace.name),
-  variant: :h1
-) %>
+<% content_for :title, accessible_t("actor_access_points.title", actor: @actor_label) %>
+<% content_for :subtitle, accessible_t("actor_access_points.workspace", name: @workspace.name) %>
+<% flat_pack_page_nav(
+     round: true,
+     style: :default,
+     anchor_href: actor_access_points_anchor_url
+   ) %>
 
 <% if @access_rows.any? %>
   <%= render FlatPack::Table::Component.new(data: @access_rows) do |table| %>
