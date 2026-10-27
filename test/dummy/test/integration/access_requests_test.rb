@@ -86,8 +86,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     sign_in @manager
     get requests_path
     assert_match "Ada Lovelace", response.body
-    assert_match "Hello from the visitor", response.body
-    assert_select "span.truncate[title='Hello from the visitor']"
+    refute_match "Hello from the visitor", response.body
     assert_select "a[data-modal-id=access-request-review][data-fp-style=default]", text: "Review"
     refute_match "Not chosen yet", response.body
   end
@@ -146,12 +145,12 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match @person.email, response.body
     assert_match "Pending", response.body
-    assert_access_request_table("I edit")
+    assert_access_request_table
 
     get request_show_path(request_recording)
     requested_on = "Requested #{I18n.l(request_recording.created_at.to_date, format: :long)}"
     assert_match "#{@person.email} requested access to #{@workspace.name}", response.body
-    assert_match "I edit", response.body
+    assert_select "[data-access-request-step=show] p", text: "\"I edit\""
     assert_equal 1, response.body.scan("I edit").size
     assert_select "p.mt-2.text-lg", text: requested_on
     assert_equal 1, response.body.scan(requested_on).size
@@ -162,7 +161,8 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_select "[role=tab][aria-selected=true]", text: "Approve"
     assert_select "[role=tab]", text: "Deny"
     assert_select "form.gap-8", count: 2
-    assert_select "form.gap-8 .pt-6 button[type=submit]", count: 2
+    assert_select "form.gap-8 .pt-6 button[type=submit]", text: "Approve"
+    assert_select "form.gap-8 .pt-6 button[type=submit]", text: "Deny"
     assert_select "form[action=?]", transition_path(request_recording), count: 2
     assert_role_buttons("edit")
     assert_select "input[name=status][value=approved]"
@@ -171,13 +171,14 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_access_request_screen("show", page: true)
 
     get request_show_path(request_recording, presentation: "modal"), headers: modal_headers
-    assert_match "I edit", response.body
+    assert_select "[data-access-request-step=show] p", text: "\"I edit\""
+    assert_select "form.gap-8 .pt-6 button[type=submit]", text: "Approve"
+    assert_select "form.gap-8 .pt-6 button[type=submit]", text: "Deny"
     assert_select "[data-access-request-step=show] h1 + p", text: requested_on
     assert_equal 1, response.body.scan(requested_on).size
     assert_select "p.mt-2.text-lg", count: 0
     assert_select "[role=tablist].border-b"
     assert_select "form.gap-8", count: 2
-    assert_select "form.gap-8 .pt-6 button[type=submit]", count: 2
     assert_role_buttons("edit")
     assert_access_request_screen("show", page: false)
 
@@ -311,14 +312,11 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     { "Turbo-Frame" => "access_request" }
   end
 
-  def assert_access_request_table(note)
+  def assert_access_request_table
     headers = css_select("table thead th").map { |node| node.text.squish }
-    assert_equal [ "Name", "Note", "Status", "Actions" ], headers
+    assert_equal [ "Name", "Status", "Actions" ], headers
     assert_select "table tbody tr", count: 1
-    assert_select "table tbody td", text: note
     assert response.body.index("<thead") < response.body.index("<tbody")
-    assert response.body.index("<tbody") < response.body.index(note)
-    assert response.body.index(note) < response.body.index("</tbody>")
   end
 
   def refute_recording_subtitle

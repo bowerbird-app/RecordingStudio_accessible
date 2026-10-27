@@ -29,9 +29,6 @@
           <% access_request_recording_label(request_recording) %>
         <% end %>
       <% end %>
-      <% table.column(title: accessible_t("requests.columns.message")) do |request_recording| %>
-        <% access_request_note_cell(request_recording) %>
-      <% end %>
       <% table.column(title: accessible_t("requests.columns.status")) do |request_recording| %>
         <% access_request_status_badge(request_recording) %>
       <% end %>

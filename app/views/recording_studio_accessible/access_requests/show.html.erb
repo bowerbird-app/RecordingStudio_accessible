@@ -18,7 +18,7 @@
                      subtitle: accessible_t("requests.requested_on", date: access_request_requested_on(@request_recording)) %>
         <% end %>
         <% if request_record.message.present? %>
-          <p><%= request_record.message %></p>
+          <p>"<%= request_record.message %>"</p>
         <% end %>
       </div>
     <% end %>
@@ -58,7 +58,7 @@
             ) %>
             <div class="pt-6">
               <%= render FlatPack::Button::Component.new(
-                text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
+                text: accessible_t("requests.approve"), style: :primary, size: :md, type: "submit"
               ) %>
             </div>
           <% end %>
@@ -76,7 +76,7 @@
             ) %>
             <div class="pt-6">
               <%= render FlatPack::Button::Component.new(
-                text: accessible_t("requests.save"), style: :primary, size: :md, type: "submit"
+                text: accessible_t("requests.deny"), style: :primary, size: :md, type: "submit"
               ) %>
             </div>
           <% end %>

@@ -26,10 +26,12 @@ All notable changes to this project will be documented in this file.
 - Development pins move to `recording_studio` `v6.1.0` and `flat_pack`
   `0.1.319`. The gemspec floor is `~> 6.1`, `>= 6.1.0`.
 - The access request list uses one Review button in the Actions column.
-  Review opens the request page in a modal, with the same heading, date,
-  message, gate answers, and Approve and Deny tabs. A save from that modal
-  returns to the current filter. A save from the full request page stays on
-  that page. The name still links to the request.
+  The list has no note column. Review opens the request page in a modal,
+  with the same heading, date, quoted message, gate answers, and Approve
+  and Deny tabs. The Approve tab submits with Approve. The Deny tab submits
+  with Deny. A save from that modal returns to the current filter. A save
+  from the full request page stays on that page. The name still links to
+  the request.
 
 ### Removed
 - `recording_studio_accessible/blank` and
@@ -70,11 +72,14 @@ All notable changes to this project will be documented in this file.
   those gems declare `>= 6.1.0`.
 - Host copies of the access request list that still render an actions menu,
   or separate Approve and Deny buttons, need one Review button. The label is
-  `requests.review`. Review loads the request page with `presentation=modal`.
-  A save from that modal returns to the list and keeps the filter. A save
-  from the full request page stays on that page. A decision posted from the
-  collection list returns to that list. A decision posted from any other list
-  URL returns to that recording's request list, on the same filter.
+  `requests.review`. Drop the note column from a copied list. Review loads
+  the request page with `presentation=modal`. A copied `access_requests/show`
+  view should quote the requester message and label the submit buttons
+  Approve and Deny. A save from that modal returns to the list and keeps the
+  filter. A save from the full request page stays on that page. A decision
+  posted from the collection list returns to that list. A decision posted
+  from any other list URL returns to that recording's request list, on the
+  same filter.
 
 ## [0.21.0] - 2026-10-21
 

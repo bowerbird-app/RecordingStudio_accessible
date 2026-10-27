@@ -27,11 +27,11 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
 
     get recording_requests_path
     assert_response :success
-    assert_match "Please open the notes", response.body
-    refute_match "I can edit this", response.body
+    assert_match @person.email, response.body
+    refute_match @second_person.email, response.body
     assert_select "turbo-frame#access_requests_index"
-    assert_equal [ "Name", "Note", "Status", "Actions" ], header_labels
-    assert_select "span.truncate[title='Please open the notes']"
+    assert_equal [ "Name", "Status", "Actions" ], header_labels
+    refute_includes header_labels, "Note"
     assert_select "a[href=?]", recording_request_path(pending), text: @person.email
     assert_review_button(pending, status: "pending")
     assert_select "a[data-turbo-frame='access_requests_index'][aria-current='page']", text: "Pending"
@@ -47,8 +47,8 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     refute_match "Taken back", response.body
 
     get recording_requests_path(status: "approved")
-    assert_match "I can edit this", response.body
-    refute_match "Please open the notes", response.body
+    assert_match @second_person.email, response.body
+    refute_match @person.email, response.body
     assert_select "a[data-turbo-frame='access_requests_index'][aria-current='page']", text: "Approved"
     assert_select "span", text: "Approved" do |badges|
       classes = badges.map { |badge| badge["class"].to_s }
@@ -59,18 +59,18 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert_review_button(approved, status: "approved")
 
     get recording_requests_path(status: "all")
-    assert_match "Please open the notes", response.body
-    assert_match "I can edit this", response.body
+    assert_match @person.email, response.body
+    assert_match @second_person.email, response.body
 
     get recording_requests_path(status: "denied")
     assert_match "Nothing matches this filter.", response.body
-    refute_match "Please open the notes", response.body
+    refute_match @person.email, response.body
 
     RecordingStudioAccessible.deny_access_request(
       request_recording: pending, manager_actor: @manager, review_note: "Not now"
     )
     get recording_requests_path(status: "denied")
-    assert_match "Please open the notes", response.body
+    assert_match @person.email, response.body
     assert_select "span", text: "Denied" do |badges|
       classes = badges.map { |badge| badge["class"].to_s }
       assert classes.any? { |css| css.include?("badge-default-background-color") }
@@ -99,8 +99,8 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     sign_in @manager
 
     get recording_requests_path
-    assert_match "Notes for this kit", response.body
-    refute_match "Notes for the other kit", response.body
+    assert_match @person.email, response.body
+    refute_match @second_person.email, response.body
     refute_includes header_labels, "Recording"
 
     sign_in @person
@@ -116,22 +116,22 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
 
     get collection_path
     assert_response :success
-    assert_match "Notes for this kit", response.body
-    refute_match "Notes for the other kit", response.body
+    assert_match @person.email, response.body
+    refute_match @second_person.email, response.body
     refute_includes header_labels, "Recording"
 
     sign_in @other_manager
     create_direct_access_recording(actor: @other_manager, role: :admin, parent_recording: @recording)
     get collection_path
-    assert_match "Notes for this kit", response.body
-    assert_match "Notes for the other kit", response.body
+    assert_match @person.email, response.body
+    assert_match @second_person.email, response.body
     assert_includes header_labels, "Recording"
     assert_select "a[href=?]", "/workspaces/#{@workspace.id}", text: @workspace.name
     assert_select "a[href=?]", "/workspaces/#{@other_workspace.id}", text: @other_workspace.name
 
     get embed_path
-    assert_match "Notes for this kit", response.body
-    refute_match "Notes for the other kit", response.body
+    assert_match @person.email, response.body
+    refute_match @second_person.email, response.body
 
     previous = RecordingStudioAccessible.configuration.access_request_index_recordings
     RecordingStudioAccessible.configuration.access_request_index_recordings = lambda { |actor:, controller:|
@@ -140,8 +140,8 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
       RecordingStudio::Recording.unscoped.where(id: @other.id)
     }
     get collection_path
-    assert_match "Notes for the other kit", response.body
-    refute_match "Notes for this kit", response.body
+    assert_match @second_person.email, response.body
+    refute_match @person.email, response.body
   ensure
     RecordingStudioAccessible.configuration.access_request_index_recordings = previous
   end
@@ -155,17 +155,17 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     end
 
     get recording_requests_path
-    assert_match "page-note-0", response.body
-    refute_match "page-note-10", response.body
+    assert_match "index-page-0@example.com", response.body
+    refute_match "index-page-10@example.com", response.body
     assert_select "[data-pagination-cursor]"
     assert_select "[data-controller='flat-pack--pagination-infinite']"
     url = css_select("[data-flat-pack--pagination-infinite-url-value]").first["data-flat-pack--pagination-infinite-url-value"]
 
     get url
-    assert_match "page-note-10", response.body
-    refute_match "page-note-0", response.body
+    assert_match "index-page-10@example.com", response.body
+    refute_match "index-page-0@example.com", response.body
     assert_select "table tbody tr", count: 1
-    assert response.body.index("<tbody") < response.body.index("page-note-10")
+    assert response.body.index("<tbody") < response.body.index("index-page-10@example.com")
   end
 
   test "review opens the request and a save returns to the current filter" do
@@ -175,7 +175,9 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     get recording_requests_path
     assert_select "[data-pagination-cursor]"
     get review_link(request_recording)["href"], headers: { "Turbo-Frame" => "access_request" }
-    assert_match "Please open the notes", response.body
+    assert_select "p", text: "\"Please open the notes\""
+    assert_select "button[type=submit]", text: "Approve"
+    assert_select "button[type=submit]", text: "Deny"
     assert_select "[data-access-request-step=show] h1"
     assert_select "[role=tab]", text: "Approve"
     assert_select "[role=tab]", text: "Deny"

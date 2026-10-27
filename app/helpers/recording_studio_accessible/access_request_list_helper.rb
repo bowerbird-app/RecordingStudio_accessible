@@ -54,11 +54,6 @@ module RecordingStudioAccessible
       )
     end
 
-    def access_request_note_cell(request_recording)
-      message = request_recording.recordable.message.to_s
-      tag.span(message, class: "block max-w-sm truncate", title: message)
-    end
-
     def access_request_recording_label(request_recording)
       label = AccessGrantedMailer.recordable_label_for(request_recording.parent_recording).to_s
       href = access_request_recording_href(request_recording)

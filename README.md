@@ -289,27 +289,28 @@ id. The page size is 10.
 
 The name column shows the requester's name, from the profile collected at the
 email step or already on the user record, with the email underneath. A person
-with no name is shown by email alone. The note is one truncated line, with the
-full text on the request page and in the cell's title. A single recording hides
-the recording column. More than one shows the recording's name or title, linked
-when the host can route to that recordable. The name links to the request page.
-Every row has a Review button. Review opens that same request page in a modal:
-the heading, the date, the message, any gate answers, and the Approve and Deny
-tabs. A save from the modal returns to the list and keeps the filter. A save
-from the full request page stays on that page. A list rendered on the
-collection route returns there. Any other list URL returns to that recording's
-request list.
+with no name is shown by email alone. The list has no note column. A single
+recording hides the recording column. More than one shows the recording's name
+or title, linked when the host can route to that recordable. The name links to
+the request page. Every row has a Review button. Review opens that same request
+page in a modal: the heading, the date, the quoted message, any gate answers,
+and the Approve and Deny tabs. The Approve tab submits with Approve. The Deny
+tab submits with Deny. A save from the modal returns to the list and keeps the
+filter. A save from the full request page stays on that page. A list rendered
+on the collection route returns there. Any other list URL returns to that
+recording's request list.
 
 `new` is the email step, the code step, or the request form. The email step
 shows the recording's name or title under the heading. Later steps do not.
 Visitors do not pick a role. Pass an optional `role:` or `action:` when the
 caller already knows a suggestion. The request page heading names who asked
 and which recording. The date they asked is the subtitle under that heading.
-The message stays on the page. Gate
+The message stays on the page, in quotes. Gate
 answers are labelled rows, flush with that heading. A manager uses Approve
 and Deny underline tabs. Approve lists the allowed roles as inline radios with icons.
 Deny has an
-optional note. Each tab saves through `transition_access_request`. An
+optional note. The Approve tab submits with Approve, and the Deny tab submits
+with Deny, both through `transition_access_request`. An
 approved request opens on Approve, and a denied request opens on Deny. The
 role choice defaults to the suggestion when it is allowed, then to the
 action's granted roles, then to `roles_for`. Events stay on the recordable.
