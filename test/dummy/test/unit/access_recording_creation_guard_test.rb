@@ -84,14 +84,6 @@ class AccessRecordingCreationGuardTest < Minitest::Test
   CREATE_VIA_GRANT = "Create access grants through RecordingStudioAccessible.grant_access"
   ACCESS_CHILDREN_NOT_ALLOWED = "does not allow RecordingStudio::Access children"
 
-  def setup
-    ensure_access_class!
-  end
-
-  def teardown
-    RecordingStudio.send(:remove_const, :Access) if @created_access_class
-  end
-
   def test_prevents_direct_access_recording_creation_without_access_context
     recording = Recording.new
 
@@ -258,10 +250,4 @@ class AccessRecordingCreationGuardTest < Minitest::Test
     end
   end
 
-  def ensure_access_class!
-    return if RecordingStudio.const_defined?(:Access, false)
-
-    @created_access_class = true
-    RecordingStudio.const_set(:Access, Class.new)
-  end
 end

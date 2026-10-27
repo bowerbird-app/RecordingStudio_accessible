@@ -1,6 +1,7 @@
 ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
 require "rails/test_help"
+require "minitest/mock"
 require "devise/test/integration_helpers"
 
 ActionController::Base.allow_forgery_protection = false

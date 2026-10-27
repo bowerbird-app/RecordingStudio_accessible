@@ -11,6 +11,11 @@ All notable changes to this project will be documented in this file.
   `access_management_current_actor_resolver`.
 - A present `config/recording_studio_accessible.yml` that cannot be parsed
   now fails at boot. A missing file still leaves configuration defaults.
+- Gem-suite tests no longer swap `RecordingStudio::Recording`, `Access`,
+  `User`, `Current`, `ActiveRecord`, or `AccessGrantedMailer` with
+  `const_set`. PORO cases that need those host constants now boot the dummy
+  app under `test/dummy/test/unit/` and stub through Minitest or the public
+  API. Helper tests use the real FlatPack components.
 
 ## [0.22.2] - 2026-10-27
 

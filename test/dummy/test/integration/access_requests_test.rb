@@ -384,19 +384,15 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
   end
 
   def with_inactive_email(email)
-    User.class_eval do
-      alias_method :active_for_authentication_without_test_disable, :active_for_authentication?
-      define_method(:active_for_authentication?) do
-        return false if self.email == email
-
-        active_for_authentication_without_test_disable
+    find_by = User.method(:find_by)
+    User.stub(:find_by, lambda { |*args, **kwargs|
+      user = find_by.call(*args, **kwargs)
+      if user&.email == email
+        user.define_singleton_method(:active_for_authentication?) { false }
       end
-    end
-    yield
-  ensure
-    User.class_eval do
-      alias_method :active_for_authentication?, :active_for_authentication_without_test_disable
-      remove_method :active_for_authentication_without_test_disable
+      user
+    }) do
+      yield
     end
   end
 end

@@ -490,105 +490,6 @@ class ConfigurationTest < Minitest::Test
     assert_equal "User with email person@example.com was not found", invalid.error
   end
 
-  def test_default_actor_scope_orders_users_by_email_when_available
-    Object.new
-    user_scope = Class.new do
-      attr_reader :ordered_by
-
-      def order(column)
-        @ordered_by = column
-        self
-      end
-    end.new
-    user_class = Class.new do
-      class << self
-        attr_accessor :scope
-      end
-
-      def self.all
-        scope
-      end
-
-      def self.column_names
-        ["email"]
-      end
-    end
-    user_class.scope = user_scope
-    Object.const_set(:User, user_class)
-
-    assert_equal [user_scope], @configuration.grantable_actors_for(controller: :controller)
-    assert_equal :email, user_scope.ordered_by
-  ensure
-    Object.send(:remove_const, :User) if Object.const_defined?(:User, false) && Object.const_get(:User) == user_class
-  end
-
-  def test_default_actor_email_resolver_uses_normalized_email
-    found_user = Object.new
-    relation = Class.new do
-      attr_reader :query, :email
-
-      def initialize(found_user)
-        @found_user = found_user
-      end
-
-      def where(query, email)
-        @query = query
-        @email = email
-        self
-      end
-
-      def first
-        @found_user
-      end
-    end.new(found_user)
-    user_class = Class.new do
-      class << self
-        attr_accessor :relation
-      end
-
-      def self.column_names
-        ["email"]
-      end
-
-      def self.where(query, email)
-        relation.where(query, email)
-      end
-    end
-    user_class.relation = relation
-    Object.const_set(:User, user_class)
-
-    assert_same found_user, @configuration.resolve_actor_for_email(controller: :controller, email: " PERSON@EXAMPLE.COM ")
-    assert_equal "LOWER(email) = ?", relation.query
-    assert_equal "person@example.com", relation.email
-  ensure
-    Object.send(:remove_const, :User) if Object.const_defined?(:User, false) && Object.const_get(:User) == user_class
-  end
-
-  def test_default_actor_email_resolver_uses_find_by_when_where_is_unavailable
-    found_user = Object.new
-    user_class = Class.new do
-      class << self
-        attr_accessor :email, :found_user
-      end
-
-      def self.column_names
-        ["email"]
-      end
-
-      def self.find_by(email:)
-        self.email = email
-        found_user
-      end
-    end
-    user_class.found_user = found_user
-    Object.const_set(:User, user_class)
-
-    assert_same found_user, @configuration.resolve_actor_for_email(controller: :controller, email: " PERSON@EXAMPLE.COM ")
-    assert_equal "person@example.com", user_class.email
-  ensure
-    Object.send(:remove_const, :User) if Object.const_defined?(:User, false) && Object.const_get(:User) == user_class
-  end
-
   def test_default_actor_label_uses_email_name_or_fallback
     email_actor = Struct.new(:email, :id).new(" person@example.com ", 1)
     name_actor = Struct.new(:name, :id).new(" Ada ", 2)
@@ -614,72 +515,28 @@ class ConfigurationTest < Minitest::Test
     actor = Struct.new(:email).new("person@example.com")
     mail = Object.new
     delivered = false
+    captured = nil
     mail.define_singleton_method(:deliver_now) { delivered = true }
-    mailer = Class.new do
-      class << self
-        attr_reader :params
-      end
+    parameterized = Object.new
+    parameterized.define_singleton_method(:access_granted) { mail }
 
-      define_singleton_method(:with) do |params|
-        @params = params
-        self
-      end
-
-      def self.access_granted
-        @mail
-      end
-
-      class << self
-        attr_writer :mail
-      end
+    RecordingStudioAccessible::AccessGrantedMailer.stub(:with, lambda { |**params|
+      captured = params
+      parameterized
+    }) do
+      @configuration.notify_access_granted(controller: :controller, recording: :recording, actor: actor, role: :view,
+                                           manager_actor: :manager)
     end
-    mailer.mail = mail
-    original_mailer = RecordingStudioAccessible.const_get(:AccessGrantedMailer) if
-      RecordingStudioAccessible.const_defined?(:AccessGrantedMailer, false)
-    RecordingStudioAccessible.send(:remove_const, :AccessGrantedMailer) if original_mailer
-    RecordingStudioAccessible.const_set(:AccessGrantedMailer, mailer)
-
-    @configuration.notify_access_granted(controller: :controller, recording: :recording, actor: actor, role: :view,
-                                         manager_actor: :manager)
 
     assert delivered
-    assert_equal :recording, mailer.params.fetch(:recording)
-    assert_equal "You were given access", mailer.params.fetch(:subject)
-  ensure
-    RecordingStudioAccessible.send(:remove_const, :AccessGrantedMailer) if
-      RecordingStudioAccessible.const_defined?(:AccessGrantedMailer, false) &&
-      RecordingStudioAccessible.const_get(:AccessGrantedMailer) == mailer
-    RecordingStudioAccessible.const_set(:AccessGrantedMailer, original_mailer) if defined?(original_mailer) && original_mailer
+    assert_equal :recording, captured.fetch(:recording)
+    assert_equal "You were given access", captured.fetch(:subject)
   end
 
   def test_default_authorizers_delegate_to_module_authorization
     RecordingStudioAccessible.stub(:authorized?, true) do
       assert @configuration.authorize_access_management?(recording: :recording, actor: :actor)
       assert @configuration.authorize_mounted_page?(controller: :controller, recording: :recording, actor: :actor)
-    end
-  end
-
-  def test_default_current_actor_prefers_current_actor
-    current_class = Class.new do
-      class << self
-        attr_accessor :actor
-      end
-    end
-
-    Object.const_set(:Current, current_class)
-    current_class.actor = :configured_actor
-
-    controller = Class.new do
-      def current_user
-        :controller_user
-      end
-    end.new
-
-    assert_equal :configured_actor, @configuration.current_actor_for(controller: controller)
-  ensure
-    current_class.actor = nil if defined?(current_class) && current_class.respond_to?(:actor=)
-    if Object.const_defined?(:Current, false) && Object.const_get(:Current) == current_class
-      Object.send(:remove_const, :Current)
     end
   end
 

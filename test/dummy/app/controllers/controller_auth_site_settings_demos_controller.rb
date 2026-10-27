@@ -27,4 +27,8 @@ class ControllerAuthSiteSettingsDemosController < ApplicationController
   private
 
   def allow_without_actor!; end
+
+  def nil_configured_actor
+    nil
+  end
 end
