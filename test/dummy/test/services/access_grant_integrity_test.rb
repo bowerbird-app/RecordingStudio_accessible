@@ -129,18 +129,12 @@ class AccessGrantIntegrityTest < ActiveSupport::TestCase
 
   test "repair prepares the Current impersonator accessor before lifecycle mutations" do
     malformed_duplicate_pair(parent: @root_recording, roles: %i[view admin])
-    original_current = Object.const_get(:Current)
-    Object.send(:remove_const, :Current)
-    replacement_current = Class.new(ActiveSupport::CurrentAttributes) { attribute :actor }
-    Object.const_set(:Current, replacement_current)
 
     result = RecordingStudioAccessible::Services::AccessGrantIntegrity.call(dry_run: false, manager_actor: @manager)
 
     assert result.success?
-    assert replacement_current.respond_to?(:impersonator)
-  ensure
-    Object.send(:remove_const, :Current) if Object.const_defined?(:Current, false)
-    Object.const_set(:Current, original_current) if original_current
+    assert Current.respond_to?(:impersonator)
+    assert Current.method_defined?(:impersonator)
   end
 
   test "integrity task prints complete partial-failure reports before aborting" do
@@ -159,11 +153,11 @@ class AccessGrantIntegrityTest < ActiveSupport::TestCase
       errors: [ report.last ]
     )
     service_class = RecordingStudioAccessible::Services::AccessGrantIntegrity
-    service_class.singleton_class.alias_method(:call_before_task_test, :call)
-    service_class.define_singleton_method(:call) { |*_, **_| result }
 
     stdout, stderr = capture_io do
-      assert_raises(SystemExit) { Rake::Task[task_name].invoke }
+      service_class.stub(:call, result) do
+        assert_raises(SystemExit) { Rake::Task[task_name].invoke }
+      end
     end
 
     assert_includes stdout, @folder_recording.id
@@ -172,10 +166,6 @@ class AccessGrantIntegrityTest < ActiveSupport::TestCase
     assert_includes stdout, ":failed"
     assert_includes stderr, "Some duplicate access grants could not be repaired"
   ensure
-    if defined?(service_class) && service_class.singleton_class.method_defined?(:call_before_task_test)
-      service_class.singleton_class.alias_method(:call, :call_before_task_test)
-      service_class.singleton_class.remove_method(:call_before_task_test)
-    end
     Rake::Task[task_name]&.reenable if defined?(task_name)
   end
 

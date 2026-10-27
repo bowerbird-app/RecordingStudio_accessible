@@ -31,13 +31,6 @@ class AuthorizationClassMethodsTest < Minitest::Test
   def setup
     Subject.reset!
     @configuration = RecordingStudioAccessible.configuration
-    ensure_access_class!
-    ensure_recording_class!
-  end
-
-  def teardown
-    RecordingStudio.send(:remove_const, :Access) if @created_access_class
-    RecordingStudio.send(:remove_const, :Recording) if @created_recording_class
   end
 
   def test_role_for_returns_nil_without_actor
@@ -161,30 +154,6 @@ class AuthorizationClassMethodsTest < Minitest::Test
   end
 
   private
-
-  def ensure_access_class!
-    return if RecordingStudio.const_defined?(:Access, false)
-
-    @created_access_class = true
-    RecordingStudio.const_set(:Access, Class.new do
-      def self.roles
-        { "view" => 0, "edit" => 1, "admin" => 2 }
-      end
-
-      def self.where(*) = nil
-    end)
-  end
-
-  def ensure_recording_class!
-    return if RecordingStudio.const_defined?(:Recording, false)
-
-    @created_recording_class = true
-    RecordingStudio.const_set(:Recording, Class.new do
-      def self.unscoped = nil
-      def self.column_names = []
-      def self.none = []
-    end)
-  end
 
   class Relation
     attr_reader :wheres, :not_wheres

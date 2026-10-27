@@ -54,12 +54,7 @@ class TrashableTrashedAtParityTest < Minitest::Test
   end
 
   def setup
-    ensure_recording_class!
     @relation = RelationSpy.new
-  end
-
-  def teardown
-    RecordingStudio.send(:remove_const, :Recording) if @created_recording_class
   end
 
   def test_query_entry_point_is_loaded_without_engine
@@ -211,14 +206,4 @@ class TrashableTrashedAtParityTest < Minitest::Test
     end
   end
 
-  def ensure_recording_class!
-    return if RecordingStudio.const_defined?(:Recording, false)
-
-    @created_recording_class = true
-    RecordingStudio.const_set(:Recording, Class.new do
-      def self.unscoped = nil
-      def self.column_names = []
-      def self.recording_studio_trashable_kept_sql(*) = '"recording_studio_recordings"."trashed_at" IS NULL'
-    end)
-  end
 end

@@ -35,14 +35,6 @@ class DirectAccessQueryTest < Minitest::Test
     end
   end
 
-  def setup
-    ensure_recording_class!
-  end
-
-  def teardown
-    RecordingStudio.send(:remove_const, :Recording) if @created_recording_class
-  end
-
   def test_access_recordings_for_filters_to_active_access_children
     relation = RelationSpy.new
     kept_sql = '"recording_studio_recordings"."trashed_at" IS NULL'
@@ -148,18 +140,4 @@ class DirectAccessQueryTest < Minitest::Test
 
   private
 
-  def ensure_recording_class!
-    return if RecordingStudio.const_defined?(:Recording, false)
-
-    @created_recording_class = true
-    RecordingStudio.const_set(:Recording, Class.new do
-      def self.unscoped = nil
-      def self.none = nil
-      def self.column_names = []
-
-      def self.recording_studio_trashable_kept_sql(*)
-        '"recording_studio_recordings"."trashed_at" IS NULL'
-      end
-    end)
-  end
 end

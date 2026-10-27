@@ -11,14 +11,6 @@ class DependentAccessTest < Minitest::Test
   end
   AccessRecordable = Struct.new(:role, :depends_on_recording_id, keyword_init: true)
 
-  def setup
-    ensure_recording_class!
-  end
-
-  def teardown
-    RecordingStudio.send(:remove_const, :Recording) if @created_recording_class
-  end
-
   def test_independent_grants_are_effective
     access_recording = AccessRecording.new(id: 1, recordable: AccessRecordable.new(role: "admin"))
 
@@ -399,19 +391,19 @@ class DependentAccessTest < Minitest::Test
   end
 
   def test_column_available_is_false_when_access_omits_the_column
-    with_access_class(Class.new { def self.column_names = ["role"] }) do
+    RecordingStudio::Access.stub(:column_names, ["role"]) do
       refute RecordingStudioAccessible::DependentAccess.column_available?
     end
   end
 
   def test_column_available_is_true_when_access_has_the_column
-    with_access_class(Class.new { def self.column_names = ["depends_on_recording_id"] }) do
+    RecordingStudio::Access.stub(:column_names, ["depends_on_recording_id"]) do
       assert RecordingStudioAccessible::DependentAccess.column_available?
     end
   end
 
   def test_column_available_is_false_when_column_lookup_raises
-    with_access_class(Class.new { def self.column_names = raise("boom") }) do
+    RecordingStudio::Access.stub(:column_names, ->(*) { raise "boom" }) do
       refute RecordingStudioAccessible::DependentAccess.column_available?
     end
   end
@@ -447,27 +439,4 @@ class DependentAccessTest < Minitest::Test
     finder
   end
 
-  def with_access_class(klass)
-    original = RecordingStudio.const_defined?(:Access, false) ? RecordingStudio::Access : nil
-    RecordingStudio.send(:remove_const, :Access) if original
-    RecordingStudio.const_set(:Access, klass)
-    yield
-  ensure
-    RecordingStudio.send(:remove_const, :Access) if RecordingStudio.const_defined?(:Access, false)
-    RecordingStudio.const_set(:Access, original) if original
-  end
-
-  def ensure_recording_class!
-    return if RecordingStudio.const_defined?(:Recording, false)
-
-    @created_recording_class = true
-    RecordingStudio.const_set(:Recording, Class.new do
-      def self.unscoped = self
-      def self.find_by(*) = nil
-
-      def self.transaction
-        yield
-      end
-    end)
-  end
 end

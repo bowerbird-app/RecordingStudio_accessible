@@ -1,53 +1,8 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "action_view"
 require "cgi"
 require "ostruct"
-require "recording_studio_accessible/engine"
-require "recording_studio_accessible"
-require_relative "../app/helpers/recording_studio_accessible/avatars_helper"
-
-module FlatPack
-  module AvatarGroup
-    class Component
-      attr_reader :system_arguments
-
-      def initialize(**system_arguments)
-        @system_arguments = system_arguments
-      end
-    end
-  end
-
-  module Tooltip
-    class Component
-      attr_reader :system_arguments
-
-      def initialize(**system_arguments)
-        @system_arguments = system_arguments
-      end
-    end
-  end
-
-  module Button
-    module Dropdown
-      class Component # :nodoc:
-        def self.available?
-          true
-        end
-      end
-    end
-
-    class Component
-      attr_reader :system_arguments
-
-      def initialize(**system_arguments)
-        @text = system_arguments[:text]
-        @system_arguments = system_arguments
-      end
-    end
-  end
-end
 
 class AvatarsHelperTest < Minitest::Test
   AccessGrant = Struct.new(:actor)
@@ -100,30 +55,38 @@ class AvatarsHelperTest < Minitest::Test
     private
 
     def render_avatar_group(component)
-      arguments = component.system_arguments
-      item_markup = arguments.fetch(:items).map do |item|
+      items = component.instance_variable_get(:@items)
+      extras = component.instance_variable_get(:@system_arguments).to_h
+      item_markup = items.map do |item|
         avatar_href = item[:href] ? %( data-avatar-href="#{ERB::Util.html_escape(item[:href])}") : ""
         %(<span data-avatar-name="#{ERB::Util.html_escape(item[:name])}" data-avatar-src="#{ERB::Util.html_escape(item[:src])}"#{avatar_href}></span>)
       end.join
 
-      %(<avatar-group data-max="#{arguments[:max]}" data-size="#{arguments[:size]}" data-overlap="#{arguments[:overlap]}" data-show-tooltip="#{arguments[:show_tooltip]}" data-overflow-href="#{ERB::Util.html_escape(arguments[:overflow_href])}">#{item_markup}</avatar-group>).html_safe
+      %(<avatar-group data-max="#{component.instance_variable_get(:@max)}" data-size="#{component.instance_variable_get(:@size)}" data-overlap="#{component.instance_variable_get(:@overlap)}" data-show-tooltip="#{extras[:show_tooltip]}" data-overflow-href="#{ERB::Util.html_escape(component.instance_variable_get(:@overflow_href))}">#{item_markup}</avatar-group>).html_safe
     end
 
     def render_button(component)
-      arguments = component.system_arguments
-      button_text = arguments[:text] ? ERB::Util.html_escape(arguments[:text]) : ""
-      data_icon = arguments[:icon] ? %( data-icon="#{ERB::Util.html_escape(arguments[:icon])}") : ""
-      data_icon_only = arguments.key?(:icon_only) ? %( data-icon-only="#{arguments[:icon_only]}") : ""
-      aria_label = arguments.dig(:aria, :label) ? %( aria-label="#{ERB::Util.html_escape(arguments.dig(:aria, :label))}") : ""
+      extras = component.instance_variable_get(:@system_arguments).to_h
+      text = component.instance_variable_get(:@text)
+      button_text = text ? ERB::Util.html_escape(text) : ""
+      icon = component.instance_variable_get(:@icon)
+      data_icon = icon ? %( data-icon="#{ERB::Util.html_escape(icon)}") : ""
+      icon_only = component.instance_variable_get(:@icon_only)
+      data_icon_only = %( data-icon-only="#{icon_only}")
+      aria_label = extras.dig(:aria, :label) ? %( aria-label="#{ERB::Util.html_escape(extras.dig(:aria, :label))}") : ""
+      style = component.instance_variable_get(:@style)
+      size = component.instance_variable_get(:@size)
+      href = component.instance_variable_get(:@href)
 
-      %(<button data-style="#{arguments[:style]}" data-size="#{arguments[:size]}" data-href="#{ERB::Util.html_escape(arguments[:href])}"#{data_icon}#{data_icon_only}#{aria_label}>#{button_text}</button>).html_safe
+      %(<button data-style="#{style}" data-size="#{size}" data-href="#{ERB::Util.html_escape(href)}"#{data_icon}#{data_icon_only}#{aria_label}>#{button_text}</button>).html_safe
     end
 
     def render_tooltip(component, &block)
-      arguments = component.system_arguments
+      text = component.instance_variable_get(:@text)
+      placement = component.instance_variable_get(:@placement)
       content = block ? block.call : ""
 
-      %(<tooltip data-text="#{ERB::Util.html_escape(arguments[:text])}" data-placement="#{arguments[:placement]}">#{content}</tooltip>).html_safe
+      %(<tooltip data-text="#{ERB::Util.html_escape(text)}" data-placement="#{placement}">#{content}</tooltip>).html_safe
     end
   end
 

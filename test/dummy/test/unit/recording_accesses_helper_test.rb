@@ -1,57 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "action_view"
-require "ostruct"
 require "cgi"
-require "recording_studio_accessible/engine"
-require "recording_studio_accessible"
-require_relative "../app/helpers/recording_studio_accessible/copy_helper"
-require_relative "../app/helpers/recording_studio_accessible/recording_accesses_helper"
-
-module FlatPack
-  module Chip
-    class Component
-      def initialize(**); end
-    end
-  end
-
-  module Badge
-    class Component
-      def initialize(**); end
-    end
-  end
-
-  module Button
-    module Dropdown
-      class Component
-        attr_reader :menu
-
-        def initialize(**)
-          @menu = []
-        end
-
-        def menu_item(text:, href: nil, **system_arguments)
-          item = Object.new
-          item.instance_variable_set(:@text, text)
-          item.instance_variable_set(:@href, href)
-          item.instance_variable_set(:@system_arguments, system_arguments)
-          @menu << item
-          item
-        end
-      end
-    end
-
-    class Component
-      unless private_method_defined?(:initialize, false)
-        def initialize(**system_arguments)
-          @text = system_arguments[:text]
-          @system_arguments = system_arguments
-        end
-      end
-    end
-  end
-end
 
 class RecordingAccessesHelperTest < Minitest::Test
   class ViewContext
@@ -73,10 +23,11 @@ class RecordingAccessesHelperTest < Minitest::Test
       if component_name == "FlatPack::Button::Dropdown::Component"
         block&.call(component)
 
-        items_html = component.menu.map do |item|
-          text = ERB::Util.html_escape(item.instance_variable_get(:@text).to_s)
-          href = item.instance_variable_get(:@href)
-          system_arguments = item.instance_variable_get(:@system_arguments).to_h
+        items_html = Array(component.menu).map do |item|
+          slot = item.respond_to?(:[]) ? (item[:item] || item[:html] || item) : item
+          text = ERB::Util.html_escape(slot.instance_variable_get(:@text).to_s)
+          href = slot.instance_variable_get(:@href)
+          system_arguments = slot.instance_variable_get(:@system_arguments).to_h
 
           if href.present?
             escaped_href = ERB::Util.html_escape(href.to_s)

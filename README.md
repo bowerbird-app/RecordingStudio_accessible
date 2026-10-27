@@ -1783,6 +1783,8 @@ bundle exec rake app:test
 bundle exec rubocop
 ```
 
+`bundle exec rake test` is the gem suite. It does not boot the dummy Rails app, so it cannot see host models such as `RecordingStudio::Recording`, `User`, or FlatPack. Tests that need those real constants live under `test/dummy/test/` (including `test/dummy/test/unit/`) and run with `bin/rails test` from `test/dummy`.
+
 If dummy app boot, assets, or migrations change, also run:
 
 ```bash

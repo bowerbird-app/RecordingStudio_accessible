@@ -330,47 +330,38 @@ class AudienceRulesTest < ActiveSupport::TestCase
   end
 
   test "set_audience rechecks the allowed set after locking the root" do
-    original_allowed = nil
-    locked_ids = []
-    RecordingStudio::Recording.class_eval do
-      alias_method :lock_without_audience_probe!, :lock!
-      define_method(:lock!) do |*args, **kwargs|
-        locked_ids << id
-        lock_without_audience_probe!(*args, **kwargs)
-      end
-    end
-
     calls = 0
-    resolver = RecordingStudioAccessible::AudienceResolver
-    original_allowed = resolver.method(:allowed_audiences_for)
-    resolver.define_singleton_method(:allowed_audiences_for) do |**|
+    locked_payloads = []
+    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*args|
+      payload = args.last
+      next unless payload[:sql].to_s.match?(/FOR UPDATE/i)
+
+      locked_payloads << payload
+    end
+    allowed = lambda do |**|
       calls += 1
       calls == 1 ? %i[public signed_in granted] : %i[granted]
     end
 
     error = assert_raises(RecordingStudioAccessible::AudienceNotAllowed) do
-      RecordingStudioAccessible.set_audience!(
-        recording: @folder_recording,
-        action: KIT,
-        audience: :public,
-        actor: @admin
-      )
+      RecordingStudioAccessible::AudienceResolver.stub(:allowed_audiences_for, allowed) do
+        RecordingStudioAccessible.set_audience!(
+          recording: @folder_recording,
+          action: KIT,
+          audience: :public,
+          actor: @admin
+        )
+      end
     end
     assert_equal RecordingStudioAccessible::Copy.t("errors.audience_not_allowed"), error.message
 
     assert_operator calls, :>=, 2
-    assert_equal @root.id, locked_ids.first
+    assert_predicate locked_payloads, :any?
+    locked_ids = locked_payloads.flat_map { |payload| Array(payload[:type_casted_binds]).map(&:to_s) }
+    assert_includes locked_ids, @root.id.to_s
     assert_nil RecordingStudioAccessible::AudienceQuery.rule_recording_for(recording: @folder_recording, action: KIT)
   ensure
-    if original_allowed
-      RecordingStudioAccessible::AudienceResolver.define_singleton_method(:allowed_audiences_for, original_allowed)
-    end
-    if RecordingStudio::Recording.method_defined?(:lock_without_audience_probe!)
-      RecordingStudio::Recording.class_eval do
-        alias_method :lock!, :lock_without_audience_probe!
-        remove_method :lock_without_audience_probe!
-      end
-    end
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
   end
 
   test "fallback event idempotency key includes the rule revision" do
