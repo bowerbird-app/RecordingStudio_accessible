@@ -12,7 +12,7 @@ class TrashableQuerySurfaceTest < ActiveSupport::TestCase
     refute defined?(RecordingStudioTrashable::Engine)
     refute defined?(RecordingStudioTrashable::CopyHelper)
     assert defined?(RecordingStudioTrashable)
-    assert_equal "0.11.2", RecordingStudioTrashable::VERSION
+    assert_equal "0.12.0", RecordingStudioTrashable::VERSION
   end
 
   test "does not register :trashable capability" do

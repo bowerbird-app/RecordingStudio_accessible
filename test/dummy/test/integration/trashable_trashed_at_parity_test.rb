@@ -11,7 +11,7 @@ class TrashableTrashedAtParityIntegrationTest < ActiveSupport::TestCase
   end
 
   test "query helpers are available without Trashable engine" do
-    assert_equal "0.11.2", RecordingStudioTrashable::VERSION
+    assert_equal "0.12.0", RecordingStudioTrashable::VERSION
     refute defined?(RecordingStudioTrashable::Engine)
     assert_respond_to RecordingStudio::Recording, :recording_studio_trashable_kept_sql
     assert_respond_to @root, :recording_studio_trashable_kept?
