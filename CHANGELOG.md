@@ -5,10 +5,9 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
-- The default current-actor resolver reads `Current.actor`, then a public
-  `recording_studio_actor` from ControllerAuth. It no longer calls a private
-  `current_user` and no longer swallows errors. Hosts that relied on a
-  private `current_user` without `Current.actor` must set the actor or set
+- The default current-actor resolver reads `Current.actor`. It no longer
+  calls `current_user` at all, public or private (Devise defines it public),
+  and no longer swallows errors. Hosts must set `Current.actor` or set
   `access_management_current_actor_resolver`.
 - A present `config/recording_studio_accessible.yml` that cannot be parsed
   now fails at boot. A missing file still leaves configuration defaults.

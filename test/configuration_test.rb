@@ -694,25 +694,21 @@ class ConfigurationTest < Minitest::Test
     assert_equal :controller, seen_controller
   end
 
-  def test_default_current_actor_uses_controller_auth
-    controller = Class.new do
-      def recording_studio_actor
-        :controller_auth_actor
+  def test_default_current_actor_does_not_call_current_user
+    Current.actor = nil if defined?(Current) && Current.respond_to?(:actor=)
+
+    [false, true].each do |make_private|
+      controller_class = Class.new do
+        def current_user
+          :controller_user
+        end
       end
-    end.new
+      controller_class.send(:private, :current_user) if make_private
 
-    assert_equal :controller_auth_actor, @configuration.current_actor_for(controller: controller)
-  end
-
-  def test_default_current_actor_does_not_fall_back_to_private_current_user
-    controller = Class.new do
-      def current_user
-        :controller_user
-      end
-      private :current_user
-    end.new
-
-    assert_nil @configuration.current_actor_for(controller: controller)
+      assert_nil @configuration.current_actor_for(controller: controller_class.new)
+    end
+  ensure
+    Current.actor = nil if defined?(Current) && Current.respond_to?(:actor=)
   end
 
   def test_default_access_granted_url_uses_recordable_route_when_available

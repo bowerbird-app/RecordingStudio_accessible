@@ -1268,7 +1268,7 @@ The same manage-access path can sit inside a Flatpack dropdown. The menu label i
 
 The missing-actor handler may return an actor, or a `RecordingStudioAccessible::MissingActorResolution`. An actor or `MissingActorResolution.created(...)` grants immediately. `:unresolved` asks the controller to call `invite_access`. `:invited` means the host already handled the invitation, and the addon stores nothing. `:invalid` and `:redirect` keep their previous behavior. Edit the copied templates under `app/views/recording_studio_accessible/access_granted_mailer/` when the grant mail is close. Replace `config.access_management_access_granted_notifier` when delivery has to change.
 
-By default, the mounted engine resolves the acting user from `Current.actor` so it follows the same actor source that RecordingStudio uses. If the controller includes ControllerAuth, a public `recording_studio_actor` is next. A private `current_user` is not used. Override `config.access_management_current_actor_resolver` when the host needs a different source.
+By default, the mounted engine resolves the acting user from `Current.actor` so it follows the same actor source that RecordingStudio uses. It does not call `current_user` at all, public or private (Devise defines it public). Hosts must set `Current.actor` or override `config.access_management_current_actor_resolver`.
 
 The mounted create flow works like this:
 
