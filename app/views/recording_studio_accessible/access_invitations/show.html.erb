@@ -1,11 +1,21 @@
 <% content_for :title, @recording_label.presence || accessible_t("invitations.title") %>
 <% content_for :subtitle, @invitation.email %>
 
-<div class="mt-6 grid w-full max-w-xl gap-3">
-  <p class="text-base leading-7 text-[var(--surface-content-color)]"><%= accessible_t("invitations.email", email: @invitation.email) %></p>
-  <p class="text-base leading-7 text-[var(--surface-content-color)]"><%= accessible_t("invitations.role", role: accessible_role_name(@invitation.role)) %></p>
-  <p class="text-base leading-7 text-[var(--surface-content-color)]"><%= accessible_t("invitations.recording", recording: @recording_label) %></p>
-  <p class="text-base leading-7 text-[var(--surface-content-color)]"><%= accessible_t("invitations.state", state: accessible_invitation_state(@invitation_state)) %></p>
+<div class="mt-6 w-full max-w-xl">
+  <%= render FlatPack::List::Component.new(divider: true) do %>
+    <%= render FlatPack::List::Item.new do %>
+      <%= accessible_t("invitations.email", email: @invitation.email) %>
+    <% end %>
+    <%= render FlatPack::List::Item.new do %>
+      <%= accessible_t("invitations.role", role: accessible_role_name(@invitation.role)) %>
+    <% end %>
+    <%= render FlatPack::List::Item.new do %>
+      <%= accessible_t("invitations.recording", recording: @recording_label) %>
+    <% end %>
+    <%= render FlatPack::List::Item.new do %>
+      <%= accessible_t("invitations.state", state: accessible_invitation_state(@invitation_state)) %>
+    <% end %>
+  <% end %>
 
   <% if @current_actor.blank? %>
     <p class="text-base leading-7 text-[var(--surface-content-color)]">

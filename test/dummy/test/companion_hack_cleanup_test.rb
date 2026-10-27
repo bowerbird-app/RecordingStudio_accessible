@@ -13,4 +13,12 @@ class CompanionHackCleanupTest < ActiveSupport::TestCase
     refute_path_exists Rails.root.join("config/initializers/recording_studio_default_layout.rb")
     refute defined?(RecordingStudio::UsesDefaultLayout)
   end
+
+  test "dummy does not define a FlatPack Tree stand-in" do
+    refute_path_exists Rails.root.join("app/components/flat_pack/tree/component.rb")
+  end
+
+  test "dummy does not ship the leftover hello Stimulus controller" do
+    refute_path_exists Rails.root.join("app/javascript/controllers/hello_controller.js")
+  end
 end

@@ -175,7 +175,7 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     get recording_requests_path
     assert_select "[data-pagination-cursor]"
     get review_link(request_recording)["href"], headers: { "Turbo-Frame" => "access_request" }
-    assert_select "p", text: "\"Please open the notes\""
+    assert_select "blockquote", text: "Please open the notes"
     assert_select "button[type=submit]", text: "Approve"
     assert_select "button[type=submit]", text: "Deny"
     assert_select "[data-access-request-step=show] h1"
@@ -295,6 +295,8 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert_includes link["href"], "list_status=#{status}"
     assert_includes link["href"], "list_scope=recording"
     assert_select "#access-request-review turbo-frame#access_request", count: 1
+    assert_equal 1, response.body.scan("turbo:before-cache").size
+    assert_includes response.body, "[data-controller='flat-pack--modal'][id^='access-request-']"
     assert_select "[role=menuitem]", count: 0
     assert_select "button", text: "Approve", count: 0
     assert_select "button", text: "Deny", count: 0

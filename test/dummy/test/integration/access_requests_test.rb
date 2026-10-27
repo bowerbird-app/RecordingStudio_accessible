@@ -150,7 +150,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     get request_show_path(request_recording)
     requested_on = "Requested #{I18n.l(request_recording.created_at.to_date, format: :long)}"
     assert_match "#{@person.email} requested access to #{@workspace.name}", response.body
-    assert_select "[data-access-request-step=show] p", text: "\"I edit\""
+    assert_select "[data-access-request-step=show] blockquote", text: "I edit"
     assert_equal 1, response.body.scan("I edit").size
     assert_select "p.mt-2.text-lg", text: requested_on
     assert_equal 1, response.body.scan(requested_on).size
@@ -171,12 +171,12 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_access_request_screen("show", page: true)
 
     get request_show_path(request_recording, presentation: "modal"), headers: modal_headers
-    assert_select "[data-access-request-step=show] p", text: "\"I edit\""
+    assert_select "[data-access-request-step=show] blockquote", text: "I edit"
     assert_select "form.gap-8 .pt-6 button[type=submit]", text: "Approve"
     assert_select "form.gap-8 .pt-6 button[type=submit]", text: "Deny"
     assert_select "[data-access-request-step=show] h1 + p", text: requested_on
     assert_equal 1, response.body.scan(requested_on).size
-    assert_select "p.mt-2.text-lg", count: 0
+    assert_select "p.mt-2.text-lg", text: requested_on, count: 1
     assert_select "[role=tablist].border-b"
     assert_select "form.gap-8", count: 2
     assert_role_buttons("edit")
@@ -276,6 +276,10 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_match "data-modal-id", response.body
     assert_match "access_request", response.body
     assert_match "presentation=modal", response.body
+    assert_select "[data-controller='flat-pack--modal'][id^='access-request-']"
+    assert_equal 1, response.body.scan("turbo:before-cache").size
+    assert_match "[data-controller='flat-pack--modal'][id^='access-request-']", response.body
+    assert_match "recordingStudioAccessibleAccessRequest", response.body
   end
 
   private

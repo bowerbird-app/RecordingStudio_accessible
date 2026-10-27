@@ -61,28 +61,30 @@ module RecordingStudioAccessible
     end
 
     def access_person_cell(row)
-      content_tag(:span, row[:actor_label], class: "font-medium text-[var(--surface-content-color)]")
+      row[:actor_label]
     end
 
     def access_actor_type_cell(row)
-      content_tag(:span, row[:actor_type], class: "text-sm text-[var(--surface-content-color)]")
+      return "" if row[:kind] == :invitation
+
+      row[:actor_type]
     end
 
     def access_role_cell(row)
-      content_tag(:span, access_role_label(row[:direct_role]), class: "text-sm text-[var(--surface-content-color)]")
+      access_role_label(row[:direct_role])
     end
 
     def inherited_access_source_cell(row)
-      content_tag(:span, row[:source_label], class: "text-sm text-[var(--surface-content-color)]")
+      row[:source_label]
     end
 
     def inherited_access_source_role_cell(row)
-      content_tag(:span, access_role_label(row[:source_role]), class: "text-sm text-[var(--surface-content-color)]")
+      access_role_label(row[:source_role])
     end
 
     def inherited_access_actions_cell(recording, row)
       source_recording = row[:source_recording]
-      return content_tag(:span, "-", class: "text-sm text-[var(--surface-content-color)]") unless source_recording
+      return "-" unless source_recording
 
       render FlatPack::Button::Dropdown::Component.new(
         text: "",
@@ -119,18 +121,13 @@ module RecordingStudioAccessible
     end
 
     def pending_invitation_person_cell(row)
-      parts = [
-        content_tag(:span, row[:email], class: "font-medium text-[var(--surface-content-color)]"),
-        content_tag(:span, accessible_t("manage.pending_invitation"), class: "text-sm text-[var(--surface-content-color)]")
-      ]
-      if row[:expired]
-        parts << content_tag(:span, accessible_t("manage.expired"), class: "text-sm text-[var(--surface-content-color)]")
-      end
+      parts = [row[:email], accessible_t("manage.pending_invitation")]
+      parts << accessible_t("manage.expired") if row[:expired]
       safe_join(parts, " ")
     end
 
     def pending_invitation_role_cell(row)
-      content_tag(:span, access_role_label(row[:role]), class: "text-sm text-[var(--surface-content-color)]")
+      access_role_label(row[:role])
     end
 
     def pending_invitation_actions_cell(recording, row)

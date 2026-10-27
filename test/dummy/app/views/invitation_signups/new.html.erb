@@ -6,8 +6,14 @@
   ) %>
 
   <div class="mt-6 grid gap-4">
-    <p class="text-base leading-7 text-[var(--surface-content-color)]">Role <%= @invitation.role.to_s.humanize %></p>
-    <p class="text-base leading-7 text-[var(--surface-content-color)]">State <%= @invitation.state %></p>
+    <%= render FlatPack::List::Component.new(layout: :key_value, divider: true) do %>
+      <%= render FlatPack::List::Item.new(key: "Role") do %>
+        <%= @invitation.role.to_s.humanize %>
+      <% end %>
+      <%= render FlatPack::List::Item.new(key: "State") do %>
+        <%= @invitation.state %>
+      <% end %>
+    <% end %>
 
     <% if @existing_user %>
       <p class="text-base leading-7 text-[var(--surface-content-color)]">

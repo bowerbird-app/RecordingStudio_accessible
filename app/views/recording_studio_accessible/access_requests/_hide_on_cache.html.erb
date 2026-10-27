@@ -1,0 +1,15 @@
+<%= javascript_tag nonce: true do %>
+  if (!document.documentElement.dataset.recordingStudioAccessibleAccessRequest) {
+    document.documentElement.dataset.recordingStudioAccessibleAccessRequest = "true"
+    document.addEventListener("turbo:before-cache", function () {
+      document.querySelectorAll("[data-controller='flat-pack--modal'][id^='access-request-']").forEach(function (modal) {
+        if (modal.classList.contains("hidden")) return
+
+        modal.classList.add("hidden")
+        modal.classList.remove("flex")
+        modal.setAttribute("aria-hidden", "true")
+        document.body.style.overflow = ""
+      })
+    })
+  }
+<% end %>

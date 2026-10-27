@@ -27,7 +27,7 @@
     <% end %>
 
     <div class="mt-4">
-      <%= link_to "Back to home", root_path, class: "text-primary-600 underline text-sm" %>
+      <%= render FlatPack::Link::Component.new(href: root_path) { "Back to home" } %>
     </div>
   </div>
 </div>
