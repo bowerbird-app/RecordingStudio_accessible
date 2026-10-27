@@ -71,7 +71,11 @@ module RecordingStudioAccessible
         target_path = File.join(mailer_template_dir, template_name)
         return if File.exist?(destination_file(target_path))
 
-        copy_file template_name, target_path
+        create_file target_path, File.binread(File.join(shared_mailer_template_dir, template_name))
+      end
+
+      def shared_mailer_template_dir
+        File.expand_path("../install/templates", __dir__)
       end
     end
   end

@@ -94,6 +94,16 @@ class AccessManagementGeneratorTest < Minitest::Test
       assert File.exist?(html_template)
       assert File.exist?(text_template)
       assert_includes File.read(html_template), 'accessible_t("mailers.granted.open"'
+      assert_equal File.binread(install_mailer_template("access_granted.html.erb")), File.binread(html_template)
+      assert_equal File.binread(install_mailer_template("access_granted.text.erb")), File.binread(text_template)
+    end
+  end
+
+  def test_mailer_templates_are_not_duplicated_in_access_management
+    %w[access_granted.html.erb access_granted.text.erb].each do |name|
+      refute File.exist?(File.expand_path("../lib/generators/recording_studio_accessible/access_management/templates/#{name}", __dir__)),
+             "#{name} should live only under install/templates"
+      assert File.exist?(install_mailer_template(name))
     end
   end
 
@@ -117,5 +127,9 @@ class AccessManagementGeneratorTest < Minitest::Test
       assert File.exist?(helper_path)
       assert_includes File.read(helper_path), "recording_access_management_link"
     end
+  end
+
+  def install_mailer_template(name)
+    File.expand_path("../lib/generators/recording_studio_accessible/install/templates/#{name}", __dir__)
   end
 end

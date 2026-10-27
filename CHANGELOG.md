@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+- Stop tracking SimpleCov `coverage/` output.
+- Drop the dummy app's unused Rails-new GitHub workflow and Dependabot files.
+- Remove leftover dummy scripts, the copied Flatpack page-nav controller, the unused SVG icon sprite, and the `gem_template.api_key` credential assertion.
+
+### Changed
+- Install and access-management generators copy the access-granted mailer templates from one source.
+
 ## [0.22.0] - 2026-10-26
 
 ### Changed

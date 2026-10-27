@@ -62,6 +62,8 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Manage access"
     assert_includes @response.body, "Main navigation"
     assert_select "body[data-recording-studio-default-layout]", count: 0
+    refute_includes @response.body, "SVG Icon Sprite"
+    refute_includes @response.body, 'id="icon-search"'
 
     sign_in @outsider
 
