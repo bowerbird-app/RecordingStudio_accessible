@@ -684,9 +684,14 @@ class ConfigurationTest < Minitest::Test
   end
 
   def test_default_current_actor_uses_public_hook
-    @configuration.access_management_current_actor_resolver = ->(_controller:) { :hook_actor }
+    seen_controller = nil
+    @configuration.access_management_current_actor_resolver = lambda { |controller:|
+      seen_controller = controller
+      :hook_actor
+    }
 
     assert_equal :hook_actor, @configuration.current_actor_for(controller: :controller)
+    assert_equal :controller, seen_controller
   end
 
   def test_default_current_actor_uses_controller_auth
