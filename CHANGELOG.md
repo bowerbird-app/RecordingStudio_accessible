@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-10-27
+
+### Behaviour changes
+- The default current-actor resolver reads `Current.actor`. It no longer
+  falls back to `controller.current_user`, public or private, and no longer
+  swallows errors. Hosts must set `Current.actor` or set
+  `access_management_current_actor_resolver`.
+- A present `config/recording_studio_accessible.yml` that cannot be parsed
+  now fails at boot. A missing file still leaves configuration defaults.
+
 ### Changed
 - Gem-suite tests no longer swap `RecordingStudio::Recording`, `Access`,
   `User`, `Current`, `ActiveRecord`, or `AccessGrantedMailer` with

@@ -2,6 +2,10 @@
 
 require "test_helper"
 require "active_record"
+require "fileutils"
+require "tmpdir"
+require "pathname"
+require "yaml"
 
 class EngineTest < Minitest::Test
   def setup
@@ -28,18 +32,57 @@ class EngineTest < Minitest::Test
     assert after_called
   end
 
-  def test_load_config_merges_yaml_and_config_x
-    xcfg = Struct.new(:recording_studio_accessible).new({ warn_on_core_conflict: false })
-    app_config = Struct.new(:x).new(xcfg)
-    app = Struct.new(:config) do
-      def config_for(_name)
-        { warn_on_core_conflict: true }
+  def test_load_config_leaves_defaults_when_yaml_file_is_missing
+    Dir.mktmpdir do |dir|
+      app = config_app(root: Pathname(dir), yaml: { warn_on_core_conflict: false })
+
+      find_initializer("recording_studio_accessible.load_config").block.call(app)
+
+      assert RecordingStudioAccessible.configuration.warn_on_core_conflict
+    end
+  end
+
+  def test_load_config_raises_when_yaml_is_malformed
+    Dir.mktmpdir do |dir|
+      FileUtils.mkdir_p(File.join(dir, "config"))
+      File.write(File.join(dir, "config", "recording_studio_accessible.yml"), ":\n  - :\n")
+      app = config_app(root: Pathname(dir))
+
+      assert_raises(Psych::SyntaxError) do
+        find_initializer("recording_studio_accessible.load_config").block.call(app)
       end
-    end.new(app_config)
+    end
+  end
 
-    find_initializer("recording_studio_accessible.load_config").block.call(app)
+  def test_load_config_merges_yaml_when_file_exists
+    Dir.mktmpdir do |dir|
+      FileUtils.mkdir_p(File.join(dir, "config"))
+      File.write(
+        File.join(dir, "config", "recording_studio_accessible.yml"),
+        { "warn_on_core_conflict" => false }.to_yaml
+      )
+      app = config_app(root: Pathname(dir))
 
-    assert_equal false, RecordingStudioAccessible.configuration.warn_on_core_conflict
+      find_initializer("recording_studio_accessible.load_config").block.call(app)
+
+      assert_equal false, RecordingStudioAccessible.configuration.warn_on_core_conflict
+    end
+  end
+
+  def test_load_config_merges_yaml_and_config_x
+    Dir.mktmpdir do |dir|
+      FileUtils.mkdir_p(File.join(dir, "config"))
+      File.write(
+        File.join(dir, "config", "recording_studio_accessible.yml"),
+        { "warn_on_core_conflict" => true }.to_yaml
+      )
+      xcfg = Struct.new(:recording_studio_accessible).new({ warn_on_core_conflict: false })
+      app = config_app(root: Pathname(dir), xcfg: xcfg)
+
+      find_initializer("recording_studio_accessible.load_config").block.call(app)
+
+      assert_equal false, RecordingStudioAccessible.configuration.warn_on_core_conflict
+    end
   end
 
   def test_register_access_types_initializer_calls_compatibility_helpers
@@ -87,5 +130,26 @@ class EngineTest < Minitest::Test
 
   def find_initializer(name)
     RecordingStudioAccessible::Engine.initializers.find { |initializer| initializer.name == name }
+  end
+
+  def config_app(root:, yaml: nil, xcfg: nil)
+    app_config = Struct.new(:x).new(xcfg)
+    Class.new do
+      def initialize(root, config, yaml)
+        @root = root
+        @config = config
+        @yaml = yaml
+      end
+
+      attr_reader :root, :config
+
+      def config_for(_name)
+        path = root.join("config", "recording_studio_accessible.yml")
+        loaded = YAML.safe_load_file(path)
+        return loaded if loaded.respond_to?(:each)
+
+        @yaml
+      end
+    end.new(root, app_config, yaml)
   end
 end

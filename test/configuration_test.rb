@@ -540,14 +540,32 @@ class ConfigurationTest < Minitest::Test
     end
   end
 
-  def test_default_current_actor_falls_back_to_controller_current_user
-    controller = Class.new do
-      def current_user
-        :controller_user
-      end
-    end.new
+  def test_default_current_actor_uses_public_hook
+    seen_controller = nil
+    @configuration.access_management_current_actor_resolver = lambda { |controller:|
+      seen_controller = controller
+      :hook_actor
+    }
 
-    assert_equal :controller_user, @configuration.current_actor_for(controller: controller)
+    assert_equal :hook_actor, @configuration.current_actor_for(controller: :controller)
+    assert_equal :controller, seen_controller
+  end
+
+  def test_default_current_actor_does_not_call_current_user
+    Current.actor = nil if defined?(Current) && Current.respond_to?(:actor=)
+
+    [false, true].each do |make_private|
+      controller_class = Class.new do
+        def current_user
+          :controller_user
+        end
+      end
+      controller_class.send(:private, :current_user) if make_private
+
+      assert_nil @configuration.current_actor_for(controller: controller_class.new)
+    end
+  ensure
+    Current.actor = nil if defined?(Current) && Current.respond_to?(:actor=)
   end
 
   def test_default_access_granted_url_uses_recordable_route_when_available

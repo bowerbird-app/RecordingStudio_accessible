@@ -30,9 +30,8 @@ RecordingStudioAccessible.configure do |config|
   # end
 
   # Optional: customize how the mounted engine resolves the acting user.
-  # By default it uses Current.actor so the addon follows the same actor source
-  # RecordingStudio uses, and only falls back to controller.current_user when
-  # Current.actor is unavailable.
+  # By default it uses Current.actor. It does not call current_user at all,
+  # public or private. Hosts must set Current.actor or use this hook.
   # config.access_management_current_actor_resolver = lambda do |controller:|
   #   Current.actor || controller.current_user
   # end

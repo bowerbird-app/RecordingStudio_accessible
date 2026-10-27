@@ -314,25 +314,11 @@ module RecordingStudioAccessible
     end
 
     def resolve_preview_access_url
-      configuration = RecordingStudioAccessible.configuration
-      kwargs = preview_resolution_kwargs
-
-      if configuration.respond_to?(:access_granted_url_for)
-        configuration.access_granted_url_for(**kwargs)
-      else
-        configuration.send(:resolve_access_granted_url, **kwargs)
-      end
+      RecordingStudioAccessible.configuration.access_granted_url_for(**preview_resolution_kwargs)
     end
 
     def resolve_preview_subject
-      configuration = RecordingStudioAccessible.configuration
-      kwargs = preview_resolution_kwargs
-
-      if configuration.respond_to?(:access_granted_subject_for)
-        configuration.access_granted_subject_for(**kwargs)
-      else
-        configuration.send(:resolve_access_granted_subject, **kwargs)
-      end
+      RecordingStudioAccessible.configuration.access_granted_subject_for(**preview_resolution_kwargs)
     end
 
     def preview_resolution_kwargs

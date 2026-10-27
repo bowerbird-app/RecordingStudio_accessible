@@ -21,6 +21,7 @@ Rails.application.routes.draw do
   get "access_request_gate", to: "access_request_gates#show", as: :access_request_gate
   patch "access_request_gate", to: "access_request_gates#update"
 
+  resource :current_actor_resolver, only: [ :show ], controller: "current_actor_resolvers"
   resource :controller_auth_demo, only: [ :show ], controller: "controller_auth_demos" do
     get :authorize
     get :authorize_nil_recording

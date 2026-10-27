@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "prism"
 
 # Ensures production call sites for gem keys do not hand-copy English from
 # en.yml (or constants equal to those strings) as `default:`. English fallback
@@ -271,7 +272,8 @@ class EnglishDefaultDriftGuardTest < Minitest::Test
 
   def default_values(default_src, constant_values)
     if string_literal_default?(default_src)
-      [eval_string_literal(default_src)]
+      value = parse_string_literal(default_src)
+      value.nil? ? [] : [value]
     elsif array_literal_default?(default_src)
       extract_array_string_literals(default_src)
     elsif constant_default?(default_src)
@@ -294,15 +296,36 @@ class EnglishDefaultDriftGuardTest < Minitest::Test
     default_src.match?(/\A[A-Z][A-Za-z0-9_:]+\z/)
   end
 
-  def eval_string_literal(literal)
-    # rubocop:disable Security/Eval
-    eval(literal)
-    # rubocop:enable Security/Eval
+  def parse_string_literal(literal)
+    node = prism_expression(literal)
+    unescaped_string(node)
   end
 
   def extract_array_string_literals(array_src)
-    array_src.scan(/(['"])((?:\\.|(?!\1).)*)\1/).map do |quote, body|
-      eval_string_literal("#{quote}#{body}#{quote}")
+    node = prism_expression(array_src)
+    return [] unless node.is_a?(Prism::ArrayNode)
+
+    node.elements.filter_map { |element| unescaped_string(element) }
+  end
+
+  def prism_expression(source)
+    result = Prism.parse(source)
+    return unless result.success?
+
+    statements = result.value&.statements
+    return unless statements.respond_to?(:body)
+
+    statements.body.one? ? statements.body.first : nil
+  end
+
+  def unescaped_string(node)
+    case node
+    when Prism::StringNode
+      node.unescaped
+    when Prism::InterpolatedStringNode
+      return unless node.parts.all?(Prism::StringNode)
+
+      node.parts.map(&:unescaped).join
     end
   end
 end
