@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-10-27
+
 ### Changed
 - Development pins move to FlatPack tag `v0.1.320`, Trashable `v0.12.0`,
   Attachable `v0.22.0`, Users `v0.25.2`, and Metrics `v0.6.1`. Dummy also
@@ -14,8 +16,12 @@ All notable changes to this project will be documented in this file.
   declare `recording_studio ~> 4.2`. Dummy Bundler still loads
   `test/support/widen_recording_studio_requirement.rb` so those gemspecs
   accept `6.1.0`.
+- Install and access-management generators copy the access-granted mailer templates from one source.
 
 ### Removed
+- Stop tracking SimpleCov `coverage/` output.
+- Drop the dummy app's unused Rails-new GitHub workflow and Dependabot files.
+- Remove leftover dummy scripts, the copied Flatpack page-nav controller, and the unused SVG icon sprite.
 - Dummy FlatPack prepends for Root Switchable PageNav keywords and Card
   `style:`. Root Switchable `v0.11.0` no longer needs them.
 - Dummy `UsesDefaultLayout` stub. Trashable `v0.12.0` no longer includes
