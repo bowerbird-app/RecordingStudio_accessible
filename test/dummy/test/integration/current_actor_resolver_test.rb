@@ -7,21 +7,17 @@ class CurrentActorResolverTest < ActionDispatch::IntegrationTest
     @user = User.find_by(email: "current-actor@example.com") ||
             User.create!(email: "current-actor@example.com", password: "Password",
                          password_confirmation: "Password")
-    Current.actor = nil if defined?(Current) && Current.respond_to?(:actor=)
-  end
-
-  teardown do
-    Current.actor = nil if defined?(Current) && Current.respond_to?(:actor=)
   end
 
   test "signed in dummy controller resolves the actor from Current.actor" do
     sign_in @user
 
-    get root_path
+    get current_actor_resolver_path
 
     assert_response :success
-    assert_kind_of HomeController, @controller
-    assert_equal @user, Current.actor
-    assert_equal @user, RecordingStudioAccessible.configuration.current_actor_for(controller: @controller)
+    assert_kind_of CurrentActorResolversController, @controller
+    assert_match(/resolver=#{Regexp.escape(@user.email)}/, response.body)
+    assert_match(/current_actor=#{Regexp.escape(@user.email)}/, response.body)
+    assert_match(/current_user=#{Regexp.escape(@user.email)}/, response.body)
   end
 end
