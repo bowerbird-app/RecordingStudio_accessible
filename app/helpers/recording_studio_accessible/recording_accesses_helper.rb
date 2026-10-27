@@ -65,6 +65,8 @@ module RecordingStudioAccessible
     end
 
     def access_actor_type_cell(row)
+      return "" if row[:kind] == :invitation
+
       row[:actor_type]
     end
 

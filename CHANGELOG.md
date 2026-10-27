@@ -5,10 +5,19 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
-- Access request modals use FlatPack Modal without inline JavaScript. The
-  request message uses Quote, modal headings use PageTitle, and gate answers
-  use List. Manage access actions use ButtonGroup. Table cells keep the
+- Access request modals use FlatPack Modal. Open access-request dialogs
+  still hide on `turbo:before-cache`, so Back/Forward does not restore a
+  stale open modal. The request message uses Quote, modal headings use
+  PageTitle (subtitle markup is `mt-2 text-lg`), and gate answers use
+  List. Manage access actions use ButtonGroup. Table cells keep the
   table's own cell chrome instead of extra spans.
+- `access_person_cell`, `access_actor_type_cell`, `access_role_cell`,
+  `inherited_access_source_cell`, `inherited_access_source_role_cell`,
+  `pending_invitation_role_cell`, and `inherited_access_actions_cell`
+  return plain strings instead of styled spans. Person names no longer
+  use `font-medium`.
+- FlatPack stays at `0.1.319` or newer. ButtonGroup `variant: :outlined`
+  first shipped in `0.1.307`.
 
 ### Removed
 - Dummy `FlatPack::Tree` stand-in. The dummy tree page uses the real Tree

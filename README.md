@@ -318,7 +318,9 @@ The page does not list them.
 
 The email, code, and request steps, and the request page, each render as a
 full page and inside the `access_request` Turbo frame. Pass
-`presentation=modal` and load that frame to use the modal.
+`presentation=modal` and load that frame to use the modal. Open access-request
+modals hide before Turbo caches the page, so Back/Forward does not restore a
+stale dialog.
 
 Visitor copy defaults to `recording_studio.accessible.requests`. Override one
 flow with `copy:` or an I18n `scope:`. Scope keys match the relative request

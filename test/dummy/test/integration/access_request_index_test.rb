@@ -295,6 +295,8 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert_includes link["href"], "list_status=#{status}"
     assert_includes link["href"], "list_scope=recording"
     assert_select "#access-request-review turbo-frame#access_request", count: 1
+    assert_equal 1, response.body.scan("turbo:before-cache").size
+    assert_includes response.body, "[data-controller='flat-pack--modal'][id^='access-request-']"
     assert_select "[role=menuitem]", count: 0
     assert_select "button", text: "Approve", count: 0
     assert_select "button", text: "Deny", count: 0

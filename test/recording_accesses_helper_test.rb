@@ -164,6 +164,12 @@ class RecordingAccessesHelperTest < Minitest::Test
     refute_includes html, "<span>badge</span>"
   end
 
+  def test_access_actor_type_cell_is_blank_for_invitations
+    html = ViewContext.new.access_actor_type_cell(kind: :invitation, email: "ada@example.com")
+
+    assert_equal "", html
+  end
+
   def test_show_access_actor_type_column_returns_false_for_single_actor_type
     visible = ViewContext.new.show_access_actor_type_column?(
       [{ actor_type: "User" }, { actor_type: "User" }],

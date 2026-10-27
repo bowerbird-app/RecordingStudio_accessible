@@ -276,10 +276,10 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_match "data-modal-id", response.body
     assert_match "access_request", response.body
     assert_match "presentation=modal", response.body
-    refute_match "javascript_tag", response.body
-    refute_match "turbo:before-cache", response.body
-    refute_match "recordingStudioAccessibleAccessRequest", response.body
-    assert_select "[data-controller='flat-pack--modal']"
+    assert_select "[data-controller='flat-pack--modal'][id^='access-request-']"
+    assert_equal 1, response.body.scan("turbo:before-cache").size
+    assert_match "[data-controller='flat-pack--modal'][id^='access-request-']", response.body
+    assert_match "recordingStudioAccessibleAccessRequest", response.body
   end
 
   private

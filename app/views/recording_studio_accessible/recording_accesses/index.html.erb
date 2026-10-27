@@ -49,11 +49,7 @@
       <% end %>
       <% if show_actor_type_column %>
         <% table.column(title: accessible_t("manage.columns.type")) do |row| %>
-          <% if row[:kind] == :invitation %>
-            <% "" %>
-          <% else %>
-            <% access_actor_type_cell(row) %>
-          <% end %>
+          <% access_actor_type_cell(row) %>
         <% end %>
       <% end %>
       <% table.column(title: accessible_t("manage.columns.role")) do |row| %>

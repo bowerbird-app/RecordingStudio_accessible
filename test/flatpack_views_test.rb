@@ -3,14 +3,19 @@
 require "test_helper"
 
 class FlatpackViewsTest < Minitest::Test
-  def test_access_request_modals_do_not_use_inline_javascript
+  def test_access_request_modals_hide_open_dialogs_before_turbo_caches
     views = RecordingStudioAccessible::Engine.root.join("app/views/recording_studio_accessible/access_requests")
+    hide_on_cache = File.read(views.join("_hide_on_cache.html.erb"))
+
+    assert_includes hide_on_cache, "javascript_tag"
+    assert_includes hide_on_cache, "turbo:before-cache"
+    assert_includes hide_on_cache, "[data-controller='flat-pack--modal'][id^='access-request-']"
 
     %w[_modal.html.erb _review_modal.html.erb].each do |name|
       source = File.read(views.join(name))
 
-      refute_includes source, "javascript_tag", "#{name} still has inline JavaScript"
-      refute_includes source, "<script", "#{name} still has a script tag"
+      assert_includes source, "hide_on_cache", "#{name} must render the shared before-cache script"
+      refute_includes source, "javascript_tag", "#{name} must not duplicate the shared script"
       assert_includes source, "FlatPack::Modal::Component", "#{name} must render the FlatPack modal"
     end
   end

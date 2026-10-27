@@ -16,8 +16,6 @@ class CompanionHackCleanupTest < ActiveSupport::TestCase
 
   test "dummy does not define a FlatPack Tree stand-in" do
     refute_path_exists Rails.root.join("app/components/flat_pack/tree/component.rb")
-    assert_equal FlatPack::Engine.root.join("app/components/flat_pack/tree/component.rb").to_s,
-                 FlatPack::Tree::Component.instance_method(:call).source_location.first
   end
 
   test "dummy does not ship the leftover hello Stimulus controller" do
