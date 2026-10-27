@@ -3,10 +3,18 @@
 
 <div class="mt-6 w-full max-w-xl">
   <%= render FlatPack::List::Component.new(divider: true) do %>
-    <%= render FlatPack::List::Item.new { accessible_t("invitations.email", email: @invitation.email) } %>
-    <%= render FlatPack::List::Item.new { accessible_t("invitations.role", role: accessible_role_name(@invitation.role)) } %>
-    <%= render FlatPack::List::Item.new { accessible_t("invitations.recording", recording: @recording_label) } %>
-    <%= render FlatPack::List::Item.new { accessible_t("invitations.state", state: accessible_invitation_state(@invitation_state)) } %>
+    <%= render FlatPack::List::Item.new do %>
+      <%= accessible_t("invitations.email", email: @invitation.email) %>
+    <% end %>
+    <%= render FlatPack::List::Item.new do %>
+      <%= accessible_t("invitations.role", role: accessible_role_name(@invitation.role)) %>
+    <% end %>
+    <%= render FlatPack::List::Item.new do %>
+      <%= accessible_t("invitations.recording", recording: @recording_label) %>
+    <% end %>
+    <%= render FlatPack::List::Item.new do %>
+      <%= accessible_t("invitations.state", state: accessible_invitation_state(@invitation_state)) %>
+    <% end %>
   <% end %>
 
   <% if @current_actor.blank? %>

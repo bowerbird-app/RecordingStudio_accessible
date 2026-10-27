@@ -7,8 +7,12 @@
 
   <div class="mt-6 grid gap-4">
     <%= render FlatPack::List::Component.new(layout: :key_value, divider: true) do %>
-      <%= render FlatPack::List::Item.new(key: "Role") { @invitation.role.to_s.humanize } %>
-      <%= render FlatPack::List::Item.new(key: "State") { @invitation.state } %>
+      <%= render FlatPack::List::Item.new(key: "Role") do %>
+        <%= @invitation.role.to_s.humanize %>
+      <% end %>
+      <%= render FlatPack::List::Item.new(key: "State") do %>
+        <%= @invitation.state %>
+      <% end %>
     <% end %>
 
     <% if @existing_user %>

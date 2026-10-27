@@ -19,7 +19,9 @@
       <% card.body do %>
         <%= render FlatPack::List::Component.new do %>
           <% @workspace.folders.map(&:name).each do |name| %>
-            <%= render FlatPack::List::Item.new { name } %>
+            <%= render FlatPack::List::Item.new do %>
+              <%= name %>
+            <% end %>
           <% end %>
         <% end %>
       <% end %>
@@ -39,7 +41,9 @@
         <% page_titles = @workspace.folders.flat_map { |folder| folder.pages.map(&:title) } %>
         <%= render FlatPack::List::Component.new do %>
           <% page_titles.each do |title| %>
-            <%= render FlatPack::List::Item.new { title } %>
+            <%= render FlatPack::List::Item.new do %>
+              <%= title %>
+            <% end %>
           <% end %>
         <% end %>
       <% end %>

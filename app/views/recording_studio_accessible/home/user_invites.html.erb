@@ -42,7 +42,9 @@
         <% @invite_status_rows.each do |row| %>
           <%= render FlatPack::List::Item.new(
                 trailing: capture { render FlatPack::Badge::Component.new(text: row[:title], style: row[:badge_style], size: :sm) }
-              ) { row[:body] } %>
+              ) do %>
+            <%= row[:body] %>
+          <% end %>
         <% end %>
       <% end %>
     </section>

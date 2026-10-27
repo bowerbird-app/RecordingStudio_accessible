@@ -176,7 +176,7 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_select "form.gap-8 .pt-6 button[type=submit]", text: "Deny"
     assert_select "[data-access-request-step=show] h1 + p", text: requested_on
     assert_equal 1, response.body.scan(requested_on).size
-    assert_select "p.mt-2.text-lg", count: 0
+    assert_select "p.mt-2.text-lg", text: requested_on, count: 1
     assert_select "[role=tablist].border-b"
     assert_select "form.gap-8", count: 2
     assert_role_buttons("edit")

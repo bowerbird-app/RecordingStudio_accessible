@@ -26,7 +26,9 @@
     <% if manager? && access_request_gate_answers(request_record).any? %>
       <%= render FlatPack::List::Component.new(layout: :key_value, divider: true) do %>
         <% access_request_gate_answers(request_record).each do |label, value| %>
-          <%= render FlatPack::List::Item.new(key: label) { value } %>
+          <%= render FlatPack::List::Item.new(key: label) do %>
+            <%= value %>
+          <% end %>
         <% end %>
       <% end %>
     <% end %>
