@@ -39,9 +39,7 @@ module RecordingStudioAccessible
 
     initializer "recording_studio_accessible.load_config" do |app|
       config_paths = []
-      if app.respond_to?(:root) && app.root
-        config_paths << app.root.join("config", "recording_studio_accessible.yml")
-      end
+      config_paths << app.root.join("config", "recording_studio_accessible.yml") if app.respond_to?(:root) && app.root
       if app.respond_to?(:paths) && app.paths["config"]
         Array(app.paths["config"]).each do |dir|
           config_paths << Pathname(dir).join("recording_studio_accessible.yml")
