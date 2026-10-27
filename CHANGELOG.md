@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Development pins move to FlatPack tag `v0.1.320`, Trashable `v0.12.0`,
+  Attachable `v0.22.0`, Users `v0.25.2`, and Metrics `v0.6.1`. Dummy also
+  pins Root Switchable `v0.11.0` and Notifications `v0.13.1`. Recording
+  Studio stays at `v6.1.0`. Admin stays at `v2.5.1` because `v2.7.0`
+  depends on `recording_studio_logs`.
+- Cache, Users, Metrics, Internationalization, and Notifications still
+  declare `recording_studio ~> 4.2`. Dummy Bundler still loads
+  `test/support/widen_recording_studio_requirement.rb` so those gemspecs
+  accept `6.1.0`.
+
+### Removed
+- Dummy FlatPack prepends for Root Switchable PageNav keywords and Card
+  `style:`. Root Switchable `v0.11.0` no longer needs them.
+- Dummy `UsesDefaultLayout` stub. Trashable `v0.12.0` no longer includes
+  that removed Recording Studio module.
+
 ## [0.22.0] - 2026-10-26
 
 ### Changed

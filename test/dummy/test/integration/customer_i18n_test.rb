@@ -27,7 +27,7 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_select "html[lang='en']"
     header = response.body[/<header[\s\S]*?<\/header>/].to_s
     language_at = header.index("dummy-language-selector")
-    switcher_at = header.index("recording-studio-root-switchable--root-switch-dropdown")
+    switcher_at = header.index("flat-pack--button-dropdown")
     assert language_at, "expected a language selector in the top nav"
     assert switcher_at, "expected a root switcher in the top nav"
     assert language_at < switcher_at, "language selector should sit left of the root switcher"
