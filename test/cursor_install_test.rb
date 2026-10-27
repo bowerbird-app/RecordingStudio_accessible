@@ -62,6 +62,8 @@ class CursorInstallTest < Minitest::Test
 
     assert_includes rules, ".cursor/skills/"
     assert_includes rules, ".cursor/rules/"
+    assert_includes rules, "coverage/"
+    assert_includes rules, "test/dummy/coverage/"
     refute_includes rules, ".cursor/install.sh"
     refute_includes rules, ".cursor/fetch-skills.sh"
     refute_includes rules, ".cursor/start.sh"

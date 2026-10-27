@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
   request message uses Quote, modal headings use PageTitle, and gate answers
   use List. Manage access actions use ButtonGroup. Table cells keep the
   table's own cell chrome instead of extra spans.
+
+### Removed
+- Dummy `FlatPack::Tree` stand-in. The dummy tree page uses the real Tree
+  component.
+
+## [0.22.1] - 2026-10-27
+
+### Changed
 - Development pins move to FlatPack tag `v0.1.320`, Trashable `v0.12.0`,
   Attachable `v0.22.0`, Users `v0.25.2`, and Metrics `v0.6.1`. Dummy also
   pins Root Switchable `v0.11.0` and Notifications `v0.13.1`. Recording
@@ -18,11 +26,12 @@ All notable changes to this project will be documented in this file.
   declare `recording_studio ~> 4.2`. Dummy Bundler still loads
   `test/support/widen_recording_studio_requirement.rb` so those gemspecs
   accept `6.1.0`.
+- Install and access-management generators copy the access-granted mailer templates from one source.
 
 ### Removed
-- Dummy `FlatPack::Tree` stand-in. The dummy tree page uses the real Tree
-  component.
-- Dummy leftover `hello_controller.js`.
+- Stop tracking SimpleCov `coverage/` output.
+- Drop the dummy app's unused Rails-new GitHub workflow and Dependabot files.
+- Remove leftover dummy scripts, the copied Flatpack page-nav controller, and the unused SVG icon sprite.
 - Dummy FlatPack prepends for Root Switchable PageNav keywords and Card
   `style:`. Root Switchable `v0.11.0` no longer needs them.
 - Dummy `UsesDefaultLayout` stub. Trashable `v0.12.0` no longer includes

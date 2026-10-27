@@ -60,6 +60,16 @@ class InstallGeneratorTest < Minitest::Test
       assert File.exist?(html_template)
       assert File.exist?(text_template)
       assert_includes File.read(text_template), 'accessible_t("mailers.granted.open_with_url"'
+      source_html = File.expand_path(
+        "../lib/generators/recording_studio_accessible/install/templates/access_granted.html.erb",
+        __dir__
+      )
+      source_text = File.expand_path(
+        "../lib/generators/recording_studio_accessible/install/templates/access_granted.text.erb",
+        __dir__
+      )
+      assert_equal File.binread(source_html), File.binread(html_template)
+      assert_equal File.binread(source_text), File.binread(text_template)
     end
   end
 
