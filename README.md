@@ -73,6 +73,12 @@ initializer.
 
 ## Configuration
 
+Host apps still configure `RecordingStudioAccessible::Configuration` through
+`RecordingStudioAccessible.configure`. The class lives in
+`lib/recording_studio_accessible/configuration.rb`; focused mixins under
+`lib/recording_studio_accessible/configuration/` hold avatars, actors,
+authorizers, invitations, and mail defaults.
+
 `config.layout` chooses the layout for engine screens. Leave it unset and
 the screens use `RecordingStudio.configuration.layout`, then
 `recording_studio/default_layout`.

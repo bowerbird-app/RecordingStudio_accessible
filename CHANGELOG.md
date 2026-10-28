@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-10-28
+
+### Changed
+- Split `Configuration` into focused mixins so size cops apply without excludes.
+
 ## [0.23.0] - 2026-10-27
 
 ### Behaviour changes
