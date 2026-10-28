@@ -46,7 +46,6 @@ Metrics/ClassLength:
     - 'lib/recording_studio_accessible/action_registry.rb'
     - 'lib/recording_studio_accessible/audience_registry.rb'
     - 'lib/recording_studio_accessible/audience_resolver.rb'
-    - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/authorization_service.rb'
     - 'lib/recording_studio_accessible/services/bootstrap_owner_access.rb'
     - 'lib/recording_studio_accessible/services/set_audience.rb'
@@ -88,7 +87,6 @@ Metrics/MethodLength:
     - 'lib/recording_studio_accessible/check_registry.rb'
     - 'lib/recording_studio_accessible/registry_class_methods.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
-    - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/dependent_access.rb'
     - 'lib/recording_studio_accessible/services/**/*'
 
@@ -107,7 +105,6 @@ Metrics/AbcSize:
     - 'lib/recording_studio_accessible/action_audiences.rb'
     - 'lib/recording_studio_accessible/audience_recording_creation_guard.rb'
     - 'lib/recording_studio_accessible/audience_resolver.rb'
-    - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/dependent_access.rb'
     - 'lib/recording_studio_accessible/services/**/*'
 
@@ -121,7 +118,6 @@ Metrics/CyclomaticComplexity:
     - 'lib/recording_studio_accessible/audience_authorization.rb'
     - 'lib/recording_studio_accessible/audience_resolver.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
-    - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/dependent_access.rb'
     - 'lib/recording_studio_accessible/services/**/*'
 
@@ -132,14 +128,12 @@ Metrics/PerceivedComplexity:
     - 'lib/recording_studio_accessible/access_recording_creation_guard.rb'
     - 'lib/recording_studio_accessible/audience_resolver.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
-    - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/dependent_access.rb'
     - 'lib/recording_studio_accessible/services/**/*'
 
 Metrics/ParameterLists:
   Exclude:
     - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
-    - 'lib/recording_studio_accessible/configuration.rb'
     - 'lib/recording_studio_accessible/services/grant_recording_access.rb'
     - 'lib/recording_studio_accessible/services/request_access.rb'
     - 'lib/recording_studio_accessible/services/transition_access_request.rb'
@@ -164,7 +158,10 @@ Naming/VariableNumber:
 Naming/PredicateMethod:
   Exclude:
     - 'lib/recording_studio_accessible/action_audiences.rb'
-    - 'lib/recording_studio_accessible/configuration.rb'
+  AllowedMethods:
+    - default_access_management_authorizer
+    - default_mounted_page_authorizer
+    - default_authorize_actor_through
 
 # Don't require super in service initialize methods
 Lint/MissingSuper:
