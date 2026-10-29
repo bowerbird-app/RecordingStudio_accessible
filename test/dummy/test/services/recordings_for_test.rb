@@ -153,20 +153,39 @@ class RecordingsForTest < ActiveSupport::TestCase
     assert_empty listed(parent: root_recording, recordable_type: "")
   end
 
-  test "ranked floor matches authorized? and a nil floor matches role_for" do
+  test "a blank floor keeps an effective unranked grant" do
     Folder.accessible_roles :view, :download
     grant_access(@user, :view, @folder_recording)
     download_folder = add_folder("Downloads")
     grant_access(@user, :download, download_folder)
 
     assert_nil RecordingStudioAccessible.role_for(actor: @user, recording: download_folder)
-    refute_includes listed_ids(parent: @root), download_folder.id
+    assert RecordingStudioAccessible.authorized_for_role?(
+      actor: @user, recording: download_folder, role: :download
+    )
+
+    assert_includes listed_ids(parent: @root), download_folder.id
+    assert_includes listed_ids(parent: @root, minimum_role: ""), download_folder.id
+    assert_includes listed_ids(parent: @root, minimum_role: false), download_folder.id
+    assert_includes RecordingStudioAccessible.recording_ids_for(actor: @user, parent_recording: @root),
+                    download_folder.id
+
     refute_includes listed_ids(parent: @root, minimum_role: :view), download_folder.id
+    assert_includes listed_ids(parent: @root, minimum_role: :view), @folder_recording.id
 
     assert_ranked_parity(@root, :view)
     assert_ranked_parity(@folder_recording, :view)
-    assert_nil_floor_parity(@root)
-    assert_nil_floor_parity(@folder_recording)
+    assert_blank_floor_parity(@root)
+    assert_blank_floor_parity(@folder_recording)
+  end
+
+  test "a blank floor inherits an unranked ancestor grant" do
+    Folder.accessible_roles :view, :download
+    grant_access(@user, :download, @root)
+    child = add_folder("Inherited download")
+
+    assert_includes listed_ids(parent: @root), child.id
+    refute_includes listed_ids(parent: @root, minimum_role: :view), child.id
   end
 
   test "an unranked minimum role returns an empty relation" do
@@ -174,9 +193,7 @@ class RecordingsForTest < ActiveSupport::TestCase
 
     refute_empty listed(parent: @root, minimum_role: :view)
     assert_empty listed(parent: @root, minimum_role: :download)
-    assert_empty listed(parent: @root, minimum_role: "")
     assert_empty listed(parent: @root, minimum_role: "VIEW")
-    assert_empty listed(parent: @root, minimum_role: false)
     assert_equal [], RecordingStudioAccessible.recording_ids_for(
       actor: @user, parent_recording: @root, minimum_role: :download
     )
@@ -324,9 +341,13 @@ class RecordingsForTest < ActiveSupport::TestCase
     assert_equal expected, listed_ids(parent: parent, minimum_role: minimum_role).sort
   end
 
-  def assert_nil_floor_parity(parent)
+  def assert_blank_floor_parity(parent)
     expected = kept_direct_children(parent).select { |child|
-      RecordingStudioAccessible.role_for(actor: @user, recording: child)
+      RecordingStudioAccessible.authorized_for_any_role?(
+        actor: @user,
+        recording: child,
+        roles: [:view, :edit, :admin, :download]
+      )
     }.map(&:id).sort
     assert_equal expected, listed_ids(parent: parent).sort
   end
