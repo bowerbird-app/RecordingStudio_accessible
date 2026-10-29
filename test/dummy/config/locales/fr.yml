@@ -322,6 +322,8 @@ fr:
           authorized_title: "Vérifier l’autorisation avec RecordingStudioAccessible.authorized?"
           root_recordings_title: "Lister les racines accessibles avec RecordingStudioAccessible.root_recordings_for"
           root_recording_ids_title: "Lister les ids de racines accessibles avec RecordingStudioAccessible.root_recording_ids_for"
+          recordings_title: "Lister les enregistrements enfants accessibles avec RecordingStudioAccessible.recordings_for"
+          recording_ids_title: "Lister les ids des enregistrements enfants accessibles avec RecordingStudioAccessible.recording_ids_for"
           access_recordings_title: "Lister les octrois directs sur un enregistrement avec RecordingStudioAccessible.access_recordings_for"
         user_invites:
           title: "Invitations utilisateur"

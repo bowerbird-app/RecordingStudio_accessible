@@ -282,6 +282,8 @@ en:
           authorized_title: "Check authorization with RecordingStudioAccessible.authorized?"
           root_recordings_title: "List accessible roots with RecordingStudioAccessible.root_recordings_for"
           root_recording_ids_title: "List accessible root ids with RecordingStudioAccessible.root_recording_ids_for"
+          recordings_title: "List accessible child recordings with RecordingStudioAccessible.recordings_for"
+          recording_ids_title: "List accessible child recording ids with RecordingStudioAccessible.recording_ids_for"
           access_recordings_title: "List direct grants on a recording with RecordingStudioAccessible.access_recordings_for"
         user_invites:
           title: "User invites"

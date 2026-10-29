@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-10-29
+
+### Added
+- `RecordingStudioAccessible.recordings_for` returns the direct child
+  recordings one actor can access under a parent recording.
+  `recording_ids_for` returns those ids. Membership uses the same role
+  rules as `authorized?` and `role_for`.
+
+### Upgrade notes
+- Additive API. `authorized?`, grant writers, and `root_recordings_for`
+  keep their current behavior.
+- `minimum_role` nil keeps a child when `role_for` returns a ranked role
+  (`view`, `edit`, or `admin`).
+- `recordings_for` returns an `ActiveRecord::Relation`.
+  `root_recordings_for` returns an Array.
+- The relation includes kept children only. A trashed child can still pass
+  `authorized?` and stays out of this list.
+- The actor is exact. Through-access stays on `authorized_through?`.
+
 ## [0.23.1] - 2026-10-28
 
 ### Changed
