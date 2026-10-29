@@ -4,20 +4,20 @@ module RecordingStudioAccessible
   module AuthorizationClassMethods
     class ChildListFloor
       def self.parse(minimum_role)
-        return AnyRanked.new if minimum_role.nil?
+        return AnyEffective.new if minimum_role.blank?
 
         return Closed.new if RecordingStudio::AccessRoles.names_at_or_above(minimum_role).empty?
 
         AtLeast.new(minimum_role)
       end
 
-      class AnyRanked
+      class AnyEffective
         def closed?
           false
         end
 
-        def keep?(resolved_role)
-          !resolved_role.nil?
+        def keep?(resolver)
+          resolver.any_effective_grant?
         end
       end
 
@@ -26,7 +26,7 @@ module RecordingStudioAccessible
           true
         end
 
-        def keep?(_resolved_role)
+        def keep?(_resolver)
           false
         end
       end
@@ -40,8 +40,11 @@ module RecordingStudioAccessible
           false
         end
 
-        def keep?(resolved_role)
-          RecordingStudio::AccessRoles.satisfies?(role: resolved_role, minimum_role: @minimum_role)
+        def keep?(resolver)
+          RecordingStudio::AccessRoles.satisfies?(
+            role: resolver.resolve_role,
+            minimum_role: @minimum_role
+          )
         end
       end
     end

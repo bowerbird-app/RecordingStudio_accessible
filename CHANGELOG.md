@@ -9,14 +9,16 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `RecordingStudioAccessible.recordings_for` returns the direct child
   recordings one actor can access under a parent recording.
-  `recording_ids_for` returns those ids. Membership uses the same role
-  rules as `authorized?` and `role_for`.
+  `recording_ids_for` returns those ids. A ranked floor uses the same
+  rule as `authorized?`. A blank floor keeps any effective grant.
 
 ### Upgrade notes
 - Additive API. `authorized?`, grant writers, and `root_recordings_for`
   keep their current behavior.
-- `minimum_role` nil keeps a child when `role_for` returns a ranked role
-  (`view`, `edit`, or `admin`).
+- A blank `minimum_role` (`nil`, `""`) keeps a child that has any
+  effective grant, including an unranked name such as `download`. That
+  matches `root_recordings_for`. A ranked floor still uses
+  `authorized?`. A present unranked floor (`:download`) stays empty.
 - `recordings_for` returns an `ActiveRecord::Relation`.
   `root_recordings_for` returns an Array.
 - The relation includes kept children only. A trashed child can still pass

@@ -1380,11 +1380,11 @@ A shared root is a valid parent. `recordings_for` lists authorized direct childr
 
 | `minimum_role` | Children that stay |
 | --- | --- |
-| `nil` | `role_for` returns a ranked role (`view`, `edit`, or `admin`). |
+| `nil` or blank (`""`) | Any effective grant on the child or an ancestor, including an unranked name such as `download`. Same blank-floor rule as `root_recordings_for`. |
 | `:view`, `:edit`, or `:admin` | That rank or higher. On a kept direct child this matches `authorized?`. |
-| Present and unranked (`:download`, `""`, `"VIEW"`, `false`) | Empty relation. `recording_ids_for` returns `[]`. |
+| Present and unranked (`:download`, `"VIEW"`) | Empty relation. `recording_ids_for` returns `[]`. |
 
-An unranked stored grant such as `download` does not qualify, including when `minimum_role` is omitted.
+An unranked stored grant such as `download` qualifies when `minimum_role` is omitted. It does not satisfy a ranked floor.
 
 `recordable_type` accepts a class or a non-blank string. The string is the `recordable_type` column. A class is stored as its name. Omit the argument and every authorized direct child stays, including `RecordingStudio::Access` rows on that parent. A symbol, an array, or `""` returns an empty relation.
 
@@ -1396,7 +1396,7 @@ These calls return `RecordingStudio::Recording.none`, and `recording_ids_for` re
 
 - `actor` is nil
 - `parent_recording` is nil, is not a `RecordingStudio::Recording`, or has a blank id
-- `minimum_role` is present and unranked
+- `minimum_role` is present and unranked (`:download`, `"VIEW"`)
 - `recordable_type` is present and is not a class or a non-blank string
 
 ### Context roles

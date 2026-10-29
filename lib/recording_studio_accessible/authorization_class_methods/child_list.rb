@@ -41,11 +41,11 @@ module RecordingStudioAccessible
 
     def allowed_child_ids(candidates, request)
       candidates.filter_map do |child|
-        resolved_role = RecordingStudio::Services::AccessResolver.new(
+        resolver = RecordingStudio::Services::AccessResolver.new(
           actor: request.actor,
           recording: child
-        ).resolve_role
-        child.id if request.floor.keep?(resolved_role)
+        )
+        child.id if request.floor.keep?(resolver)
       end
     end
   end
