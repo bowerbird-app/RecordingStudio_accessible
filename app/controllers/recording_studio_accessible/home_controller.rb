@@ -75,6 +75,27 @@ module RecordingStudioAccessible
           RUBY
         },
         {
+          title: Copy.t("home.methods.recordings_title"),
+          code: <<~RUBY.strip
+            RecordingStudioAccessible.recordings_for(
+              actor: user,
+              parent_recording: recording,
+              minimum_role: :view,
+              recordable_type: "MessageGroup"
+            )
+          RUBY
+        },
+        {
+          title: Copy.t("home.methods.recording_ids_title"),
+          code: <<~RUBY.strip
+            RecordingStudioAccessible.recording_ids_for(
+              actor: user,
+              parent_recording: recording,
+              recordable_type: "MessageGroup"
+            )
+          RUBY
+        },
+        {
           title: Copy.t("home.methods.access_recordings_title"),
           code: <<~RUBY.strip
             RecordingStudioAccessible.access_recordings_for(recording)

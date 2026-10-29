@@ -152,6 +152,35 @@ class ExtractedAccessServicesTest < Minitest::Test
     end
   end
 
+  def test_access_resolver_any_effective_grant_includes_unranked_roles
+    root = Recording.new(id: 1)
+    child = Recording.new(id: 2, parent_recording: root)
+    access_recordings = [AccessRecording.new(2, AccessRecordable.new("download"))]
+    actor = Actor.new(1)
+
+    RecordingStudio.stub(:root_recording_or_self, root) do
+      RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, access_recordings) do
+        resolver = RecordingStudio::Services::AccessResolver.new(actor: actor, recording: child)
+
+        assert_nil resolver.resolve_role
+        assert resolver.any_effective_grant?
+      end
+    end
+  end
+
+  def test_access_resolver_any_effective_grant_is_false_without_grants
+    root = Recording.new(id: 1)
+    child = Recording.new(id: 2, parent_recording: root)
+
+    RecordingStudio.stub(:root_recording_or_self, root) do
+      RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, []) do
+        resolver = RecordingStudio::Services::AccessResolver.new(actor: Actor.new(1), recording: child)
+
+        refute resolver.any_effective_grant?
+      end
+    end
+  end
+
   def test_access_resolver_keeps_lookup_batched
     root = Recording.new(id: 1)
     child = Recording.new(id: 2, parent_recording: root)

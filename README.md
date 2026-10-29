@@ -917,6 +917,8 @@ Accessible rejects new and updated direct grants on shared roots. Legacy grants
 can still be revoked. Mounted access management returns `404` for shared roots.
 `root_recordings_for` and `root_recording_ids_for` exclude shared roots from
 actor-owned bucket lists while descendant authorization continues to work.
+`recordings_for` still lists direct children of a shared-root parent. See
+[Children under one parent](#children-under-one-parent).
 
 Useful RecordingStudio 4 introspection helpers:
 
@@ -1341,6 +1343,61 @@ RecordingStudioAccessible.authorized?(
 ```
 
 It does not check whether a user can use the workspace's access.
+
+### Children under one parent
+
+`recordings_for` returns the direct child recordings one actor can access under a parent. `recording_ids_for` returns the ids from that relation.
+
+```ruby
+RecordingStudioAccessible.recordings_for(
+  actor: current_user,
+  parent_recording: mount_recording,
+  minimum_role: :view,
+  recordable_type: "MessageGroup"
+)
+# => ActiveRecord::Relation of RecordingStudio::Recording
+
+RecordingStudioAccessible.recording_ids_for(
+  actor: current_user,
+  parent_recording: mount_recording,
+  minimum_role: :view,
+  recordable_type: MessageGroup
+)
+# => Array of ids. Same membership as recordings_for(...).pluck(:id).
+```
+
+The same four keywords are on `RecordingStudioAccessible::Authorization`.
+
+Candidates are direct children. `parent_recording_id` is the given parent. A grandchild stays out. The parent row stays out.
+
+The actor is the exact actor. A host that also honors through-access keeps that check on `authorized_through?`.
+
+A shared root is a valid parent. `recordings_for` lists authorized direct children under that parent, including a `MessageGroup` under `MessageRoot`. `root_recordings_for` lists actor-owned buckets and leaves shared roots out of that bucket list.
+
+`Recording#recordings_for` wraps recordables in one root. It takes no actor.
+
+`minimum_role` defaults to `nil`.
+
+| `minimum_role` | Children that stay |
+| --- | --- |
+| `nil` or blank (`""`) | Any effective grant on the child or an ancestor, including an unranked name such as `download`. Same blank-floor rule as `root_recordings_for`. |
+| `:view`, `:edit`, or `:admin` | That rank or higher. On a kept direct child this matches `authorized?`. |
+| Present and unranked (`:download`, `"VIEW"`) | Empty relation. `recording_ids_for` returns `[]`. |
+
+An unranked stored grant such as `download` qualifies when `minimum_role` is omitted. It does not satisfy a ranked floor.
+
+`recordable_type` accepts a class or a non-blank string. The string is the `recordable_type` column. A class is stored as its name. Omit the argument and every authorized direct child stays, including `RecordingStudio::Access` rows on that parent. A symbol, an array, or `""` returns an empty relation.
+
+Trashed children stay out. A trashed child can still pass `authorized?`. Trashed access grants do not count.
+
+The relation is the kept direct children, the optional type, and `id` in the ids that passed during the call. Chain `order`, `limit`, `includes`, and extra `where`. `unscope(:where)`, `rewhere(id:)`, and `or` drop that decision.
+
+These calls return `RecordingStudio::Recording.none`, and `recording_ids_for` returns `[]`:
+
+- `actor` is nil
+- `parent_recording` is nil, is not a `RecordingStudio::Recording`, or has a blank id
+- `minimum_role` is present and unranked (`:download`, `"VIEW"`)
+- `recordable_type` is present and is not a class or a non-blank string
 
 ### Context roles
 

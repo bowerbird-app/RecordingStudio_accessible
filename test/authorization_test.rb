@@ -6,7 +6,7 @@ class AuthorizationTest < Minitest::Test
   AuthorizationServiceStub = Class.new do
     class << self
       attr_reader :allowed_call, :role_call, :allowed_through_call, :role_through_call, :root_recordings_call,
-                  :root_recording_ids_call, :access_recordings_call
+                  :root_recording_ids_call, :access_recordings_call, :recordings_calls, :recording_ids_calls
 
       def reset!
         @allowed_call = nil
@@ -16,6 +16,8 @@ class AuthorizationTest < Minitest::Test
         @root_recordings_call = nil
         @root_recording_ids_call = nil
         @access_recordings_call = nil
+        @recordings_calls = []
+        @recording_ids_calls = []
       end
 
       def allowed?(**kwargs)
@@ -52,6 +54,16 @@ class AuthorizationTest < Minitest::Test
         @access_recordings_call = recording
         [:grant]
       end
+
+      def recordings_for(**kwargs)
+        @recordings_calls << kwargs
+        :children
+      end
+
+      def recording_ids_for(**kwargs)
+        @recording_ids_calls << kwargs
+        [7]
+      end
     end
   end
 
@@ -77,6 +89,10 @@ class AuthorizationTest < Minitest::Test
       assert_equal [:recording], RecordingStudioAccessible.root_recordings_for(actor: :actor, minimum_role: :view)
       assert_equal [123], RecordingStudioAccessible.root_recording_ids_for(actor: :actor, minimum_role: :edit)
       assert_equal [:grant], RecordingStudioAccessible.access_recordings_for(:recording)
+      assert_equal :children, RecordingStudioAccessible.recordings_for(**recordings_for_keywords)
+      assert_equal [7], RecordingStudioAccessible.recording_ids_for(**recording_ids_keywords)
+      assert_equal :children, RecordingStudioAccessible::Authorization.recordings_for(**recordings_for_keywords)
+      assert_equal [7], RecordingStudioAccessible::Authorization.recording_ids_for(**recording_ids_keywords)
     end
   end
 
@@ -94,5 +110,15 @@ class AuthorizationTest < Minitest::Test
     assert_equal({ actor: :actor, minimum_role: :view }, AuthorizationServiceStub.root_recordings_call)
     assert_equal({ actor: :actor, minimum_role: :edit }, AuthorizationServiceStub.root_recording_ids_call)
     assert_equal :recording, AuthorizationServiceStub.access_recordings_call
+    assert_equal [recordings_for_keywords, recordings_for_keywords], AuthorizationServiceStub.recordings_calls
+    assert_equal [recording_ids_keywords, recording_ids_keywords], AuthorizationServiceStub.recording_ids_calls
+  end
+
+  def recordings_for_keywords
+    { actor: :actor, parent_recording: :parent, minimum_role: :view, recordable_type: "MessageGroup" }
+  end
+
+  def recording_ids_keywords
+    { actor: :actor, parent_recording: :parent, minimum_role: :edit, recordable_type: "Page" }
   end
 end

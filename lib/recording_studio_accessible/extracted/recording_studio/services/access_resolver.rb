@@ -20,6 +20,12 @@ module RecordingStudio
             .max_by { |role| RecordingStudio::AccessRoles.value_for(role) }
       end
 
+      def any_effective_grant?
+        return false unless actor && recording
+
+        path.lookup_recordings.any? { |path_recording| lookup.roles_for(path_recording).any? }
+      end
+
       def any_role?(roles)
         return false unless actor && recording
 

@@ -43,6 +43,8 @@ class LocalesTest < Minitest::Test
     "methods.authorized_title" => "Check authorization with RecordingStudioAccessible.authorized?",
     "methods.root_recordings_title" => "List accessible roots with RecordingStudioAccessible.root_recordings_for",
     "methods.root_recording_ids_title" => "List accessible root ids with RecordingStudioAccessible.root_recording_ids_for",
+    "methods.recordings_title" => "List accessible child recordings with RecordingStudioAccessible.recordings_for",
+    "methods.recording_ids_title" => "List accessible child recording ids with RecordingStudioAccessible.recording_ids_for",
     "methods.access_recordings_title" => "List direct grants on a recording with RecordingStudioAccessible.access_recordings_for",
     "user_invites.title" => "User invites",
     "user_invites.subtitle" => "How missing emails are resolved during access grants",
