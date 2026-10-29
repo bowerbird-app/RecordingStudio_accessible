@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "recording_studio_accessible/extracted/recording_studio/access_roles"
+require_relative "authorization_class_methods/child_list"
 
 module RecordingStudioAccessible
   module AuthorizationClassMethods

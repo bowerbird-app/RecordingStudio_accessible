@@ -40,6 +40,24 @@ module RecordingStudioAccessible
         authorization_service.root_recording_ids_for(actor: actor, minimum_role: minimum_role)
       end
 
+      def recordings_for(actor:, parent_recording:, minimum_role: nil, recordable_type: nil)
+        authorization_service.recordings_for(
+          actor: actor,
+          parent_recording: parent_recording,
+          minimum_role: minimum_role,
+          recordable_type: recordable_type
+        )
+      end
+
+      def recording_ids_for(actor:, parent_recording:, minimum_role: nil, recordable_type: nil)
+        authorization_service.recording_ids_for(
+          actor: actor,
+          parent_recording: parent_recording,
+          minimum_role: minimum_role,
+          recordable_type: recordable_type
+        )
+      end
+
       def access_recordings_for(recording)
         authorization_service.access_recordings_for(recording)
       end
