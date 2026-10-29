@@ -14,8 +14,7 @@ module RecordingStudioAccessible
       return RecordingStudio::Recording.none unless request
 
       candidates = direct_child_candidates(request)
-      # The id list is this call's decision. The bare candidate scope would include later rows.
-      candidates.where(id: allowed_child_ids(candidates, request))
+      pin_membership(candidates, allowed_child_ids(candidates, request))
     end
 
     def recording_ids_for(actor:, parent_recording:, minimum_role: nil, recordable_type: nil)
@@ -28,6 +27,10 @@ module RecordingStudioAccessible
     end
 
     private
+
+    def pin_membership(candidates, ids_at_call)
+      candidates.where(id: ids_at_call)
+    end
 
     def direct_child_candidates(request)
       scope = active_recordings_scope.where(parent_recording_id: request.parent_recording.id)

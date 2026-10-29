@@ -135,7 +135,7 @@ class RecordingsForTest < ActiveSupport::TestCase
 
   test "recordable type string and class agree and a symbol array or blank string is empty" do
     root_recording, group_recording, other_group_recording = message_groups
-    access_recording = create_legacy_shared_root_access(actor: @user, role: :view, parent_recording: root_recording)
+    access_recording = insert_access_recording(actor: @user, role: :view, parent_recording: root_recording)
 
     string_ids = listed_ids(parent: root_recording, recordable_type: "MessageGroup").sort
     class_ids = listed_ids(parent: root_recording, recordable_type: MessageGroup).sort
@@ -209,19 +209,11 @@ class RecordingsForTest < ActiveSupport::TestCase
   end
 
   test "a grant on a grandchild does not include the child" do
-    RecordingStudio.enable_capability(:accessible, on: Page)
-    grant_access(@user, :view, @page_recording)
+    insert_access_recording(actor: @user, role: :view, parent_recording: @page_recording)
 
     assert RecordingStudioAccessible.authorized?(actor: @user, recording: @page_recording, role: :view)
     refute_includes listed_ids(parent: @root), @folder_recording.id
     refute RecordingStudioAccessible.authorized?(actor: @user, recording: @folder_recording, role: :view)
-  ensure
-    # Page does not declare accessible. Drop the test-only enable.
-    RecordingStudio.synchronize_capabilities do
-      enabled = RecordingStudio.configuration.instance_variable_get(:@capabilities)
-      enabled["Page"]&.delete(:accessible)
-      enabled.delete("Page") if enabled["Page"].blank?
-    end
   end
 
   test "order and limit stay inside the authorized ids" do
@@ -297,11 +289,12 @@ class RecordingsForTest < ActiveSupport::TestCase
     ]
   end
 
-  def create_legacy_shared_root_access(actor:, role:, parent_recording:)
+  def insert_access_recording(actor:, role:, parent_recording:)
     connection = ActiveRecord::Base.connection
     access_id = SecureRandom.uuid
     recording_id = SecureRandom.uuid
     now = Time.current.utc.iso8601(6)
+    root_id = parent_recording.root_recording_id.presence || parent_recording.id
     connection.exec_insert(<<~SQL.squish, "SQL", [])
       INSERT INTO recording_studio_accesses
         (id, actor_type, actor_id, role, created_at)
@@ -314,7 +307,7 @@ class RecordingsForTest < ActiveSupport::TestCase
         (id, recordable_type, recordable_id, parent_recording_id, root_recording_id, created_at, updated_at)
       VALUES
         (#{connection.quote(recording_id)}, 'RecordingStudio::Access', #{connection.quote(access_id)},
-         #{connection.quote(parent_recording.id)}, #{connection.quote(parent_recording.id)},
+         #{connection.quote(parent_recording.id)}, #{connection.quote(root_id)},
          #{connection.quote(now)}, #{connection.quote(now)})
     SQL
     RecordingStudio::Recording.unscoped.find(recording_id)

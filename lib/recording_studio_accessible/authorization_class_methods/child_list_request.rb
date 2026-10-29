@@ -4,20 +4,18 @@ module RecordingStudioAccessible
   module AuthorizationClassMethods
     class ChildListFloor
       def self.parse(minimum_role)
-        return Any.new if minimum_role.nil?
+        return AnyRanked.new if minimum_role.nil?
 
         return Closed.new if RecordingStudio::AccessRoles.names_at_or_above(minimum_role).empty?
 
         AtLeast.new(minimum_role)
       end
 
-      class Any
+      class AnyRanked
         def closed?
           false
         end
 
-        # resolve_role already drops unranked names. A blank minimum_role on
-        # access_scope_for keeps those rows. This floor does not.
         def keep?(resolved_role)
           !resolved_role.nil?
         end
@@ -73,7 +71,6 @@ module RecordingStudioAccessible
           when nil
             nil
           when String
-            # A blank string is not a column filter.
             recordable_type unless recordable_type.blank?
           when Class
             recordable_type.name.presence
