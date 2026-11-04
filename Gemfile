@@ -27,7 +27,7 @@ gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attach
                                    require: false
 gem "recording_studio_cache", github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.2",
                               require: false
-gem "recording_studio_user", github: "bowerbird-app/RecordingStudio_users", tag: "v0.26.5",
+gem "recording_studio_user", github: "bowerbird-app/RecordingStudio_users", tag: "v0.26.6",
                              require: false
 
 gem "devise"

@@ -400,7 +400,7 @@ request emails direct admins on the target and its parents. Replace that with
 ## Compatibility with RecordingStudio 6.1
 
 Recording Studio Accessible targets RecordingStudio `~> 6.1`, `>= 6.1.0` (currently
-tested with `v6.1.0`) and its capability-owned child recordable contract. RecordingStudio
+tested with `v6.3.0`) and its capability-owned child recordable contract. RecordingStudio
 core no longer ships built-in access control, so this addon provides
 `RecordingStudio::Access` and `RecordingStudio::AccessRequest`, declares them
 as child-only recordables, and registers them as metadata for the `:accessible`
@@ -1793,7 +1793,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v6.1.0`, FlatPack `v0.1.320`, Trashable `v0.12.0`, Attachable `v0.22.0`, Users `v0.25.2`, Metrics `v0.6.1`, Admin `v2.5.1`, Root Switchable `v0.11.0`, Notifications `v0.13.1`, and (dummy only) Recording Studio Internationalization `v0.1.7`. Admin stays on `v2.5.1` because `v2.7.0` depends on `recording_studio_logs`, which this repo does not pin. Cache, Users, Metrics, Internationalization, and Notifications still declare `recording_studio ~> 4.2` in their own gemspecs. Dummy Bundler loads `test/support/widen_recording_studio_requirement.rb` so those gemspecs accept Recording Studio `6.1.0`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v6.3.0`, FlatPack `v0.1.341`, Trashable `v0.12.2`, Users `v0.26.6`, Metrics `v0.7.2`, Root Switchable `v0.11.4`, Notifications `v0.14.7`, and (dummy only) Recording Studio Internationalization `v0.2.0`. Attachable stays `v0.22.0`. Admin stays on `v2.5.1` because `v2.7.0` depends on `recording_studio_logs`, which this repo does not pin. Cache stays `v0.6.2`. Cache, Users, Metrics, Internationalization, and Notifications declare `recording_studio >= 6.1.0` in their own gemspecs, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

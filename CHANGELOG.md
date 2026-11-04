@@ -8,8 +8,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Development pins move to Recording Studio `v6.3.0`, FlatPack `v0.1.341`,
-  Users `v0.26.5`, Metrics `v0.7.2`, and Cache `v0.6.2`. Dummy also pins
-  Root Switchable `v0.11.3`, Internationalization `v0.2.0`, and
+  Users `v0.26.6`, Metrics `v0.7.2`, and Cache `v0.6.2`. Dummy also pins
+  Root Switchable `v0.11.4`, Internationalization `v0.2.0`, and
   Notifications `v0.14.7`. Trashable is `v0.12.2`. Admin stays at
   `v2.5.1`. view_component stays at `4.19.0`.
 - Cache, Users, Metrics, Internationalization, and Notifications now
