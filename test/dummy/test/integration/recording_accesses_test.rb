@@ -46,7 +46,8 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_nil add_access.at_css("svg")
     assert_equal "Access requests", requests.text.squish
     assert_nil requests.at_css('[class*="badge-primary"]')
-    assert_manage_access_nav_collapse_menu
+    assert_nil top_nav_right.at_css(".fp-button-group-menu")
+    refute_nil top_nav_right.at_css(".fp-button-group")
     assert_includes add_access["href"], recording_studio_accessible.new_recording_access_path(@root_recording)
     assert_includes requests["href"], recording_studio_accessible.recording_access_requests_path(@root_recording)
     assert_includes @response.body, @admin.email
@@ -85,15 +86,6 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, "Other people with access"
     refute_includes @response.body, "other-people-with-access"
     refute_includes @response.body, "Access point"
-  end
-
-  test "manage access nav button group renders collapse menu markup" do
-    sign_in @admin
-
-    get root_recording_accesses_path
-
-    assert_response :success
-    assert_manage_access_nav_collapse_menu
   end
 
   test "folder recording access page is available when the recordable has opted in" do
@@ -195,7 +187,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     requests = top_nav_action("Access requests")
     add_access = top_nav_action("+ Access")
     assert_equal "+ Access", add_access.text.squish
-    assert_manage_access_nav_collapse_menu
+    assert_nil top_nav_right.at_css(".fp-button-group-menu")
     badge = requests.at_css('[class*="badge-primary"]')
     assert_equal "1", badge.text.squish
 
@@ -589,17 +581,6 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
 
   def direct_access_recording_for(user)
     direct_access_recordings_for(user).first
-  end
-
-  def assert_manage_access_nav_collapse_menu
-    menu = top_nav_right.at_css(".fp-button-group-menu")
-    refute_nil menu, "expected the manage-access ButtonGroup to collapse to a menu"
-    assert_equal "768", menu["data-collapse-at"]
-    trigger = menu.at_css(".fp-button-group-menu__trigger")
-    refute_nil trigger
-    assert_equal "Access", trigger.text.squish
-    refute_nil menu.at_css(".fp-button-group-menu__row")
-    refute_nil menu.at_css(".fp-button-group-menu__panel")
   end
 
   def top_nav_right

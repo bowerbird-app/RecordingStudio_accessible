@@ -6,11 +6,7 @@
      anchor_href: recording_access_anchor_url
    ) %>
 <% recording_studio_page_nav_right do %>
-  <%= render FlatPack::ButtonGroup::Component.new(
-        variant: :outlined,
-        collapse: :menu,
-        menu_label: accessible_t("manage.nav_actions")
-      ) do |group| %>
+  <%= render FlatPack::ButtonGroup::Component.new(variant: :outlined) do |group| %>
     <% group.button(
          FlatPack::Button::Component.new(
            text: accessible_t("manage.add"),

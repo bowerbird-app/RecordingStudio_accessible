@@ -81,7 +81,6 @@ fr:
         edit: "Modifier"
         manage_access: "Gérer l’accès"
         access_menu: "Accès"
-        nav_actions: "Accès"
         invitation_actions: "Actions d’invitation"
         access_actions: "Actions d’accès"
         access_point_actions: "Actions du point d’accès"
