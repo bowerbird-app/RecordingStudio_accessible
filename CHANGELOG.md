@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.24.1] - 2026-11-04
+
+### Changed
+- Development pins move to Recording Studio `v6.3.0`, FlatPack `v0.1.341`,
+  Users `v0.26.6`, Metrics `v0.7.2`, and Cache `v0.6.2`. Dummy also pins
+  Root Switchable `v0.11.4`, Internationalization `v0.2.0`, and
+  Notifications `v0.14.7`. Trashable is `v0.12.2`. Admin stays at
+  `v2.5.1`. view_component stays at `4.19.0`.
+- Cache, Users, Metrics, Internationalization, and Notifications now
+  declare `recording_studio >= 6.1.0`, so Bundler no longer needs
+  `test/support/widen_recording_studio_requirement.rb`.
+- Lockfiles did not pick up extra RubyGems version changes besides those
+  companion pins. Dummy Internationalization in the lockfile moves from
+  `0.1.2` to `0.2.0` to match the `v0.2.0` tag. Cache in both lockfiles
+  moves from `0.5.0` to `0.6.2`.
+- Manage access keeps `Access requests` (and its pending count) in the
+  outlined ButtonGroup row at every width. `+ Access` sits in that group's
+  overflow menu. The group does not use `collapse: :menu`.
+
+### Upgrade notes
+- Point development and dummy Gemfiles at the tags above and run bundle
+  update for those gems. The gemspec floor stays `recording_studio ~> 6.1,
+  >= 6.1.0`.
+- Hosts that copied the manage-access index should keep `Access requests`
+  with `overflow: false` and put `+ Access` in the ButtonGroup overflow
+  (`overflow: true`). Do not set `collapse: :menu`; that hides the pending
+  count on phones.
+
 ## [0.24.0] - 2026-10-29
 
 ### Added
@@ -876,7 +904,15 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.20.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.1...HEAD
+[0.24.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.0...v0.24.1
+[0.24.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.23.1...v0.24.0
+[0.23.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.23.0...v0.23.1
+[0.23.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.22.2...v0.23.0
+[0.22.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.22.1...v0.22.2
+[0.22.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.22.0...v0.22.1
+[0.22.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.21.0...v0.22.0
+[0.21.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.20.1...v0.21.0
 [0.20.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.19.1...v0.20.0
 [0.19.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.19.0...v0.19.1
