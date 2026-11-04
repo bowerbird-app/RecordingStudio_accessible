@@ -1,23 +1,21 @@
 source "https://rubygems.org"
 
-require_relative "../support/widen_recording_studio_requirement"
-
 # Use the recording_studio_accessible engine
 gem "recording_studio_accessible", path: "../.."
 
 # RecordingStudio engine
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.1.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
 # Query-only trash helpers (Accessible gemspec "~> 0.10"; pin by tag).
 # require: false — Accessible loads recording_studio_trashable/query only.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",
                                   tag: "v0.12.0", require: false
-gem "recording_studio_root_switchable", github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.11.0"
+gem "recording_studio_root_switchable", github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.11.3"
 # Required by root_switchable and trashable (git-only; not on RubyGems).
-gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.6.1"
+gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.2"
 
 # Dummy-only language switching. Accessible ships English; hosts own other languages.
 gem "recording_studio_internationalization",
-    github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.1.7"
+    github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.2.0"
 
 # Devise authentication
 gem "devise"
@@ -43,7 +41,7 @@ gem "jbuilder"
 gem "tailwindcss-rails"
 
 # FlatPack UI component library [https://github.com/bowerbird-app/flatpack]
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.320"
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.341"
 gem "minitest", ">= 5.26", "< 6"
 gem "view_component", "4.19.0"
 
@@ -51,9 +49,9 @@ gem "view_component", "4.19.0"
 # because Users already depends on Accessible.
 gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.5.1"
 gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.22.0"
-gem "recording_studio_cache", github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.1"
-gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.13.1"
-gem "recording_studio_user", github: "bowerbird-app/RecordingStudio_users", tag: "v0.25.2"
+gem "recording_studio_cache", github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.2"
+gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.14.7"
+gem "recording_studio_user", github: "bowerbird-app/RecordingStudio_users", tag: "v0.26.5"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"

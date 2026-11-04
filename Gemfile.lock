@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio.git
-  revision: 403521dddc141ddb12d1ed8d8b30bd4105a9d6f8
-  tag: v6.1.0
+  revision: 6acc0377fa4c940a2ff7222bbcbdc3ee6d59c591
+  tag: v6.3.0
   specs:
-    recording_studio (6.1.0)
+    recording_studio (6.3.0)
       flat_pack (>= 0.1.315)
       rails (>= 8.1.0)
 
@@ -31,19 +31,19 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_cache.git
-  revision: 711cb9cf7074a3dcbe9b96b628d830e93dd46a5b
-  tag: v0.5.1
+  revision: 4d123db79226a1f18ce1289e09c867a5f9ed335c
+  tag: v0.6.2
   specs:
-    recording_studio_cache (0.5.0)
+    recording_studio_cache (0.6.2)
       rails (~> 8.1.0)
       recording_studio (>= 6.1.0)
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_metrics.git
-  revision: 05e78289bbe3d9a90507c4cb4d7ba990edc57227
-  tag: v0.6.1
+  revision: cb87f3b47ec6825458e3f467f7b16a5cb407e96c
+  tag: v0.7.2
   specs:
-    recording_studio_metrics (0.6.1)
+    recording_studio_metrics (0.7.2)
       rails (~> 8.1.0)
       recording_studio (>= 6.1.0)
 
@@ -60,12 +60,12 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_users.git
-  revision: e329dd4fea32553e8fde8d72e0c37d8a01e6596d
-  tag: v0.25.2
+  revision: 9f46b8f97690345c4011c1fab28a86b5a6f48400
+  tag: v0.26.5
   specs:
-    recording_studio_user (0.25.2)
+    recording_studio_user (0.26.5)
       devise (~> 5.0)
-      flat_pack (>= 0.1.144)
+      flat_pack (>= 0.1.328)
       omniauth (~> 2.1)
       omniauth-apple (~> 1.3)
       omniauth-google-oauth2 (~> 1.2)
@@ -80,13 +80,14 @@ GIT
       recording_studio_attachable (~> 0.7)
       recording_studio_cache (~> 0.5)
       recording_studio_metrics (>= 0.3, < 1.0)
+      view_component (>= 4.14, < 5)
 
 GIT
   remote: https://github.com/bowerbird-app/flatpack.git
-  revision: 609ed9a7760bb55a415e9af992e8f7b4c459b838
-  tag: v0.1.320
+  revision: 374c9b7f7130057954df596597ff75f139c72b50
+  tag: v0.1.341
   specs:
-    flat_pack (0.1.320)
+    flat_pack (0.1.341)
       pagy (~> 9.0)
       rails (>= 7.1, < 9)
       tailwind_merge (~> 0.13)
@@ -95,7 +96,7 @@ GIT
 PATH
   remote: .
   specs:
-    recording_studio_accessible (0.24.0)
+    recording_studio_accessible (0.24.1)
       rails (~> 8.1.0)
       recording_studio (~> 6.1, >= 6.1.0)
       recording_studio_trashable (~> 0.10)
@@ -555,7 +556,7 @@ CHECKSUMS
   faraday (2.15.0) sha256=3be0eff0187ed913a1b4f679e9fcfe845b542cdd4f75b76cd6181a4ae1335fff
   faraday-follow_redirects (0.5.0) sha256=5cde93c894b30943a5d2b93c2fe9284216a6b756f7af406a1e55f211d97d10ad
   faraday-net_http (3.5.0) sha256=2e7094c34e38754ee048cc3df47376f8657005d9375f8473bce1c3b526a22e36
-  flat_pack (0.1.320)
+  flat_pack (0.1.341)
   globalid (1.4.0) sha256=037f12fbf1d9d7a014d501c2d5c77356fd4ddd96d7a7991d6700bba96706f427
   hashie (5.1.0) sha256=c266471896f323c446ea8207f8ffac985d2718df0a0ba98651a3057096ca3870
   i18n (1.15.2) sha256=00f9eb62412fe593b2a65a97daa75300d37abb8f7202ec748e94b6d46a9dd1b5
@@ -628,14 +629,14 @@ CHECKSUMS
   rake (13.4.2) sha256=cb825b2bd5f1f8e91ca37bddb4b9aaf345551b4731da62949be002fa89283701
   rbs (4.2.0) sha256=51f7b886dcc05bc09e10b901daa6a81829f6adc03101d6ca9ea4aac6103e0674
   rdoc (8.1.0) sha256=befc37880a5cfd36dcb176c748b5fd5ee39dd3536a75e81824e4972ce230f60a
-  recording_studio (6.1.0)
-  recording_studio_accessible (0.24.0)
+  recording_studio (6.3.0)
+  recording_studio_accessible (0.24.1)
   recording_studio_admin (2.5.1)
   recording_studio_attachable (0.22.0)
-  recording_studio_cache (0.5.0)
-  recording_studio_metrics (0.6.1)
+  recording_studio_cache (0.6.2)
+  recording_studio_metrics (0.7.2)
   recording_studio_trashable (0.12.0)
-  recording_studio_user (0.25.2)
+  recording_studio_user (0.26.5)
   regexp_parser (2.12.0) sha256=35a916a1d63190ab5c9009457136ae5f3c0c7512d60291d0d1378ba18ce08ebb
   reline (0.7.0) sha256=5b012d8e55dbf9d450f12bde2cf7d15ff546ae80b3f8f3b30e570d431815583d
   responders (3.2.0) sha256=89c2d6ac0ae16f6458a11524cae4a8efdceba1a3baea164d28ee9046bd3df55a
