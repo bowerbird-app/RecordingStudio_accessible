@@ -10,8 +10,11 @@ All notable changes to this project will be documented in this file.
 - Development pins move to Recording Studio `v6.3.0`, FlatPack `v0.1.341`,
   Users `v0.26.5`, Metrics `v0.7.2`, and Cache `v0.6.2`. Dummy also pins
   Root Switchable `v0.11.3`, Internationalization `v0.2.0`, and
-  Notifications `v0.14.7`. Trashable stays at `v0.12.0`. Admin stays at
+  Notifications `v0.14.7`. Trashable is `v0.12.2`. Admin stays at
   `v2.5.1`. view_component stays at `4.19.0`.
+- Manage access puts "+ Access" and "Access requests" in a FlatPack
+  ButtonGroup with `collapse: :menu`, so the pair becomes a short Access
+  menu on a phone instead of clipping next to back and close.
 - Cache, Users, Metrics, Internationalization, and Notifications now
   declare `recording_studio >= 6.1.0`, so Bundler no longer needs
   `test/support/widen_recording_studio_requirement.rb`.
@@ -24,6 +27,9 @@ All notable changes to this project will be documented in this file.
 - Point development and dummy Gemfiles at the tags above and run bundle
   update for those gems. The gemspec floor stays `recording_studio ~> 6.1,
   >= 6.1.0`.
+- Hosts that override `recording_accesses/index` and copy the old
+  ButtonGroup should pass `collapse: :menu` (and a short `menu_label`)
+  so the pair does not clip on a phone.
 
 ## [0.24.0] - 2026-10-29
 
