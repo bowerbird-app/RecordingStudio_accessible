@@ -41,6 +41,7 @@ en:
         edit: "Edit"
         manage_access: "Manage access"
         access_menu: "Access"
+        nav_actions: "Access"
         invitation_actions: "Invitation actions"
         access_actions: "Access actions"
         access_point_actions: "Access point actions"

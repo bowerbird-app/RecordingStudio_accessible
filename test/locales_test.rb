@@ -123,6 +123,7 @@ class LocalesTest < Minitest::Test
       I18n.with_locale(:en) do
         assert_equal "Manage access", Copy.t("manage.title")
         assert_equal "+ Access", Copy.t("manage.add")
+        assert_equal "Access", Copy.t("manage.nav_actions")
         assert_equal "Pending invitation", Copy.t("manage.pending_invitation")
         assert_equal "Accept invitation", Copy.t("invitations.accept")
         assert_equal "Access granted.", Copy.t("flashes.access_granted")
