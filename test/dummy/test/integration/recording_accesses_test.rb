@@ -42,12 +42,14 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     add_access = top_nav_action("+ Access")
     requests = top_nav_action("Access requests")
     assert_equal "+ Access", add_access.text.squish
-    assert_equal "default", add_access["data-fp-style"]
+    assert_includes add_access["class"].to_s, "fp-menu-row"
     assert_nil add_access.at_css("svg")
     assert_equal "Access requests", requests.text.squish
+    assert_equal "default", requests["data-fp-style"]
     assert_nil requests.at_css('[class*="badge-primary"]')
     assert_nil top_nav_right.at_css(".fp-button-group-menu")
     refute_nil top_nav_right.at_css(".fp-button-group")
+    assert_manage_access_overflow_split(add_access: add_access, requests: requests)
     assert_includes add_access["href"], recording_studio_accessible.new_recording_access_path(@root_recording)
     assert_includes requests["href"], recording_studio_accessible.recording_access_requests_path(@root_recording)
     assert_includes @response.body, @admin.email
@@ -188,6 +190,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     add_access = top_nav_action("+ Access")
     assert_equal "+ Access", add_access.text.squish
     assert_nil top_nav_right.at_css(".fp-button-group-menu")
+    assert_manage_access_overflow_split(add_access: add_access, requests: requests)
     badge = requests.at_css('[class*="badge-primary"]')
     assert_equal "1", badge.text.squish
 
@@ -196,6 +199,20 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_response :success
     folder_requests = top_nav_action("Access requests")
     assert_equal "1", folder_requests.at_css('[class*="badge-primary"]').text.squish
+  end
+
+  test "manage access keeps access requests in the row and parks plus access in overflow" do
+    sign_in @admin
+
+    get root_recording_accesses_path
+
+    assert_response :success
+    add_access = top_nav_action("+ Access")
+    requests = top_nav_action("Access requests")
+    assert_manage_access_overflow_split(add_access: add_access, requests: requests)
+    refute_includes requests["class"].to_s, "fp-menu-row"
+    assert_includes add_access["href"], recording_studio_accessible.new_recording_access_path(@root_recording)
+    assert_includes requests["href"], recording_studio_accessible.recording_access_requests_path(@root_recording)
   end
 
   test "recording access page add access links preserve stable back_url and anchor_url" do
@@ -591,6 +608,23 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
   def top_nav_action(label)
     top_nav_right.css("a").find { |link| link.text.squish.include?(label) } ||
       flunk("expected #{label} in the top nav right slot")
+  end
+
+  def assert_manage_access_overflow_split(add_access:, requests:)
+    overflow = top_nav_right.at_css(".fp-button-group__overflow") ||
+      flunk("expected the ButtonGroup overflow menu")
+    group = top_nav_right.at_css(".fp-button-group") ||
+      flunk("expected the outlined ButtonGroup")
+
+    overflow_labels = overflow.css("a.fp-menu-row").map { |link| link.text.squish }
+    row_labels = group.css("a").reject { |link|
+      link.ancestors.any? { |node| node["class"].to_s.include?("fp-button-group__overflow") }
+    }.map { |link| link.text.squish }
+
+    assert_includes overflow_labels, add_access.text.squish
+    refute_includes overflow_labels, requests.text.squish
+    assert row_labels.any? { |label| label.include?("Access requests") },
+           "expected Access requests in the ButtonGroup row"
   end
 
   def people_access_row(email)

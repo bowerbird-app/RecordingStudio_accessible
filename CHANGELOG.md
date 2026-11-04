@@ -19,11 +19,18 @@ All notable changes to this project will be documented in this file.
   companion pins. Dummy Internationalization in the lockfile moves from
   `0.1.2` to `0.2.0` to match the `v0.2.0` tag. Cache in both lockfiles
   moves from `0.5.0` to `0.6.2`.
+- Manage access keeps `Access requests` (and its pending count) in the
+  outlined ButtonGroup row at every width. `+ Access` sits in that group's
+  overflow menu. The group does not use `collapse: :menu`.
 
 ### Upgrade notes
 - Point development and dummy Gemfiles at the tags above and run bundle
   update for those gems. The gemspec floor stays `recording_studio ~> 6.1,
   >= 6.1.0`.
+- Hosts that copied the manage-access index should keep `Access requests`
+  with `overflow: false` and put `+ Access` in the ButtonGroup overflow
+  (`overflow: true`). Do not set `collapse: :menu`; that hides the pending
+  count on phones.
 
 ## [0.24.0] - 2026-10-29
 

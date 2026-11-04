@@ -13,7 +13,8 @@
            href: new_recording_access_path_with_back_url(@recording),
            style: :default,
            size: :sm
-         )
+         ),
+         overflow: true
        ) %>
     <% requests_button = FlatPack::Button::Component.new(
          text: accessible_t("requests.list_title"),
@@ -30,7 +31,7 @@
             ) %>
       <% end %>
     <% end %>
-    <% group.button(requests_button) %>
+    <% group.button(requests_button, overflow: false) %>
   <% end %>
 <% end %>
 

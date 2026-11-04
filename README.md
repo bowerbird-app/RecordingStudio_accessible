@@ -1172,6 +1172,11 @@ That generator:
 - copies overrideable share-email templates to `app/views/recording_studio_accessible/access_granted_mailer/` only when they are still missing
 - optionally creates a host helper with `recording_access_management_path` and `recording_access_management_link`
 
+Manage access puts `Access requests` (and its pending-count badge) in the
+top-right outlined ButtonGroup row at every width. `+ Access` sits in that
+group's overflow menu. The group does not collapse to a phone menu, so the
+count stays visible. A host layout must render `:page_nav_right`.
+
 `AccessInvitation` records pending intent for an email address. `RecordingStudio::Access` records authorization for a persisted actor. `authorized?` and `role_for` read access grants only.
 
 `invite_access` calls `grant_access` when the email already belongs to an actor. Otherwise it stores one unclosed `AccessInvitation` for that recording and email. Unclosed means not accepted and not revoked. An expired invitation stays in that slot, and a later invite refreshes the same row instead of inserting another one. After the invited person authenticates, `accept_access_invitation` calls `grant_access` and stamps the invitation accepted. `revoke_access_invitation` withdraws a pending invitation and leaves any access grant alone.
