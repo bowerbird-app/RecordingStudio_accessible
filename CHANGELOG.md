@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.24.2] - 2026-11-05
+
+### Changed
+- Lockfiles move to Rails `8.1.4.1`, rack `3.2.8`, nokogiri `1.19.7`,
+  loofah `2.25.3`, and rails-html-sanitizer `1.7.2`. Dummy also moves
+  net-ssh to `7.3.8`. Bundler also pulled `io-console` `0.9.5`.
+
+### Upgrade notes
+- Run `bundle update rails rack nokogiri loofah rails-html-sanitizer`
+  (and `net-ssh` if you lock it) so hosts pick up the same floors.
+
 ## [0.24.1] - 2026-11-04
 
 ### Changed
@@ -904,7 +915,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.2...HEAD
+[0.24.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.1...v0.24.2
 [0.24.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.0...v0.24.1
 [0.24.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.23.1...v0.24.0
 [0.23.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.23.0...v0.23.1
