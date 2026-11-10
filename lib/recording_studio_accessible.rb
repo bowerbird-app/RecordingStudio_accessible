@@ -44,6 +44,7 @@ require "recording_studio_accessible/authorization_class_methods"
 require "recording_studio_accessible/configuration"
 require "recording_studio_accessible/authorization"
 require "recording_studio_accessible/direct_access_query"
+require "recording_studio_accessible/access_grant_list"
 require "recording_studio_accessible/services/base_service"
 require "recording_studio_accessible/authorization_service"
 require "recording_studio_accessible/services/access_record_lifecycle"
@@ -82,11 +83,13 @@ require "recording_studio_accessible/access_request_account"
 require "recording_studio_accessible/access_request_api"
 require_relative "../app/controllers/concerns/recording_studio_accessible/controller_auth"
 
+require "recording_studio_accessible/access_writers"
 require "recording_studio_accessible/engine"
 
 module RecordingStudioAccessible
   extend RegistryClassMethods
   extend AccessRequestApi
+  extend AccessWriters
 
   class << self
     def configuration

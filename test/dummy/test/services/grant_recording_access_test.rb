@@ -73,6 +73,32 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal @recording.id, result.value.parent_recording_id
   end
 
+  test "public facades delegate update and revoke" do
+    access_recording = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: @user,
+      role: :view,
+      manager_actor: @manager_actor
+    ).value
+
+    updated = RecordingStudioAccessible.update_access(
+      recording: @recording,
+      access_recording: access_recording,
+      role: :edit,
+      manager_actor: @manager_actor
+    )
+    assert updated.success?
+    assert_equal "edit", updated.value.recordable.role
+
+    revoked = RecordingStudioAccessible.revoke_access(
+      recording: @recording,
+      access_recording: access_recording,
+      manager_actor: @manager_actor
+    )
+    assert revoked.success?
+    assert_nil RecordingStudio::Recording.unscoped.find_by(id: access_recording.id)
+  end
+
   test "service uses current actor fallback for authorization and audit attribution" do
     Current.actor = @manager_actor
 

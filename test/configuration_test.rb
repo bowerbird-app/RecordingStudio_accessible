@@ -155,6 +155,18 @@ class ConfigurationTest < Minitest::Test
     assert_equal %w[User Workspace], @configuration.access_actor_types
   end
 
+  def test_grantable_actor_types_for_reads_a_relation_klass
+    klass = Class.new do
+      def self.name
+        "GrantablePerson"
+      end
+    end
+    relation = Struct.new(:klass).new(klass)
+    @configuration.access_management_actor_scope = ->(_controller) { relation }
+
+    assert_equal ["GrantablePerson"], @configuration.grantable_actor_types_for
+  end
+
   def test_access_actor_types_uses_polymorphic_name_when_available
     actor_class = Class.new do
       def self.base_class
@@ -298,6 +310,7 @@ class ConfigurationTest < Minitest::Test
     @configuration.mounted_page_authorizer = mounted_page_authorizer
 
     assert_equal [:custom_actor], @configuration.grantable_actors_for(controller: :controller)
+    assert_equal [], @configuration.grantable_actor_types_for(controller: :controller)
     assert_equal %i[controller current_actor], @configuration.current_actor_for(controller: :controller)
     assert_equal "Label: custom_actor", @configuration.actor_label_for(:custom_actor)
     assert_equal [:controller, "person@example.com"],

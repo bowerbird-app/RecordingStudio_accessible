@@ -14,6 +14,7 @@ Rails.application.routes.draw do
   resources :workspaces, only: [ :show, :create ]
 
   mount RecordingStudioAccessible::Engine, at: "/recording_studio_accessible"
+  mount RecordingStudioApi::Engine, at: "/recording_studio_api" if defined?(RecordingStudioApi)
 
   get "tree", to: "home#tree"
   get "access_request_demo", to: "access_request_demos#show"

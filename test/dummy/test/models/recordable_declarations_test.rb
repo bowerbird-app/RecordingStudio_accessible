@@ -5,6 +5,12 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
     assert RecordingStudio.validate_recordable_declarations!
   end
 
+  test "admin api is registered when recording studio api is loaded" do
+    skip "Recording Studio API is not loaded" unless defined?(RecordingStudioApi::AdminApi)
+
+    assert_includes RecordingStudio.configuration.recordable_types, "RecordingStudioApi::AdminApi"
+  end
+
   test "dummy app recordables declare root and parent rules" do
     assert RecordingStudio.root_allowed?(MessageRoot)
     assert RecordingStudio.root_allowed?(Workspace)

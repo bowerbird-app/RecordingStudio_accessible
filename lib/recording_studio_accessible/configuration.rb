@@ -6,6 +6,7 @@ require_relative "configuration/call_helpers"
 require_relative "configuration/attributes"
 require_relative "configuration/avatars"
 require_relative "configuration/actors"
+require_relative "configuration/grantable_types"
 require_relative "configuration/authorizers"
 require_relative "configuration/access_requests"
 require_relative "configuration/registry"
@@ -22,6 +23,7 @@ module RecordingStudioAccessible
     include Attributes
     include Avatars
     include Actors
+    include GrantableTypes
     include Authorizers
     include AccessRequests
     include Registry

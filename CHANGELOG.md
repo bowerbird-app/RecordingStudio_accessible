@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-11-10
+
+### Added
+- Recording Studio API member actions `list_access`, `grant_access`,
+  `update_access`, and `revoke_access` (`capability: :accessible`,
+  `required_role: :admin`). They wrap the same policy and services as the
+  manage-access UI. Inherited grants appear in `list_access` and cannot be
+  updated or revoked. An email grant uses `invite_access`.
+- `RecordingStudioAccessible.update_access` and `revoke_access` facades next
+  to `grant_access`.
+
+### Upgrade notes
+- Additive. The gem does not depend on Recording Studio API. Actions register
+  only when that gem is loaded. Current RS_API still needs each type API to
+  list the actions in `capability_actions`. A later RS_API release may enable
+  them for types that already declare `:accessible`.
+- `RecordingStudio::Access` is not an API resource. List rows name the actor
+  and the source recording only. `list_access` does not include pending
+  invitations.
+- `grant_access` with `actor_id` requires `actor_type` and only grants types
+  the manage-access UI can grant. Email remains the people invite path.
+- Shared roots 404 on every access action, matching the UI. `actor_type` is
+  allowlisted before constantize. A host registration of the same action name
+  with a different `required_role` is left in place and warned.
+
 ## [0.24.2] - 2026-11-05
 
 ### Changed
@@ -915,7 +940,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.2...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.25.0...HEAD
+[0.25.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.2...v0.25.0
 [0.24.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.1...v0.24.2
 [0.24.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.0...v0.24.1
 [0.24.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.23.1...v0.24.0
