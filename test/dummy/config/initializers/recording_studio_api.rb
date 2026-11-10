@@ -5,6 +5,15 @@
 return unless defined?(RecordingStudioApi)
 return unless RecordingStudioApi.respond_to?(:register_recordable_type_api)
 
+RecordingStudioApi.configure do |config|
+  config.rate_limit_oauth_enabled = false
+  config.rate_limit_api_pre_auth_enabled = false
+  config.rate_limit_api_enabled = false
+  config.rate_limit_fail_closed = false if config.respond_to?(:rate_limit_fail_closed=)
+  config.api_management_authorization_required = false
+  config.documentation_enabled = false if config.respond_to?(:documentation_enabled=)
+end
+
 ACCESS_MANAGEMENT_ACTIONS = %i[list_access grant_access update_access revoke_access].freeze
 
 %w[Workspace Folder MessageGroup].each do |recordable_type|

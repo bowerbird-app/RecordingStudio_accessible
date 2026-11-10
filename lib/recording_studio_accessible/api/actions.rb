@@ -5,7 +5,6 @@ module RecordingStudioAccessible
     class ListAccess < Handler
       def call
         authorize_management!
-        ensure_access_children!
 
         { grants: grant_list.rows.map { |row| Payload.grant_row(row) } }
       end
@@ -14,7 +13,6 @@ module RecordingStudioAccessible
     class GrantAccess < Handler
       def call
         authorize_management!
-        ensure_access_children!
         reject_mixed_actor_and_email!
 
         return invite_by_email(param(:email)) if param(:email).present?
@@ -46,7 +44,7 @@ module RecordingStudioAccessible
       end
 
       def grant_to_actor
-        actor = find_actor!
+        actor = find_actor!(purpose: :grant)
         result = RecordingStudioAccessible.grant_access(
           recording: recording,
           actor: actor,

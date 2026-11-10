@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
+require "recording_studio_accessible/api/actor_lookup"
+
 module RecordingStudioAccessible
   module Api
+    ACTOR_TYPE_NAME = /\A(?:[A-Z][A-Za-z0-9]*::)*[A-Z][A-Za-z0-9]*\z/
+
     class Error < StandardError; end
 
     class AuthorizationError < Error; end
@@ -63,12 +67,22 @@ module RecordingStudioAccessible
     end
 
     class Handler
+      include ActorLookup
+
       def self.call(context)
-        new(context).call
+        handler = new(context)
+        handler.ensure_access_children!
+        handler.call
       end
 
       def initialize(context)
         @context = context
+      end
+
+      def ensure_access_children!
+        return if Compatibility.access_management_allowed?(recording)
+
+        raise not_found_error(Copy.t("errors.direct_access_not_enabled"))
       end
 
       private
@@ -103,12 +117,6 @@ module RecordingStudioAccessible
         raise authorization_error(Copy.t("errors.not_authorized"))
       end
 
-      def ensure_access_children!
-        return if Compatibility.access_management_allowed?(recording)
-
-        raise not_found_error(Copy.t("errors.direct_access_not_enabled"))
-      end
-
       def raise_service_failure!(result)
         message = result.error.to_s
         details = Array(result.errors).presence || [message]
@@ -120,36 +128,7 @@ module RecordingStudioAccessible
       def inherited_grant_error(row)
         source = Payload.recording(row.source_recording)
         message = Copy.t("errors.inherited_access", source_label: source.fetch(:label))
-        details = [
-          message,
-          "source_id=#{source.fetch(:id)}",
-          "source_type=#{source.fetch(:type)}"
-        ]
-        invalid_input_error(message, details: details)
-      end
-
-      def find_actor!
-        actor_id = param(:actor_id)
-        if actor_id.blank?
-          raise invalid_input_error(Copy.t("errors.actor_required"), details: [Copy.t("errors.actor_required")])
-        end
-
-        actor = resolve_actor(actor_id)
-        return actor if actor
-
-        raise not_found_error(Copy.t("errors.unknown_actor"))
-      end
-
-      def resolve_actor(actor_id)
-        type_name = param(:actor_type).presence || "User"
-        klass = type_name.to_s.safe_constantize
-        return unless klass.respond_to?(:find_by)
-
-        actor = klass.find_by(id: actor_id)
-        return unless actor
-        return unless RecordingStudioAccessible.configuration.allowed_access_actor_type?(actor)
-
-        actor
+        invalid_input_error(message, details: [message])
       end
 
       def grant_list

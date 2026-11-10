@@ -86,6 +86,7 @@ en:
         role_exceeds_manager: "You can only grant a role you already hold."
         unexpected: "Something went wrong. Try again."
         actor_type_not_allowed: "Actor type is not allowed for access"
+        actor_type_required: "Actor type is required"
         email_required: "Email is required"
         email_invalid: "Email is invalid"
         user_required: "User is required"

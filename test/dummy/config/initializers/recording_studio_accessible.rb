@@ -39,6 +39,13 @@ end
 Rails.application.config.to_prepare do
   RecordingStudioAccessible.configuration.register_access_request_gate(:read, AccessRequestReasonGate)
   RecordingStudioAccessible.configuration.register_access_request_gate(:default, AccessRequestReasonGate)
+
+  if defined?(RecordingStudioApi::ApiClient)
+    types = Array(RecordingStudioAccessible.configuration.access_actor_types)
+    unless types.include?("RecordingStudioApi::ApiClient")
+      RecordingStudioAccessible.configuration.access_actor_types = types + [ "RecordingStudioApi::ApiClient" ]
+    end
+  end
 end
 
 # -- Demo: action authorization registry -----------------------------------

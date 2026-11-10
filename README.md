@@ -1193,16 +1193,26 @@ add a runtime gemspec dependency on `recording_studio_api`.
 
 | Action | Inputs | Result |
 | --- | --- | --- |
-| `list_access` | none | `{ grants: [...] }` with actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role` |
-| `grant_access` | `actor_id` or `email`, `role`, optional `actor_type` | granted row, or `{ invited: true, email, role, notice }` |
+| `list_access` | none | `{ grants: [...] }` with actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role`. Direct and inherited grants only — pending invitations are not listed. |
+| `grant_access` | `email` plus `role`, or `actor_id` plus `actor_type` plus `role` | granted row, or `{ invited: true, email, role, notice }` |
 | `update_access` | `actor_id`, `role`, optional `actor_type` | updated direct grant |
 | `revoke_access` | `actor_id`, optional `actor_type` | `{ revoked: true, actor }` |
+
+Email is the people path and matches the manage-access form (`invite_access`).
+`actor_id` grants also need `actor_type`, limited to the types the UI can grant
+(`grantable_actors_for`, users by default). Do not mix `email` with `actor_id`.
+`update_access` and `revoke_access` change or remove a direct grant for that
+actor on this recording. They refuse inherited grants; change the source
+recording instead. `actor_type` is optional there and defaults to `User` only
+when `User` is in `access_actor_types`.
 
 Each action is `capability: :accessible`, `required_role: :admin`, member
 scope. Handlers call `AccessManagementPolicy` and the Grant / Invite / Update /
 Revoke services, so RoleCeiling, valid roles, shared-root refusal, and Access
 child compatibility apply as they do in the UI. Inherited rows are read-only.
-The error names the source recording to change instead.
+The error names the source recording to change instead. API invitation mail
+uses the mailer's `default_url_options` because the handler has no controller
+(`controller` is `nil`).
 
 Current Recording Studio API does not auto-enable capability actions from the
 `:accessible` mixin. List them on each type API:
@@ -1837,7 +1847,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v6.3.0`, FlatPack `v0.1.341`, Trashable `v0.12.2`, Users `v0.26.6`, Metrics `v0.7.2`, Root Switchable `v0.11.4`, Notifications `v0.14.7`, and (dummy only) Recording Studio Internationalization `v0.2.0`. Attachable stays `v0.22.0`. Admin stays on `v2.5.1` because `v2.7.0` depends on `recording_studio_logs`, which this repo does not pin. Cache stays `v0.6.2`. Cache, Users, Metrics, Internationalization, and Notifications declare `recording_studio >= 6.1.0` in their own gemspecs, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v6.3.0`, FlatPack `v0.1.341`, Trashable `v0.12.2`, Users `v0.26.6`, Metrics `v0.7.2`, Root Switchable `v0.11.4`, Notifications `v0.14.7`, and (dummy only) Recording Studio Internationalization `v0.2.0`. Attachable stays `v0.22.0`. Dummy development/test also pins Recording Studio API `v0.18.5`, Logs `v0.7.3`, Icons `v0.2.1`, and Moveable `v4.1.0` so access member actions run through the real dispatcher. Admin stays on `v2.5.1`. Cache stays `v0.6.2`. Cache, Users, Metrics, Internationalization, and Notifications declare `recording_studio >= 6.1.0` in their own gemspecs, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

@@ -21,7 +21,13 @@ All notable changes to this project will be documented in this file.
   list the actions in `capability_actions`. A later RS_API release may enable
   them for types that already declare `:accessible`.
 - `RecordingStudio::Access` is not an API resource. List rows name the actor
-  and the source recording only.
+  and the source recording only. `list_access` does not include pending
+  invitations.
+- `grant_access` with `actor_id` requires `actor_type` and only grants types
+  the manage-access UI can grant. Email remains the people invite path.
+- Shared roots 404 on every access action, matching the UI. `actor_type` is
+  allowlisted before constantize. A host registration of the same action name
+  with a different `required_role` is left in place and warned.
 
 ## [0.24.2] - 2026-11-05
 

@@ -26,7 +26,7 @@ module RecordingStudioAccessible
         },
         openapi: {
           summary: "Grant access",
-          description: "Grants a role to an actor id, or invites an email.",
+          description: "Grants a role to an actor id plus actor_type, or invites an email.",
           responses: {
             "200" => { description: "Access granted or invitation stored." },
             "403" => { description: "Not allowed to manage access." },

@@ -119,12 +119,7 @@ module RecordingStudioAccessible
       end
 
       def class_access_actor_type(type)
-        base_class = type.respond_to?(:base_class) ? type.base_class : type
-        if base_class.respond_to?(:polymorphic_name)
-          base_class.polymorphic_name
-        else
-          base_class.name
-        end
+        RecordingStudioAccessible::ActorType.for_class(type)
       end
     end
   end

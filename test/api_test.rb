@@ -38,6 +38,20 @@ class ApiTest < Minitest::Test
     end
   end
 
+  def test_registration_warns_when_existing_required_role_differs
+    existing = Struct.new(:name, :required_role).new(:list_access, :view)
+
+    with_fake_recording_studio_api(existing_actions: { public: existing }) do |api|
+      _out, err = capture_io do
+        RecordingStudioAccessible::Api.register_capability_actions!
+      end
+
+      names = api.registrations.map { |registration| registration.fetch(:name) }
+      refute_includes names, :list_access
+      assert_match(/list_access.*required_role=:view.*:admin/, err)
+    end
+  end
+
   def test_registration_covers_each_named_api
     with_fake_recording_studio_api(api_names: %i[public operations]) do |api|
       RecordingStudioAccessible::Api.register_capability_actions!
@@ -55,7 +69,7 @@ class ApiTest < Minitest::Test
       RecordingStudioAccessible::Api.register_capability_actions!
       contract = api.registrations.first.fetch(:input_contract)
 
-      result = contract.call(api_key: "public", api_version: "v1", surprise: "no")
+      result = contract.call(api_key: "public", api_version: "v1", member_action: "list_access", surprise: "no")
 
       refute result.success?
       assert_includes result.errors.join, "surprise"
@@ -86,7 +100,7 @@ class ApiTest < Minitest::Test
       define_named_api_behavior(api, api_names)
     else
       api.define_singleton_method(:capability_action) do |name|
-        @existing_actions["public"] if @existing_actions["public"] == name
+        matching_existing_action(@existing_actions["public"], name)
       end
       api.define_singleton_method(:register_capability_action) do |name, **options|
         @registrations << options.merge(name: name)
@@ -94,6 +108,14 @@ class ApiTest < Minitest::Test
     end
 
     api.define_singleton_method(:registrations) { @registrations }
+
+    api.define_singleton_method(:matching_existing_action) do |existing, name|
+      return if existing.nil?
+      return existing if existing == name
+      return existing if existing.respond_to?(:name) && existing.name.to_sym == name.to_sym
+
+      nil
+    end
 
     Object.const_set(:RecordingStudioApi, api)
     yield api
@@ -105,7 +127,7 @@ class ApiTest < Minitest::Test
     configuration = fake_api_configuration(api_names)
     api.define_singleton_method(:configuration) { configuration }
     api.define_singleton_method(:capability_action) do |name, api: :public|
-      @existing_actions[api.to_s] if @existing_actions[api.to_s] == name
+      matching_existing_action(@existing_actions[api.to_s], name)
     end
     api.define_singleton_method(:register_capability_action) do |name, api: :public, **options|
       @registrations << options.merge(name: name, api: api.to_s)
