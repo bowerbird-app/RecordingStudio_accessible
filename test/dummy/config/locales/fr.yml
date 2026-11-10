@@ -118,6 +118,8 @@ fr:
         not_authorized: "Vous n’êtes pas autorisé à gérer l’accès"
         recording_required: "L’élément est obligatoire"
         actor_required: "La personne est obligatoire"
+        actor_or_email: "Donnez un identifiant de personne ou un e-mail, pas les deux."
+        inherited_access: "Cet accès vient de %{source_label}. Modifiez-le là-bas."
         access_recording_required: "L’accès est obligatoire"
         access_recording_invalid: "L’accès n’est pas valide"
         role_invalid: "Le rôle n’est pas valide"

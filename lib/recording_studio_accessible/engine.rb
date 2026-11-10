@@ -85,6 +85,12 @@ module RecordingStudioAccessible
       RecordingStudioAccessible::Hooks.run(:after_initialize, self)
     end
 
+    initializer "recording_studio_accessible.register_recording_studio_api_actions",
+                before: "recording_studio_api.after_initialize" do
+      require "recording_studio_accessible/api"
+      RecordingStudioAccessible::Api.register_capability_actions!
+    end
+
     initializer "recording_studio_accessible.filter_parameters" do |app|
       next unless app.config.respond_to?(:filter_parameters)
 

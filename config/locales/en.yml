@@ -78,6 +78,8 @@ en:
         not_authorized: "Not authorized to manage access"
         recording_required: "Recording is required"
         actor_required: "Actor is required"
+        actor_or_email: "Give an actor id or an email, not both."
+        inherited_access: "That access comes from %{source_label}. Change it there."
         access_recording_required: "Access recording is required"
         access_recording_invalid: "Access recording is invalid"
         role_invalid: "Role is invalid"

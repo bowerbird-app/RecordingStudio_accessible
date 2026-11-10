@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-11-10
+
+### Added
+- Recording Studio API member actions `list_access`, `grant_access`,
+  `update_access`, and `revoke_access` (`capability: :accessible`,
+  `required_role: :admin`). They wrap the same policy and services as the
+  manage-access UI. Inherited grants appear in `list_access` and cannot be
+  updated or revoked. An email grant uses `invite_access`.
+- `RecordingStudioAccessible.update_access` and `revoke_access` facades next
+  to `grant_access`.
+
+### Upgrade notes
+- Additive. The gem does not depend on Recording Studio API. Actions register
+  only when that gem is loaded. Current RS_API still needs each type API to
+  list the actions in `capability_actions`. A later RS_API release may enable
+  them for types that already declare `:accessible`.
+- `RecordingStudio::Access` is not an API resource. List rows name the actor
+  and the source recording only.
+
 ## [0.24.2] - 2026-11-05
 
 ### Changed

@@ -126,6 +126,12 @@ class EngineTest < Minitest::Test
     assert_equal "recording_studio.load_shipped_english", initializer.before
   end
 
+  def test_api_action_initializer_runs_before_recording_studio_api_after_initialize
+    initializer = find_initializer("recording_studio_accessible.register_recording_studio_api_actions")
+    refute_nil initializer
+    assert_equal "recording_studio_api.after_initialize", initializer.before
+  end
+
   private
 
   def find_initializer(name)

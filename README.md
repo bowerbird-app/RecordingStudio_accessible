@@ -11,6 +11,9 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 - optional per-action audiences (`public`, `signed_in`, `granted`, plus `register_audience`) with workspace limits and per-recording rules
 - `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, and named-action checks
 - a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
+- Recording Studio API member actions (`list_access`, `grant_access`,
+  `update_access`, `revoke_access`) that wrap the same grant path, when
+  `recording_studio_api` is loaded
 - `RecordingStudioAccessible::ControllerAuth` for sibling addon engines that share authenticate / authorize / current-root helpers
 - install and migration generators for host apps
 - a dummy Rails app that demonstrates the addon mounted separately from RecordingStudio
@@ -1180,6 +1183,47 @@ count stays visible. A host layout must render `:page_nav_right`.
 `AccessInvitation` records pending intent for an email address. `RecordingStudio::Access` records authorization for a persisted actor. `authorized?` and `role_for` read access grants only.
 
 `invite_access` calls `grant_access` when the email already belongs to an actor. Otherwise it stores one unclosed `AccessInvitation` for that recording and email. Unclosed means not accepted and not revoked. An expired invitation stays in that slot, and a later invite refreshes the same row instead of inserting another one. After the invited person authenticates, `accept_access_invitation` calls `grant_access` and stamps the invitation accepted. `revoke_access_invitation` withdraws a pending invitation and leaves any access grant alone.
+
+### Access management over Recording Studio API
+
+The same manage-access path is available as member capability actions when
+Recording Studio API is loaded. Accessible registers them from an engine
+initializer (`before: "recording_studio_api.after_initialize"`). It does not
+add a runtime gemspec dependency on `recording_studio_api`.
+
+| Action | Inputs | Result |
+| --- | --- | --- |
+| `list_access` | none | `{ grants: [...] }` with actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role` |
+| `grant_access` | `actor_id` or `email`, `role`, optional `actor_type` | granted row, or `{ invited: true, email, role, notice }` |
+| `update_access` | `actor_id`, `role`, optional `actor_type` | updated direct grant |
+| `revoke_access` | `actor_id`, optional `actor_type` | `{ revoked: true, actor }` |
+
+Each action is `capability: :accessible`, `required_role: :admin`, member
+scope. Handlers call `AccessManagementPolicy` and the Grant / Invite / Update /
+Revoke services, so RoleCeiling, valid roles, shared-root refusal, and Access
+child compatibility apply as they do in the UI. Inherited rows are read-only.
+The error names the source recording to change instead.
+
+Current Recording Studio API does not auto-enable capability actions from the
+`:accessible` mixin. List them on each type API:
+
+```ruby
+RecordingStudioApi.register_recordable_type_api(
+  "Workspace",
+  operations: %i[index show create update destroy],
+  capability_actions: %i[list_access grant_access update_access revoke_access],
+  serializer: ->(workspace, **) { { name: workspace.name } },
+  output_keys: %i[name]
+)
+```
+
+A later RS_API release may enable these actions for types that already declare
+`:accessible`. Until then, the type's `capability_actions` list is what makes
+them callable and visible to MCP's generic `capability_action` tool.
+
+Do not register `RecordingStudio::Access` as an API resource. Callers address
+people through `actor_id` / `email` on the workspace, folder, press kit, or
+other recording they already expose.
 
 By default, the new-access form resolves the email with `access_management_actor_email_resolver`. A matching actor is granted immediately. An unknown email returns `MissingActorResolution.unresolved`, and the access controller calls `invite_access`. A host handler that returns `:invited` has already finished its own hand-off. The addon stores nothing in that case.
 
