@@ -30,6 +30,7 @@ module RecordingStudioAccessible
           responses: {
             "200" => { description: "Access granted or invitation stored." },
             "403" => { description: "Not allowed to manage access." },
+            "404" => { description: "Direct access is not enabled for this recording." },
             "422" => { description: "Grant request is invalid." }
           }
         }
@@ -47,6 +48,7 @@ module RecordingStudioAccessible
           responses: {
             "200" => { description: "Direct grant updated." },
             "403" => { description: "Not allowed to manage access." },
+            "404" => { description: "Direct access is not enabled for this recording." },
             "422" => { description: "Update request is invalid." }
           }
         }
@@ -63,6 +65,7 @@ module RecordingStudioAccessible
           responses: {
             "200" => { description: "Direct grant removed." },
             "403" => { description: "Not allowed to manage access." },
+            "404" => { description: "Direct access is not enabled for this recording." },
             "422" => { description: "Revoke request is invalid." }
           }
         }

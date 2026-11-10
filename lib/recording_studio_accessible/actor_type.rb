@@ -4,7 +4,10 @@ module RecordingStudioAccessible
   module ActorType
     class << self
       def for(actor)
-        for_class(actor.class)
+        base_class = actor.class.base_class
+        return base_class.polymorphic_name if base_class.respond_to?(:polymorphic_name)
+
+        base_class.name
       end
 
       def for_class(klass)

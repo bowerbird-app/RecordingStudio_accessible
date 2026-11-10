@@ -38,10 +38,10 @@ class AccessApiActionsRequestTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
   end
 
-  test "cross-root list_access is denied through the dispatcher" do
+  test "cross-root list_access is 404 through the dispatcher" do
     post_access_action(@other_root, :list_access, token_for(@admin_access, "Cross-root list"))
 
-    assert_includes [403, 404], response.status
+    assert_response :not_found
   end
 
   test "admin grant is 200 and editor grant is 403 through the dispatcher" do
@@ -75,7 +75,7 @@ class AccessApiActionsRequestTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
   end
 
-  test "cross-root grant is denied through the dispatcher" do
+  test "cross-root grant is 404 through the dispatcher" do
     post_access_action(
       @other_root,
       :grant_access,
@@ -83,8 +83,93 @@ class AccessApiActionsRequestTest < ActionDispatch::IntegrationTest
       params: { email: "cross-root-grant@example.com", role: "view" }
     )
 
-    assert_includes [403, 404], response.status
+    assert_response :not_found
     refute RecordingStudioAccessible::AccessInvitation.exists?(email: "cross-root-grant@example.com")
+  end
+
+  test "admin update_access is 200 through the dispatcher" do
+    post_access_action(
+      @root,
+      :update_access,
+      token_for(@admin_access, "Admin update"),
+      params: { actor_id: @editor.id.to_s, actor_type: "User", role: "view" }
+    )
+
+    assert_response :success
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: @editor, recording: @root)
+  end
+
+  test "editor and viewer update_access are 403 through the dispatcher" do
+    post_access_action(
+      @root,
+      :update_access,
+      token_for(@editor_access, "Editor update"),
+      params: { actor_id: @viewer.id.to_s, actor_type: "User", role: "view" }
+    )
+    assert_response :forbidden
+
+    post_access_action(
+      @root,
+      :update_access,
+      token_for(@viewer_access, "Viewer update"),
+      params: { actor_id: @editor.id.to_s, actor_type: "User", role: "view" }
+    )
+    assert_response :forbidden
+  end
+
+  test "cross-root update_access is 404 through the dispatcher" do
+    post_access_action(
+      @other_root,
+      :update_access,
+      token_for(@admin_access, "Cross-root update"),
+      params: { actor_id: @other_admin.id.to_s, actor_type: "User", role: "view" }
+    )
+
+    assert_response :not_found
+  end
+
+  test "admin revoke_access is 200 through the dispatcher" do
+    invitee = create_user("api-request-revokee@example.com")
+    create_direct_access_recording(actor: invitee, role: :view, parent_recording: @root)
+
+    post_access_action(
+      @root,
+      :revoke_access,
+      token_for(@admin_access, "Admin revoke"),
+      params: { actor_id: invitee.id.to_s, actor_type: "User" }
+    )
+
+    assert_response :success
+    refute RecordingStudioAccessible.authorized?(actor: invitee, recording: @root, role: :view)
+  end
+
+  test "editor and viewer revoke_access are 403 through the dispatcher" do
+    post_access_action(
+      @root,
+      :revoke_access,
+      token_for(@editor_access, "Editor revoke"),
+      params: { actor_id: @viewer.id.to_s, actor_type: "User" }
+    )
+    assert_response :forbidden
+
+    post_access_action(
+      @root,
+      :revoke_access,
+      token_for(@viewer_access, "Viewer revoke"),
+      params: { actor_id: @editor.id.to_s, actor_type: "User" }
+    )
+    assert_response :forbidden
+  end
+
+  test "cross-root revoke_access is 404 through the dispatcher" do
+    post_access_action(
+      @other_root,
+      :revoke_access,
+      token_for(@admin_access, "Cross-root revoke"),
+      params: { actor_id: @other_admin.id.to_s, actor_type: "User" }
+    )
+
+    assert_response :not_found
   end
 
   private

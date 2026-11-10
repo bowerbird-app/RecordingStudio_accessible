@@ -192,6 +192,19 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     assert RecordingStudioAccessible.authorized?(actor: @editor, recording: @folder, role: :edit)
   end
 
+  test "shared root list_access returns not found" do
+    message_root_recording = create_root_recording(MessageRoot.create!(name: "API Shared List"))
+    previous = RecordingStudioAccessible.configuration.access_management_authorizer
+    RecordingStudioAccessible.configuration.access_management_authorizer = ->(**) { true }
+
+    error = assert_raises(not_found_error_class) do
+      RecordingStudioAccessible::Api::ListAccess.call(admin_context(message_root_recording))
+    end
+    assert_equal "Direct access is not enabled for this recording", error.message
+  ensure
+    RecordingStudioAccessible.configuration.access_management_authorizer = previous
+  end
+
   test "shared root cannot be a grant target" do
     message_root_recording = create_root_recording(MessageRoot.create!(name: "API Shared Messages"))
     previous = RecordingStudioAccessible.configuration.access_management_authorizer

@@ -940,7 +940,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.2...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.25.0...HEAD
+[0.25.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.2...v0.25.0
 [0.24.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.1...v0.24.2
 [0.24.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.0...v0.24.1
 [0.24.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.23.1...v0.24.0

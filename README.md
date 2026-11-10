@@ -956,6 +956,19 @@ RecordingStudioAccessible.grant_access(
   role: :view,
   manager_actor: current_actor
 )
+
+RecordingStudioAccessible.update_access(
+  recording: recording,
+  access_recording: access_recording,
+  role: :edit,
+  manager_actor: current_actor
+)
+
+RecordingStudioAccessible.revoke_access(
+  recording: recording,
+  access_recording: access_recording,
+  manager_actor: current_actor
+)
 ```
 
 `actor` is the polymorphic object receiving access. It can be a user,
