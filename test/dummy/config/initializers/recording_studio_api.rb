@@ -12,6 +12,15 @@ RecordingStudioApi.configure do |config|
   config.rate_limit_fail_closed = false if config.respond_to?(:rate_limit_fail_closed=)
   config.api_management_authorization_required = false
   config.documentation_enabled = false if config.respond_to?(:documentation_enabled=)
+  # Dummy has no AdminRoot. Keep this empty so AdminApi's declaration does not
+  # name an unregistered parent when CI eager-loads the model.
+  config.admin_root_recordable_type_names = []
+end
+
+# AdminApi always declares recording_studio_recordable. The API engine only
+# auto-registers it when a configured admin-root type constantizes.
+if defined?(RecordingStudio)
+  RecordingStudio.register_recordable_type("RecordingStudioApi::AdminApi")
 end
 
 ACCESS_MANAGEMENT_ACTIONS = %i[list_access grant_access update_access revoke_access].freeze
