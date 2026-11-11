@@ -98,7 +98,7 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes @response.body, "layout-admin@example.com"
-    assert_includes @response.body, "Who"
+    assert_includes @response.body, "fp-list-item-title"
     refute_includes @response.body, "People with access"
     refute_match(/<html/i, @response.body)
     assert_select "body[data-recording-studio-default-layout]", count: 0

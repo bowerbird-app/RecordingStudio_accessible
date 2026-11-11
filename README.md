@@ -439,7 +439,7 @@ No migration.
 2. Leave `config.layout` unset to use `RecordingStudio.configuration.layout`, then `recording_studio/default_layout`. Set the Accessible layout only when these screens should differ from the core layout. A callable is `->(controller:) { "name" }` and returns a layout name, `nil`, or `false`.
 3. Delete host copies of `recording_studio_accessible/blank` and `recording_studio_accessible/access_request`. Page titles belong in `content_for :title` and `content_for :subtitle`. Close and back belong in `flat_pack_page_nav`. `FlatPack::Card` no longer accepts `style:`.
 4. Access-request modal frames still have no document layout. A denied actor still fails closed before a layout callable runs.
-5. Manage access shows `+ Access` and `Access requests` in the top-right slot. A host layout must render `:page_nav_right`. Pending access requests on that recording add a count on `Access requests`.
+5. Manage access shows `+ Access` and `Access requests` in the top-right ButtonGroup overflow. A host layout must render `:page_nav_right`. Pending access requests on that recording add a count on `Access requests`.
 
 #### Upgrading to 0.21.0
 
@@ -1205,10 +1205,17 @@ That generator:
 - copies overrideable share-email templates to `app/views/recording_studio_accessible/access_granted_mailer/` only when they are still missing
 - optionally creates a host helper with `recording_access_management_path` and `recording_access_management_link`
 
-Manage access puts `Access requests` (and its pending-count badge) in the
-top-right outlined ButtonGroup row at every width. `+ Access` sits in that
-group's overflow menu. The group does not collapse to a phone menu, so the
-count stays visible. A host layout must render `:page_nav_right`.
+Manage access lists each person as a Flatpack list item: name as the title,
+role and email on one wrapping subtitle, and the access actions dropdown as
+the trailing control. Inherited grants use the same list, with the source
+on the subtitle. Screenshots: `docs/screenshots/manage-access-index-390.png`
+(phone), `docs/screenshots/manage-access-index-390-actions.png` (actions
+menu open), and `docs/screenshots/manage-access-index-1280.png` (desktop).
+
+`+ Access` and `Access requests` sit in the top-right outlined ButtonGroup
+overflow at every width. A pending count is appended to the Access requests
+label. The group does not use `collapse: :menu`. A host layout must render
+`:page_nav_right`.
 
 `AccessInvitation` records pending intent for an email address. `RecordingStudio::Access` records authorization for a persisted actor. `authorized?` and `role_for` read access grants only.
 

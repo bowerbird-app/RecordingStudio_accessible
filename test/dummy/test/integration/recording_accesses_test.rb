@@ -45,7 +45,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes add_access["class"].to_s, "fp-menu-row"
     assert_nil add_access.at_css("svg")
     assert_equal "Access requests", requests.text.squish
-    assert_equal "default", requests["data-fp-style"]
+    assert_includes requests["class"].to_s, "fp-menu-row"
     assert_nil requests.at_css('[class*="badge-primary"]')
     assert_nil top_nav_right.at_css(".fp-button-group-menu")
     refute_nil top_nav_right.at_css(".fp-button-group")
@@ -57,10 +57,10 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     refute_includes @response.body, "People with access"
     refute_includes @response.body, "No direct access yet"
     refute_includes @response.body, "Direct access entries granted on this recording"
-    assert_includes @response.body, "<table"
-    assert_includes @response.body, "Who"
+    refute_includes @response.body, "<table"
+    refute_includes @response.body, ">Who<"
     refute_includes @response.body, ">Type<"
-    assert_includes @response.body, "Role"
+    refute_includes @response.body, ">Role<"
     assert_includes @response.body, "Edit"
     assert_includes @response.body, "flat-pack--button-dropdown"
     assert_includes @response.body, 'aria-label="Access actions"'
@@ -71,13 +71,15 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     expected_roles = { @admin => "Admin", @editor => "Edit", @viewer => "View" }
     expected_roles.each do |person, role|
       row = people_access_row(person.email)
-      assert_equal 3, row.css("td").size
-      assert_includes row.css("td")[0].text, person.email
-      assert_includes row.css("td")[1].text, role
+      assert_equal "li", row.name
+      assert_includes row.at_css(".fp-list-item-title").text, person.email
+      subtitle = row.at_css(".fp-list-item-subtitle").text
+      assert_includes subtitle, role
+      assert_includes subtitle, person.email
     end
 
     remove_form = Nokogiri::HTML(@response.body).at_css(%(form[id="remove-access-form-#{editor_access_recording_id}"]))
-    assert_equal "td", remove_form.parent.name
+    assert_equal "span", remove_form.parent.name
 
     assert_includes @response.body, %Q(form="remove-access-form-#{editor_access_recording_id}")
     assert_includes @response.body, ">Remove access<"
@@ -100,9 +102,12 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "No direct access yet"
     refute_includes @response.body, "People with access"
     assert_includes @response.body, "Other people with access"
-    assert_includes @response.body, "Actions"
+    refute_includes @response.body, ">Actions<"
     assert_includes @response.body, 'aria-label="Access point actions"'
     assert_includes @response.body, "Manage access"
+    inherited = people_access_row(@admin.email)
+    assert_equal "li", inherited.name
+    assert_includes inherited.at_css(".fp-list-item-subtitle").text, "Integration Workspace"
 
     expected_folder_index_path = recording_studio_accessible.recording_accesses_path(@folder_recording, back_url: "/", anchor_url: "/")
     expected_manage_access_path = recording_studio_accessible.recording_accesses_path(
@@ -191,17 +196,18 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_equal "+ Access", add_access.text.squish
     assert_nil top_nav_right.at_css(".fp-button-group-menu")
     assert_manage_access_overflow_split(add_access: add_access, requests: requests)
-    badge = requests.at_css('[class*="badge-primary"]')
-    assert_equal "1", badge.text.squish
+    assert_equal "Access requests 1", requests.text.squish
+    assert_nil requests.at_css('[class*="badge-primary"]')
 
     get recording_accesses_path
 
     assert_response :success
     folder_requests = top_nav_action("Access requests")
-    assert_equal "1", folder_requests.at_css('[class*="badge-primary"]').text.squish
+    assert_equal "Access requests 1", folder_requests.text.squish
+    assert_nil folder_requests.at_css('[class*="badge-primary"]')
   end
 
-  test "manage access keeps access requests in the row and parks plus access in overflow" do
+  test "manage access parks access requests and plus access in overflow" do
     sign_in @admin
 
     get root_recording_accesses_path
@@ -210,7 +216,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     add_access = top_nav_action("+ Access")
     requests = top_nav_action("Access requests")
     assert_manage_access_overflow_split(add_access: add_access, requests: requests)
-    refute_includes requests["class"].to_s, "fp-menu-row"
+    assert_includes requests["class"].to_s, "fp-menu-row"
     assert_includes add_access["href"], recording_studio_accessible.new_recording_access_path(@root_recording)
     assert_includes requests["href"], recording_studio_accessible.recording_access_requests_path(@root_recording)
   end
@@ -384,9 +390,11 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "missing@example.com"
     assert_includes @response.body, "Pending invitation"
     invitation_row = people_access_row("missing@example.com")
-    assert_includes invitation_row.css("td")[0].text, "missing@example.com"
-    assert_includes invitation_row.css("td")[0].text, "Pending invitation"
-    assert_includes invitation_row.css("td")[1].text, "View"
+    assert_includes invitation_row.at_css(".fp-list-item-title").text, "missing@example.com"
+    subtitle = invitation_row.at_css(".fp-list-item-subtitle").text
+    assert_includes subtitle, "missing@example.com"
+    assert_includes subtitle, "Pending invitation"
+    assert_includes subtitle, "View"
     assert_includes @response.body, "Resend"
     assert_includes @response.body, "Cancel invitation"
     refute_includes @response.body, "Access granted to missing@example.com"
@@ -636,13 +644,16 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     }.map { |link| link.text.squish }
 
     assert_includes overflow_labels, add_access.text.squish
-    refute_includes overflow_labels, requests.text.squish
-    assert row_labels.any? { |label| label.include?("Access requests") },
-           "expected Access requests in the ButtonGroup row"
+    assert overflow_labels.any? { |label| label.include?("Access requests") },
+           "expected Access requests in the ButtonGroup overflow"
+    refute row_labels.any? { |label| label.include?("Access requests") }
+    refute_includes row_labels, add_access.text.squish
+    assert_includes add_access["class"].to_s, "fp-menu-row"
+    assert_includes requests["class"].to_s, "fp-menu-row"
   end
 
   def people_access_row(email)
-    Nokogiri::HTML(@response.body).css("tr").find { |row| row.text.include?(email) } ||
+    Nokogiri::HTML(@response.body).css("li[role='listitem']").find { |row| row.text.include?(email) } ||
       flunk("expected a people-with-access row for #{email}")
   end
 end

@@ -117,25 +117,59 @@ class RecordingAccessesHelperTest < Minitest::Test
     end
   end
 
-  def test_access_person_cell_renders_only_the_actor_label
-    html = ViewContext.new.access_person_cell(actor_label: "Ada Lovelace", actor_type: "User")
+  def test_access_person_title_uses_the_actor_label
+    title = ViewContext.new.access_person_title(actor_label: "Ada Lovelace", email: "ada@example.com")
 
-    assert_equal "Ada Lovelace", html
-    refute_includes html, "<span>chip</span>"
+    assert_equal "Ada Lovelace", title
   end
 
-  def test_access_actor_type_cell_renders_plain_text
-    html = ViewContext.new.access_actor_type_cell(actor_type: "User")
+  def test_access_person_title_uses_the_invitation_email
+    title = ViewContext.new.access_person_title(kind: :invitation, email: "ada@example.com")
 
-    assert_equal "User", html
-    refute_includes html, "<span>chip</span>"
-    refute_includes html, "<span>badge</span>"
+    assert_equal "ada@example.com", title
   end
 
-  def test_access_actor_type_cell_is_blank_for_invitations
-    html = ViewContext.new.access_actor_type_cell(kind: :invitation, email: "ada@example.com")
+  def test_access_person_subtitle_joins_role_and_email
+    subtitle = ViewContext.new.access_person_subtitle(
+      {
+        actor_label: "Ada Lovelace",
+        email: "ada@example.com",
+        direct_role: :admin
+      }
+    )
 
-    assert_equal "", html
+    assert_equal "Admin · ada@example.com", subtitle
+  end
+
+  def test_access_person_subtitle_includes_pending_invitation_copy
+    subtitle = ViewContext.new.access_person_subtitle(
+      {
+        kind: :invitation,
+        email: "ada@example.com",
+        role: :view,
+        expired: true
+      }
+    )
+
+    assert_includes subtitle, "View"
+    assert_includes subtitle, "ada@example.com"
+    assert_includes subtitle, "Pending invitation"
+    assert_includes subtitle, ViewContext.new.accessible_t("manage.expired")
+  end
+
+  def test_access_person_subtitle_includes_inherited_source_and_actor_type
+    subtitle = ViewContext.new.access_person_subtitle(
+      {
+        actor_label: "Ada Lovelace",
+        email: "ada@example.com",
+        source_role: :edit,
+        source_label: "Integration Workspace",
+        actor_type: "User"
+      },
+      include_actor_type: true
+    )
+
+    assert_equal "Edit · ada@example.com · User · Integration Workspace", subtitle
   end
 
   def test_show_access_actor_type_column_returns_false_for_single_actor_type
@@ -154,14 +188,6 @@ class RecordingAccessesHelperTest < Minitest::Test
     )
 
     assert visible
-  end
-
-  def test_access_role_cell_renders_plain_text
-    html = ViewContext.new.access_role_cell(direct_role: :admin)
-
-    assert_equal "Admin", html
-    refute_includes html, "<span>chip</span>"
-    refute_includes html, "<span>badge</span>"
   end
 
   def test_access_actions_cell_renders_dropdown_with_edit_and_remove_access_menu_items

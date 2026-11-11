@@ -60,26 +60,30 @@ module RecordingStudioAccessible
       actor_types.size > 1
     end
 
-    def access_person_cell(row)
-      row[:actor_label]
+    def render_access_people_list(recording, rows, include_actor_type: false)
+      render FlatPack::List::Component.new(layout: :items, divider: true, class: "min-w-0") do
+        safe_join(
+          Array(rows).map do |row|
+            render_access_person_item(recording, row, include_actor_type: include_actor_type)
+          end
+        )
+      end
     end
 
-    def access_actor_type_cell(row)
-      return "" if row[:kind] == :invitation
+    def access_person_title(row)
+      return row[:email].to_s if row[:kind] == :invitation
 
-      row[:actor_type]
+      row[:actor_label].to_s
     end
 
-    def access_role_cell(row)
-      access_role_label(row[:direct_role])
-    end
-
-    def inherited_access_source_cell(row)
-      row[:source_label]
-    end
-
-    def inherited_access_source_role_cell(row)
-      access_role_label(row[:source_role])
+    def access_person_subtitle(row, include_actor_type: false)
+      [
+        access_role_label(access_person_role(row)),
+        access_person_email(row),
+        access_person_type_label(row, include_actor_type: include_actor_type),
+        row[:source_label].presence,
+        *access_person_invitation_labels(row)
+      ].compact.join(" · ")
     end
 
     def inherited_access_actions_cell(recording, row)
@@ -118,16 +122,6 @@ module RecordingStudioAccessible
         }
       end
       rows
-    end
-
-    def pending_invitation_person_cell(row)
-      parts = [row[:email], accessible_t("manage.pending_invitation")]
-      parts << accessible_t("manage.expired") if row[:expired]
-      safe_join(parts, " ")
-    end
-
-    def pending_invitation_role_cell(row)
-      access_role_label(row[:role])
     end
 
     def pending_invitation_actions_cell(recording, row)
@@ -187,6 +181,57 @@ module RecordingStudioAccessible
     end
 
     private
+
+    def render_access_person_item(recording, row, include_actor_type:)
+      render FlatPack::List::Item.new(
+        title: access_person_title(row),
+        trailing: access_person_trailing(recording, row),
+        align: :center
+      ) do |item|
+        item.with_subtitle do
+          render FlatPack::Text::Component.new(
+            text: access_person_subtitle(row, include_actor_type: include_actor_type),
+            size: :sm,
+            style: :muted,
+            as: :p,
+            class: "fp-list-item-subtitle mt-0.5 break-all"
+          )
+        end
+      end
+    end
+
+    def access_person_trailing(recording, row)
+      case row[:kind]
+      when :invitation
+        pending_invitation_actions_cell(recording, row)
+      when :grant
+        access_actions_cell(recording, row)
+      else
+        inherited_access_actions_cell(recording, row)
+      end
+    end
+
+    def access_person_email(row)
+      row[:email].to_s.strip.presence
+    end
+
+    def access_person_role(row)
+      row[:direct_role] || row[:role] || row[:source_role]
+    end
+
+    def access_person_type_label(row, include_actor_type:)
+      return if !include_actor_type || row[:kind] == :invitation
+
+      row[:actor_type].to_s.strip.presence
+    end
+
+    def access_person_invitation_labels(row)
+      return [] unless row[:kind] == :invitation
+
+      labels = [accessible_t("manage.pending_invitation")]
+      labels << accessible_t("manage.expired") if row[:expired]
+      labels
+    end
 
     def invitation_actions_dropdown(resend_form_id, cancel_form_id)
       render FlatPack::Button::Dropdown::Component.new(

@@ -250,6 +250,7 @@ module RecordingStudioAccessible
           id: access_recording.id,
           actor_label: RecordingStudioAccessible.configuration.actor_label_for(actor),
           actor_type: actor.class.name.demodulize,
+          email: actor_email_for(actor),
           direct_role: access_recording.recordable.role,
           effective_role: effective_role_for(actor)
         }
@@ -272,6 +273,7 @@ module RecordingStudioAccessible
         rows_by_actor[actor_key] = {
           actor_label: RecordingStudioAccessible.configuration.actor_label_for(actor),
           actor_type: actor.class.name.demodulize,
+          email: actor_email_for(actor),
           source_label: recordable_label_for(access_recording.parent_recording&.recordable),
           source_recording: access_recording.parent_recording,
           source_role: access_recording.recordable.role,
@@ -344,6 +346,12 @@ module RecordingStudioAccessible
         back_url: back_url,
         anchor_url: anchor_url
       }
+    end
+
+    def actor_email_for(actor)
+      return unless actor.respond_to?(:email)
+
+      actor.email.to_s.squish.presence
     end
 
     def host_root_path
