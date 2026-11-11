@@ -149,8 +149,7 @@ RecordingStudioAccessible.configure do |config|
   #
   #   raise RecordingStudioAccessible::GrantRefused.new(
   #     "You've filled every seat. Free one up, or pick a larger plan.",
-  #     cta_label: "See options",
-  #     cta_path: "/billing"
+  #     redirect_to: "/plans"
   #   )
   # end
 

@@ -1022,9 +1022,11 @@ The callable receives one frozen `GrantContext` (`actor`, `actor_type`,
 `actor_id`, `recording`, `role`, `previous_role`, `source`, `granted_by`).
 `source` is `:grant`, `:role_change`, `:invite`, `:invite_acceptance`,
 `:access_request`, or `:bootstrap`. Return to allow. Raise
-`RecordingStudioAccessible::GrantRefused` to refuse. Pass an optional
-`cta_label` and `cta_path` for the manage-access alert button. Other
-exceptions are not converted into a refusal.
+`RecordingStudioAccessible::GrantRefused` to refuse. Pass optional
+`redirect_to` (a host path or URL such as `/plans`). Manage access then
+sends the manager to that page with the message in `flash[:alert]`. Omit
+it and the current page shows the alert only. Other exceptions are not
+converted into a refusal.
 
 The hook runs inside `AccessGrantWriter#upsert_access_recording!`, in the
 write transaction, after the recording lock and after the built-in checks
@@ -1040,9 +1042,11 @@ invite can fail early. Acceptance is the authoritative write.
 own lock. It does not call `before_access_grant`. A new workspace's first
 owner is never blocked by this hook.
 
-Manage access shows the refusal as an alert plus an optional FlatPack
-button. Screenshots: `docs/screenshots/grant-refused-manage-access-390.png`
-and `docs/screenshots/grant-refused-manage-access-1280.png`.
+The manage-access screens do not show a gate button. Screenshots of Share
+access with no gate UI: `docs/screenshots/grant-refused-share-390.png` and
+`docs/screenshots/grant-refused-share-1280.png`. The dummy `/plans` flash:
+`docs/screenshots/grant-refused-plans-390.png` and
+`docs/screenshots/grant-refused-plans-1280.png`.
 
 Default is `nil`. Existing hosts keep current behaviour.
 
@@ -1060,8 +1064,7 @@ RecordingStudioAccessible.configure do |config|
 
     raise RecordingStudioAccessible::GrantRefused.new(
       "You've filled every seat. Free one up, or pick a larger plan.",
-      cta_label: "See options",
-      cta_path: "/billing"
+      redirect_to: "/plans"
     )
   end
 end

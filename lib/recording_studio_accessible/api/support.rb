@@ -74,7 +74,9 @@ module RecordingStudioAccessible
         handler.ensure_access_children!
         handler.call
       rescue ::RecordingStudioAccessible::GrantRefused => e
-        raise handler.send(:invalid_input_error, e.message, details: [e.message])
+        details = [e.message]
+        details << { redirect_to: e.redirect_to } if e.redirect_to.present?
+        raise handler.send(:invalid_input_error, e.message, details: details)
       end
 
       def initialize(context)

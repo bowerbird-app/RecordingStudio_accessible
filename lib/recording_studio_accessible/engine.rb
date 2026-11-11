@@ -3,7 +3,6 @@
 require_relative "../../app/helpers/recording_studio_accessible/copy_helper"
 require_relative "../../app/helpers/recording_studio_accessible/avatars_helper"
 require_relative "../../app/helpers/recording_studio_accessible/access_requests_helper"
-require_relative "../../app/helpers/recording_studio_accessible/grant_refused_helper"
 
 module RecordingStudioAccessible
   class Engine < ::Rails::Engine
@@ -20,7 +19,6 @@ module RecordingStudioAccessible
         include RecordingStudioAccessible::CopyHelper
         include RecordingStudioAccessible::AvatarsHelper
         include RecordingStudioAccessible::AccessRequestsHelper
-        include RecordingStudioAccessible::GrantRefusedHelper
       end
     end
 

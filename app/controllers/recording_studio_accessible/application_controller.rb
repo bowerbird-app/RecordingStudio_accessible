@@ -9,9 +9,10 @@ module RecordingStudioAccessible
     private
 
     def refuse_access_grant(error, template: nil, location: nil)
-      @grant_refused = error
-      store_grant_refused_cta(error, now: template.present?)
-      if template
+      target = error.redirect_to
+      if target.present?
+        redirect_to(target, alert: error.message, allow_other_host: absolute_http_url?(target))
+      elsif template
         flash.now[:alert] = error.message
         render template, status: :unprocessable_entity
       else
@@ -19,10 +20,8 @@ module RecordingStudioAccessible
       end
     end
 
-    def store_grant_refused_cta(error, now:)
-      bag = now ? flash.now : flash
-      bag[:grant_refused_cta_path] = error.cta_path
-      bag[:grant_refused_cta_label] = error.cta_label
+    def absolute_http_url?(target)
+      target.to_s.match?(%r{\Ahttps?://}i)
     end
   end
 end

@@ -107,7 +107,6 @@ fr:
         access_removed: "Accès retiré."
         invitation_already_accepted: "Invitation déjà acceptée."
         sign_in_to_accept: "Connectez-vous pour accepter cette invitation"
-        grant_refused_cta: "Voir les options"
       errors:
         invitation_not_found: "Invitation introuvable"
         invitation_wrong_email: "Cette invitation a été envoyée à une autre adresse e-mail"

@@ -59,8 +59,7 @@ class BeforeAccessGrantTest < ActiveSupport::TestCase
       end
 
       assert_equal "You've filled every seat.", error.message
-      assert_equal "See options", error.cta_label
-      assert_equal "/billing", error.cta_path
+      assert_equal "/plans", error.redirect_to
     end
     refute RecordingStudioAccessible.authorized?(actor: @person, recording: @recording, role: :view)
   end
@@ -266,8 +265,7 @@ class BeforeAccessGrantTest < ActiveSupport::TestCase
       @seen << context
       raise RecordingStudioAccessible::GrantRefused.new(
         message,
-        cta_label: "See options",
-        cta_path: "/billing"
+        redirect_to: "/plans"
       )
     end
   end
