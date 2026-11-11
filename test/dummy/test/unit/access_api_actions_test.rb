@@ -163,6 +163,45 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     RecordingStudioAccessible.configuration.access_management_authorizer = previous
   end
 
+  test "grant_access refused by the host hook is invalid input not a 500" do
+    previous = RecordingStudioAccessible.configuration.before_access_grant
+    RecordingStudioAccessible.configuration.before_access_grant = lambda do |_context|
+      raise RecordingStudioAccessible::GrantRefused.new("You've filled every seat.")
+    end
+
+    error = assert_raises(invalid_input_error_class) do
+      RecordingStudioAccessible::Api::GrantAccess.call(
+        admin_context(@root, actor_id: @viewer.id.to_s, actor_type: "User", role: "view")
+      )
+    end
+    assert_equal "You've filled every seat.", error.message
+    assert_equal ["You've filled every seat."], error.details
+    refute RecordingStudioAccessible.authorized?(actor: @viewer, recording: @root, role: :view)
+  ensure
+    RecordingStudioAccessible.configuration.before_access_grant = previous
+  end
+
+  test "grant_access refusal includes redirect_to in error details" do
+    previous = RecordingStudioAccessible.configuration.before_access_grant
+    RecordingStudioAccessible.configuration.before_access_grant = lambda do |_context|
+      raise RecordingStudioAccessible::GrantRefused.new(
+        "You've filled every seat.",
+        redirect_to: "/plans"
+      )
+    end
+
+    error = assert_raises(invalid_input_error_class) do
+      RecordingStudioAccessible::Api::GrantAccess.call(
+        admin_context(@root, actor_id: @viewer.id.to_s, actor_type: "User", role: "view")
+      )
+    end
+    assert_equal "You've filled every seat.", error.message
+    assert_includes error.details, { redirect_to: "/plans" }
+    refute RecordingStudioAccessible.authorized?(actor: @viewer, recording: @root, role: :view)
+  ensure
+    RecordingStudioAccessible.configuration.before_access_grant = previous
+  end
+
   test "revoke_access of the last admin is 422 with last_admin copy" do
     error = assert_raises(invalid_input_error_class) do
       RecordingStudioAccessible::Api::RevokeAccess.call(

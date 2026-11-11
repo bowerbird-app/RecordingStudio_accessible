@@ -29,6 +29,8 @@ module RecordingStudioAccessible
         failure(e.message, errors: e.record.errors.full_messages)
       rescue ActiveRecord::RecordNotUnique
         failure(copy("errors.duplicate_access_request"))
+      rescue ::RecordingStudioAccessible::GrantRefused
+        raise
       rescue StandardError => e
         unexpected_failure(e)
       end
@@ -99,7 +101,7 @@ module RecordingStudioAccessible
       end
 
       def grant_args
-        { recording: target, actor: snapshot.actor, role: @role, manager_actor: manager }
+        { recording: target, actor: snapshot.actor, role: @role, manager_actor: manager, source: :access_request }
       end
 
       def revise_request!

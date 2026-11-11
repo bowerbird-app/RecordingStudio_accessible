@@ -6,13 +6,14 @@ module RecordingStudioAccessible
       include AccessRecordLifecycle
       include AccessGrantWriter
 
-      def initialize(recording:, actor:, role:, manager_actor: nil, controller: nil, depends_on: nil)
+      def initialize(recording:, actor:, role:, manager_actor: nil, controller: nil, depends_on: nil, source: :grant)
         @recording = recording
         @actor = actor
         @role = role.to_s.strip
         @manager_actor = manager_actor
         @controller = controller
         @depends_on = depends_on
+        @grant_source = source.to_s.to_sym
       end
 
       private
@@ -27,6 +28,8 @@ module RecordingStudioAccessible
         success(access_recording)
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
+      rescue ::RecordingStudioAccessible::GrantRefused
+        raise
       rescue StandardError => e
         unexpected_failure(e)
       end

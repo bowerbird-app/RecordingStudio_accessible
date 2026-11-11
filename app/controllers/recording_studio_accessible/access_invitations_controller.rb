@@ -23,6 +23,9 @@ module RecordingStudioAccessible
       return render_sign_in_required if actor.blank?
 
       redirect_or_render_accept(actor)
+    rescue RecordingStudioAccessible::GrantRefused => e
+      assign_show_state
+      refuse_access_grant(e, template: :show)
     end
 
     private
