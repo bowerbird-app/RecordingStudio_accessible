@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-11-11
+
+### Changed
+- Default actor labels prefer a person's full name. `actor_label_for`
+  (manage-access rows, API `list_access` `actor.label`, and other callers)
+  joins `first_name` and `last_name` (blank parts skipped), then the same
+  join on `RecordingStudioUser.profile_for(actor)`, then `name`, then
+  `email`, then `Type #id`. One present part is used on its own. Host
+  `config.access_management_actor_label` still wins.
+- Manage-access list subtitles are the role only. Email is not repeated
+  when the title is a name. Pending, expired, actor type, and inherited
+  source stay on that line.
+- Manage-access list items show a FlatPack avatar in the leading slot.
+  The photo is duck-typed from `avatar` or `image` on the actor, then
+  `RecordingStudioUser.profile_image_recording_for` when Users is loaded.
+  Missing photos and pending invitations use FlatPack's user icon.
+  `config.access_management_actor_avatar` replaces that default.
+
+### Upgrade notes
+- Behaviour change on the default label. People with a first or last name,
+  or a Users profile, now show that name instead of email. Restore
+  email-first labels with
+  `config.access_management_actor_label = ->(actor) { actor.email }`,
+  or keep a host callable that already sets the label.
+- Hosts that copied the 0.27.1 list and joined `Role · email` when the
+  title was a name should drop the email from the subtitle.
+- Hosts that copied the manage-access list should pass `leading:` on
+  each `FlatPack::List::Item` (photo or user icon). Restore a host photo
+  with `config.access_management_actor_avatar`.
+
 ## [0.27.1] - 2026-11-11
 
 ### Changed

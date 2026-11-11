@@ -45,6 +45,7 @@ module RecordingStudioAccessible
         @access_management_actor_scope = method(:default_access_management_actor_scope)
         @access_management_current_actor_resolver = method(:default_access_management_current_actor_resolver)
         @access_management_actor_label = method(:default_access_management_actor_label)
+        @access_management_actor_avatar = method(:default_access_management_actor_avatar)
         @access_management_actor_email_resolver = method(:default_access_management_actor_email_resolver)
         @access_actor_types = nil
       end
@@ -61,20 +62,6 @@ module RecordingStudioAccessible
         return scope.order(:email) if scope.respond_to?(:order) && ::User.column_names.include?("email")
 
         scope
-      end
-
-      def default_access_management_actor_label(actor)
-        return Copy.t("errors.unknown_actor") unless actor
-
-        actor_display_name(actor) || "#{actor.class.name.demodulize} ##{actor.id}"
-      end
-
-      def actor_display_name(actor)
-        if actor.respond_to?(:email)
-          actor.email.to_s.squish.presence
-        elsif actor.respond_to?(:name)
-          actor.name.to_s.squish.presence
-        end
       end
 
       def default_access_management_current_actor_resolver(controller: nil)

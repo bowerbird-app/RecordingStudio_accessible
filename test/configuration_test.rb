@@ -526,9 +526,17 @@ class ConfigurationTest < Minitest::Test
     assert_equal "User with email person@example.com was not found", invalid.error
   end
 
-  def test_default_actor_label_uses_email_name_or_fallback
-    email_actor = Struct.new(:email, :id).new(" person@example.com ", 1)
-    name_actor = Struct.new(:name, :id).new(" Ada ", 2)
+  def test_default_actor_label_prefers_full_name_then_name_then_email
+    full_name_actor = Struct.new(:first_name, :last_name, :name, :email, :id)
+                            .new(" Ada ", " Lovelace ", "Other", "ada@example.com", 1)
+    first_only_actor = Struct.new(:first_name, :last_name, :name, :email, :id)
+                             .new(" Ada ", "  ", "Other", "ada@example.com", 2)
+    last_only_actor = Struct.new(:first_name, :last_name, :name, :email, :id)
+                            .new("  ", " Lovelace ", "Other", "ada@example.com", 3)
+    blank_parts_actor = Struct.new(:first_name, :last_name, :name, :email, :id)
+                              .new("  ", nil, " Ada ", "ada@example.com", 4)
+    name_actor = Struct.new(:name, :email, :id).new(" Ada ", "ada@example.com", 5)
+    email_actor = Struct.new(:email, :id).new(" person@example.com ", 6)
     fallback_class = Class.new do
       attr_reader :id
 
@@ -540,11 +548,92 @@ class ConfigurationTest < Minitest::Test
         @id = id
       end
     end
-    fallback_actor = fallback_class.new(3)
+    fallback_actor = fallback_class.new(7)
 
-    assert_equal "person@example.com", @configuration.actor_label_for(email_actor)
+    assert_equal "Ada Lovelace", @configuration.actor_label_for(full_name_actor)
+    assert_equal "Ada", @configuration.actor_label_for(first_only_actor)
+    assert_equal "Lovelace", @configuration.actor_label_for(last_only_actor)
+    assert_equal "Ada", @configuration.actor_label_for(blank_parts_actor)
     assert_equal "Ada", @configuration.actor_label_for(name_actor)
-    assert_equal "AccountMember #3", @configuration.actor_label_for(fallback_actor)
+    assert_equal "person@example.com", @configuration.actor_label_for(email_actor)
+    assert_equal "AccountMember #7", @configuration.actor_label_for(fallback_actor)
+  end
+
+  def test_default_actor_label_uses_recording_studio_user_profile_full_name
+    actor = Struct.new(:email, :id).new("ada@example.com", 9)
+    profile = Struct.new(:first_name, :last_name).new(" Ada ", " Lovelace ")
+
+    with_recording_studio_user_profile(profile) do
+      assert_equal "Ada Lovelace", @configuration.actor_label_for(actor)
+    end
+  end
+
+  def test_default_actor_label_uses_one_profile_name_part_when_the_other_is_blank
+    actor = Struct.new(:email, :id).new("ada@example.com", 9)
+    first_only = Struct.new(:first_name, :last_name).new(" Ada ", "  ")
+    last_only = Struct.new(:first_name, :last_name).new(nil, " Lovelace ")
+
+    with_recording_studio_user_profile(first_only) do
+      assert_equal "Ada", @configuration.actor_label_for(actor)
+    end
+    with_recording_studio_user_profile(last_only) do
+      assert_equal "Lovelace", @configuration.actor_label_for(actor)
+    end
+  end
+
+  def test_default_actor_label_skips_blank_profile_names
+    actor = Struct.new(:email, :id).new(" ada@example.com ", 9)
+    profile = Struct.new(:first_name, :last_name).new("  ", nil)
+
+    with_recording_studio_user_profile(profile) do
+      assert_equal "ada@example.com", @configuration.actor_label_for(actor)
+    end
+  end
+
+  def test_default_actor_label_does_not_raise_when_readers_fail
+    actor = Object.new
+    actor.define_singleton_method(:first_name) { raise "boom" }
+    actor.define_singleton_method(:last_name) { raise "boom" }
+    actor.define_singleton_method(:name) { "Ada" }
+    actor.define_singleton_method(:id) { 1 }
+
+    assert_equal "Ada", @configuration.actor_label_for(actor)
+  end
+
+  def test_default_actor_avatar_prefers_actor_image
+    actor = Struct.new(:image, :id).new("/photos/ada.png", 1)
+
+    assert_equal "/photos/ada.png", @configuration.actor_avatar_src_for(actor)
+  end
+
+  def test_default_actor_avatar_is_nil_when_the_actor_has_no_image
+    actor = Struct.new(:email, :id).new("ada@example.com", 1)
+
+    assert_nil @configuration.actor_avatar_src_for(actor)
+  end
+
+  def test_default_actor_avatar_uses_users_profile_image_recording
+    actor = Struct.new(:email, :id).new("ada@example.com", 9)
+
+    with_recording_studio_user_profile_image("/photos/profile.png") do
+      assert_equal "/photos/profile.png", @configuration.actor_avatar_src_for(actor)
+    end
+  end
+
+  def test_host_actor_avatar_callable_wins
+    actor = Struct.new(:image, :id).new("/photos/ada.png", 1)
+    @configuration.access_management_actor_avatar = ->(_actor) { "/host.png" }
+
+    assert_equal "/host.png", @configuration.actor_avatar_src_for(actor)
+  end
+
+  def test_default_actor_avatar_does_not_raise_when_readers_fail
+    actor = Object.new
+    actor.define_singleton_method(:avatar) { raise "boom" }
+    actor.define_singleton_method(:image) { raise "boom" }
+    actor.define_singleton_method(:id) { 1 }
+
+    assert_nil @configuration.actor_avatar_src_for(actor)
   end
 
   def test_default_access_granted_notifier_sends_mail_when_actor_has_email
@@ -758,6 +847,29 @@ class ConfigurationTest < Minitest::Test
   end
 
   private
+
+  def with_recording_studio_user_profile(profile, &)
+    with_recording_studio_user_singleton(:profile_for, ->(_actor) { profile }, &)
+  end
+
+  def with_recording_studio_user_profile_image(recording, &)
+    with_recording_studio_user_singleton(:profile_image_recording_for, ->(_actor) { recording }, &)
+  end
+
+  def with_recording_studio_user_singleton(method_name, implementation)
+    created = !defined?(::RecordingStudioUser)
+    original = nil
+    Object.const_set(:RecordingStudioUser, Module.new) if created
+    original = RecordingStudioUser.method(method_name) if RecordingStudioUser.respond_to?(method_name)
+    RecordingStudioUser.define_singleton_method(method_name, &implementation)
+    yield
+  ensure
+    if created && defined?(::RecordingStudioUser)
+      Object.send(:remove_const, :RecordingStudioUser)
+    elsif original
+      RecordingStudioUser.define_singleton_method(method_name, original)
+    end
+  end
 
   def deliver_invitation
     @configuration.deliver_access_invitation(

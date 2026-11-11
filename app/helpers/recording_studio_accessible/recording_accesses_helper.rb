@@ -79,11 +79,17 @@ module RecordingStudioAccessible
     def access_person_subtitle(row, include_actor_type: false)
       [
         access_role_label(access_person_role(row)),
-        access_person_subtitle_email(row),
         access_person_type_label(row, include_actor_type: include_actor_type),
         row[:source_label].presence,
         *access_person_invitation_labels(row)
       ].compact.join(" · ")
+    end
+
+    def access_person_leading(row)
+      src = access_person_avatar_src(row)
+      render FlatPack::Avatar::Component.new(
+        **access_person_avatar_attributes(src, row)
+      )
     end
 
     def inherited_access_actions_cell(recording, row)
@@ -185,6 +191,7 @@ module RecordingStudioAccessible
     def render_access_person_item(recording, row, include_actor_type:)
       render FlatPack::List::Item.new(
         title: access_person_title(row),
+        leading: access_person_leading(row),
         trailing: access_person_trailing(recording, row),
         align: :center
       ) do |item|
@@ -200,6 +207,29 @@ module RecordingStudioAccessible
       end
     end
 
+    def access_person_avatar_src(row)
+      return if row[:kind] == :invitation
+
+      RecordingStudioAccessible.configuration.actor_avatar_src_for(row[:actor])
+    rescue StandardError
+      nil
+    end
+
+    def access_person_avatar_attributes(src, row)
+      attributes = {
+        size: :sm,
+        shape: :circle,
+        show_tooltip: false
+      }
+      if src.present?
+        attributes[:src] = src
+        attributes[:alt] = access_person_title(row)
+      else
+        attributes[:icon] = "user"
+      end
+      attributes
+    end
+
     def access_person_trailing(recording, row)
       case row[:kind]
       when :invitation
@@ -209,17 +239,6 @@ module RecordingStudioAccessible
       else
         inherited_access_actions_cell(recording, row)
       end
-    end
-
-    def access_person_email(row)
-      row[:email].to_s.strip.presence
-    end
-
-    def access_person_subtitle_email(row)
-      email = access_person_email(row)
-      return if email.blank? || access_person_title(row) == email
-
-      email
     end
 
     def access_person_role(row)

@@ -9,6 +9,7 @@ module RecordingStudioAccessible
         access_management_actor_scope
         access_management_current_actor_resolver
         access_management_actor_label
+        access_management_actor_avatar
         access_management_actor_email_resolver
         access_management_missing_actor_handler
         access_management_access_granted_notifier

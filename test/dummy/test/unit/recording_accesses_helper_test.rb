@@ -49,6 +49,12 @@ class RecordingAccessesHelperTest < Minitest::Test
         return %(<div data-controller="flat-pack--button-dropdown">#{items_html}</div>).html_safe
       end
 
+      if component_name == "FlatPack::Avatar::Component"
+        src = ERB::Util.html_escape(component.instance_variable_get(:@src).to_s)
+        icon = ERB::Util.html_escape(component.instance_variable_get(:@icon).to_s)
+        return %(<span class="fp-avatar" data-src="#{src}" data-icon="#{icon}"></span>).html_safe
+      end
+
       if component_name == "FlatPack::Button::Component" || component.instance_variable_defined?(:@text)
         text = component.instance_variable_get(:@text)
         return "<button>#{ERB::Util.html_escape(text)}</button>".html_safe
@@ -117,6 +123,33 @@ class RecordingAccessesHelperTest < Minitest::Test
     end
   end
 
+  def test_access_person_leading_uses_the_actor_image
+    actor = Struct.new(:image).new("/photos/ada.png")
+    html = ViewContext.new.access_person_leading(actor: actor, actor_label: "Ada Lovelace")
+
+    assert_includes html, 'data-src="/photos/ada.png"'
+    refute_includes html, 'data-icon="user"'
+  end
+
+  def test_access_person_leading_uses_the_user_icon_when_the_actor_has_no_image
+    actor = Struct.new(:email).new("ada@example.com")
+    html = ViewContext.new.access_person_leading(actor: actor, actor_label: "Ada Lovelace")
+
+    assert_includes html, 'data-icon="user"'
+    assert_includes html, 'data-src=""'
+  end
+
+  def test_access_person_leading_uses_the_user_icon_for_invitations
+    html = ViewContext.new.access_person_leading(
+      kind: :invitation,
+      email: "ada@example.com",
+      actor: Struct.new(:image).new("/photos/ada.png")
+    )
+
+    assert_includes html, 'data-icon="user"'
+    assert_includes html, 'data-src=""'
+  end
+
   def test_access_person_title_uses_the_actor_label
     title = ViewContext.new.access_person_title(actor_label: "Ada Lovelace", email: "ada@example.com")
 
@@ -129,7 +162,7 @@ class RecordingAccessesHelperTest < Minitest::Test
     assert_equal "ada@example.com", title
   end
 
-  def test_access_person_subtitle_joins_role_and_email_when_the_title_is_a_name
+  def test_access_person_subtitle_is_the_role_when_the_title_is_a_name
     subtitle = ViewContext.new.access_person_subtitle(
       {
         actor_label: "Ada Lovelace",
@@ -138,10 +171,10 @@ class RecordingAccessesHelperTest < Minitest::Test
       }
     )
 
-    assert_equal "Admin · ada@example.com", subtitle
+    assert_equal "Admin", subtitle
   end
 
-  def test_access_person_subtitle_omits_email_when_the_title_is_the_email
+  def test_access_person_subtitle_is_the_role_when_the_title_is_the_email
     subtitle = ViewContext.new.access_person_subtitle(
       {
         actor_label: "ada@example.com",
@@ -181,7 +214,7 @@ class RecordingAccessesHelperTest < Minitest::Test
       include_actor_type: true
     )
 
-    assert_equal "Edit · ada@example.com · User · Integration Workspace", subtitle
+    assert_equal "Edit · User · Integration Workspace", subtitle
   end
 
   def test_show_access_actor_type_column_returns_false_for_single_actor_type

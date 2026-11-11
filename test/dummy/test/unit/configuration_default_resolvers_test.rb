@@ -74,6 +74,25 @@ class ConfigurationDefaultResolversTest < ActiveSupport::TestCase
     assert_equal [{ email: "person@example.com" }], find_by_calls
   end
 
+  test "default actor label uses a recording studio user profile full name" do
+    user = create_user("label-ada@example.com")
+    RecordingStudioUser.record_profile!(user, actor: user, first_name: "Ada", last_name: "Lovelace")
+
+    assert_equal "Ada Lovelace", @configuration.actor_label_for(user)
+  end
+
+  test "default actor avatar uses the dummy admin photo" do
+    user = create_user("admin@admin.com")
+
+    assert_equal User::DEMO_AVATAR_PATH, @configuration.actor_avatar_src_for(user)
+  end
+
+  test "default actor avatar is nil when the dummy user has no photo" do
+    user = create_user("resolver-no-photo@example.com")
+
+    assert_nil @configuration.actor_avatar_src_for(user)
+  end
+
   test "default current actor prefers Current.actor" do
     user = create_user("resolver-current@example.com")
     Current.actor = user
