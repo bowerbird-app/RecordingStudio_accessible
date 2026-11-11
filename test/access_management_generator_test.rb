@@ -124,8 +124,11 @@ class AccessManagementGeneratorTest < Minitest::Test
       generator.copy_helper
 
       helper_path = File.join(dir, "app/helpers/recording_studio_accessible/access_management_helper.rb")
+      helper = File.read(helper_path)
       assert File.exist?(helper_path)
-      assert_includes File.read(helper_path), "recording_access_management_link"
+      assert_includes helper, "recording_access_management_link"
+      assert_includes helper, "AccessManagementCopy.resolve"
+      refute_includes helper, "label: \"Manage access\""
     end
   end
 

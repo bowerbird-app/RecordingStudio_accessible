@@ -6,6 +6,11 @@ module RecordingStudioAccessible
       Copy.t(...)
     end
 
+    def access_management_t(key, recording: nil, **interpolations)
+      recording ||= @recording if defined?(@recording)
+      AccessManagementCopy.resolve(recording: recording, controller: try(:controller)).text(key, **interpolations)
+    end
+
     def accessible_copy(override, key, **)
       Copy.value(override, key, **)
     end

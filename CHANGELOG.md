@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-11-11
+
+### Added
+- `config.access_management_copy` retitles manage-access chrome for one
+  recording. The callable receives `recording:` and `controller:` and returns
+  nil, `{ scope: "featured_in.teams" }`, a hash of chrome keys, or both
+  `scope` and `copy`. Lookup is host scope, then
+  `recording_studio.accessible.*`. A missing host key, a raise, or junk
+  keeps the defaults. Copy is resolved from the recording, never from a query
+  param.
+
+### Upgrade notes
+- Additive. Default is nil, so existing screens keep current copy.
+- Set `config.access_management_copy` when one recording needs different
+  titles (for example Teams). A host locale file still changes every
+  manage-access screen.
+- Chrome only: titles, empty state, + button, requests title, access menu
+  default, and the generated `recording_access_management_link` default.
+  Flashes, errors, mail, invitation accept, role names, and
+  `recordables.access.label` are unchanged.
+- Regenerating `recording_studio_accessible:access_management --link-helper`
+  switches the generated link default from hardcoded English to this lookup.
+
 ## [0.26.0] - 2026-11-11
 
 ### Changed

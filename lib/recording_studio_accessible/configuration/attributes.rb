@@ -22,6 +22,7 @@ module RecordingStudioAccessible
         access_invitation_sign_in_url_resolver
         access_notification_locale
         access_management_authorizer
+        access_management_copy
         access_request_submitted_notifier
         access_request_denied_notifier
         access_request_index_recordings

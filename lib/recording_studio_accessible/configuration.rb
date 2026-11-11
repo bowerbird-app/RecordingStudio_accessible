@@ -51,6 +51,15 @@ module RecordingStudioAccessible
       @layout = RecordingStudio::Layout.accept(value)
     end
 
+    def resolve_access_management_copy(recording:, controller: nil)
+      callable = access_management_copy
+      return unless callable.respond_to?(:call)
+
+      callable.call(**filtered_keyword_arguments(callable, recording: recording, controller: controller))
+    rescue StandardError
+      nil
+    end
+
     def action_audiences=(value)
       @action_audiences ||= ActionAudiences.new
       @action_audiences.replace(value)
@@ -74,6 +83,7 @@ module RecordingStudioAccessible
     def assign_core_defaults
       @warn_on_core_conflict = true
       @layout = nil
+      @access_management_copy = nil
       @hooks = Hooks.new
       @action_audiences = ActionAudiences.new
     end

@@ -122,6 +122,17 @@ RecordingStudioAccessible.configure do |config|
   #   )
   # end
 
+  # Optional: retitle manage-access chrome for one recording. Return nil for
+  # the defaults, { scope: "featured_in.teams" }, or a hash of chrome keys.
+  # Resolve from the recording. Do not read titles from query params. A raise
+  # or junk return keeps the defaults.
+  # config.access_management_copy = lambda do |recording:, **|
+  #   recordable = recording&.recordable
+  #   next unless recordable.is_a?(Workspace) && recordable.name == "Teams"
+  #
+  #   { scope: "featured_in.teams" }
+  # end
+
   # Optional: customize who can view the mounted addon overview/docs/email-preview
   # pages under /recording_studio_accessible. The default is fail-closed unless
   # the current actor has admin access to the resolved demo root recording.

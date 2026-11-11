@@ -25,6 +25,29 @@ class ConfigurationTest < Minitest::Test
     assert_equal true, @configuration.warn_on_core_conflict
   end
 
+  def test_access_management_copy_defaults_to_nil
+    assert_nil @configuration.access_management_copy
+    assert_nil @configuration.resolve_access_management_copy(recording: :recording, controller: :controller)
+  end
+
+  def test_access_management_copy_callable_receives_recording_and_controller
+    seen = nil
+    @configuration.access_management_copy = lambda do |recording:, controller:|
+      seen = [recording, controller]
+      { scope: "featured_in.teams" }
+    end
+
+    assert_equal({ scope: "featured_in.teams" },
+                 @configuration.resolve_access_management_copy(recording: :recording, controller: :controller))
+    assert_equal %i[recording controller], seen
+  end
+
+  def test_access_management_copy_raise_returns_nil
+    @configuration.access_management_copy = ->(**) { raise "boom" }
+
+    assert_nil @configuration.resolve_access_management_copy(recording: :recording, controller: :controller)
+  end
+
   def test_layout_defaults_to_nil_and_rejects_invalid_values
     assert_nil @configuration.layout
 
