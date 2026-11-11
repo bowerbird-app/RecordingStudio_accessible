@@ -16,22 +16,18 @@
          ),
          overflow: true
        ) %>
-    <% requests_button = FlatPack::Button::Component.new(
-         text: access_management_t("requests.list_title"),
-         href: recording_access_requests_path(@recording),
-         style: :default,
-         size: :sm
+    <% requests_label = access_management_t("requests.list_title") %>
+    <% pending_requests = @pending_access_requests_count.to_i %>
+    <% requests_label = "#{requests_label} #{pending_requests}" if pending_requests.positive? %>
+    <% group.button(
+         FlatPack::Button::Component.new(
+           text: requests_label,
+           href: recording_access_requests_path(@recording),
+           style: :default,
+           size: :sm
+         ),
+         overflow: true
        ) %>
-    <% if @pending_access_requests_count.to_i.positive? %>
-      <% requests_button.with_trailing do %>
-        <%= render FlatPack::Badge::Component.new(
-              text: @pending_access_requests_count.to_s,
-              size: :sm,
-              style: :primary
-            ) %>
-      <% end %>
-    <% end %>
-    <% group.button(requests_button, overflow: false) %>
   <% end %>
 <% end %>
 
@@ -40,34 +36,7 @@
 <% people_rows = people_with_access_rows(@direct_access_rows, @pending_invitation_rows) %>
 
 <% if people_rows.any? %>
-  <%= render FlatPack::Table::Component.new(data: people_rows) do |table| %>
-      <% table.column(title: accessible_t("manage.columns.who")) do |row| %>
-        <% if row[:kind] == :invitation %>
-          <% pending_invitation_person_cell(row) %>
-        <% else %>
-          <% access_person_cell(row) %>
-        <% end %>
-      <% end %>
-      <% if show_actor_type_column %>
-        <% table.column(title: accessible_t("manage.columns.type")) do |row| %>
-          <% access_actor_type_cell(row) %>
-        <% end %>
-      <% end %>
-      <% table.column(title: accessible_t("manage.columns.role")) do |row| %>
-        <% if row[:kind] == :invitation %>
-          <% pending_invitation_role_cell(row) %>
-        <% else %>
-          <% access_role_cell(row) %>
-        <% end %>
-      <% end %>
-      <% table.column(title: accessible_t("manage.columns.actions")) do |row| %>
-        <% if row[:kind] == :invitation %>
-          <% pending_invitation_actions_cell(@recording, row) %>
-        <% else %>
-          <% access_actions_cell(@recording, row) %>
-        <% end %>
-      <% end %>
-  <% end %>
+  <%= render_access_people_list(@recording, people_rows, include_actor_type: show_actor_type_column) %>
 <% else %>
   <%= render FlatPack::Card::Component.new(border: :strong) do |card| %>
     <% card.body(class: "grid gap-3 justify-items-start") do %>
@@ -90,14 +59,6 @@
       anchor_id: "other-people-with-access"
     ) %>
 
-    <%= render FlatPack::Table::Component.new(data: @inherited_access_rows) do |table| %>
-      <% table.column(title: accessible_t("manage.columns.who")) { |row| access_person_cell(row) } %>
-      <% if show_actor_type_column %>
-        <% table.column(title: accessible_t("manage.columns.type")) { |row| access_actor_type_cell(row) } %>
-      <% end %>
-      <% table.column(title: accessible_t("manage.columns.access_point")) { |row| inherited_access_source_cell(row) } %>
-      <% table.column(title: accessible_t("manage.columns.role")) { |row| inherited_access_source_role_cell(row) } %>
-      <% table.column(title: accessible_t("manage.columns.actions")) { |row| inherited_access_actions_cell(@recording, row) } %>
-    <% end %>
+    <%= render_access_people_list(@recording, @inherited_access_rows, include_actor_type: show_actor_type_column) %>
   </div>
 <% end %>

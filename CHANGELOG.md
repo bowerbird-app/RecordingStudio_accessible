@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.27.1] - 2026-11-11
+
+### Changed
+- Manage access lists people as `FlatPack::List` items (`layout: :items`,
+  divider) instead of a `FlatPack::Table`. Each grant is one item: name as
+  the title, role and email on a wrapping subtitle (pending invitations and
+  inherited source stay on that line), and the existing actions dropdown as
+  the trailing control. One markup at every width. Long emails wrap. When
+  the title is already the email, the subtitle omits the email.
+- `+ Access` and `Access requests` both sit in the outlined ButtonGroup
+  overflow. A pending count is appended to the Access requests label so it
+  still shows in the menu. The group still does not use `collapse: :menu`.
+
+### Upgrade notes
+- Hosts that copied the manage-access index should render
+  `FlatPack::List::Component` / `FlatPack::List::Item` for people and
+  inherited grants, not `FlatPack::Table`. Put `Access requests` in the
+  ButtonGroup overflow (`overflow: true`) with `+ Access`. Do not set
+  `collapse: :menu`.
+- Grants, roles, policies, public helpers, and
+  `config.access_management_copy` are unchanged.
+
 ## [0.27.0] - 2026-11-11
 
 ### Added
