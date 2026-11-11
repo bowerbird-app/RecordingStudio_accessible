@@ -1206,9 +1206,9 @@ That generator:
 - optionally creates a host helper with `recording_access_management_path` and `recording_access_management_link`
 
 Manage access lists each person as a Flatpack list item: name as the title,
-role and email on one wrapping subtitle, and the access actions dropdown as
-the trailing control. Inherited grants use the same list, with the source
-on the subtitle. Screenshots: `docs/screenshots/manage-access-index-390.png`
+role and email on one wrapping subtitle when the name is not the email, and
+the access actions dropdown as the trailing control. Inherited grants use
+the same list, with the source on the subtitle. Screenshots: `docs/screenshots/manage-access-index-390.png`
 (phone), `docs/screenshots/manage-access-index-390-actions.png` (actions
 menu open), and `docs/screenshots/manage-access-index-1280.png` (desktop).
 

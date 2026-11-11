@@ -129,7 +129,7 @@ class RecordingAccessesHelperTest < Minitest::Test
     assert_equal "ada@example.com", title
   end
 
-  def test_access_person_subtitle_joins_role_and_email
+  def test_access_person_subtitle_joins_role_and_email_when_the_title_is_a_name
     subtitle = ViewContext.new.access_person_subtitle(
       {
         actor_label: "Ada Lovelace",
@@ -139,6 +139,18 @@ class RecordingAccessesHelperTest < Minitest::Test
     )
 
     assert_equal "Admin · ada@example.com", subtitle
+  end
+
+  def test_access_person_subtitle_omits_email_when_the_title_is_the_email
+    subtitle = ViewContext.new.access_person_subtitle(
+      {
+        actor_label: "ada@example.com",
+        email: "ada@example.com",
+        direct_role: :admin
+      }
+    )
+
+    assert_equal "Admin", subtitle
   end
 
   def test_access_person_subtitle_includes_pending_invitation_copy
@@ -152,7 +164,7 @@ class RecordingAccessesHelperTest < Minitest::Test
     )
 
     assert_includes subtitle, "View"
-    assert_includes subtitle, "ada@example.com"
+    refute_includes subtitle, "ada@example.com"
     assert_includes subtitle, "Pending invitation"
     assert_includes subtitle, ViewContext.new.accessible_t("manage.expired")
   end

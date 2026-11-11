@@ -75,7 +75,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
       assert_includes row.at_css(".fp-list-item-title").text, person.email
       subtitle = row.at_css(".fp-list-item-subtitle").text
       assert_includes subtitle, role
-      assert_includes subtitle, person.email
+      refute_includes subtitle, person.email
     end
 
     remove_form = Nokogiri::HTML(@response.body).at_css(%(form[id="remove-access-form-#{editor_access_recording_id}"]))
@@ -392,7 +392,7 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     invitation_row = people_access_row("missing@example.com")
     assert_includes invitation_row.at_css(".fp-list-item-title").text, "missing@example.com"
     subtitle = invitation_row.at_css(".fp-list-item-subtitle").text
-    assert_includes subtitle, "missing@example.com"
+    refute_includes subtitle, "missing@example.com"
     assert_includes subtitle, "Pending invitation"
     assert_includes subtitle, "View"
     assert_includes @response.body, "Resend"

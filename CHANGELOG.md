@@ -11,7 +11,8 @@ All notable changes to this project will be documented in this file.
   divider) instead of a `FlatPack::Table`. Each grant is one item: name as
   the title, role and email on a wrapping subtitle (pending invitations and
   inherited source stay on that line), and the existing actions dropdown as
-  the trailing control. One markup at every width. Long emails wrap.
+  the trailing control. One markup at every width. Long emails wrap. When
+  the title is already the email, the subtitle omits the email.
 - `+ Access` and `Access requests` both sit in the outlined ButtonGroup
   overflow. A pending count is appended to the Access requests label so it
   still shows in the menu. The group still does not use `collapse: :menu`.

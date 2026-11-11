@@ -79,7 +79,7 @@ module RecordingStudioAccessible
     def access_person_subtitle(row, include_actor_type: false)
       [
         access_role_label(access_person_role(row)),
-        access_person_email(row),
+        access_person_subtitle_email(row),
         access_person_type_label(row, include_actor_type: include_actor_type),
         row[:source_label].presence,
         *access_person_invitation_labels(row)
@@ -213,6 +213,13 @@ module RecordingStudioAccessible
 
     def access_person_email(row)
       row[:email].to_s.strip.presence
+    end
+
+    def access_person_subtitle_email(row)
+      email = access_person_email(row)
+      return if email.blank? || access_person_title(row) == email
+
+      email
     end
 
     def access_person_role(row)
