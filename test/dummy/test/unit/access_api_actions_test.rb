@@ -163,6 +163,31 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     RecordingStudioAccessible.configuration.access_management_authorizer = previous
   end
 
+  test "revoke_access of the last admin is 422 with last_admin copy" do
+    error = assert_raises(invalid_input_error_class) do
+      RecordingStudioAccessible::Api::RevokeAccess.call(
+        admin_context(@root, actor_id: @admin.id.to_s, actor_type: "User")
+      )
+    end
+    assert_equal "Add another admin before removing the last one.", error.message
+    assert RecordingStudioAccessible.authorized?(actor: @admin, recording: @root, role: :admin)
+  end
+
+  test "update_access downgrading the last admin is 422 with last_admin copy" do
+    only = create_user("api-only-admin@example.com")
+    workspace = Workspace.create!(name: "API Last Admin Workspace")
+    root = create_root_recording(workspace)
+    create_direct_access_recording(actor: only, role: :admin, parent_recording: root)
+
+    error = assert_raises(invalid_input_error_class) do
+      RecordingStudioAccessible::Api::UpdateAccess.call(
+        actor_context(only, root, actor_id: only.id.to_s, actor_type: "User", role: "view")
+      )
+    end
+    assert_equal "Add another admin before removing the last one.", error.message
+    assert_equal :admin, RecordingStudioAccessible.role_for(actor: only, recording: root)
+  end
+
   test "inherited rows appear in list_access and cannot be updated or revoked" do
     listed = RecordingStudioAccessible::Api::ListAccess.call(admin_context(@folder))
     inherited = listed.fetch(:grants).find { |row| row.fetch(:actor).fetch(:id) == @editor.id }

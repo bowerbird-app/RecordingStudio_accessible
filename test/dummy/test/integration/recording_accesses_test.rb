@@ -347,6 +347,20 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_nil RecordingStudio::Access.find_by(id: access_record_id)
   end
 
+  test "removing the last admin flashes last_admin copy and keeps the grant" do
+    sign_in @admin
+
+    admin_access_id = direct_access_recording_for(@admin).id
+    delete "#{root_recording_accesses_path}/#{admin_access_id}"
+
+    assert_response :redirect
+    follow_redirect!
+    assert_response :success
+    assert_equal "Add another admin before removing the last one.", flash[:alert]
+    assert_includes @response.body, "Add another admin before removing the last one."
+    refute_nil direct_access_recording_for(@admin)
+  end
+
   test "admin can invite an unknown email without creating a user or access grant" do
     sign_in @admin
 

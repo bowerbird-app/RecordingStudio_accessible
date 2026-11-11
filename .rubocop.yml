@@ -135,6 +135,8 @@ Metrics/ParameterLists:
   Exclude:
     - 'app/helpers/recording_studio_accessible/avatars_helper.rb'
     - 'lib/recording_studio_accessible/services/grant_recording_access.rb'
+    - 'lib/recording_studio_accessible/services/update_recording_access.rb'
+    - 'lib/recording_studio_accessible/access_writers.rb'
     - 'lib/recording_studio_accessible/services/request_access.rb'
     - 'lib/recording_studio_accessible/services/transition_access_request.rb'
     - 'lib/recording_studio_accessible/access_request_api.rb'
