@@ -21,9 +21,27 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     create_direct_access_recording(actor: @editor, role: :edit, parent_recording: @root)
   end
 
+  test "grant_access accepts a custom declared role" do
+    Folder.accessible_roles :view, :download
+
+    granted = RecordingStudioAccessible::Api::GrantAccess.call(
+      admin_context(@folder, actor_id: @viewer.id.to_s, actor_type: "User", role: "download")
+    )
+
+    assert_equal false, granted.fetch(:invited)
+    assert_equal "download", granted.fetch(:role)
+    assert RecordingStudioAccessible.authorized_for_role?(
+      actor: @viewer, recording: @folder, role: :download
+    )
+  ensure
+    Folder.remove_instance_variable(:@accessible_role_set) if Folder.instance_variable_defined?(:@accessible_role_set)
+  end
+
   test "admin can list grant update and revoke access" do
     listed = RecordingStudioAccessible::Api::ListAccess.call(admin_context(@root))
-    emails = listed.fetch(:grants).map { |row| row.fetch(:actor).fetch(:label) }
+    emails = listed.fetch(:grants)
+                   .select { |row| row.fetch(:status) == "granted" }
+                   .map { |row| row.fetch(:actor).fetch(:label) }
     assert_includes emails, @admin.email
     assert_includes emails, @editor.email
     listed.fetch(:grants).each do |row|
@@ -254,7 +272,9 @@ class AccessApiActionsTest < ActiveSupport::TestCase
 
   test "inherited rows appear in list_access and cannot be updated or revoked" do
     listed = RecordingStudioAccessible::Api::ListAccess.call(admin_context(@folder))
-    inherited = listed.fetch(:grants).find { |row| row.fetch(:actor).fetch(:id) == @editor.id }
+    inherited = listed.fetch(:grants)
+                      .select { |row| row.fetch(:status) == "granted" }
+                      .find { |row| row.fetch(:actor).fetch(:id) == @editor.id }
 
     assert inherited.fetch(:inherited)
     assert_equal "edit", inherited.fetch(:role)

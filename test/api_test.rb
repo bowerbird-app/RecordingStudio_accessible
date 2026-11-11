@@ -64,14 +64,19 @@ class ApiTest < Minitest::Test
     end
   end
 
-  def test_grant_access_role_field_enumerates_default_roles
-    role_field = RecordingStudioAccessible::Api::ACTION_DEFINITIONS
-                 .fetch(:grant_access)
-                 .fetch(:fields)
-                 .fetch(:role)
+  def test_grant_and_update_access_role_fields_describe_defaults_without_enum
+    expected = "Default roles: #{RecordingStudioAccessible::RoleSet::DEFAULT_NAMES.join(', ')}. " \
+               "Types may declare others."
 
-    assert_equal RecordingStudioAccessible::RoleSet::DEFAULT_NAMES, role_field.fetch(:enum)
-    assert_equal %w[view edit admin], role_field.fetch(:enum)
+    %i[grant_access update_access].each do |action|
+      role_field = RecordingStudioAccessible::Api::ACTION_DEFINITIONS
+                   .fetch(action)
+                   .fetch(:fields)
+                   .fetch(:role)
+
+      assert_equal expected, role_field.fetch(:description)
+      refute role_field.key?(:enum)
+    end
   end
 
   def test_list_access_contract_rejects_unknown_keys_after_filtering_route_params

@@ -7,8 +7,9 @@ All notable changes to this project will be documented in this file.
 ## [0.29.0] - 2026-11-11
 
 ### Added
-- `grant_access` API/MCP describe lists valid roles from
-  `RoleSet::DEFAULT_NAMES` (`view`, `edit`, `admin`) on the `role` field.
+- `grant_access` and `update_access` API/MCP describe list default roles
+  from `RoleSet::DEFAULT_NAMES` on the `role` field. Types may declare
+  others. Validation stays on `role_valid_for?`.
 - `list_access` includes unclosed email invitations from
   `AccessInvitation.pending_rows_for`. Those rows use `status: pending`
   (or `expired`), plus `email` and `role`. Direct and inherited grants

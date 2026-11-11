@@ -26,7 +26,9 @@ module RecordingStudioAccessible
             type: :string,
             required: true,
             allow_blank: false,
-            enum: RecordingStudioAccessible::RoleSet::DEFAULT_NAMES
+            description:
+              "Default roles: #{RecordingStudioAccessible::RoleSet::DEFAULT_NAMES.join(', ')}. " \
+              "Types may declare others."
           }
         },
         openapi: {
@@ -45,7 +47,14 @@ module RecordingStudioAccessible
         fields: {
           actor_id: { type: :string, required: true, allow_blank: false },
           actor_type: { type: :string, allow_blank: false },
-          role: { type: :string, required: true, allow_blank: false }
+          role: {
+            type: :string,
+            required: true,
+            allow_blank: false,
+            description:
+              "Default roles: #{RecordingStudioAccessible::RoleSet::DEFAULT_NAMES.join(', ')}. " \
+              "Types may declare others."
+          }
         },
         openapi: {
           summary: "Update access",

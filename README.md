@@ -1232,8 +1232,8 @@ add a runtime gemspec dependency on `recording_studio_api`.
 | Action | Inputs | Result |
 | --- | --- | --- |
 | `list_access` | none | `{ grants: [...] }` with `status` (`granted`, `pending`, or `expired`). Granted rows include actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role`. Pending invitation rows include `email`, `role`, and `source_recording`. |
-| `grant_access` | `email` plus `role`, or `actor_id` plus `actor_type` plus `role`. `role` enum is `RoleSet::DEFAULT_NAMES` (`view`, `edit`, `admin`) | granted row, or `{ invited: true, email, role, notice }` |
-| `update_access` | `actor_id`, `role`, optional `actor_type` | updated direct grant |
+| `grant_access` | `email` plus `role`, or `actor_id` plus `actor_type` plus `role`. `role` describes `RoleSet::DEFAULT_NAMES`; types may declare others | granted row, or `{ invited: true, email, role, notice }` |
+| `update_access` | `actor_id`, `role`, optional `actor_type`. Same `role` description as `grant_access` | updated direct grant |
 | `revoke_access` | `actor_id`, optional `actor_type` | `{ revoked: true, actor }` |
 
 Email is the people path and matches the manage-access form (`invite_access`).
