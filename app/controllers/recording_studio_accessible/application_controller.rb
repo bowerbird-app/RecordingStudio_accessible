@@ -24,9 +24,9 @@ module RecordingStudioAccessible
       target.to_s.match?(%r{\Ahttps?://}i)
     end
 
-    def guard_grant_page!(source, recording:)
+    def guard_grant_page!(source, recording:, actor: nil, role: nil, granted_by: current_actor)
       context = RecordingStudioAccessible::BeforeAccessGrant.context_for(
-        actor: nil, recording: recording, role: nil, source: source, granted_by: current_actor
+        actor: actor, recording: recording, role: role, source: source, granted_by: granted_by
       )
       RecordingStudioAccessible::BeforeAccessGrant.call!(context)
     rescue RecordingStudioAccessible::GrantRefused => e

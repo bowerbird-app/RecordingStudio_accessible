@@ -154,14 +154,19 @@ class GrantRefusedAccessTest < ActionDispatch::IntegrationTest
     assert_equal @admin, access_context.granted_by
     assert_equal @root_recording, access_context.recording
 
+    invitee = create_user("page-allow@example.com")
+    sign_in invitee
+
     get "/recording_studio_accessible/access_invitations/#{token}"
 
     assert_response :success
     assert_includes @response.body, "Accept invitation"
     invitation_context = seen.last
     assert_equal :new_invitation, invitation_context.source
-    assert_nil invitation_context.role
-    assert_nil invitation_context.actor
+    assert_equal "view", invitation_context.role
+    assert_equal invitee, invitation_context.actor
+    assert_equal "User", invitation_context.actor_type
+    assert_equal invitee.id, invitation_context.actor_id
     assert_equal @admin, invitation_context.granted_by
     assert_equal @root_recording, invitation_context.recording
   end

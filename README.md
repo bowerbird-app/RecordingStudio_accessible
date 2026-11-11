@@ -435,7 +435,7 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 No migration.
 
-`before_access_grant` also runs before the new-access page (`source: :new_access`) and the invitation page (`source: :new_invitation`). `role` and the grantee (`actor`) are nil. `granted_by` is the current actor. Leave the config unset and those pages stay as they are.
+`before_access_grant` also runs before the new-access page (`source: :new_access`) and the invitation page (`source: :new_invitation`). On new access, `role` and the grantee (`actor`) are nil and `granted_by` is the current actor. On the invitation page, `actor` is the signed-in invitee, `role` is the invitation role, and `granted_by` is the inviter. Leave the config unset and those pages stay as they are.
 
 #### Upgrading to 0.22.0
 
@@ -1045,9 +1045,11 @@ Invite creation also runs the hook with `source: :invite` so a pending
 invite can fail early. Acceptance is the authoritative write.
 
 The new-access page calls the same hook after the manage-access check,
-with `source: :new_access`. The invitation page calls it after the
-signed-in check, with `source: :new_invitation`. On both pages `role` is
-nil, `actor` (the grantee) is nil, and `granted_by` is the current actor.
+with `source: :new_access`. `role` is nil, `actor` (the grantee) is nil,
+and `granted_by` is the current actor. The invitation page calls it after
+the signed-in check, with `source: :new_invitation`. `actor` is the
+signed-in invitee, `role` is the invitation role, and `granted_by` is the
+inviter. That matches an `:invite_acceptance` write.
 `GrantRefused` redirects or shows the alert the same way a refused write
 does. Any other error does not render the form. The write still runs the
 hook, so a direct POST is refused even when the page was shown.

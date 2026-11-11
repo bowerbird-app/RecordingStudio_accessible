@@ -140,9 +140,10 @@ RecordingStudioAccessible.configure do |config|
   # Optional: refuse a grant the built-in checks would otherwise allow.
   # Default nil means no extra check. Raise GrantRefused to refuse. Do not
   # rescue other errors. Bootstrap of the first owner does not call this.
-  # The new-access page passes source :new_access. The invitation page
-  # passes source :new_invitation. On those calls role and the grantee
-  # actor are nil, and granted_by is the current actor.
+  # The new-access page passes source :new_access. Role and the grantee
+  # actor are nil, and granted_by is the current actor. The invitation
+  # page passes source :new_invitation. Actor is the signed-in invitee,
+  # role is the invitation role, and granted_by is the inviter.
   # config.before_access_grant = lambda do |context|
   #   next if context.previous_role.present?
   #
