@@ -1374,10 +1374,11 @@ The same manage-access path can sit inside a Flatpack dropdown. The menu label i
 The missing-actor handler may return an actor, or a `RecordingStudioAccessible::MissingActorResolution`. An actor or `MissingActorResolution.created(...)` grants immediately. `:unresolved` asks the controller to call `invite_access`. `:invited` means the host already handled the invitation, and the addon stores nothing. `:invalid` and `:redirect` keep their previous behavior. Edit the copied templates under `app/views/recording_studio_accessible/access_granted_mailer/` when the grant mail is close. Replace `config.access_management_access_granted_notifier` when delivery has to change.
 
 Default actor labels (manage-access rows, API `list_access` `actor.label`,
-and `actor_label_for`) are first name, then full name, then email, then
-`Type #id`. First name is `actor.first_name` when that method returns a
-present string, otherwise `RecordingStudioUser.profile_for(actor).first_name`
-when Recording Studio Users is loaded. Set
+and `actor_label_for`) are the person's full name, then `name`, then email,
+then `Type #id`. Full name is `first_name` and `last_name` joined, skipping
+blanks. If the actor has neither, the same join runs on
+`RecordingStudioUser.profile_for(actor)` when Recording Studio Users is
+loaded. One present part is used on its own. Set
 `config.access_management_actor_label` to replace that default. Use
 `->(actor) { actor.email }` to keep email-first labels.
 

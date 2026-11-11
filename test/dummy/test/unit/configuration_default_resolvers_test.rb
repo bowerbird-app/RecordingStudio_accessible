@@ -74,11 +74,11 @@ class ConfigurationDefaultResolversTest < ActiveSupport::TestCase
     assert_equal [{ email: "person@example.com" }], find_by_calls
   end
 
-  test "default actor label uses a recording studio user profile first name" do
+  test "default actor label uses a recording studio user profile full name" do
     user = create_user("label-ada@example.com")
     RecordingStudioUser.record_profile!(user, actor: user, first_name: "Ada", last_name: "Lovelace")
 
-    assert_equal "Ada", @configuration.actor_label_for(user)
+    assert_equal "Ada Lovelace", @configuration.actor_label_for(user)
   end
 
   test "default current actor prefers Current.actor" do

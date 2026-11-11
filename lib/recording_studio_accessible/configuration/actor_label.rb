@@ -12,20 +12,26 @@ module RecordingStudioAccessible
       end
 
       def actor_display_name(actor)
-        present_actor_string(read_actor_attribute(actor, :first_name)) ||
-          present_actor_string(recording_studio_user_first_name(actor)) ||
+        present_actor_string(joined_person_name(actor)) ||
+          present_actor_string(joined_person_name(recording_studio_user_profile(actor))) ||
           present_actor_string(read_actor_attribute(actor, :name)) ||
           present_actor_string(read_actor_attribute(actor, :email))
       end
 
-      def recording_studio_user_first_name(actor)
+      def joined_person_name(person)
+        return unless person
+
+        [
+          present_actor_string(read_actor_attribute(person, :first_name)),
+          present_actor_string(read_actor_attribute(person, :last_name))
+        ].compact.join(" ").presence
+      end
+
+      def recording_studio_user_profile(actor)
         return unless defined?(::RecordingStudioUser)
         return unless RecordingStudioUser.respond_to?(:profile_for)
 
-        profile = RecordingStudioUser.profile_for(actor)
-        return unless profile.respond_to?(:first_name)
-
-        profile.first_name
+        RecordingStudioUser.profile_for(actor)
       rescue StandardError
         nil
       end

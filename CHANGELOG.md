@@ -7,17 +7,18 @@ All notable changes to this project will be documented in this file.
 ## [0.28.0] - 2026-11-11
 
 ### Changed
-- Default actor labels prefer a first name. `actor_label_for` (manage-access
-  rows, API `list_access` `actor.label`, and other callers) reads
-  `first_name`, then a Recording Studio Users profile first name via
-  `RecordingStudioUser.profile_for`, then `name`, then `email`, then
-  `Type #id`. Blank values skip to the next option. Host
+- Default actor labels prefer a person's full name. `actor_label_for`
+  (manage-access rows, API `list_access` `actor.label`, and other callers)
+  joins `first_name` and `last_name` (blank parts skipped), then the same
+  join on `RecordingStudioUser.profile_for(actor)`, then `name`, then
+  `email`, then `Type #id`. One present part is used on its own. Host
   `config.access_management_actor_label` still wins.
 
 ### Upgrade notes
-- Behaviour change on the default label. People with a first name or Users
-  profile now show that name instead of email. Restore email-first labels
-  with `config.access_management_actor_label = ->(actor) { actor.email }`,
+- Behaviour change on the default label. People with a first or last name,
+  or a Users profile, now show that name instead of email. Restore
+  email-first labels with
+  `config.access_management_actor_label = ->(actor) { actor.email }`,
   or keep a host callable that already sets the label.
 
 ## [0.27.1] - 2026-11-11

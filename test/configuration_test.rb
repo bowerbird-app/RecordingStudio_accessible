@@ -526,11 +526,17 @@ class ConfigurationTest < Minitest::Test
     assert_equal "User with email person@example.com was not found", invalid.error
   end
 
-  def test_default_actor_label_prefers_first_name_then_name_then_email
-    first_name_actor = Struct.new(:first_name, :name, :email, :id).new(" Ada ", "Ada Lovelace", "ada@example.com", 1)
-    blank_first_name_actor = Struct.new(:first_name, :name, :email, :id).new("  ", " Ada ", "ada@example.com", 2)
-    name_actor = Struct.new(:name, :email, :id).new(" Ada ", "ada@example.com", 3)
-    email_actor = Struct.new(:email, :id).new(" person@example.com ", 4)
+  def test_default_actor_label_prefers_full_name_then_name_then_email
+    full_name_actor = Struct.new(:first_name, :last_name, :name, :email, :id)
+                            .new(" Ada ", " Lovelace ", "Other", "ada@example.com", 1)
+    first_only_actor = Struct.new(:first_name, :last_name, :name, :email, :id)
+                             .new(" Ada ", "  ", "Other", "ada@example.com", 2)
+    last_only_actor = Struct.new(:first_name, :last_name, :name, :email, :id)
+                            .new("  ", " Lovelace ", "Other", "ada@example.com", 3)
+    blank_parts_actor = Struct.new(:first_name, :last_name, :name, :email, :id)
+                              .new("  ", nil, " Ada ", "ada@example.com", 4)
+    name_actor = Struct.new(:name, :email, :id).new(" Ada ", "ada@example.com", 5)
+    email_actor = Struct.new(:email, :id).new(" person@example.com ", 6)
     fallback_class = Class.new do
       attr_reader :id
 
@@ -542,27 +548,42 @@ class ConfigurationTest < Minitest::Test
         @id = id
       end
     end
-    fallback_actor = fallback_class.new(5)
+    fallback_actor = fallback_class.new(7)
 
-    assert_equal "Ada", @configuration.actor_label_for(first_name_actor)
-    assert_equal "Ada", @configuration.actor_label_for(blank_first_name_actor)
+    assert_equal "Ada Lovelace", @configuration.actor_label_for(full_name_actor)
+    assert_equal "Ada", @configuration.actor_label_for(first_only_actor)
+    assert_equal "Lovelace", @configuration.actor_label_for(last_only_actor)
+    assert_equal "Ada", @configuration.actor_label_for(blank_parts_actor)
     assert_equal "Ada", @configuration.actor_label_for(name_actor)
     assert_equal "person@example.com", @configuration.actor_label_for(email_actor)
-    assert_equal "AccountMember #5", @configuration.actor_label_for(fallback_actor)
+    assert_equal "AccountMember #7", @configuration.actor_label_for(fallback_actor)
   end
 
-  def test_default_actor_label_uses_recording_studio_user_profile_first_name
+  def test_default_actor_label_uses_recording_studio_user_profile_full_name
     actor = Struct.new(:email, :id).new("ada@example.com", 9)
-    profile = Struct.new(:first_name).new(" Ada ")
+    profile = Struct.new(:first_name, :last_name).new(" Ada ", " Lovelace ")
 
     with_recording_studio_user_profile(profile) do
-      assert_equal "Ada", @configuration.actor_label_for(actor)
+      assert_equal "Ada Lovelace", @configuration.actor_label_for(actor)
     end
   end
 
-  def test_default_actor_label_skips_blank_profile_first_name
+  def test_default_actor_label_uses_one_profile_name_part_when_the_other_is_blank
+    actor = Struct.new(:email, :id).new("ada@example.com", 9)
+    first_only = Struct.new(:first_name, :last_name).new(" Ada ", "  ")
+    last_only = Struct.new(:first_name, :last_name).new(nil, " Lovelace ")
+
+    with_recording_studio_user_profile(first_only) do
+      assert_equal "Ada", @configuration.actor_label_for(actor)
+    end
+    with_recording_studio_user_profile(last_only) do
+      assert_equal "Lovelace", @configuration.actor_label_for(actor)
+    end
+  end
+
+  def test_default_actor_label_skips_blank_profile_names
     actor = Struct.new(:email, :id).new(" ada@example.com ", 9)
-    profile = Struct.new(:first_name).new("  ")
+    profile = Struct.new(:first_name, :last_name).new("  ", nil)
 
     with_recording_studio_user_profile(profile) do
       assert_equal "ada@example.com", @configuration.actor_label_for(actor)
@@ -572,6 +593,7 @@ class ConfigurationTest < Minitest::Test
   def test_default_actor_label_does_not_raise_when_readers_fail
     actor = Object.new
     actor.define_singleton_method(:first_name) { raise "boom" }
+    actor.define_singleton_method(:last_name) { raise "boom" }
     actor.define_singleton_method(:name) { "Ada" }
     actor.define_singleton_method(:id) { 1 }
 
