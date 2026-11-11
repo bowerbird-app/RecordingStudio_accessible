@@ -247,6 +247,25 @@ module RecordingStudioAccessible
                                                 manager_actor: :manager).error
       end
 
+      def test_revoke_access_returns_last_admin_error_without_unexpected_copy
+        recording = Recording.new(id: 1)
+        access_recording = valid_access_recording(recording)
+        service = RevokeRecordingAccess.new(recording: recording, access_recording: access_recording,
+                                            manager_actor: :manager)
+
+        service.stub(:revocable_access_recording?, true) do
+          RecordingStudioAccessible::LastAdminGuard.stub(:protect!, lambda { |**|
+            raise RecordingStudioAccessible::LastAdminError
+          }) do
+            result = service.send(:perform)
+
+            assert result.failure?
+            assert_equal "Add another admin before removing the last one.", result.error
+            assert_kind_of RecordingStudioAccessible::LastAdminError, result.errors.first
+          end
+        end
+      end
+
       def test_revoke_access_destroys_valid_access_recording
         recording = Recording.new(id: 1)
         access_recording = valid_access_recording(recording)

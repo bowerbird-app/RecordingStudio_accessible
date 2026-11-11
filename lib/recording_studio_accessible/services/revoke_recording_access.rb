@@ -5,11 +5,13 @@ module RecordingStudioAccessible
     class RevokeRecordingAccess < BaseService
       include AccessRecordLifecycle
 
-      def initialize(recording:, access_recording:, manager_actor: nil, controller: nil)
+      def initialize(recording:, access_recording:, manager_actor: nil, controller: nil,
+                     allow_last_admin_removal: false)
         @recording = recording
         @access_recording = access_recording
         @manager_actor = manager_actor
         @controller = controller
+        @allow_last_admin_removal = allow_last_admin_removal
       end
 
       private
@@ -29,15 +31,24 @@ module RecordingStudioAccessible
 
         ensure_current_impersonator_accessor!
 
-        RecordingStudio::Recording.transaction do
+        LastAdminGuard.protect!(
+          recordings: last_admin_recordings,
+          allow_last_admin_removal: @allow_last_admin_removal
+        ) do
           destroy_access_recording!(@access_recording, manager_actor: manager_actor)
         end
 
         success(true)
+      rescue ::RecordingStudioAccessible::LastAdminError => e
+        failure(e, errors: [e])
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
       rescue StandardError => e
         unexpected_failure(e)
+      end
+
+      def last_admin_recordings
+        [@recording] + LastAdminGuard.dependent_parent_recordings(@access_recording)
       end
 
       def service_args

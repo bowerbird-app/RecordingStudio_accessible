@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-11-11
+
+### Changed
+- `revoke_access`, `update_access` (when a role drops below admin), and
+  `VoidDependentAccesses` refuse a write that would leave a recording with no
+  effective admin. Effective admin is a kept, ranked `:admin` grant on the
+  recording or an ancestor, the same resolution as `authorized?` /
+  `AccessGrantList`. Pending invitations, trashed grants, and dependents whose
+  manager is invalid do not count. The whole write rolls back. Destroying the
+  recording itself is not guarded. `revoke_access_invitation` is not blocked.
+
+### Added
+- `RecordingStudioAccessible::LastAdminError` and copy key
+  `recording_studio.accessible.errors.last_admin` ("Add another admin before
+  removing the last one."). The manage-access UI flashes that text. Recording
+  Studio API `update_access` and `revoke_access` return 422 with the same
+  message.
+- `allow_last_admin_removal: true` on `revoke_access` and `update_access`,
+  passed through to the dependent-void cascade, for teardown and staff scripts.
+
+### Upgrade notes
+- Mild behaviour change. A host that relied on removing the last admin (for
+  example emptying a workspace before delete) should pass
+  `allow_last_admin_removal: true` or destroy the recording instead.
+- Helper signatures stay compatible. The new keyword defaults to `false`.
+
 ## [0.25.0] - 2026-11-10
 
 ### Added

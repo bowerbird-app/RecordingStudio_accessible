@@ -42,7 +42,7 @@ module RecordingStudioAccessible
       if result.success?
         redirect_to recording_access_index_redirect_path
       else
-        @form_errors = result.errors.presence || Array(result.error)
+        @form_errors = Array(result.error)
         flash.now[:alert] = @form_errors.to_sentence
         render :edit, status: :unprocessable_entity
       end
@@ -59,7 +59,7 @@ module RecordingStudioAccessible
       if result.success?
         redirect_to recording_access_index_redirect_path, notice: Copy.t("flashes.access_removed")
       else
-        head :unprocessable_entity
+        redirect_to recording_access_index_redirect_path, alert: result.error
       end
     end
 

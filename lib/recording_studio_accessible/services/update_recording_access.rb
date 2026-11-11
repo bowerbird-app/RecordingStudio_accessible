@@ -5,12 +5,14 @@ module RecordingStudioAccessible
     class UpdateRecordingAccess < BaseService
       include AccessRecordLifecycle
 
-      def initialize(recording:, access_recording:, role:, manager_actor: nil, controller: nil)
+      def initialize(recording:, access_recording:, role:, manager_actor: nil, controller: nil,
+                     allow_last_admin_removal: false)
         @recording = recording
         @access_recording = access_recording
         @role = role.to_s.strip
         @manager_actor = manager_actor
         @controller = controller
+        @allow_last_admin_removal = allow_last_admin_removal
       end
 
       private
@@ -21,18 +23,29 @@ module RecordingStudioAccessible
 
         ensure_current_impersonator_accessor!
 
-        revised_recording = RecordingStudioAccessible::AccessCreationContext.allow do
-          RecordingStudio.root_recording_or_self(@access_recording).revise(@access_recording,
-                                                                           actor: manager_actor) do |access|
-            access.role = @role
+        revised_recording = LastAdminGuard.protect!(
+          recordings: last_admin_recordings,
+          allow_last_admin_removal: @allow_last_admin_removal
+        ) do
+          RecordingStudioAccessible::AccessCreationContext.allow do
+            RecordingStudio.root_recording_or_self(@access_recording).revise(@access_recording,
+                                                                             actor: manager_actor) do |access|
+              access.role = @role
+            end
           end
         end
 
         success(revised_recording)
+      rescue ::RecordingStudioAccessible::LastAdminError => e
+        failure(e, errors: [e])
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
       rescue StandardError => e
         unexpected_failure(e)
+      end
+
+      def last_admin_recordings
+        [@recording] + LastAdminGuard.dependent_parent_recordings(@access_recording)
       end
 
       def validate_update_request

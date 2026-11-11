@@ -971,6 +971,23 @@ RecordingStudioAccessible.revoke_access(
 )
 ```
 
+A recording that already has an effective admin cannot be taken to zero
+admins by `revoke_access`, by `update_access` that drops the role below
+admin, or by the dependent-grant void cascade. Effective admin is a kept,
+ranked `:admin` grant on that recording or an ancestor. Pending invitations,
+trashed grants, and dependents whose manager is invalid do not count. The
+failure is `RecordingStudioAccessible::LastAdminError` (copy key
+`recording_studio.accessible.errors.last_admin`). The manage-access UI
+flashes that message. See `docs/screenshots/last-admin-flash.png`. API
+`update_access` and `revoke_access` return 422.
+
+Self-removal is allowed when another effective admin remains. Invitation
+revoke is never blocked. Destroying the recording is not guarded.
+
+Teardown and staff scripts can pass `allow_last_admin_removal: true` on
+`revoke_access` and `update_access`. That flag is passed through to
+`VoidDependentAccesses`.
+
 `actor` is the polymorphic object receiving access. It can be a user,
 workspace, company, team, system actor, or another configured access actor.
 `manager_actor` remains the actor performing the access-management action.
@@ -1216,7 +1233,8 @@ Email is the people path and matches the manage-access form (`invite_access`).
 (`grantable_actors_for`, users by default). Do not mix `email` with `actor_id`.
 `update_access` and `revoke_access` change or remove a direct grant for that
 actor on this recording. They refuse inherited grants; change the source
-recording instead. `actor_type` is optional there and defaults to `User` only
+recording instead. They also refuse a write that would remove the last
+effective admin (`recording_studio.accessible.errors.last_admin`, HTTP 422). `actor_type` is optional there and defaults to `User` only
 when `User` is in `access_actor_types`.
 
 Each action is `capability: :accessible`, `required_role: :admin`, member

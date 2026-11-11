@@ -76,6 +76,7 @@ en:
         invitation_not_sent: "Invitation could not be sent."
         invitation_not_saved: "Invitation could not be saved"
         not_authorized: "Not authorized to manage access"
+        last_admin: "Add another admin before removing the last one."
         recording_required: "Recording is required"
         actor_required: "Actor is required"
         actor_or_email: "Give an actor id or an email, not both."
