@@ -248,6 +248,7 @@ module RecordingStudioAccessible
 
         {
           id: access_recording.id,
+          actor: actor,
           actor_label: RecordingStudioAccessible.configuration.actor_label_for(actor),
           actor_type: actor.class.name.demodulize,
           email: actor_email_for(actor),
@@ -271,6 +272,7 @@ module RecordingStudioAccessible
         next unless effective_role
 
         rows_by_actor[actor_key] = {
+          actor: actor,
           actor_label: RecordingStudioAccessible.configuration.actor_label_for(actor),
           actor_type: actor.class.name.demodulize,
           email: actor_email_for(actor),

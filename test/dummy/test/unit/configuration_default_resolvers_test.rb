@@ -81,6 +81,18 @@ class ConfigurationDefaultResolversTest < ActiveSupport::TestCase
     assert_equal "Ada Lovelace", @configuration.actor_label_for(user)
   end
 
+  test "default actor avatar uses the dummy admin photo" do
+    user = create_user("admin@admin.com")
+
+    assert_equal User::DEMO_AVATAR_PATH, @configuration.actor_avatar_src_for(user)
+  end
+
+  test "default actor avatar is nil when the dummy user has no photo" do
+    user = create_user("resolver-no-photo@example.com")
+
+    assert_nil @configuration.actor_avatar_src_for(user)
+  end
+
   test "default current actor prefers Current.actor" do
     user = create_user("resolver-current@example.com")
     Current.actor = user

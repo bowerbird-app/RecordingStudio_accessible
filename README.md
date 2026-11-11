@@ -1205,10 +1205,11 @@ That generator:
 - copies overrideable share-email templates to `app/views/recording_studio_accessible/access_granted_mailer/` only when they are still missing
 - optionally creates a host helper with `recording_access_management_path` and `recording_access_management_link`
 
-Manage access lists each person as a Flatpack list item: name as the title,
-role and email on one wrapping subtitle when the name is not the email, and
-the access actions dropdown as the trailing control. Inherited grants use
-the same list, with the source on the subtitle. Screenshots: `docs/screenshots/manage-access-index-390.png`
+Manage access lists each person as a Flatpack list item: a photo or user
+icon in the leading slot, name as the title, role on the subtitle, and
+the access actions dropdown as the trailing control. The subtitle does
+not repeat the email. Pending, expired, actor type, and inherited source
+stay on that line. Pending invitations always use the icon. Screenshots: `docs/screenshots/manage-access-index-390.png`
 (phone), `docs/screenshots/manage-access-index-390-actions.png` (actions
 menu open), and `docs/screenshots/manage-access-index-1280.png` (desktop).
 
@@ -1381,6 +1382,13 @@ blanks. If the actor has neither, the same join runs on
 loaded. One present part is used on its own. Set
 `config.access_management_actor_label` to replace that default. Use
 `->(actor) { actor.email }` to keep email-first labels.
+
+Manage-access row photos use `actor.avatar` or `actor.image` when that
+value is a URL (or an object/`Hash` with `src` / `url` / `image_url`).
+If Recording Studio Users is loaded, a profile image recording from
+`profile_image_recording_for` is used next. Otherwise the row shows
+FlatPack's user icon. Set `config.access_management_actor_avatar` to
+replace that default. The callable should return a URL or nil.
 
 By default, the mounted engine resolves the acting user from `Current.actor` so it follows the same actor source that RecordingStudio uses. It does not call `current_user` at all, public or private (Devise defines it public). Hosts must set `Current.actor` or override `config.access_management_current_actor_resolver`.
 

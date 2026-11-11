@@ -45,6 +45,7 @@ module RecordingStudioAccessible
         @access_management_actor_scope = method(:default_access_management_actor_scope)
         @access_management_current_actor_resolver = method(:default_access_management_current_actor_resolver)
         @access_management_actor_label = method(:default_access_management_actor_label)
+        @access_management_actor_avatar = method(:default_access_management_actor_avatar)
         @access_management_actor_email_resolver = method(:default_access_management_actor_email_resolver)
         @access_actor_types = nil
       end

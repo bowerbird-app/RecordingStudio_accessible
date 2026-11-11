@@ -600,6 +600,42 @@ class ConfigurationTest < Minitest::Test
     assert_equal "Ada", @configuration.actor_label_for(actor)
   end
 
+  def test_default_actor_avatar_prefers_actor_image
+    actor = Struct.new(:image, :id).new("/photos/ada.png", 1)
+
+    assert_equal "/photos/ada.png", @configuration.actor_avatar_src_for(actor)
+  end
+
+  def test_default_actor_avatar_is_nil_when_the_actor_has_no_image
+    actor = Struct.new(:email, :id).new("ada@example.com", 1)
+
+    assert_nil @configuration.actor_avatar_src_for(actor)
+  end
+
+  def test_default_actor_avatar_uses_users_profile_image_recording
+    actor = Struct.new(:email, :id).new("ada@example.com", 9)
+
+    with_recording_studio_user_profile_image("/photos/profile.png") do
+      assert_equal "/photos/profile.png", @configuration.actor_avatar_src_for(actor)
+    end
+  end
+
+  def test_host_actor_avatar_callable_wins
+    actor = Struct.new(:image, :id).new("/photos/ada.png", 1)
+    @configuration.access_management_actor_avatar = ->(_actor) { "/host.png" }
+
+    assert_equal "/host.png", @configuration.actor_avatar_src_for(actor)
+  end
+
+  def test_default_actor_avatar_does_not_raise_when_readers_fail
+    actor = Object.new
+    actor.define_singleton_method(:avatar) { raise "boom" }
+    actor.define_singleton_method(:image) { raise "boom" }
+    actor.define_singleton_method(:id) { 1 }
+
+    assert_nil @configuration.actor_avatar_src_for(actor)
+  end
+
   def test_default_access_granted_notifier_sends_mail_when_actor_has_email
     actor = Struct.new(:email).new("person@example.com")
     mail = Object.new
@@ -812,13 +848,27 @@ class ConfigurationTest < Minitest::Test
 
   private
 
-  def with_recording_studio_user_profile(profile)
+  def with_recording_studio_user_profile(profile, &)
+    with_recording_studio_user_singleton(:profile_for, ->(_actor) { profile }, &)
+  end
+
+  def with_recording_studio_user_profile_image(recording, &)
+    with_recording_studio_user_singleton(:profile_image_recording_for, ->(_actor) { recording }, &)
+  end
+
+  def with_recording_studio_user_singleton(method_name, implementation)
     created = !defined?(::RecordingStudioUser)
+    original = nil
     Object.const_set(:RecordingStudioUser, Module.new) if created
-    RecordingStudioUser.define_singleton_method(:profile_for) { |_actor| profile }
+    original = RecordingStudioUser.method(method_name) if RecordingStudioUser.respond_to?(method_name)
+    RecordingStudioUser.define_singleton_method(method_name, &implementation)
     yield
   ensure
-    Object.send(:remove_const, :RecordingStudioUser) if created && defined?(::RecordingStudioUser)
+    if created && defined?(::RecordingStudioUser)
+      Object.send(:remove_const, :RecordingStudioUser)
+    elsif original
+      RecordingStudioUser.define_singleton_method(method_name, original)
+    end
   end
 
   def deliver_invitation
