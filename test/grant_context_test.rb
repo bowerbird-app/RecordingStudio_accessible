@@ -29,6 +29,26 @@ class GrantContextTest < Minitest::Test
     assert_equal granted_by, context.granted_by
   end
 
+  def test_page_sources_allow_a_nil_role_and_grantee
+    context = RecordingStudioAccessible::GrantContext.new(
+      actor: nil,
+      recording: :recording,
+      role: nil,
+      source: :new_access,
+      granted_by: :manager
+    )
+
+    assert_nil context.role
+    assert_nil context.actor
+    assert_nil context.previous_role
+    assert_equal :recording, context.recording
+    assert_equal :new_access, context.source
+    assert_equal :manager, context.granted_by
+    assert_includes RecordingStudioAccessible::GrantContext::PAGE_SOURCES, :new_invitation
+    refute_includes RecordingStudioAccessible::GrantContext::WRITE_SOURCES, :new_access
+    refute_includes RecordingStudioAccessible::GrantContext::WRITE_SOURCES, :new_invitation
+  end
+
   def test_rejects_unknown_source
     error = assert_raises(ArgumentError) do
       RecordingStudioAccessible::GrantContext.new(

@@ -56,7 +56,9 @@ module RecordingStudioAccessible
 
       def grant_source
         source = instance_variable_defined?(:@grant_source) ? @grant_source : :grant
-        ::RecordingStudioAccessible::GrantContext::SOURCES.include?(source) ? source : :grant
+        return source if ::RecordingStudioAccessible::GrantContext::WRITE_SOURCES.include?(source)
+
+        :grant
       end
 
       def update_existing_access_recording(access_recording, existing_recordings)
