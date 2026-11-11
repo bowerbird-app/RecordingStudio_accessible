@@ -63,20 +63,6 @@ module RecordingStudioAccessible
         scope
       end
 
-      def default_access_management_actor_label(actor)
-        return Copy.t("errors.unknown_actor") unless actor
-
-        actor_display_name(actor) || "#{actor.class.name.demodulize} ##{actor.id}"
-      end
-
-      def actor_display_name(actor)
-        if actor.respond_to?(:email)
-          actor.email.to_s.squish.presence
-        elsif actor.respond_to?(:name)
-          actor.name.to_s.squish.presence
-        end
-      end
-
       def default_access_management_current_actor_resolver(controller: nil)
         _controller = controller
         return unless defined?(Current) && Current.respond_to?(:actor)

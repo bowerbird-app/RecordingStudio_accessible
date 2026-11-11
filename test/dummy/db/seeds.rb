@@ -165,6 +165,8 @@ end
 
 def seed_demo_requester_names!(users)
   {
+    "admin@admin.com" => %w[Alex Rivera],
+    "outsider@admin.com" => %w[Jordan Ellis],
     "viewer@admin.com" => %w[Maya Chen],
     "page_owner@admin.com" => %w[Sam Okonkwo],
     "editor@admin.com" => %w[Priya Nair],
@@ -176,7 +178,8 @@ def seed_demo_requester_names!(users)
     "access_user_6@admin.com" => %w[Elena Vasquez],
     "access_user_7@admin.com" => %w[Owen Park],
     "access_user_8@admin.com" => %w[Leila Hassan],
-    "access_user_9@admin.com" => %w[Theo Marlow]
+    "access_user_9@admin.com" => %w[Theo Marlow],
+    "access_user_10@admin.com" => %w[Riley Cho]
   }.each do |email, name|
     user = users.values.find { |candidate| candidate.email == email }
     ensure_demo_profile!(user, name.first, name.last) if user

@@ -101,7 +101,7 @@ RecordingStudioAccessible.configure do |config|
   #   ).access_granted.deliver_now
   # end
 
-  # Optional: customize how actors are labeled in the access management UI.
+  # Optional: override default actor labels (first name, then name, then email).
   # config.access_management_actor_label = ->(actor) { actor.email }
 
   # Optional: customize avatar data for recording_studio_accessible_avatars.
