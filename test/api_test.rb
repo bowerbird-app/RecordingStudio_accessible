@@ -64,6 +64,16 @@ class ApiTest < Minitest::Test
     end
   end
 
+  def test_grant_access_role_field_enumerates_default_roles
+    role_field = RecordingStudioAccessible::Api::ACTION_DEFINITIONS
+                 .fetch(:grant_access)
+                 .fetch(:fields)
+                 .fetch(:role)
+
+    assert_equal RecordingStudioAccessible::RoleSet::DEFAULT_NAMES, role_field.fetch(:enum)
+    assert_equal %w[view edit admin], role_field.fetch(:enum)
+  end
+
   def test_list_access_contract_rejects_unknown_keys_after_filtering_route_params
     with_fake_recording_studio_api do |api|
       RecordingStudioAccessible::Api.register_capability_actions!

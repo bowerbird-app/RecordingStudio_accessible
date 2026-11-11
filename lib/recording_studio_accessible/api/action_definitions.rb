@@ -22,7 +22,12 @@ module RecordingStudioAccessible
           actor_id: { type: :string, allow_blank: false },
           actor_type: { type: :string, allow_blank: false },
           email: { type: :string, allow_blank: false },
-          role: { type: :string, required: true, allow_blank: false }
+          role: {
+            type: :string,
+            required: true,
+            allow_blank: false,
+            enum: RecordingStudioAccessible::RoleSet::DEFAULT_NAMES
+          }
         },
         openapi: {
           summary: "Grant access",

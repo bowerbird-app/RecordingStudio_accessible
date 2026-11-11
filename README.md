@@ -1232,7 +1232,7 @@ add a runtime gemspec dependency on `recording_studio_api`.
 | Action | Inputs | Result |
 | --- | --- | --- |
 | `list_access` | none | `{ grants: [...] }` with actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role`. Direct and inherited grants only — pending invitations are not listed. |
-| `grant_access` | `email` plus `role`, or `actor_id` plus `actor_type` plus `role` | granted row, or `{ invited: true, email, role, notice }` |
+| `grant_access` | `email` plus `role`, or `actor_id` plus `actor_type` plus `role`. `role` enum is `RoleSet::DEFAULT_NAMES` (`view`, `edit`, `admin`) | granted row, or `{ invited: true, email, role, notice }` |
 | `update_access` | `actor_id`, `role`, optional `actor_type` | updated direct grant |
 | `revoke_access` | `actor_id`, optional `actor_type` | `{ revoked: true, actor }` |
 
