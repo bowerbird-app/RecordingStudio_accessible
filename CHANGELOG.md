@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-11-11
+
+### Added
+- `before_access_grant` runs before the new-access page
+  (`source: :new_access`) and the invitation page
+  (`source: :new_invitation`), after the existing access check. `role` is
+  nil. `actor` (the grantee) is nil. `granted_by` is the current actor.
+  `GrantRefused` redirects or shows the alert the same way a refused write
+  does. Any other error does not render the form. The write path is
+  unchanged.
+
+### Upgrade notes
+- No migration. Leave `config.before_access_grant` unset and page
+  behaviour stays the same.
+- Page sources are `:new_access` and `:new_invitation`. `role` and the
+  grantee are nil on those calls.
+
 ## [0.29.0] - 2026-11-11
 
 ### Added

@@ -431,6 +431,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.30.0
+
+No migration.
+
+`before_access_grant` also runs before the new-access page (`source: :new_access`) and the invitation page (`source: :new_invitation`). `role` and the grantee (`actor`) are nil. `granted_by` is the current actor. Leave the config unset and those pages stay as they are.
+
 #### Upgrading to 0.22.0
 
 No migration.
@@ -1037,6 +1043,14 @@ recording is race-safe with other writers.
 
 Invite creation also runs the hook with `source: :invite` so a pending
 invite can fail early. Acceptance is the authoritative write.
+
+The new-access page calls the same hook after the manage-access check,
+with `source: :new_access`. The invitation page calls it after the
+signed-in check, with `source: :new_invitation`. On both pages `role` is
+nil, `actor` (the grantee) is nil, and `granted_by` is the current actor.
+`GrantRefused` redirects or shows the alert the same way a refused write
+does. Any other error does not render the form. The write still runs the
+hook, so a direct POST is refused even when the page was shown.
 
 `bootstrap_owner_access!` writes through `create_access_recording` after its
 own lock. It does not call `before_access_grant`. A new workspace's first
