@@ -241,6 +241,24 @@ class BeforeAccessGrantTest < ActiveSupport::TestCase
     assert_equal @workspace.id, @seen.last.actor_id
   end
 
+  test "a page source passed to grant_access still writes as grant" do
+    allow_hook
+
+    result = RecordingStudioAccessible.grant_access(
+      recording: @recording,
+      actor: @person,
+      role: :view,
+      manager_actor: @manager,
+      source: :new_access
+    )
+
+    assert result.success?
+    assert_equal :grant, @seen.last.source
+    assert_equal @person, @seen.last.actor
+    assert_equal "view", @seen.last.role
+    assert RecordingStudioAccessible.authorized?(actor: @person, recording: @recording, role: :view)
+  end
+
   test "other errors still become unexpected failure copy" do
     RecordingStudioAccessible.configuration.before_access_grant = ->(_context) { raise "boom" }
 

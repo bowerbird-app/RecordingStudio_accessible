@@ -2,7 +2,9 @@
 
 module RecordingStudioAccessible
   class GrantContext
-    SOURCES = %i[grant role_change invite invite_acceptance access_request bootstrap].freeze
+    WRITE_SOURCES = %i[grant role_change invite invite_acceptance access_request bootstrap].freeze
+    PAGE_SOURCES = %i[new_access new_invitation].freeze
+    SOURCES = (WRITE_SOURCES + PAGE_SOURCES).freeze
 
     attr_reader :actor, :actor_type, :actor_id, :recording, :role, :previous_role, :source, :granted_by
 
