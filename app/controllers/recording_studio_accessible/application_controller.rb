@@ -23,5 +23,14 @@ module RecordingStudioAccessible
     def absolute_http_url?(target)
       target.to_s.match?(%r{\Ahttps?://}i)
     end
+
+    def guard_grant_page!(source, recording:)
+      context = RecordingStudioAccessible::BeforeAccessGrant.context_for(
+        actor: nil, recording: recording, role: nil, source: source, granted_by: current_actor
+      )
+      RecordingStudioAccessible::BeforeAccessGrant.call!(context)
+    rescue RecordingStudioAccessible::GrantRefused => e
+      refuse_access_grant(e, template: action_name.to_sym)
+    end
   end
 end

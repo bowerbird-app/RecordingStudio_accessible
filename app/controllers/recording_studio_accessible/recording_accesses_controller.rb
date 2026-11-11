@@ -11,6 +11,7 @@ module RecordingStudioAccessible
     before_action :prepare_index_page_state, only: [:index]
     before_action :prepare_new_page_state, only: %i[new create]
     before_action :prepare_edit_page_state, only: %i[edit update]
+    before_action :guard_new_access_page!, only: :new
 
     def index; end
 
@@ -75,6 +76,10 @@ module RecordingStudioAccessible
 
     def set_recording
       @recording = RecordingStudio::Recording.unscoped.find(params[:recording_id])
+    end
+
+    def guard_new_access_page!
+      guard_grant_page!(:new_access, recording: @recording)
     end
 
     def authorize_access_management!

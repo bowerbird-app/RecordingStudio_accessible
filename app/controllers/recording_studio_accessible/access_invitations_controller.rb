@@ -14,6 +14,7 @@ module RecordingStudioAccessible
       return if redirect_unsigned_visitor?
 
       assign_show_state
+      guard_grant_page!(:new_invitation, recording: @invitation.recording)
     end
 
     def accept
