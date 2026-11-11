@@ -349,6 +349,26 @@ class AvatarsHelperTest < Minitest::Test
     assert_equal "Access", menu.items.fetch(0)[:text]
   end
 
+  def test_access_menu_item_follows_access_management_copy_scope
+    recording = Recording.new(1, "1")
+    menu = Menu.new
+    previous = RecordingStudioAccessible.configuration.access_management_copy
+    I18n.backend.store_translations(:en, { featured_in: { teams: { manage: { access_menu: "Teams" } } } })
+    RecordingStudioAccessible.configuration.access_management_copy = lambda do |recording:, **|
+      next unless recording.id == 1
+
+      { scope: "featured_in.teams" }
+    end
+
+    with_access_recordings(recording, []) do
+      ViewContext.new.recording_studio_accessible_access_menu_item(recording, menu)
+    end
+
+    assert_equal "Teams", menu.items.fetch(0)[:text]
+  ensure
+    RecordingStudioAccessible.configuration.access_management_copy = previous
+  end
+
   def test_access_menu_item_follows_a_locale_override
     recording = Recording.new(42, "42")
     menu = Menu.new

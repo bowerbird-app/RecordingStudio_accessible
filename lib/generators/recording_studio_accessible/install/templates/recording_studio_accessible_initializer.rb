@@ -122,6 +122,17 @@ RecordingStudioAccessible.configure do |config|
   #   )
   # end
 
+  # Optional: retitle manage-access chrome for one recording. Return nil for
+  # the defaults, { scope: "featured_in.teams" }, or a hash of chrome keys.
+  # Resolve from the recording. Do not read titles from query params. A raise
+  # or junk return keeps the defaults.
+  # config.access_management_copy = lambda do |recording:, **|
+  #   recordable = recording&.recordable
+  #   next unless recordable.is_a?(Workspace) && recordable.name == "Teams"
+  #
+  #   { scope: "featured_in.teams" }
+  # end
+
   # Optional: wrap engine screens in one host layout. Pass a layout name, or a
   # callable that receives `controller:` and returns a layout name. Leave this
   # unset and each screen keeps the layout it uses today. Authentication and

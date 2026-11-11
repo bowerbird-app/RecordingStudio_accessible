@@ -1850,6 +1850,63 @@ automatically use workspace, company, or team access. Use
 `authorized_through?` or `role_through` when you explicitly want one actor to
 use another actor's access grant.
 
+## Retitle manage access per recording
+
+A host locale file under `recording_studio.accessible.*` changes every
+manage-access screen. Use `config.access_management_copy` when one recording
+should use different chrome, for example a workspace whose page says Teams.
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.access_management_copy = lambda do |recording:, **|
+    recordable = recording&.recordable
+    next unless recordable.is_a?(Workspace) && recordable.name == "Teams"
+
+    { scope: "featured_in.teams" }
+  end
+end
+```
+
+Put the host strings under that scope, using the same relative keys as the gem:
+
+```yaml
+en:
+  featured_in:
+    teams:
+      manage:
+        title: "Teams"
+        add: "+ Teammate"
+        add_access: "+ Teammate"
+        empty_title: "No teammates yet"
+        empty_subtitle: "Invite someone onto this team."
+        access_menu: "Teams"
+      form:
+        new_title: "Add a teammate"
+        edit_title: "Change team access"
+      requests:
+        list_title: "Join requests"
+```
+
+Each chrome key looks up the host scope first, then
+`recording_studio.accessible.*`. A missing host key falls back. The callable
+may also return explicit strings (`{ "manage.title" => "Teams" }`) or both
+(`{ scope: "featured_in.teams", copy: { "manage.add" => "+ Teammate" } }`).
+This is the same `scope` / `copy` shape as access-request copy.
+
+The engine resolves copy from the recording on the server. It does not read
+titles from query params. If the callable raises or returns junk, the page
+keeps the defaults.
+
+The pack covers `manage.title`, `form.new_title`, `form.edit_title`,
+`manage.add`, `manage.add_access`, `manage.empty_title`,
+`manage.empty_subtitle`, `requests.list_title`, the default
+`manage.access_menu` label on `recording_studio_accessible_access_menu_item`,
+and the generated `recording_access_management_link` default. Flashes, errors,
+mail, invitation accept, role names, and `recordables.access.label` stay on
+the shared locale. Grants, roles, and authorization are unchanged.
+
+The dummy app uses this on the workspace named Teams.
+
 ## Internationalization
 
 The gem ships **English only** in `config/locales/en.yml`. Keys nest under `recording_studio.accessible.*`:
@@ -1882,7 +1939,11 @@ The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessibl
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 
-The dummy app configures actor types, through-authorization, and avatars in `test/dummy/config/initializers/recording_studio_accessible.rb`. It leaves an unknown email as an invitation until the signup page creates the user and accepts.
+The dummy app configures actor types, through-authorization, avatars, and
+`access_management_copy` in
+`test/dummy/config/initializers/recording_studio_accessible.rb`. The workspace
+named Teams retitles manage access. An unknown email stays an invitation until
+the signup page creates the user and accepts.
 
 Run it with:
 

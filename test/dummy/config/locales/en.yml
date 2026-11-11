@@ -32,3 +32,17 @@ en:
   early_access_demo:
     email_title: "Request early access"
     form_title: "Ask for early access"
+  featured_in:
+    teams:
+      manage:
+        title: "Teams"
+        add: "+ Teammate"
+        add_access: "+ Teammate"
+        empty_title: "No teammates yet"
+        empty_subtitle: "Invite someone onto this team."
+        access_menu: "Teams"
+      form:
+        new_title: "Add a teammate"
+        edit_title: "Change team access"
+      requests:
+        list_title: "Join requests"

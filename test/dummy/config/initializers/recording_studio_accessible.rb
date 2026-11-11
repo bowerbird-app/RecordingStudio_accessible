@@ -34,6 +34,13 @@ RecordingStudioAccessible.configure do |config|
   config.access_invitation_sign_in_url_resolver = lambda do |controller:, token:, **|
     controller.main_app.new_invitation_signup_path(token)
   end
+
+  config.access_management_copy = lambda do |recording:, **|
+    recordable = recording&.recordable
+    next unless recordable.is_a?(Workspace) && recordable.name == "Teams"
+
+    { scope: "featured_in.teams" }
+  end
 end
 
 Rails.application.config.to_prepare do

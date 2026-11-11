@@ -34,7 +34,7 @@ module RecordingStudioAccessible
       return if path.blank?
 
       dropdown.menu_item(
-        text: recording_studio_accessible_access_menu_label(label),
+        text: recording_studio_accessible_access_menu_label(label, recording),
         href: path,
         badge: recording_studio_accessible_access_holders(recording, scope: scope).size.to_s
       )
@@ -51,9 +51,13 @@ module RecordingStudioAccessible
       defined?(::FlatPack::Button::Dropdown::Component) && dropdown.respond_to?(:menu_item)
     end
 
-    def recording_studio_accessible_access_menu_label(label)
-      text = Copy.value(label, "manage.access_menu")
-      text.presence || Copy.t("manage.access_menu")
+    def recording_studio_accessible_access_menu_label(label, recording)
+      if Copy.provided?(label)
+        text = label.to_s.strip
+        return text if text.present?
+      end
+
+      AccessManagementCopy.resolve(recording: recording, controller: self).text("manage.access_menu")
     end
 
     def recording_studio_accessible_avatar_items(recording, scope: :direct)
@@ -141,7 +145,7 @@ module RecordingStudioAccessible
     def recording_studio_accessible_access_button(recording, button_size:, button_style:)
       recording_studio_accessible_button(
         recording,
-        text: Copy.t("manage.add_access"),
+        text: AccessManagementCopy.resolve(recording: recording, controller: self).text("manage.add_access"),
         button_size: button_size,
         button_style: button_style
       )

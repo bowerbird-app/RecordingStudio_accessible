@@ -419,6 +419,8 @@ workspace = Workspace.find_or_create_by!(name: "Accessible Demo Workspace")
 root_recording = ensure_root_recording(workspace)
 restricted_workspace = Workspace.find_or_create_by!(name: "Restricted Demo Workspace")
 restricted_root_recording = ensure_root_recording(restricted_workspace)
+teams_workspace = Workspace.find_or_create_by!(name: "Teams")
+teams_root_recording = ensure_root_recording(teams_workspace)
 message_root = upsert_message_root(name: "Messages Root")
 message_root_recording = ensure_root_recording(message_root)
 
@@ -585,6 +587,12 @@ sync_owned_root_access!(
   owner: users[:admin]
 )
 
+sync_owned_root_access!(
+  root_recording: teams_root_recording,
+  owner: users[:admin],
+  additional_grants: [ { actor: users[:editor], role: :edit } ]
+)
+
 sync_access_recordings(
   parent_recording: restricted_planning_recording,
   root_recording: restricted_root_recording,
@@ -639,3 +647,4 @@ puts "Seeded without direct page access for pages: #{welcome_pack.title}, #{acce
 
 puts "Seeded: Workspace '#{workspace.name}' with #{workspace.folders.count} folders"
 puts "Seeded: Workspace '#{restricted_workspace.name}' with #{restricted_workspace.folders.count} folder"
+puts "Seeded: Workspace '#{teams_workspace.name}' with retitled manage-access chrome"
