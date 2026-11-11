@@ -5,4 +5,5 @@
        anchor_href: recording_accesses_path(@recording)
      ) %>
 <% end %>
+<%= render "recording_studio_accessible/shared/grant_refused" %>
 <%= render "recording_studio_accessible/access_requests/list", page: @page, list_url: @list_url %>

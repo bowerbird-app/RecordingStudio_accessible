@@ -13,7 +13,8 @@ module RecordingStudioAccessible
           lock_grant_scope!
 
           existing_recordings = existing_access_recordings.to_a
-          access_recording = existing_recordings.first
+          access_recording = target_access_recording(existing_recordings)
+          refuse_if_hook_rejects!(access_recording)
 
           if access_recording
             update_existing_access_recording(access_recording, existing_recordings)
@@ -23,8 +24,44 @@ module RecordingStudioAccessible
         end
       end
 
+      def target_access_recording(existing_recordings)
+        return @access_recording if instance_variable_defined?(:@access_recording) && @access_recording
+
+        existing_recordings.first
+      end
+
+      def refuse_if_hook_rejects!(existing_recording)
+        recordable = existing_recording.recordable if existing_recording.respond_to?(:recordable)
+        previous_role = recordable.role if recordable.respond_to?(:role)
+        return if previous_role.present? && previous_role.to_s == @role.to_s
+
+        ::RecordingStudioAccessible::BeforeAccessGrant.call!(
+          ::RecordingStudioAccessible::BeforeAccessGrant.context_for(
+            actor: @actor,
+            recording: @recording,
+            role: @role,
+            source: grant_write_source(previous_role),
+            granted_by: manager_actor,
+            previous_role: previous_role
+          )
+        )
+      end
+
+      def grant_write_source(previous_role)
+        configured = grant_source
+        return configured unless configured == :grant
+
+        previous_role.present? ? :role_change : :grant
+      end
+
+      def grant_source
+        source = instance_variable_defined?(:@grant_source) ? @grant_source : :grant
+        ::RecordingStudioAccessible::GrantContext::SOURCES.include?(source) ? source : :grant
+      end
+
       def update_existing_access_recording(access_recording, existing_recordings)
-        deduplicate_access_recordings!(existing_recordings.drop(1))
+        extras = existing_recordings.reject { |recording| recording.id == access_recording.id }
+        deduplicate_access_recordings!(extras)
 
         RecordingStudioAccessible::AccessCreationContext.allow do
           root_recording.revise(access_recording, actor: manager_actor) do |access|

@@ -67,6 +67,7 @@ en:
         access_removed: "Access removed."
         invitation_already_accepted: "Invitation already accepted."
         sign_in_to_accept: "Sign in to accept this invitation"
+        grant_refused_cta: "See options"
       errors:
         invitation_not_found: "Invitation was not found"
         invitation_wrong_email: "This invitation was sent to a different email"
@@ -77,6 +78,7 @@ en:
         invitation_not_saved: "Invitation could not be saved"
         not_authorized: "Not authorized to manage access"
         last_admin: "Add another admin before removing the last one."
+        grant_refused: "This person can't be added right now."
         recording_required: "Recording is required"
         actor_required: "Actor is required"
         actor_or_email: "Give an actor id or an email, not both."

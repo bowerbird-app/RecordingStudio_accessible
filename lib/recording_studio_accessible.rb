@@ -7,6 +7,8 @@ require "recording_studio_accessible/version"
 require "recording_studio_accessible/copy"
 require "recording_studio_accessible/hooks"
 require "recording_studio_accessible/errors"
+require "recording_studio_accessible/grant_context"
+require "recording_studio_accessible/before_access_grant"
 require "recording_studio_accessible/compatibility"
 RecordingStudioAccessible::Compatibility.register_access_capability!
 RecordingStudioAccessible::Compatibility.register_action_audiences_capability!
@@ -142,13 +144,14 @@ module RecordingStudioAccessible
       )
     end
 
-    def grant_access(recording:, actor:, role:, manager_actor: nil, depends_on: nil)
+    def grant_access(recording:, actor:, role:, manager_actor: nil, depends_on: nil, source: :grant)
       Services::GrantRecordingAccess.call(
         recording: recording,
         actor: actor,
         role: role,
         manager_actor: manager_actor,
-        depends_on: depends_on
+        depends_on: depends_on,
+        source: source
       )
     end
 

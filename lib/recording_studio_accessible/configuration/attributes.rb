@@ -24,6 +24,7 @@ module RecordingStudioAccessible
         access_notification_locale
         access_management_authorizer
         access_management_copy
+        before_access_grant
         access_request_submitted_notifier
         access_request_denied_notifier
         access_request_index_recordings

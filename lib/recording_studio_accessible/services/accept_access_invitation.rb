@@ -73,7 +73,8 @@ module RecordingStudioAccessible
           recording: @invitation.recording,
           actor: @actor,
           role: @invitation.role,
-          manager_actor: @invitation.manager_actor
+          manager_actor: @invitation.manager_actor,
+          source: :invite_acceptance
         )
         return grant unless grant.success?
 

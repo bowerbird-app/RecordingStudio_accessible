@@ -107,6 +107,7 @@ fr:
         access_removed: "Accès retiré."
         invitation_already_accepted: "Invitation déjà acceptée."
         sign_in_to_accept: "Connectez-vous pour accepter cette invitation"
+        grant_refused_cta: "Voir les options"
       errors:
         invitation_not_found: "Invitation introuvable"
         invitation_wrong_email: "Cette invitation a été envoyée à une autre adresse e-mail"
@@ -117,6 +118,7 @@ fr:
         invitation_not_saved: "L’invitation n’a pas pu être enregistrée"
         not_authorized: "Vous n’êtes pas autorisé à gérer l’accès"
         last_admin: "Ajoutez un autre admin avant de retirer le dernier."
+        grant_refused: "Cette personne ne peut pas être ajoutée pour le moment."
         recording_required: "L’élément est obligatoire"
         actor_required: "La personne est obligatoire"
         actor_or_email: "Donnez un identifiant de personne ou un e-mail, pas les deux."

@@ -2,6 +2,8 @@
 <% content_for :subtitle, @invitation.email %>
 
 <div class="mt-6 w-full max-w-xl">
+  <%= render "recording_studio_accessible/shared/grant_refused" %>
+
   <%= render FlatPack::List::Component.new(divider: true) do %>
     <%= render FlatPack::List::Item.new do %>
       <%= accessible_t("invitations.email", email: @invitation.email) %>

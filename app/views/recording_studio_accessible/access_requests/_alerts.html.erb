@@ -4,3 +4,4 @@
 <% if modal_frame_request? && flash[:alert].present? %>
   <%= render FlatPack::Alert::Component.new(description: flash[:alert], style: :danger, class: "mb-[var(--stack-gap-lg)]") %>
 <% end %>
+<%= render "recording_studio_accessible/shared/grant_refused" %>

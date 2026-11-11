@@ -41,6 +41,18 @@ RecordingStudioAccessible.configure do |config|
 
     { scope: "featured_in.teams" }
   end
+
+  if ENV["RECORDING_STUDIO_ACCESSIBLE_GRANT_REFUSED_DEMO"] == "1"
+    config.before_access_grant = lambda do |context|
+      next if context.previous_role.present?
+
+      raise RecordingStudioAccessible::GrantRefused.new(
+        "You've filled every seat. Free one up, or pick a larger plan.",
+        cta_label: "See options",
+        cta_path: "/"
+      )
+    end
+  end
 end
 
 Rails.application.config.to_prepare do

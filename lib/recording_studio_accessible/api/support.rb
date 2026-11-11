@@ -73,6 +73,8 @@ module RecordingStudioAccessible
         handler = new(context)
         handler.ensure_access_children!
         handler.call
+      rescue ::RecordingStudioAccessible::GrantRefused => e
+        raise handler.send(:invalid_input_error, e.message, details: [e.message])
       end
 
       def initialize(context)

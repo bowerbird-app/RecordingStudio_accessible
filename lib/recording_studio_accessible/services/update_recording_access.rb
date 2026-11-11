@@ -4,6 +4,7 @@ module RecordingStudioAccessible
   module Services
     class UpdateRecordingAccess < BaseService
       include AccessRecordLifecycle
+      include AccessGrantWriter
 
       def initialize(recording:, access_recording:, role:, manager_actor: nil, controller: nil,
                      allow_last_admin_removal: false)
@@ -13,6 +14,8 @@ module RecordingStudioAccessible
         @manager_actor = manager_actor
         @controller = controller
         @allow_last_admin_removal = allow_last_admin_removal
+        @grant_source = :role_change
+        @actor = access_recording.respond_to?(:recordable) ? access_recording.recordable&.actor : nil
       end
 
       private
@@ -27,17 +30,14 @@ module RecordingStudioAccessible
           recordings: last_admin_recordings,
           allow_last_admin_removal: @allow_last_admin_removal
         ) do
-          RecordingStudioAccessible::AccessCreationContext.allow do
-            RecordingStudio.root_recording_or_self(@access_recording).revise(@access_recording,
-                                                                             actor: manager_actor) do |access|
-              access.role = @role
-            end
-          end
+          upsert_access_recording!
         end
 
         success(revised_recording)
       rescue ::RecordingStudioAccessible::LastAdminError => e
         failure(e, errors: [e])
+      rescue ::RecordingStudioAccessible::GrantRefused
+        raise
       rescue ActiveRecord::RecordInvalid => e
         failure(e.message, errors: e.record.errors.full_messages)
       rescue StandardError => e

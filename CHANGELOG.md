@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-11-11
+
+### Added
+- `config.before_access_grant` runs before a grant is created or its role
+  changes. Default `nil` keeps current behaviour. The callable receives a
+  frozen `GrantContext`. Raise `RecordingStudioAccessible::GrantRefused`
+  (`message`, optional `cta_label`, optional `cta_path`) to refuse. The
+  manage-access UI shows the message and an optional FlatPack button. API
+  `grant_access` / `update_access` return 422 with the message, not 500.
+- The hook runs in `AccessGrantWriter#upsert_access_recording!` after the
+  recording lock and built-in checks, so `grant_access`, `update_access`,
+  invite acceptance, and access-request approval share one write path.
+  Invite creation also runs it (`source: :invite`). Acceptance is the
+  authoritative check.
+
+### Upgrade notes
+- Additive. Leave the config unset and nothing changes.
+- Set `config.before_access_grant` for a host policy such as a seat cap.
+  Count direct grants on the locked recording. This gem does not know
+  about Stripe, plans, seats, or teams.
+- `bootstrap_owner_access!` does not call the hook. A first owner is never
+  blocked by default.
+- `GrantRefused` is not wrapped in a service Result. Rescue it in a host
+  controller if you call `grant_access` outside the mounted UI.
+
 ## [0.28.0] - 2026-11-11
 
 ### Changed

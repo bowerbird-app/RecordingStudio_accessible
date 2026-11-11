@@ -31,6 +31,8 @@
   <% end %>
 <% end %>
 
+<%= render "recording_studio_accessible/shared/grant_refused" %>
+
 <% show_actor_type_column = show_access_actor_type_column?(@direct_access_rows, @inherited_access_rows) %>
 
 <% people_rows = people_with_access_rows(@direct_access_rows, @pending_invitation_rows) %>

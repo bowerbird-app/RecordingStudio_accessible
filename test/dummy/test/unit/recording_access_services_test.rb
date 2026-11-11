@@ -125,6 +125,22 @@ module RecordingStudioAccessible
         end
       end
 
+      def test_grant_perform_lets_grant_refused_propagate
+        service = GrantRecordingAccess.new(recording: Recording.new(id: 1), actor: Actor.new(1), role: :view,
+                                           manager_actor: :manager)
+        refused = RecordingStudioAccessible::GrantRefused.new("You've filled every seat.")
+
+        service.stub(:validate_request, true) do
+          service.stub(:ensure_current_impersonator_accessor!, nil) do
+            service.stub(:upsert_access_recording!, -> { raise refused }) do
+              error = assert_raises(RecordingStudioAccessible::GrantRefused) { service.send(:perform) }
+
+              assert_equal refused, error
+            end
+          end
+        end
+      end
+
       def test_grant_upsert_creates_or_updates_inside_transaction
         recording = Recording.new(id: 1)
         actor = Actor.new(1)
@@ -215,14 +231,13 @@ module RecordingStudioAccessible
       def test_update_access_revises_valid_access_recording
         recording = Recording.new(id: 1)
         access_recording = valid_access_recording(recording)
-        root = RootRecorder.new(:updated_recording)
         service = UpdateRecordingAccess.new(recording: recording, access_recording: access_recording, role: :admin,
                                             manager_actor: :manager)
 
         RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
           service.stub(:valid_access_recording_for_parent?, true) do
             RecordingStudioAccessible::RoleCeiling.stub(:allowed?, true) do
-              RecordingStudio.stub(:root_recording_or_self, root) do
+              service.stub(:upsert_access_recording!, :updated_recording) do
                 result = service.send(:perform)
 
                 assert result.success?
