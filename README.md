@@ -978,7 +978,8 @@ ranked `:admin` grant on that recording or an ancestor. Pending invitations,
 trashed grants, and dependents whose manager is invalid do not count. The
 failure is `RecordingStudioAccessible::LastAdminError` (copy key
 `recording_studio.accessible.errors.last_admin`). The manage-access UI
-flashes that message. API `update_access` and `revoke_access` return 422.
+flashes that message. See `docs/screenshots/last-admin-flash.png`. API
+`update_access` and `revoke_access` return 422.
 
 Self-removal is allowed when another effective admin remains. Invitation
 revoke is never blocked. Destroying the recording is not guarded.
