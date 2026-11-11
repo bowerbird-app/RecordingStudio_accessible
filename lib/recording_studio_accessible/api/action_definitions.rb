@@ -8,9 +8,9 @@ module RecordingStudioAccessible
         fields: {},
         openapi: {
           summary: "List access",
-          description: "Lists direct and inherited grants on this recording.",
+          description: "Lists direct and inherited grants, plus pending email invitations, on this recording.",
           responses: {
-            "200" => { description: "Grants on this recording." },
+            "200" => { description: "Grants and pending invitations on this recording." },
             "403" => { description: "Not allowed to manage access." },
             "404" => { description: "Direct access is not enabled for this recording." }
           }

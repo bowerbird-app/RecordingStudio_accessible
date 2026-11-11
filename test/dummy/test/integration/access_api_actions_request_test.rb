@@ -26,8 +26,25 @@ class AccessApiActionsRequestTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     grants = JSON.parse(response.body).fetch("grants")
-    labels = grants.map { |row| row.dig("actor", "label") }
+    labels = grants.filter_map { |row| row.dig("actor", "label") }
     assert_includes labels, @admin.email
+  end
+
+  test "admin list_access includes pending invitations through the dispatcher" do
+    RecordingStudioAccessible.invite_access(
+      recording: @root,
+      email: "dispatcher-invite@example.com",
+      role: :view,
+      manager_actor: @admin
+    )
+
+    post_access_action(@root, :list_access, token_for(@admin_access, "Admin list invites"))
+
+    assert_response :success
+    grants = JSON.parse(response.body).fetch("grants")
+    pending = grants.find { |row| row["status"] == "pending" }
+    assert_equal "dispatcher-invite@example.com", pending.fetch("email")
+    assert_equal "view", pending.fetch("role")
   end
 
   test "editor and viewer list_access are 403 through the dispatcher" do
