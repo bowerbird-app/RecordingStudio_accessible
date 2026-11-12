@@ -6,7 +6,13 @@ module RecordingStudioAccessible
       def call
         authorize_management!
 
-        { grants: grant_list.rows.map { |row| Payload.grant_row(row) } }
+        { grants: grant_list.rows.map { |row| Payload.grant_row(row) } + invitation_rows }
+      end
+
+      private
+
+      def invitation_rows
+        Payload.pending_invitation_rows(recording)
       end
     end
 

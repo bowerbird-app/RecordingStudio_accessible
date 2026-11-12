@@ -431,6 +431,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.31.0
+
+No migration.
+
+`list_access` `grants` now includes unclosed email invitations (`status: pending` or `expired`) from `AccessInvitation.pending_rows_for`. Those rows have `email` and `role`, not `actor`. Direct and inherited grants use `status: granted`. Filter `status: granted` if you still want accepted grants alone. `grant_access` and `update_access` describe default roles from `RoleSet::DEFAULT_NAMES`; validation stays on `role_valid_for?`.
+
 #### Upgrading to 0.30.0
 
 No migration.
@@ -1320,9 +1326,9 @@ add a runtime gemspec dependency on `recording_studio_api`.
 
 | Action | Inputs | Result |
 | --- | --- | --- |
-| `list_access` | none | `{ grants: [...] }` with actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role`. Direct and inherited grants only — pending invitations are not listed. |
-| `grant_access` | `email` plus `role`, or `actor_id` plus `actor_type` plus `role` | granted row, or `{ invited: true, email, role, notice }` |
-| `update_access` | `actor_id`, `role`, optional `actor_type` | updated direct grant |
+| `list_access` | none | `{ grants: [...] }` with `status` (`granted`, `pending`, or `expired`). Granted rows include actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role`. Pending invitation rows include `email`, `role`, and `source_recording`. |
+| `grant_access` | `email` plus `role`, or `actor_id` plus `actor_type` plus `role`. `role` describes `RoleSet::DEFAULT_NAMES`; types may declare others | granted row, or `{ invited: true, email, role, notice }` |
+| `update_access` | `actor_id`, `role`, optional `actor_type`. Same `role` description as `grant_access` | updated direct grant |
 | `revoke_access` | `actor_id`, optional `actor_type` | `{ revoked: true, actor }` |
 
 Email is the people path and matches the manage-access form (`invite_access`).

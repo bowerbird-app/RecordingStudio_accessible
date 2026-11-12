@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-11-12
+
+### Added
+- `grant_access` and `update_access` API/MCP describe list default roles
+  from `RoleSet::DEFAULT_NAMES` on the `role` field. Types may declare
+  others. Validation stays on `role_valid_for?`.
+- `list_access` includes unclosed email invitations from
+  `AccessInvitation.pending_rows_for`. Those rows use `status: pending`
+  (or `expired`), plus `email` and `role`. Direct and inherited grants
+  use `status: granted`.
+
+### Upgrade notes
+- `list_access` `grants` is no longer grants-only. Pending invitation
+  rows have no `actor`. Filter `status: granted` if you still want
+  accepted grants alone.
+
 ## [0.30.0] - 2026-11-11
 
 ### Added
@@ -1089,7 +1105,11 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.25.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.30.0...v0.31.0
+[0.30.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.29.0...v0.30.0
+[0.29.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.28.0...v0.29.0
+[0.28.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.27.1...v0.28.0
 [0.25.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.2...v0.25.0
 [0.24.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.1...v0.24.2
 [0.24.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.0...v0.24.1

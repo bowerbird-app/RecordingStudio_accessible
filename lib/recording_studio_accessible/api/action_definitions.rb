@@ -8,9 +8,9 @@ module RecordingStudioAccessible
         fields: {},
         openapi: {
           summary: "List access",
-          description: "Lists direct and inherited grants on this recording.",
+          description: "Lists direct and inherited grants, plus pending email invitations, on this recording.",
           responses: {
-            "200" => { description: "Grants on this recording." },
+            "200" => { description: "Grants and pending invitations on this recording." },
             "403" => { description: "Not allowed to manage access." },
             "404" => { description: "Direct access is not enabled for this recording." }
           }
@@ -22,7 +22,14 @@ module RecordingStudioAccessible
           actor_id: { type: :string, allow_blank: false },
           actor_type: { type: :string, allow_blank: false },
           email: { type: :string, allow_blank: false },
-          role: { type: :string, required: true, allow_blank: false }
+          role: {
+            type: :string,
+            required: true,
+            allow_blank: false,
+            description:
+              "Default roles: #{RecordingStudioAccessible::RoleSet::DEFAULT_NAMES.join(', ')}. " \
+              "Types may declare others."
+          }
         },
         openapi: {
           summary: "Grant access",
@@ -40,7 +47,14 @@ module RecordingStudioAccessible
         fields: {
           actor_id: { type: :string, required: true, allow_blank: false },
           actor_type: { type: :string, allow_blank: false },
-          role: { type: :string, required: true, allow_blank: false }
+          role: {
+            type: :string,
+            required: true,
+            allow_blank: false,
+            description:
+              "Default roles: #{RecordingStudioAccessible::RoleSet::DEFAULT_NAMES.join(', ')}. " \
+              "Types may declare others."
+          }
         },
         openapi: {
           summary: "Update access",

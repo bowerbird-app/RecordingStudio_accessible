@@ -21,12 +21,33 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     create_direct_access_recording(actor: @editor, role: :edit, parent_recording: @root)
   end
 
+  test "grant_access accepts a custom declared role" do
+    Folder.accessible_roles :view, :download
+
+    granted = RecordingStudioAccessible::Api::GrantAccess.call(
+      admin_context(@folder, actor_id: @viewer.id.to_s, actor_type: "User", role: "download")
+    )
+
+    assert_equal false, granted.fetch(:invited)
+    assert_equal "download", granted.fetch(:role)
+    assert RecordingStudioAccessible.authorized_for_role?(
+      actor: @viewer, recording: @folder, role: :download
+    )
+  ensure
+    Folder.remove_instance_variable(:@accessible_role_set) if Folder.instance_variable_defined?(:@accessible_role_set)
+  end
+
   test "admin can list grant update and revoke access" do
     listed = RecordingStudioAccessible::Api::ListAccess.call(admin_context(@root))
-    emails = listed.fetch(:grants).map { |row| row.fetch(:actor).fetch(:label) }
+    emails = listed.fetch(:grants)
+                   .select { |row| row.fetch(:status) == "granted" }
+                   .map { |row| row.fetch(:actor).fetch(:label) }
     assert_includes emails, @admin.email
     assert_includes emails, @editor.email
-    listed.fetch(:grants).each { |row| refute row.fetch(:inherited) }
+    listed.fetch(:grants).each do |row|
+      refute row.fetch(:inherited)
+      assert_equal "granted", row.fetch(:status)
+    end
 
     granted = RecordingStudioAccessible::Api::GrantAccess.call(
       admin_context(@root, actor_id: @viewer.id.to_s, actor_type: "User", role: "view")
@@ -49,7 +70,7 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     refute RecordingStudioAccessible.authorized?(actor: @viewer, recording: @root, role: :view)
   end
 
-  test "list_access omits pending invitations" do
+  test "list_access includes pending invitations" do
     RecordingStudioAccessible.invite_access(
       recording: @root,
       email: "pending-invite@example.com",
@@ -58,10 +79,71 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     )
 
     listed = RecordingStudioAccessible::Api::ListAccess.call(admin_context(@root))
-    labels = listed.fetch(:grants).filter_map { |row| row.dig(:actor, :label) }
+    pending = listed.fetch(:grants).find { |row| row[:status] == "pending" }
 
-    refute_includes labels, "pending-invite@example.com"
+    assert_equal "pending-invite@example.com", pending.fetch(:email)
+    assert_equal "view", pending.fetch(:role)
+    assert_equal false, pending.fetch(:inherited)
+    assert_equal @root.id, pending.fetch(:source_recording).fetch(:id)
+    refute pending.key?(:actor)
     assert RecordingStudioAccessible::AccessInvitation.exists?(email: "pending-invite@example.com")
+  end
+
+  test "list_access marks expired unclosed invitations" do
+    RecordingStudioAccessible.invite_access(
+      recording: @root,
+      email: "expired-invite@example.com",
+      role: :edit,
+      manager_actor: @admin
+    )
+    RecordingStudioAccessible::AccessInvitation.find_by!(email: "expired-invite@example.com")
+                                 .update!(expires_at: 1.hour.ago)
+
+    listed = RecordingStudioAccessible::Api::ListAccess.call(admin_context(@root))
+    expired = listed.fetch(:grants).find { |row| row[:email] == "expired-invite@example.com" }
+
+    assert_equal "expired", expired.fetch(:status)
+    assert_equal "edit", expired.fetch(:role)
+  end
+
+  test "list_access omits accepted invitations" do
+    RecordingStudioAccessible.invite_access(
+      recording: @root,
+      email: "will-accept@example.com",
+      role: :view,
+      manager_actor: @admin
+    )
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "will-accept@example.com")
+    accepted = create_user("will-accept@example.com")
+    result = RecordingStudioAccessible.accept_access_invitation(invitation: invitation, actor: accepted)
+    assert result.success?
+
+    listed = RecordingStudioAccessible::Api::ListAccess.call(admin_context(@root))
+    emails = listed.fetch(:grants).filter_map { |row| row[:email] }
+
+    refute_includes emails, "will-accept@example.com"
+    assert listed.fetch(:grants).any? { |row| row.dig(:actor, :id) == accepted.id }
+  end
+
+  test "list_access pending invitations stay on their recording" do
+    RecordingStudioAccessible.invite_access(
+      recording: @root,
+      email: "root-invite@example.com",
+      role: :view,
+      manager_actor: @admin
+    )
+    RecordingStudioAccessible.invite_access(
+      recording: @folder,
+      email: "folder-invite@example.com",
+      role: :view,
+      manager_actor: @admin
+    )
+
+    listed = RecordingStudioAccessible::Api::ListAccess.call(admin_context(@folder))
+    emails = listed.fetch(:grants).filter_map { |row| row[:email] }
+
+    assert_includes emails, "folder-invite@example.com"
+    refute_includes emails, "root-invite@example.com"
   end
 
   test "non-admin is denied" do
@@ -229,7 +311,9 @@ class AccessApiActionsTest < ActiveSupport::TestCase
 
   test "inherited rows appear in list_access and cannot be updated or revoked" do
     listed = RecordingStudioAccessible::Api::ListAccess.call(admin_context(@folder))
-    inherited = listed.fetch(:grants).find { |row| row.fetch(:actor).fetch(:id) == @editor.id }
+    inherited = listed.fetch(:grants)
+                      .select { |row| row.fetch(:status) == "granted" }
+                      .find { |row| row.fetch(:actor).fetch(:id) == @editor.id }
 
     assert inherited.fetch(:inherited)
     assert_equal "edit", inherited.fetch(:role)

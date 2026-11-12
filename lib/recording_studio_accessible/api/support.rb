@@ -49,7 +49,24 @@ module RecordingStudioAccessible
           role: row.role&.to_s,
           effective_role: row.effective_role&.to_s,
           actor: actor(row.actor),
-          source_recording: recording(row.source_recording)
+          source_recording: recording(row.source_recording),
+          status: "granted"
+        }
+      end
+
+      def pending_invitation_rows(recording)
+        AccessInvitation.pending_rows_for(recording).map do |invitation|
+          pending_invitation_row(invitation, recording)
+        end
+      end
+
+      def pending_invitation_row(invitation, recording)
+        {
+          inherited: false,
+          role: invitation.role.to_s,
+          email: invitation.email,
+          source_recording: recording(recording),
+          status: invitation.expired ? "expired" : "pending"
         }
       end
 
