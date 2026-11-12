@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "recording_studio_accessible/api/request_action_definitions"
+
 module RecordingStudioAccessible
   module Api
     ACTION_DEFINITIONS = {
@@ -84,6 +86,6 @@ module RecordingStudioAccessible
           }
         }
       }
-    }.freeze
+    }.merge(REQUEST_ACTION_DEFINITIONS).freeze
   end
 end

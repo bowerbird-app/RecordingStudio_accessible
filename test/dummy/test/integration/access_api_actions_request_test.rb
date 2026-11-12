@@ -43,6 +43,8 @@ class AccessApiActionsRequestTest < ActionDispatch::IntegrationTest
     assert_response :success
     grants = JSON.parse(response.body).fetch("grants")
     pending = grants.find { |row| row["status"] == "pending" }
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "dispatcher-invite@example.com")
+    assert_equal invitation.id, pending.fetch("id")
     assert_equal "dispatcher-invite@example.com", pending.fetch("email")
     assert_equal "view", pending.fetch("role")
   end
@@ -178,6 +180,205 @@ class AccessApiActionsRequestTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
   end
 
+  test "member access actions are 401 without a bearer token" do
+    post_access_action(@root, :list_access, nil)
+    assert_response :unauthorized
+
+    post_access_action(@root, :revoke_access_invitation, nil, params: { invitation_id: "unused" })
+    assert_response :unauthorized
+
+    post_access_action(@root, :approve_access_request, nil, params: { request_recording_id: "unused", role: "view" })
+    assert_response :unauthorized
+
+    post_access_action(@root, :deny_access_request, nil, params: { request_recording_id: "unused" })
+    assert_response :unauthorized
+  end
+
+  test "admin revoke_access_invitation is 200 through the dispatcher" do
+    RecordingStudioAccessible.invite_access(
+      recording: @root,
+      email: "dispatcher-revoke-invite@example.com",
+      role: :view,
+      manager_actor: @admin
+    )
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "dispatcher-revoke-invite@example.com")
+
+    post_access_action(
+      @root,
+      :revoke_access_invitation,
+      token_for(@admin_access, "Admin revoke invite"),
+      params: { invitation_id: invitation.id.to_s }
+    )
+
+    assert_response :success
+    assert invitation.reload.revoked?
+  end
+
+  test "editor and viewer revoke_access_invitation are 403 through the dispatcher" do
+    RecordingStudioAccessible.invite_access(
+      recording: @root,
+      email: "dispatcher-editor-invite@example.com",
+      role: :view,
+      manager_actor: @admin
+    )
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "dispatcher-editor-invite@example.com")
+
+    post_access_action(
+      @root,
+      :revoke_access_invitation,
+      token_for(@editor_access, "Editor revoke invite"),
+      params: { invitation_id: invitation.id.to_s }
+    )
+    assert_response :forbidden
+
+    post_access_action(
+      @root,
+      :revoke_access_invitation,
+      token_for(@viewer_access, "Viewer revoke invite"),
+      params: { invitation_id: invitation.id.to_s }
+    )
+    assert_response :forbidden
+    refute invitation.reload.revoked?
+  end
+
+  test "cross-root revoke_access_invitation is 404 through the dispatcher" do
+    RecordingStudioAccessible.invite_access(
+      recording: @other_root,
+      email: "dispatcher-cross-invite@example.com",
+      role: :view,
+      manager_actor: @other_admin
+    )
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "dispatcher-cross-invite@example.com")
+
+    post_access_action(
+      @other_root,
+      :revoke_access_invitation,
+      token_for(@admin_access, "Cross-root revoke invite"),
+      params: { invitation_id: invitation.id.to_s }
+    )
+
+    assert_response :not_found
+    refute invitation.reload.revoked?
+  end
+
+  test "admin approve_access_request is 200 through the dispatcher" do
+    requester = create_user("api-request-approvee@example.com")
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: @root, actor: requester, role: "view", message: "Please"
+    ).value
+
+    post_access_action(
+      @root,
+      :approve_access_request,
+      token_for(@admin_access, "Admin approve request"),
+      params: { request_recording_id: request_recording.id.to_s, role: "view" }
+    )
+
+    assert_response :success
+    assert_equal "approved", request_recording.reload.recordable.status
+    assert RecordingStudioAccessible.authorized?(actor: requester, recording: @root, role: :view)
+  end
+
+  test "editor and viewer approve_access_request are 403 through the dispatcher" do
+    requester = create_user("api-request-blocked-approvee@example.com")
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: @root, actor: requester, role: "view"
+    ).value
+
+    post_access_action(
+      @root,
+      :approve_access_request,
+      token_for(@editor_access, "Editor approve request"),
+      params: { request_recording_id: request_recording.id.to_s, role: "view" }
+    )
+    assert_response :forbidden
+
+    post_access_action(
+      @root,
+      :approve_access_request,
+      token_for(@viewer_access, "Viewer approve request"),
+      params: { request_recording_id: request_recording.id.to_s, role: "view" }
+    )
+    assert_response :forbidden
+    assert_equal "pending", request_recording.reload.recordable.status
+  end
+
+  test "cross-root approve_access_request is 404 through the dispatcher" do
+    requester = create_user("api-request-cross-approvee@example.com")
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: @other_root, actor: requester, role: "view"
+    ).value
+
+    post_access_action(
+      @other_root,
+      :approve_access_request,
+      token_for(@admin_access, "Cross-root approve request"),
+      params: { request_recording_id: request_recording.id.to_s, role: "view" }
+    )
+
+    assert_response :not_found
+    assert_equal "pending", request_recording.reload.recordable.status
+  end
+
+  test "admin deny_access_request is 200 through the dispatcher" do
+    requester = create_user("api-request-denyed@example.com")
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: @root, actor: requester, role: "view", message: "Please"
+    ).value
+
+    post_access_action(
+      @root,
+      :deny_access_request,
+      token_for(@admin_access, "Admin deny request"),
+      params: { request_recording_id: request_recording.id.to_s, review_note: "Not this week" }
+    )
+
+    assert_response :success
+    assert_equal "denied", request_recording.reload.recordable.status
+    refute RecordingStudioAccessible.authorized?(actor: requester, recording: @root, role: :view)
+  end
+
+  test "editor and viewer deny_access_request are 403 through the dispatcher" do
+    requester = create_user("api-request-blocked-denyed@example.com")
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: @root, actor: requester, role: "view"
+    ).value
+
+    post_access_action(
+      @root,
+      :deny_access_request,
+      token_for(@editor_access, "Editor deny request"),
+      params: { request_recording_id: request_recording.id.to_s }
+    )
+    assert_response :forbidden
+
+    post_access_action(
+      @root,
+      :deny_access_request,
+      token_for(@viewer_access, "Viewer deny request"),
+      params: { request_recording_id: request_recording.id.to_s }
+    )
+    assert_response :forbidden
+    assert_equal "pending", request_recording.reload.recordable.status
+  end
+
+  test "cross-root deny_access_request is 404 through the dispatcher" do
+    requester = create_user("api-request-cross-denyed@example.com")
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: @other_root, actor: requester, role: "view"
+    ).value
+
+    post_access_action(
+      @other_root,
+      :deny_access_request,
+      token_for(@admin_access, "Cross-root deny request"),
+      params: { request_recording_id: request_recording.id.to_s }
+    )
+
+    assert_response :not_found
+    assert_equal "pending", request_recording.reload.recordable.status
+  end
+
   test "cross-root revoke_access is 404 through the dispatcher" do
     post_access_action(
       @other_root,
@@ -192,10 +393,13 @@ class AccessApiActionsRequestTest < ActionDispatch::IntegrationTest
   private
 
   def post_access_action(recording, action_name, token, params: {})
+    headers = {}
+    headers["Authorization"] = "Bearer #{token}" if token
+
     post "/recording_studio_api/api/v1/workspaces/#{recording.id}/actions/#{action_name}",
          params: params,
          as: :json,
-         headers: { "Authorization" => "Bearer #{token}" }
+         headers: headers
   end
 
   def token_for(access_recording, name)

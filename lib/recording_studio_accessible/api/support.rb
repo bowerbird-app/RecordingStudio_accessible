@@ -62,6 +62,7 @@ module RecordingStudioAccessible
 
       def pending_invitation_row(invitation, recording)
         {
+          id: invitation.id,
           inherited: false,
           role: invitation.role.to_s,
           email: invitation.email,
@@ -83,8 +84,40 @@ module RecordingStudioAccessible
       end
     end
 
+    module AccessActionRecords
+      private
+
+      def invitation_on_recording
+        AccessInvitation.where(recording_id: recording.id).find_by(id: param(:invitation_id))
+      end
+
+      def request_recording_on_parent
+        AccessRequestQuery.for_parent(recording).find_by(id: param(:request_recording_id))
+      end
+
+      def serialize_access_request(request_recording)
+        snapshot = request_recording.recordable
+        {
+          status: snapshot.status,
+          role: snapshot.role&.to_s,
+          actor: Payload.actor(snapshot.actor),
+          request_recording: Payload.recording(request_recording)
+        }
+      end
+
+      def serialize_revoked_invitation(invitation, outcome)
+        {
+          revoked: true,
+          id: invitation.id,
+          email: invitation.email,
+          notice: outcome.notice
+        }
+      end
+    end
+
     class Handler
       include ActorLookup
+      include AccessActionRecords
 
       def self.call(context)
         handler = new(context)

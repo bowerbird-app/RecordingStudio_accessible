@@ -15,7 +15,13 @@ class ApiTest < Minitest::Test
       RecordingStudioAccessible::Api.register_capability_actions!
 
       names = api.registrations.map { |registration| registration.fetch(:name) }
-      assert_equal %i[list_access grant_access update_access revoke_access], names
+      assert_equal(
+        %i[
+          list_access grant_access update_access revoke_access
+          revoke_access_invitation approve_access_request deny_access_request
+        ],
+        names
+      )
 
       api.registrations.each do |registration|
         assert_equal :accessible, registration.fetch(:capability)
@@ -59,7 +65,7 @@ class ApiTest < Minitest::Test
       by_api = api.registrations.group_by { |registration| registration.fetch(:api) }
       assert_equal %w[public operations], by_api.keys
       by_api.each_value do |registrations|
-        assert_equal 4, registrations.size
+        assert_equal 7, registrations.size
       end
     end
   end
@@ -68,7 +74,7 @@ class ApiTest < Minitest::Test
     expected = "Default roles: #{RecordingStudioAccessible::RoleSet::DEFAULT_NAMES.join(', ')}. " \
                "Types may declare others."
 
-    %i[grant_access update_access].each do |action|
+    %i[grant_access update_access approve_access_request].each do |action|
       role_field = RecordingStudioAccessible::Api::ACTION_DEFINITIONS
                    .fetch(action)
                    .fetch(:fields)
@@ -76,6 +82,22 @@ class ApiTest < Minitest::Test
 
       assert_equal expected, role_field.fetch(:description)
       refute role_field.key?(:enum)
+    end
+  end
+
+  def test_new_actions_use_type_first_openapi_titles
+    expected = {
+      revoke_access_invitation: ["Access Invitation - Revoke", "Withdraws a pending invitation on this recording."],
+      approve_access_request: ["Access Request - Approve", "Approves a pending request and grants the role."],
+      deny_access_request: ["Access Request - Deny", "Denies a pending access request on this recording."]
+    }
+
+    expected.each do |action, (title, summary)|
+      openapi = RecordingStudioAccessible::Api::ACTION_DEFINITIONS.fetch(action).fetch(:openapi)
+
+      assert_equal title, openapi.fetch(:title)
+      assert_equal summary, openapi.fetch(:summary)
+      refute_equal title, summary
     end
   end
 
