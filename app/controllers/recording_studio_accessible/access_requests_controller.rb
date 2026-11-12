@@ -88,6 +88,8 @@ module RecordingStudioAccessible
         RecordingStudioAccessible.approve_access_request(**review_args, role: params[:role]),
         "requests.flashes.approved"
       )
+    rescue RecordingStudioAccessible::GrantRefused => e
+      refuse_access_grant(e, location: review_location)
     end
 
     def deny
@@ -99,6 +101,8 @@ module RecordingStudioAccessible
 
     def transition
       review(transition_result, "requests.flashes.#{transition_flash}")
+    rescue RecordingStudioAccessible::GrantRefused => e
+      refuse_access_grant(e, location: review_location)
     end
 
     private

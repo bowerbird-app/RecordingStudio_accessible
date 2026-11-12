@@ -12,4 +12,13 @@ module RecordingStudioAccessible
       super(message.presence || Copy.t("errors.last_admin"))
     end
   end
+
+  class GrantRefused < Error
+    attr_reader :redirect_to
+
+    def initialize(message = nil, redirect_to: nil)
+      super(message.presence || Copy.t("errors.grant_refused"))
+      @redirect_to = redirect_to.presence
+    end
+  end
 end

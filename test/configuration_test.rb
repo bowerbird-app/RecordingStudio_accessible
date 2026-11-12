@@ -30,6 +30,10 @@ class ConfigurationTest < Minitest::Test
     assert_nil @configuration.resolve_access_management_copy(recording: :recording, controller: :controller)
   end
 
+  def test_before_access_grant_defaults_to_nil
+    assert_nil @configuration.before_access_grant
+  end
+
   def test_access_management_copy_callable_receives_recording_and_controller
     seen = nil
     @configuration.access_management_copy = lambda do |recording:, controller:|

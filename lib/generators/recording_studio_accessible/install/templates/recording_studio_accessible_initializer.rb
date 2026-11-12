@@ -137,6 +137,26 @@ RecordingStudioAccessible.configure do |config|
   #   { scope: "featured_in.teams" }
   # end
 
+  # Optional: refuse a grant the built-in checks would otherwise allow.
+  # Default nil means no extra check. Raise GrantRefused to refuse. Do not
+  # rescue other errors. Bootstrap of the first owner does not call this.
+  # The new-access page passes source :new_access. Role and the grantee
+  # actor are nil, and granted_by is the current actor. The invitation
+  # page passes source :new_invitation. Actor is the signed-in invitee,
+  # role is the invitation role, and granted_by is the inviter.
+  # config.before_access_grant = lambda do |context|
+  #   next if context.previous_role.present?
+  #
+  #   cap = 5
+  #   count = RecordingStudioAccessible.access_recordings_for(context.recording).count
+  #   next if count < cap
+  #
+  #   raise RecordingStudioAccessible::GrantRefused.new(
+  #     "You've filled every seat. Free one up, or pick a larger plan.",
+  #     redirect_to: "/plans"
+  #   )
+  # end
+
   # Optional: wrap engine screens in one host layout. Pass a layout name, or a
   # callable that receives `controller:` and returns a layout name. Leave this
   # unset and each screen keeps the layout it uses today. Authentication and

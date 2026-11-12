@@ -35,6 +35,7 @@
       <% layout.main do %>
         <main class="h-full overflow-auto p-6">
           <% flash.each do |level, message| %>
+            <% next unless %w[notice alert error].include?(level.to_s) %>
             <% next if message.blank? %>
             <div class="mb-4">
               <%= render FlatPack::Alert::Component.new(

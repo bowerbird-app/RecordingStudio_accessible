@@ -26,6 +26,8 @@ module RecordingStudioAccessible
         controller: self
       )
       redirect_to_access_index(result)
+    rescue RecordingStudioAccessible::GrantRefused => e
+      refuse_access_grant(e, location: recording_access_index_redirect_path)
     end
 
     private

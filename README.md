@@ -431,6 +431,18 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.31.0
+
+No migration.
+
+`list_access` `grants` now includes unclosed email invitations (`status: pending` or `expired`) from `AccessInvitation.pending_rows_for`. Those rows have `email` and `role`, not `actor`. Direct and inherited grants use `status: granted`. Filter `status: granted` if you still want accepted grants alone. `grant_access` and `update_access` describe default roles from `RoleSet::DEFAULT_NAMES`; validation stays on `role_valid_for?`.
+
+#### Upgrading to 0.30.0
+
+No migration.
+
+`before_access_grant` also runs before the new-access page (`source: :new_access`) and the invitation page (`source: :new_invitation`). On new access, `role` and the grantee (`actor`) are nil and `granted_by` is the current actor. On the invitation page, `actor` is the signed-in invitee, `role` is the invitation role, and `granted_by` is the inviter. Leave the config unset and those pages stay as they are.
+
 #### Upgrading to 0.22.0
 
 No migration.
@@ -1011,6 +1023,89 @@ result = RecordingStudioAccessible.grant_access(
 ```
 
 Independent grants omit `depends_on` and keep the previous behavior.
+
+### Refusing a grant from the host
+
+Set `config.before_access_grant` when the host must refuse a grant the gem
+would otherwise write. Featured In uses this for a plan seat cap. This gem
+does not know about plans, seats, Stripe, or teams.
+
+The callable receives one frozen `GrantContext` (`actor`, `actor_type`,
+`actor_id`, `recording`, `role`, `previous_role`, `source`, `granted_by`).
+`source` is `:grant`, `:role_change`, `:invite`, `:invite_acceptance`,
+`:access_request`, or `:bootstrap`. Return to allow. Raise
+`RecordingStudioAccessible::GrantRefused` to refuse. Pass optional
+`redirect_to` (a host path or URL such as `/plans`). Manage access then
+sends the manager to that page with the message in `flash[:alert]`. Omit
+it and the current page shows the alert only. Other exceptions are not
+converted into a refusal.
+
+The hook runs inside `AccessGrantWriter#upsert_access_recording!`, in the
+write transaction, after the recording lock and after the built-in checks
+(valid role, placement, duplicate handling, last-admin on role change).
+`grant_access`, `update_access`, invite acceptance, and access-request
+approval share that path. A host that counts direct grants on the locked
+recording is race-safe with other writers.
+
+Invite creation also runs the hook with `source: :invite` so a pending
+invite can fail early. Acceptance is the authoritative write.
+
+The new-access page calls the same hook after the manage-access check,
+with `source: :new_access`. `role` is nil, `actor` (the grantee) is nil,
+and `granted_by` is the current actor. The invitation page calls it after
+the signed-in check, with `source: :new_invitation`. `actor` is the
+signed-in invitee, `role` is the invitation role, and `granted_by` is the
+inviter. That matches an `:invite_acceptance` write.
+`GrantRefused` redirects or shows the alert the same way a refused write
+does. Any other error does not render the form. The write still runs the
+hook, so a direct POST is refused even when the page was shown.
+
+`bootstrap_owner_access!` writes through `create_access_recording` after its
+own lock. It does not call `before_access_grant`. A new workspace's first
+owner is never blocked by this hook.
+
+The manage-access screens do not show a gate button. Screenshots of Share
+access with no gate UI: `docs/screenshots/grant-refused-share-390.png` and
+`docs/screenshots/grant-refused-share-1280.png`. The dummy `/plans` flash:
+`docs/screenshots/grant-refused-plans-390.png` and
+`docs/screenshots/grant-refused-plans-1280.png`.
+
+Default is `nil`. Existing hosts keep current behaviour.
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.before_access_grant = lambda do |context|
+    next if context.previous_role.present?
+
+    root = RecordingStudio.root_recording_or_self(context.recording)
+    next unless root == context.recording
+
+    cap = 5
+    count = RecordingStudioAccessible.access_recordings_for(root).count
+    next if count < cap
+
+    raise RecordingStudioAccessible::GrantRefused.new(
+      "You've filled every seat. Free one up, or pick a larger plan.",
+      redirect_to: "/plans"
+    )
+  end
+end
+```
+
+Count the actor on the grant. Grants can target any allowlisted actor type,
+including a Workspace in this dummy. There is no separate Group or Team
+grant type in this gem. If the host grants a workspace (or another
+non-user actor), the hook sees that actor, not its members.
+
+Audience rules and access-point pages do not create Access grants. Access
+requests create a request row. Approval writes through
+`AccessGrantWriter` and is covered.
+
+`AccessCreationContext.allow` is an integrity gate around writing an
+Access recordable, not a product grant API. Call sites: create and
+revise in `AccessGrantWriter` (hook already ran), and
+`AccessGrantIntegrity` repair (not a product grant, so the hook does
+not run). Do not grant through that context yourself.
 
 ### Bootstrapping the first owner
 

@@ -9,7 +9,20 @@ module RecordingStudioAccessible
         existing = unclosed_invitation
         return resend_unclosed(existing, manager) if existing
 
+        refuse_invite!(manager)
         create_and_deliver(manager)
+      end
+
+      def refuse_invite!(manager)
+        ::RecordingStudioAccessible::BeforeAccessGrant.call!(
+          ::RecordingStudioAccessible::BeforeAccessGrant.context_for(
+            actor: nil,
+            recording: @recording,
+            role: @role,
+            source: :invite,
+            granted_by: manager
+          )
+        )
       end
 
       def create_and_deliver(manager)

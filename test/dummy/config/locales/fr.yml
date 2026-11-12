@@ -117,6 +117,7 @@ fr:
         invitation_not_saved: "L’invitation n’a pas pu être enregistrée"
         not_authorized: "Vous n’êtes pas autorisé à gérer l’accès"
         last_admin: "Ajoutez un autre admin avant de retirer le dernier."
+        grant_refused: "Cette personne ne peut pas être ajoutée pour le moment."
         recording_required: "L’élément est obligatoire"
         actor_required: "La personne est obligatoire"
         actor_or_email: "Donnez un identifiant de personne ou un e-mail, pas les deux."

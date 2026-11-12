@@ -88,6 +88,7 @@ module RecordingStudioAccessible
       @warn_on_core_conflict = true
       @layout = nil
       @access_management_copy = nil
+      @before_access_grant = nil
       @hooks = Hooks.new
       @action_audiences = ActionAudiences.new
     end

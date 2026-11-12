@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.29.0] - 2026-11-11
+## [0.31.0] - 2026-11-12
 
 ### Added
 - `grant_access` and `update_access` API/MCP describe list default roles
@@ -19,6 +19,54 @@ All notable changes to this project will be documented in this file.
 - `list_access` `grants` is no longer grants-only. Pending invitation
   rows have no `actor`. Filter `status: granted` if you still want
   accepted grants alone.
+
+## [0.30.0] - 2026-11-11
+
+### Added
+- `before_access_grant` runs before the new-access page
+  (`source: :new_access`) and the invitation page
+  (`source: :new_invitation`), after the existing access check. On new
+  access, `role` and `actor` are nil and `granted_by` is the current
+  actor. On the invitation page, `actor` is the signed-in invitee, `role`
+  is the invitation role, and `granted_by` is the inviter.
+  `GrantRefused` redirects or shows the alert the same way a refused write
+  does. Any other error does not render the form. The write path is
+  unchanged.
+
+### Upgrade notes
+- No migration. Leave `config.before_access_grant` unset and page
+  behaviour stays the same.
+- `:new_access` has a nil role and a nil grantee. `granted_by` is the
+  current actor. `:new_invitation` uses the signed-in invitee, the
+  invitation role, and the inviter, same as `:invite_acceptance`.
+
+## [0.29.0] - 2026-11-11
+
+### Added
+- `config.before_access_grant` runs before a grant is created or its role
+  changes. Default `nil` keeps current behaviour. The callable receives a
+  frozen `GrantContext`. Raise `RecordingStudioAccessible::GrantRefused`
+  (`message`, optional `redirect_to`) to refuse. Manage access redirects
+  to that host path with `flash[:alert]`, or stays on the current page
+  with the alert only. API `grant_access` / `update_access` return 422
+  with the message (and `redirect_to` in the error details when set),
+  not 500.
+- The hook runs in `AccessGrantWriter#upsert_access_recording!` after the
+  recording lock and built-in checks, so `grant_access`, `update_access`,
+  invite acceptance, and access-request approval share one write path.
+  Invite creation also runs it (`source: :invite`). Acceptance is the
+  authoritative check.
+
+### Upgrade notes
+- Additive. Leave the config unset and nothing changes.
+- Set `config.before_access_grant` for a host policy such as a seat cap.
+  Count direct grants on the locked recording. This gem does not know
+  about Stripe, plans, seats, or teams.
+- `bootstrap_owner_access!` does not call the hook. A first owner is never
+  blocked by default.
+- `GrantRefused` is not wrapped in a service Result. Rescue it in a host
+  controller if you call `grant_access` outside the mounted UI. Pass
+  `redirect_to` when the host has a page that should show the flash.
 
 ## [0.28.0] - 2026-11-11
 
@@ -1057,7 +1105,9 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.29.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.30.0...v0.31.0
+[0.30.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.27.1...v0.28.0
 [0.25.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.24.2...v0.25.0
