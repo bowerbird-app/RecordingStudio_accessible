@@ -218,6 +218,33 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     refute RecordingStudioAccessible.authorized?(actor: @viewer, recording: @root, role: :view)
   end
 
+  test "approve and deny use the access-request parent gate, not Access children" do
+    request_only = lambda do |child_type:, parent_recording:|
+      child_type.to_s == RecordingStudioAccessible::Compatibility::ACCESS_REQUEST_RECORDABLE_TYPE
+    end
+
+    RecordingStudio.stub(:parent_allowed?, request_only) do
+      refute RecordingStudioAccessible::Compatibility.access_management_allowed?(@root)
+      assert RecordingStudioAccessible::Compatibility.access_request_parent_allowed?(@root)
+
+      error = assert_raises(not_found_error_class) do
+        RecordingStudioAccessible::Api::GrantAccess.call(
+          admin_context(@root, actor_id: @viewer.id.to_s, actor_type: "User", role: "view")
+        )
+      end
+      assert_equal "Direct access is not enabled for this recording", error.message
+
+      request_recording = RecordingStudioAccessible.request_access(
+        recording: @root, actor: @viewer, role: "view", message: "Please"
+      ).value
+
+      denied = RecordingStudioAccessible::Api::DenyAccessRequest.call(
+        admin_context(@root, request_recording_id: request_recording.id.to_s)
+      )
+      assert_equal "denied", denied.fetch(:status)
+    end
+  end
+
   test "approve_access_request does not approve a request on another recording" do
     other_root = create_root_recording(Workspace.create!(name: "Request IDOR Workspace"))
     create_direct_access_recording(actor: @admin, role: :admin, parent_recording: other_root)

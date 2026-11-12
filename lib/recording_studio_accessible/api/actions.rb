@@ -159,6 +159,12 @@ module RecordingStudioAccessible
     end
 
     class ApproveAccessRequest < Handler
+      def ensure_access_children!
+        return if Compatibility.access_request_parent_allowed?(recording)
+
+        raise not_found_error(Copy.t("errors.direct_access_not_enabled"))
+      end
+
       def call
         authorize_management!
         result = RecordingStudioAccessible.approve_access_request(
@@ -173,6 +179,12 @@ module RecordingStudioAccessible
     end
 
     class DenyAccessRequest < Handler
+      def ensure_access_children!
+        return if Compatibility.access_request_parent_allowed?(recording)
+
+        raise not_found_error(Copy.t("errors.direct_access_not_enabled"))
+      end
+
       def call
         authorize_management!
         result = RecordingStudioAccessible.deny_access_request(

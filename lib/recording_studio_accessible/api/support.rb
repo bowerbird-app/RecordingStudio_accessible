@@ -5,18 +5,6 @@ require "recording_studio_accessible/api/actor_lookup"
 module RecordingStudioAccessible
   module Api
     ACTOR_TYPE_NAME = /\A(?:[A-Z][A-Za-z0-9]*::)*[A-Z][A-Za-z0-9]*\z/
-    MANAGE_ACCESS_ERRORS = {
-      "403" => { description: "Not allowed to manage access." },
-      "404" => { description: "Direct access is not enabled for this recording." }
-    }.freeze
-    ROLE_FIELD = {
-      type: :string,
-      allow_blank: false,
-      description:
-        "Default roles: #{RecordingStudioAccessible::RoleSet::DEFAULT_NAMES.join(', ')}. " \
-        "Types may declare others."
-    }.freeze
-    REQUIRED_ROLE_FIELD = ROLE_FIELD.merge(required: true).freeze
 
     class Error < StandardError; end
 

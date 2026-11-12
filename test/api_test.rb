@@ -87,16 +87,17 @@ class ApiTest < Minitest::Test
 
   def test_new_actions_use_type_first_openapi_titles
     expected = {
-      revoke_access_invitation: "Access Invitation - Revoke",
-      approve_access_request: "Access Request - Approve",
-      deny_access_request: "Access Request - Deny"
+      revoke_access_invitation: ["Access Invitation - Revoke", "Withdraws a pending invitation on this recording."],
+      approve_access_request: ["Access Request - Approve", "Approves a pending request and grants the role."],
+      deny_access_request: ["Access Request - Deny", "Denies a pending access request on this recording."]
     }
 
-    expected.each do |action, title|
+    expected.each do |action, (title, summary)|
       openapi = RecordingStudioAccessible::Api::ACTION_DEFINITIONS.fetch(action).fetch(:openapi)
 
       assert_equal title, openapi.fetch(:title)
-      assert_equal title, openapi.fetch(:summary)
+      assert_equal summary, openapi.fetch(:summary)
+      refute_equal title, summary
     end
   end
 
