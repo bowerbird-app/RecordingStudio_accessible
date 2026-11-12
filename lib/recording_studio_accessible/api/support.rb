@@ -5,6 +5,18 @@ require "recording_studio_accessible/api/actor_lookup"
 module RecordingStudioAccessible
   module Api
     ACTOR_TYPE_NAME = /\A(?:[A-Z][A-Za-z0-9]*::)*[A-Z][A-Za-z0-9]*\z/
+    MANAGE_ACCESS_ERRORS = {
+      "403" => { description: "Not allowed to manage access." },
+      "404" => { description: "Direct access is not enabled for this recording." }
+    }.freeze
+    ROLE_FIELD = {
+      type: :string,
+      allow_blank: false,
+      description:
+        "Default roles: #{RecordingStudioAccessible::RoleSet::DEFAULT_NAMES.join(', ')}. " \
+        "Types may declare others."
+    }.freeze
+    REQUIRED_ROLE_FIELD = ROLE_FIELD.merge(required: true).freeze
 
     class Error < StandardError; end
 
@@ -62,6 +74,7 @@ module RecordingStudioAccessible
 
       def pending_invitation_row(invitation, recording)
         {
+          id: invitation.id,
           inherited: false,
           role: invitation.role.to_s,
           email: invitation.email,
@@ -83,8 +96,40 @@ module RecordingStudioAccessible
       end
     end
 
+    module AccessActionRecords
+      private
+
+      def invitation_on_recording
+        AccessInvitation.where(recording_id: recording.id).find_by(id: param(:invitation_id))
+      end
+
+      def request_recording_on_parent
+        AccessRequestQuery.for_parent(recording).find_by(id: param(:request_recording_id))
+      end
+
+      def serialize_access_request(request_recording)
+        snapshot = request_recording.recordable
+        {
+          status: snapshot.status,
+          role: snapshot.role&.to_s,
+          actor: Payload.actor(snapshot.actor),
+          request_recording: Payload.recording(request_recording)
+        }
+      end
+
+      def serialize_revoked_invitation(invitation, outcome)
+        {
+          revoked: true,
+          id: invitation.id,
+          email: invitation.email,
+          notice: outcome.notice
+        }
+      end
+    end
+
     class Handler
       include ActorLookup
+      include AccessActionRecords
 
       def self.call(context)
         handler = new(context)

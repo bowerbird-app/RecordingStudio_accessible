@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-11-12
+
+### Added
+- Member actions `revoke_access_invitation`, `approve_access_request`, and
+  `deny_access_request` (`capability: :accessible`, `required_role: :admin`).
+  They wrap `RecordingStudioAccessible.revoke_access_invitation` and
+  `AccessRequestApi` approve/deny. Inputs are `invitation_id` and
+  `request_recording_id` (plus optional `role` or `review_note`).
+- `list_access` pending invitation rows include `id`, the invitation to
+  pass to `revoke_access_invitation`.
+
+### Upgrade notes
+- Additive. Same manage-access role as the HTML screens and the existing
+  grant/revoke actions. RS_API `0.19+` auto-enables `:accessible` member
+  actions on types that already declare that mixin. Hosts do not need to
+  list these names in `capability_actions` unless they set
+  `auto_capability_actions: false`. Accessible `0.25.0` said each type API
+  had to list the actions. That was true then. Current RS_API auto-enables
+  them. Do not register `RecordingStudio::Access` as an API resource.
+
 ## [0.31.0] - 2026-11-12
 
 ### Added
@@ -1105,7 +1125,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.28.0...v0.29.0

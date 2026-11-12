@@ -431,6 +431,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.32.0
+
+No migration.
+
+`revoke_access_invitation`, `approve_access_request`, and `deny_access_request` join the existing manage-access member actions (`required_role: :admin`). Pending `list_access` invitation rows include `id` for revoke. Recording Studio API `0.19+` auto-enables `:accessible` actions; you only list `capability_actions` when a type sets `auto_capability_actions: false`.
+
 #### Upgrading to 0.31.0
 
 No migration.
@@ -1326,10 +1332,13 @@ add a runtime gemspec dependency on `recording_studio_api`.
 
 | Action | Inputs | Result |
 | --- | --- | --- |
-| `list_access` | none | `{ grants: [...] }` with `status` (`granted`, `pending`, or `expired`). Granted rows include actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role`. Pending invitation rows include `email`, `role`, and `source_recording`. |
+| `list_access` | none | `{ grants: [...] }` with `status` (`granted`, `pending`, or `expired`). Granted rows include actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role`. Pending invitation rows include `id`, `email`, `role`, and `source_recording`. |
 | `grant_access` | `email` plus `role`, or `actor_id` plus `actor_type` plus `role`. `role` describes `RoleSet::DEFAULT_NAMES`; types may declare others | granted row, or `{ invited: true, email, role, notice }` |
 | `update_access` | `actor_id`, `role`, optional `actor_type`. Same `role` description as `grant_access` | updated direct grant |
 | `revoke_access` | `actor_id`, optional `actor_type` | `{ revoked: true, actor }` |
+| `revoke_access_invitation` | `invitation_id` | `{ revoked: true, id, email, notice }` |
+| `approve_access_request` | `request_recording_id`, optional `role` | approved request (`status`, `role`, `actor`, `request_recording`) |
+| `deny_access_request` | `request_recording_id`, optional `review_note` | denied request (`status`, `role`, `actor`, `request_recording`) |
 
 Email is the people path and matches the manage-access form (`invite_access`).
 `actor_id` grants also need `actor_type`, limited to the types the UI can grant
@@ -1342,28 +1351,28 @@ when `User` is in `access_actor_types`.
 
 Each action is `capability: :accessible`, `required_role: :admin`, member
 scope. Handlers call `AccessManagementPolicy` and the Grant / Invite / Update /
-Revoke services, so RoleCeiling, valid roles, shared-root refusal, and Access
-child compatibility apply as they do in the UI. Inherited rows are read-only.
-The error names the source recording to change instead. API invitation mail
-uses the mailer's `default_url_options` because the handler has no controller
-(`controller` is `nil`).
+Revoke / invitation / request services, so RoleCeiling, valid roles, shared-root
+refusal, and Access child compatibility apply as they do in the UI. Inherited
+rows are read-only. The error names the source recording to change instead. API
+invitation mail uses the mailer's `default_url_options` because the handler has
+no controller (`controller` is `nil`). `revoke_access_invitation` only matches
+an invitation on the member recording. Approve and deny only match an access
+request whose parent is that recording.
 
-Current Recording Studio API does not auto-enable capability actions from the
-`:accessible` mixin. List them on each type API:
+Recording Studio API `0.19+` auto-enables member actions whose capability is
+`:accessible` on types that already declare that mixin. You do not list them in
+`capability_actions` unless the type sets `auto_capability_actions: false`.
+Listing the names is still valid. MCP's generic `capability_action` tool sees
+the same auto-enabled set.
 
 ```ruby
 RecordingStudioApi.register_recordable_type_api(
   "Workspace",
   operations: %i[index show create update destroy],
-  capability_actions: %i[list_access grant_access update_access revoke_access],
   serializer: ->(workspace, **) { { name: workspace.name } },
   output_keys: %i[name]
 )
 ```
-
-A later RS_API release may enable these actions for types that already declare
-`:accessible`. Until then, the type's `capability_actions` list is what makes
-them callable and visible to MCP's generic `capability_action` tool.
 
 Do not register `RecordingStudio::Access` as an API resource. Callers address
 people through `actor_id` / `email` on the workspace, folder, press kit, or

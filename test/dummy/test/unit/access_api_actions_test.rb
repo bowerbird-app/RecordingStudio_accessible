@@ -81,6 +81,9 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     listed = RecordingStudioAccessible::Api::ListAccess.call(admin_context(@root))
     pending = listed.fetch(:grants).find { |row| row[:status] == "pending" }
 
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "pending-invite@example.com")
+
+    assert_equal invitation.id, pending.fetch(:id)
     assert_equal "pending-invite@example.com", pending.fetch(:email)
     assert_equal "view", pending.fetch(:role)
     assert_equal false, pending.fetch(:inherited)
@@ -146,6 +149,91 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     refute_includes emails, "root-invite@example.com"
   end
 
+  test "revoke_access_invitation withdraws a pending invitation on this recording" do
+    RecordingStudioAccessible.invite_access(
+      recording: @root,
+      email: "revoke-invite@example.com",
+      role: :view,
+      manager_actor: @admin
+    )
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "revoke-invite@example.com")
+
+    revoked = RecordingStudioAccessible::Api::RevokeAccessInvitation.call(
+      admin_context(@root, invitation_id: invitation.id.to_s)
+    )
+
+    assert_equal true, revoked.fetch(:revoked)
+    assert_equal invitation.id, revoked.fetch(:id)
+    assert_equal "revoke-invite@example.com", revoked.fetch(:email)
+    assert invitation.reload.revoked?
+  end
+
+  test "revoke_access_invitation does not revoke an invitation on another recording" do
+    other_root = create_root_recording(Workspace.create!(name: "Invite IDOR Workspace"))
+    create_direct_access_recording(actor: @admin, role: :admin, parent_recording: other_root)
+    RecordingStudioAccessible.invite_access(
+      recording: other_root,
+      email: "other-invite@example.com",
+      role: :view,
+      manager_actor: @admin
+    )
+    invitation = RecordingStudioAccessible::AccessInvitation.find_by!(email: "other-invite@example.com")
+
+    error = assert_raises(invalid_input_error_class) do
+      RecordingStudioAccessible::Api::RevokeAccessInvitation.call(
+        admin_context(@root, invitation_id: invitation.id.to_s)
+      )
+    end
+    assert_equal "Invitation was not found", error.message
+    refute invitation.reload.revoked?
+  end
+
+  test "approve_access_request grants the requester" do
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: @root, actor: @viewer, role: "view", message: "Please"
+    ).value
+
+    approved = RecordingStudioAccessible::Api::ApproveAccessRequest.call(
+      admin_context(@root, request_recording_id: request_recording.id.to_s, role: "view")
+    )
+
+    assert_equal "approved", approved.fetch(:status)
+    assert_equal "view", approved.fetch(:role)
+    assert_equal @viewer.id, approved.fetch(:actor).fetch(:id)
+    assert_equal request_recording.id, approved.fetch(:request_recording).fetch(:id)
+    assert RecordingStudioAccessible.authorized?(actor: @viewer, recording: @root, role: :view)
+  end
+
+  test "deny_access_request leaves the requester unauthorized" do
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: @root, actor: @viewer, role: "view", message: "Please"
+    ).value
+
+    denied = RecordingStudioAccessible::Api::DenyAccessRequest.call(
+      admin_context(@root, request_recording_id: request_recording.id.to_s, review_note: "Not this week")
+    )
+
+    assert_equal "denied", denied.fetch(:status)
+    assert_equal "Not this week", request_recording.reload.recordable.review_note
+    refute RecordingStudioAccessible.authorized?(actor: @viewer, recording: @root, role: :view)
+  end
+
+  test "approve_access_request does not approve a request on another recording" do
+    other_root = create_root_recording(Workspace.create!(name: "Request IDOR Workspace"))
+    create_direct_access_recording(actor: @admin, role: :admin, parent_recording: other_root)
+    request_recording = RecordingStudioAccessible.request_access(
+      recording: other_root, actor: @viewer, role: "view"
+    ).value
+
+    error = assert_raises(invalid_input_error_class) do
+      RecordingStudioAccessible::Api::ApproveAccessRequest.call(
+        admin_context(@root, request_recording_id: request_recording.id.to_s, role: "view")
+      )
+    end
+    assert_equal "Access request is required", error.message
+    assert_equal "pending", request_recording.reload.recordable.status
+  end
+
   test "non-admin is denied" do
     error = assert_raises(authorization_error_class) do
       RecordingStudioAccessible::Api::ListAccess.call(actor_context(@editor, @root))
@@ -155,6 +243,27 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     error = assert_raises(authorization_error_class) do
       RecordingStudioAccessible::Api::GrantAccess.call(
         actor_context(@editor, @root, actor_id: @viewer.id.to_s, actor_type: "User", role: "view")
+      )
+    end
+    assert_equal "Not authorized to manage access", error.message
+
+    error = assert_raises(authorization_error_class) do
+      RecordingStudioAccessible::Api::RevokeAccessInvitation.call(
+        actor_context(@editor, @root, invitation_id: "unused")
+      )
+    end
+    assert_equal "Not authorized to manage access", error.message
+
+    error = assert_raises(authorization_error_class) do
+      RecordingStudioAccessible::Api::ApproveAccessRequest.call(
+        actor_context(@editor, @root, request_recording_id: "unused", role: "view")
+      )
+    end
+    assert_equal "Not authorized to manage access", error.message
+
+    error = assert_raises(authorization_error_class) do
+      RecordingStudioAccessible::Api::DenyAccessRequest.call(
+        actor_context(@editor, @root, request_recording_id: "unused")
       )
     end
     assert_equal "Not authorized to manage access", error.message

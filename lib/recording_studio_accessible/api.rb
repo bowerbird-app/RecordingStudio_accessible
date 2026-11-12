@@ -11,7 +11,7 @@ module RecordingStudioAccessible
     INTERNAL_ROUTE_PARAMETER_KEYS = %i[api_key api_version member_action]
                                     .push("api_key", "api_version", "member_action").freeze
     IDENTITY_SERIALIZER = ->(payload) { payload }
-    ACTION_NAMES = %i[list_access grant_access update_access revoke_access].freeze
+    ACTION_NAMES = ACTION_DEFINITIONS.keys.freeze
 
     extend Registration
   end

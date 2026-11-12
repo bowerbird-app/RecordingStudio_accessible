@@ -143,5 +143,47 @@ module RecordingStudioAccessible
         { revoked: true, actor: Payload.actor(actor) }
       end
     end
+
+    class RevokeAccessInvitation < Handler
+      def call
+        authorize_management!
+        invitation = invitation_on_recording
+        result = RecordingStudioAccessible.revoke_access_invitation(
+          invitation: invitation,
+          manager_actor: manager_actor
+        )
+        raise_service_failure!(result) if result.failure?
+
+        serialize_revoked_invitation(invitation, result.value)
+      end
+    end
+
+    class ApproveAccessRequest < Handler
+      def call
+        authorize_management!
+        result = RecordingStudioAccessible.approve_access_request(
+          request_recording: request_recording_on_parent,
+          manager_actor: manager_actor,
+          role: param(:role)
+        )
+        raise_service_failure!(result) if result.failure?
+
+        serialize_access_request(result.value)
+      end
+    end
+
+    class DenyAccessRequest < Handler
+      def call
+        authorize_management!
+        result = RecordingStudioAccessible.deny_access_request(
+          request_recording: request_recording_on_parent,
+          manager_actor: manager_actor,
+          review_note: param(:review_note)
+        )
+        raise_service_failure!(result) if result.failure?
+
+        serialize_access_request(result.value)
+      end
+    end
   end
 end
