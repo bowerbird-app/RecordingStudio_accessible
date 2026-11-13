@@ -305,8 +305,47 @@ class AccessApiActionsTest < ActiveSupport::TestCase
         actor_context(only, root, actor_id: only.id.to_s, actor_type: "User", role: "view")
       )
     end
-    assert_equal "Add another admin before removing the last one.", error.message
+    assert_equal "Add another admin before changing the last admin's role.", error.message
     assert_equal :admin, RecordingStudioAccessible.role_for(actor: only, recording: root)
+  end
+
+  test "access action 200 schemas include the returned payload keys" do
+    grant = schema_for(:grant_access)
+    list = schema_for(:list_access)
+    revoke = schema_for(:revoke_access)
+    update = schema_for(:update_access)
+
+    %w[invited inherited role effective_role actor source_recording notice email].each do |key|
+      assert_includes schema_property_names(grant), key
+    end
+    %w[grants inherited role effective_role actor source_recording status email].each do |key|
+      assert_includes schema_property_names(list), key
+    end
+    %w[revoked actor id type label].each do |key|
+      assert_includes schema_property_names(revoke), key
+    end
+    %w[invited inherited role effective_role actor source_recording].each do |key|
+      assert_includes schema_property_names(update), key
+    end
+  end
+
+  test "openapi override changes one type and leaves generic copy on another" do
+    RecordingStudioAccessible::Api.override_openapi(
+      type: "Folder",
+      action: :grant_access,
+      title: "Folder - Grant Access",
+      description: "Folder-only grant copy."
+    )
+
+    folder = RecordingStudioAccessible::Api.openapi_for(:grant_access, type: "Folder")
+    workspace = RecordingStudioAccessible::Api.openapi_for(:grant_access, type: "Workspace")
+
+    assert_equal "Folder - Grant Access", folder.fetch(:title)
+    assert_equal "Folder-only grant copy.", folder.fetch(:description)
+    assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, workspace.fetch(:description)
+    refute workspace.key?(:title)
+  ensure
+    RecordingStudioAccessible::Api::OpenapiOverrides.reset!
   end
 
   test "inherited rows appear in list_access and cannot be updated or revoked" do
@@ -430,13 +469,31 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     refute RecordingStudioAccessible.authorized?(actor: @viewer, recording: @root, role: :view)
   end
 
-  test "actor_id grants require actor_type" do
+  test "grant_access defaults actor_type to User when User is allowed" do
+    granted = RecordingStudioAccessible::Api::GrantAccess.call(
+      admin_context(@root, actor_id: @viewer.id.to_s, role: "view")
+    )
+
+    assert_equal false, granted.fetch(:invited)
+    assert_equal "view", granted.fetch(:role)
+    assert_equal @viewer.id, granted.fetch(:actor).fetch(:id)
+    assert_equal "User", granted.fetch(:actor).fetch(:type)
+    assert RecordingStudioAccessible.authorized?(actor: @viewer, recording: @root, role: :view)
+  end
+
+  test "grant_access still requires actor_type when User is not allowed" do
+    previous = RecordingStudioAccessible.configuration.access_actor_types
+    RecordingStudioAccessible.configuration.access_actor_types = ["Workspace"]
+
     error = assert_raises(invalid_input_error_class) do
       RecordingStudioAccessible::Api::GrantAccess.call(
         admin_context(@root, actor_id: @viewer.id.to_s, role: "view")
       )
     end
     assert_equal "Actor type is required", error.message
+    refute RecordingStudioAccessible.authorized?(actor: @viewer, recording: @root, role: :view)
+  ensure
+    RecordingStudioAccessible.configuration.access_actor_types = previous
   end
 
   test "actor_type is allowlisted before constantize" do
@@ -508,6 +565,26 @@ class AccessApiActionsTest < ActiveSupport::TestCase
 
   def not_found_error_class
     api_error_class(:NotFoundError, RecordingStudioAccessible::Api::NotFoundError)
+  end
+
+  def schema_for(action)
+    RecordingStudioAccessible::Api.openapi_for(action).dig(:responses, "200", :content, "application/json", :schema)
+  end
+
+  def schema_property_names(node)
+    return [] if node.nil?
+
+    names = []
+    if node.is_a?(Hash)
+      properties = node[:properties] || node["properties"]
+      if properties.is_a?(Hash)
+        names.concat(properties.keys.map(&:to_s))
+        properties.each_value { |child| names.concat(schema_property_names(child)) }
+      end
+      names.concat(schema_property_names(node[:items] || node["items"]))
+      Array(node[:oneOf] || node["oneOf"]).each { |child| names.concat(schema_property_names(child)) }
+    end
+    names.uniq
   end
 
   def api_error_class(name, fallback)

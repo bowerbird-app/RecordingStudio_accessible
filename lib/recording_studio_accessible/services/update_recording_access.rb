@@ -34,8 +34,9 @@ module RecordingStudioAccessible
         end
 
         success(revised_recording)
-      rescue ::RecordingStudioAccessible::LastAdminError => e
-        failure(e, errors: [e])
+      rescue ::RecordingStudioAccessible::LastAdminError
+        error = ::RecordingStudioAccessible::LastAdminError.new(copy("errors.last_admin_role_change"))
+        failure(error, errors: [error])
       rescue ::RecordingStudioAccessible::GrantRefused
         raise
       rescue ActiveRecord::RecordInvalid => e

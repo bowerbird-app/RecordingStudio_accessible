@@ -99,7 +99,9 @@ class LastAdminGuardTest < ActiveSupport::TestCase
       manager_actor: @admin
     )
 
-    assert_last_admin_failure(result)
+    assert result.failure?
+    assert_equal "Add another admin before changing the last admin's role.", result.error
+    assert_kind_of RecordingStudioAccessible::LastAdminError, result.errors.first
     assert_equal :admin, RecordingStudioAccessible.role_for(actor: @admin, recording: @recording)
   end
 
