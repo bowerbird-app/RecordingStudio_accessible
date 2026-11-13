@@ -21,4 +21,13 @@ class CompanionHackCleanupTest < ActiveSupport::TestCase
   test "dummy does not ship the leftover hello Stimulus controller" do
     refute_path_exists Rails.root.join("app/javascript/controllers/hello_controller.js")
   end
+
+  test "dummy allows recording writes before an actor is signed in" do
+    assert_equal true, RecordingStudio.configuration.allow_unauthorized_writes
+    assert RecordingStudio.configuration.authorize_write.call(actor: nil)
+  end
+
+  test "recordings include purge_at for Trashable retention" do
+    assert_includes RecordingStudio::Recording.column_names, "purge_at"
+  end
 end

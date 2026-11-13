@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Development pins move to Recording Studio `v6.7.0`, FlatPack `v0.1.356`,
+  Trashable `v0.14.0`, Attachable `v0.23.0`, Users `v0.28.1`, Metrics `v0.8.0`,
+  Cache `v0.6.3`, Admin `v2.13.0`, Logs `v0.7.4`, API `v0.23.0`, Moveable
+  `v4.1.1`, and Icons `v0.2.1`. Dummy also pins Root Switchable `v0.15.0` and
+  Notifications `v0.15.0`. Internationalization stays `v0.2.0`.
+- Dummy recordings gain Trashable's nullable `purge_at` column. Dummy writes
+  set `authorize_write` and `allow_unauthorized_writes` so seeds and tests can
+  record before an actor is signed in.
+
+### Upgrade notes
+- No gemspec or version change. Re-bundle to pick up the release tags.
+- Hosts on Recording Studio 6.5+ need `config.authorize_write`, or
+  `config.allow_unauthorized_writes` when writes happen with no actor.
+- Install Trashable `0.14.0`'s `purge_at` migration and restamp existing trash
+  with `bin/rails recording_studio_trashable:restamp_purge_at`.
+
 ## [0.32.0] - 2026-11-13
 
 ### Added
