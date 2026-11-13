@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-11-13
+
+### Added
+- `RecordingStudioAccessible::Api.override_openapi` sets a per-type OpenAPI
+  `title` and `description` for Accessible capability actions. Other types keep
+  the generic `ACTION_DEFINITIONS` copy. Lookup is `openapi_for(action, type:)`.
+  Registration now passes that lookup to Recording Studio API as `openapi_for:`,
+  so OpenAPI and the MCP catalog use the per-type copy.
+- `grant_access`, `list_access`, `revoke_access`, and `update_access` document
+  real 200 schemas for the payloads those handlers already return.
+
+### Changed
+- `grant_access` with `actor_id` defaults `actor_type` to User when User is
+  allowed, matching `update_access` and `revoke_access`. If User is not
+  allowed, `actor_type` is still required.
+- Generic OpenAPI descriptions and field wording for the four access actions
+  now say that a second grant revises a direct grant, a known email is granted
+  immediately, and inherited grants and invitations are not updated or
+  revoked.
+- Demoting the last admin uses
+  "Add another admin before changing the last admin's role." Revoke still uses
+  "Add another admin before removing the last one." `LastAdminGuard` is
+  unchanged.
+
+### Upgrade notes
+- No migration.
+- Clients may omit `actor_type` on `grant_access` when granting a User and
+  User is in `access_actor_types`.
+- Last-admin role-change errors now use `errors.last_admin_role_change`.
+- Host gems can override title and description per recordable type without
+  changing Accessible's generic copy. Recording Studio API 0.23.0 reads the
+  registered `openapi_for:` callable.
+
 ## [0.31.0] - 2026-11-12
 
 ### Added
@@ -1105,7 +1138,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.28.0...v0.29.0

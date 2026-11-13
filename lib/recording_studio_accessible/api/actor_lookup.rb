@@ -7,7 +7,7 @@ module RecordingStudioAccessible
 
       def find_actor!(purpose: :lookup)
         actor_id = required_actor_id!
-        type_name = requested_actor_type_name(purpose)
+        type_name = requested_actor_type_name
         reject_disallowed_actor_type!(type_name)
         reject_ungrantable_actor_type!(type_name) if purpose == :grant
 
@@ -21,10 +21,10 @@ module RecordingStudioAccessible
         raise invalid_input_error(Copy.t("errors.actor_required"), details: [Copy.t("errors.actor_required")])
       end
 
-      def requested_actor_type_name(purpose)
+      def requested_actor_type_name
         given = param(:actor_type).to_s.strip.presence
         return given if given.present?
-        return default_actor_type_name if purpose != :grant && default_actor_type_name
+        return default_actor_type_name if default_actor_type_name
 
         raise invalid_input_error(Copy.t("errors.actor_type_required"), details: [Copy.t("errors.actor_type_required")])
       end

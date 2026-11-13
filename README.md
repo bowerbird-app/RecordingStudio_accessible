@@ -431,11 +431,17 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.32.0
+
+No migration.
+
+`grant_access` with `actor_id` now defaults `actor_type` to `User` when `User` is in `access_actor_types`, the same default `update_access` and `revoke_access` already used. If `User` is not allowed, `actor_type` is still required. Demoting the last admin returns `errors.last_admin_role_change` ("Add another admin before changing the last admin's role."). Revoke still uses `errors.last_admin`. Hosts can set per-type OpenAPI title and description with `RecordingStudioAccessible::Api.override_openapi(type:, action:, title:, description:)`; other types keep the generic Accessible copy. The four access actions now document real 200 schemas for the payloads they already return.
+
 #### Upgrading to 0.31.0
 
 No migration.
 
-`list_access` `grants` now includes unclosed email invitations (`status: pending` or `expired`) from `AccessInvitation.pending_rows_for`. Those rows have `email` and `role`, not `actor`. Direct and inherited grants use `status: granted`. Filter `status: granted` if you still want accepted grants alone. `grant_access` and `update_access` describe default roles from `RoleSet::DEFAULT_NAMES`; validation stays on `role_valid_for?`.
+`list_access` `grants` now includes unclosed email invitations (`status: pending` or `expired`) from `AccessInvitation.pending_rows_for`. Those rows have `email` and `role`, not `actor`. Direct and inherited grants use `status: granted`. Filter `status: granted` if you still want accepted grants alone. `grant_access` and `update_access` describe default roles from `RoleSet::DEFAULT_NAMES`; validation stays on `role_valid_for?`. See 0.32.0 for the User default on `grant_access` `actor_type` and per-type OpenAPI overrides.
 
 #### Upgrading to 0.30.0
 
@@ -1327,18 +1333,35 @@ add a runtime gemspec dependency on `recording_studio_api`.
 | Action | Inputs | Result |
 | --- | --- | --- |
 | `list_access` | none | `{ grants: [...] }` with `status` (`granted`, `pending`, or `expired`). Granted rows include actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role`. Pending invitation rows include `email`, `role`, and `source_recording`. |
-| `grant_access` | `email` plus `role`, or `actor_id` plus `actor_type` plus `role`. `role` describes `RoleSet::DEFAULT_NAMES`; types may declare others | granted row, or `{ invited: true, email, role, notice }` |
+| `grant_access` | `email` plus `role`, or `actor_id` plus `role` (`actor_type` defaults to User when User is allowed). `role` describes `RoleSet::DEFAULT_NAMES`; types may declare others | granted row, or `{ invited: true, email, role, notice }` |
 | `update_access` | `actor_id`, `role`, optional `actor_type`. Same `role` description as `grant_access` | updated direct grant |
 | `revoke_access` | `actor_id`, optional `actor_type` | `{ revoked: true, actor }` |
 
 Email is the people path and matches the manage-access form (`invite_access`).
-`actor_id` grants also need `actor_type`, limited to the types the UI can grant
-(`grantable_actors_for`, users by default). Do not mix `email` with `actor_id`.
+`actor_id` grants, updates, and revokes default `actor_type` to `User` when
+`User` is in `access_actor_types`. Otherwise `actor_type` is required. Grants
+are limited to the types the UI can grant (`grantable_actors_for`, users by
+default). Do not mix `email` with `actor_id`.
 `update_access` and `revoke_access` change or remove a direct grant for that
 actor on this recording. They refuse inherited grants; change the source
 recording instead. They also refuse a write that would remove the last
-effective admin (`recording_studio.accessible.errors.last_admin`, HTTP 422). `actor_type` is optional there and defaults to `User` only
-when `User` is in `access_actor_types`.
+effective admin (HTTP 422). Revoke uses
+`recording_studio.accessible.errors.last_admin`. A last-admin role change uses
+`errors.last_admin_role_change`.
+
+Host gems can override OpenAPI title and description for one recordable type
+without changing other types:
+
+```ruby
+RecordingStudioAccessible::Api.override_openapi(
+  type: "Folder",
+  action: :grant_access,
+  title: "Folder - Grant Access",
+  description: "Grant a role on this folder."
+)
+```
+
+The generic copy stays on `ACTION_DEFINITIONS`. `openapi_for(:grant_access, type: "Folder")` applies the override. Accessible registers that lookup as `openapi_for:` on each capability action so Recording Studio API OpenAPI and the MCP catalog use the per-type copy.
 
 Each action is `capability: :accessible`, `required_role: :admin`, member
 scope. Handlers call `AccessManagementPolicy` and the Grant / Invite / Update /

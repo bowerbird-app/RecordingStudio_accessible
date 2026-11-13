@@ -77,6 +77,7 @@ en:
         invitation_not_saved: "Invitation could not be saved"
         not_authorized: "Not authorized to manage access"
         last_admin: "Add another admin before removing the last one."
+        last_admin_role_change: "Add another admin before changing the last admin's role."
         grant_refused: "This person can't be added right now."
         recording_required: "Recording is required"
         actor_required: "Actor is required"
