@@ -46,6 +46,7 @@ require "recording_studio_accessible/authorization_class_methods"
 require "recording_studio_accessible/configuration"
 require "recording_studio_accessible/authorization"
 require "recording_studio_accessible/direct_access_query"
+require "recording_studio_accessible/actors_with_access"
 require "recording_studio_accessible/access_grant_list"
 require "recording_studio_accessible/last_admin_guard"
 require "recording_studio_accessible/services/base_service"
@@ -106,6 +107,14 @@ module RecordingStudioAccessible
 
     def role_for(actor:, recording:)
       Authorization.role_for(actor: actor, recording: recording)
+    end
+
+    # Actors who hold an effective role on the recording at or above
+    # minimum_role. Each entry is an ActorAccess (actor, role). Role is the
+    # strongest effective role, matching role_for. Invitations and audience
+    # gates are not included.
+    def actors_with_access(recording:, minimum_role: :view)
+      ActorsWithAccess.new(recording).entries(minimum_role: minimum_role)
     end
 
     def authorized?(actor:, recording:, role:)

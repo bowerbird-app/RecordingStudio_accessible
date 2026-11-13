@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.33.0] - 2026-11-13
+
+### Added
+- `RecordingStudioAccessible.actors_with_access(recording:, minimum_role: :view)`
+  returns each actor with an effective role on that recording. The role is the
+  strongest kept grant on the same path `role_for` uses. Actors load in batches
+  per polymorphic type. Missing actors are skipped. Invitations and audience
+  gates are not included.
+
+### Changed
+- `list_access` (`AccessGrantList.rows_for`) and `LastAdminGuard` use that
+  batched lookup. Direct and inherited output, source, and pending invitations
+  stay. A grant that is not effective (a dependent whose manager does not hold)
+  is omitted. An inherited effective grant for that actor still shows.
+
+### Upgrade notes
+- No migration.
+- `list_access` no longer returns an ineffective dependent grant. Filter
+  nothing new to drop those rows; they are already gone. Call
+  `actors_with_access` when you need the effective set rather than the grant
+  list.
+
 ## [Unreleased]
 
 ### Changed
@@ -1155,7 +1177,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.32.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.33.0...HEAD
+[0.33.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.29.0...v0.30.0

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "recording_studio_accessible/actors_with_access"
+
 module RecordingStudioAccessible
   class AccessGrantList
     Row = Struct.new(
@@ -51,14 +53,14 @@ module RecordingStudioAccessible
     end
 
     def collect_inherited_rows
-      seen = build_actor_keys(direct_access_recordings)
+      seen = direct_rows.to_set { |row| actor_key_for(row.actor) }
       ancestor_access_recordings.filter_map do |access_recording|
         inherited_row_if_new(access_recording, seen)
       end
     end
 
     def inherited_row_if_new(access_recording, seen)
-      actor = access_recording.recordable.actor
+      actor = actor_for(access_recording)
       return unless actor
 
       key = actor_key_for(actor)
@@ -72,28 +74,29 @@ module RecordingStudioAccessible
     end
 
     def row_for(access_recording, inherited:)
-      actor = access_recording.recordable.actor
-      return unless actor
+      actor = actor_for(access_recording)
+      return unless actor && lookup.effective_grant?(access_recording)
 
-      Row.new(
-        inherited: inherited,
-        role: access_recording.recordable.role,
-        effective_role: effective_role_for(actor),
-        actor: actor,
-        source_recording: inherited ? access_recording.parent_recording : @recording,
-        access_recording: inherited ? nil : access_recording
-      )
+      Row.new(inherited: inherited, role: access_recording.recordable.role, actor: actor,
+              effective_role: effective_role_for(actor),
+              source_recording: inherited ? access_recording.parent_recording : @recording,
+              access_recording: inherited ? nil : access_recording)
     end
 
     def direct_access_recordings
-      @direct_access_recordings ||= DirectAccessQuery.access_recordings_for(@recording)
-                                                     .order(created_at: :asc, id: :asc)
+      @direct_access_recordings ||= ordered_grants_for(@recording)
     end
 
     def ancestor_access_recordings
-      ancestor_recordings.flat_map do |recording|
-        DirectAccessQuery.access_recordings_for(recording).order(created_at: :asc, id: :asc)
-      end
+      ancestor_recordings.flat_map { |recording| ordered_grants_for(recording) }
+    end
+
+    def ordered_grants_for(recording)
+      Array(grants_by_parent_id[recording&.id]).sort_by { |grant| [grant.created_at, grant.id.to_s] }
+    end
+
+    def grants_by_parent_id
+      @grants_by_parent_id ||= lookup.grants.group_by(&:parent_recording_id)
     end
 
     def ancestor_recordings
@@ -108,11 +111,11 @@ module RecordingStudioAccessible
       ancestors
     end
 
-    def build_actor_keys(access_recordings)
-      access_recordings.filter_map do |access_recording|
-        actor = access_recording.recordable.actor
-        actor_key_for(actor) if actor
-      end.to_set
+    def actor_for(access_recording)
+      access = access_recording.recordable
+      return unless access
+
+      lookup.actor_at(access.actor_type, access.actor_id)
     end
 
     def actor_key_for(actor)
@@ -120,7 +123,11 @@ module RecordingStudioAccessible
     end
 
     def effective_role_for(actor)
-      RecordingStudioAccessible.role_for(actor: actor, recording: @recording)
+      lookup.effective_role_for(actor)
+    end
+
+    def lookup
+      @lookup ||= ActorsWithAccess.new(@recording)
     end
   end
 end

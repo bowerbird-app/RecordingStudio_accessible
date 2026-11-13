@@ -36,6 +36,19 @@ module RecordingStudioAccessible
           .order(created_at: :desc, id: :desc)
       end
 
+      # Kept Access recordings whose parent is in the set. One query for the
+      # whole set, plus a preload of the Access rows. Callers pass the same
+      # recordings AccessPath uses for role_for.
+      def access_recordings_for_parents(recordings)
+        parent_ids = Array(recordings).filter_map { |recording| recording.respond_to?(:id) ? recording.id : nil }
+        parent_ids.uniq!
+        return RecordingStudio::Recording.none if parent_ids.empty?
+
+        active_recordings_scope
+          .where(parent_recording_id: parent_ids, recordable_type: "RecordingStudio::Access")
+          .includes(:recordable)
+      end
+
       def access_recordings_depending_on(recording_id)
         return RecordingStudio::Recording.none if recording_id.blank?
         return RecordingStudio::Recording.none unless RecordingStudioAccessible::DependentAccess.column_available?
