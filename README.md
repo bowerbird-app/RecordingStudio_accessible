@@ -1361,7 +1361,7 @@ RecordingStudioAccessible::Api.override_openapi(
 )
 ```
 
-The generic copy stays on `ACTION_DEFINITIONS`. `openapi_for(:grant_access, type: "Folder")` applies the override. The Recording Studio API catalog still merges the generic `action.openapi` onto every type unless the host or a later API release reads `openapi_for` for that type.
+The generic copy stays on `ACTION_DEFINITIONS`. `openapi_for(:grant_access, type: "Folder")` applies the override. Accessible registers that lookup as `openapi_for:` on each capability action so Recording Studio API OpenAPI and the MCP catalog use the per-type copy.
 
 Each action is `capability: :accessible`, `required_role: :admin`, member
 scope. Handlers call `AccessManagementPolicy` and the Grant / Invite / Update /

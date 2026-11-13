@@ -84,7 +84,8 @@ module RecordingStudioAccessible
           handler: definition.fetch(:handler),
           serializer: IDENTITY_SERIALIZER,
           input_contract: input_contract_for(definition.fetch(:fields)),
-          openapi: openapi_for(name)
+          openapi: openapi_for(name),
+          openapi_for: ->(type:, action:) { openapi_for(action, type: type) }
         )
       end
 

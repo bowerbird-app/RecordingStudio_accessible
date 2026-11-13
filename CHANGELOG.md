@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - `RecordingStudioAccessible::Api.override_openapi` sets a per-type OpenAPI
   `title` and `description` for Accessible capability actions. Other types keep
   the generic `ACTION_DEFINITIONS` copy. Lookup is `openapi_for(action, type:)`.
+  Registration now passes that lookup to Recording Studio API as `openapi_for:`,
+  so OpenAPI and the MCP catalog use the per-type copy.
 - `grant_access`, `list_access`, `revoke_access`, and `update_access` document
   real 200 schemas for the payloads those handlers already return.
 
@@ -32,7 +34,8 @@ All notable changes to this project will be documented in this file.
   User is in `access_actor_types`.
 - Last-admin role-change errors now use `errors.last_admin_role_change`.
 - Host gems can override title and description per recordable type without
-  changing Accessible's generic copy.
+  changing Accessible's generic copy. Recording Studio API 0.23.0 reads the
+  registered `openapi_for:` callable.
 
 ## [0.31.0] - 2026-11-12
 

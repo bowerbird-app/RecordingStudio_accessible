@@ -329,7 +329,10 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     end
   end
 
-  test "openapi override changes one type and leaves generic copy on another" do
+  test "openapi override reaches Recording Studio API output per type" do
+    skip "Recording Studio API is not loaded" unless defined?(RecordingStudioApi)
+    skip unless RecordingStudioApi.respond_to?(:openapi_document)
+
     RecordingStudioAccessible::Api.override_openapi(
       type: "Folder",
       action: :grant_access,
@@ -337,8 +340,9 @@ class AccessApiActionsTest < ActiveSupport::TestCase
       description: "Folder-only grant copy."
     )
 
-    folder = RecordingStudioAccessible::Api.openapi_for(:grant_access, type: "Folder")
-    workspace = RecordingStudioAccessible::Api.openapi_for(:grant_access, type: "Workspace")
+    document = RecordingStudioApi.openapi_document
+    folder = member_action_operation(document, "folders", "grant_access")
+    workspace = member_action_operation(document, "workspaces", "grant_access")
 
     assert_equal "Folder - Grant Access", folder.fetch(:title)
     assert_equal "Folder-only grant copy.", folder.fetch(:description)
@@ -565,6 +569,16 @@ class AccessApiActionsTest < ActiveSupport::TestCase
 
   def not_found_error_class
     api_error_class(:NotFoundError, RecordingStudioAccessible::Api::NotFoundError)
+  end
+
+  def member_action_operation(document, resource_name, action_name)
+    paths = document.fetch(:paths)
+    path = paths.keys.find do |candidate|
+      candidate.to_s.end_with?("/#{resource_name}/{id}/actions/#{action_name}")
+    end
+    refute_nil path, "expected #{resource_name} #{action_name} in OpenAPI paths"
+
+    paths.fetch(path).fetch("post") { paths.fetch(path).fetch(:post) }
   end
 
   def schema_for(action)
