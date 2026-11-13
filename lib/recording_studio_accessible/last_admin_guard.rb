@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-require "recording_studio_accessible/extracted/recording_studio/access_roles"
-
 module RecordingStudioAccessible
   # Keeps at least one effective :admin on a recording that already has one.
-  # Effective admin matches AccessGrantList / authorized?(:admin): a kept,
+  # Effective admin matches actors_with_access / authorized?(:admin): a kept,
   # ranked admin grant on the recording or an ancestor. Pending invitations,
   # trashed grants, and dependents whose manager is invalid do not count.
   class LastAdminGuard
@@ -25,9 +23,7 @@ module RecordingStudioAccessible
       def administered?(recording)
         return false unless recording
 
-        AccessGrantList.rows_for(recording).any? do |row|
-          RecordingStudio::AccessRoles.satisfies?(role: row.effective_role, minimum_role: :admin)
-        end
+        RecordingStudioAccessible.actors_with_access(recording: recording, minimum_role: :admin).any?
       end
 
       def dependent_parent_recordings(access_recording)

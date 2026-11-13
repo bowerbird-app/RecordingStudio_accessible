@@ -9,7 +9,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 - child-only `RecordingStudio::Access` recordables for direct grants under opted-in recordings
 - optional dependent grants: one Access recording can be capped by and die with another Access recording on the same root. Dependents void in place when the manager Access is revised weaker, trashed, destroyed, or moved — they do not follow a move
 - optional per-action audiences (`public`, `signed_in`, `granted`, plus `register_audience`) with workspace limits and per-recording rules
-- `RecordingStudioAccessible.role_for`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, and named-action checks
+- `RecordingStudioAccessible.role_for`, `actors_with_access`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, and named-action checks
 - a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
 - Recording Studio API member actions (`list_access`, `grant_access`,
   `update_access`, `revoke_access`) that wrap the same grant path, when
@@ -430,6 +430,14 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.33.0
+
+No migration.
+
+`RecordingStudioAccessible.actors_with_access(recording:, minimum_role: :view)` lists each actor who has an effective role on that recording, with that role. It follows the same path and rules as `role_for`. It does not include invitations or audience gates (`public`, `signed_in`).
+
+`list_access` still returns direct grants, inherited grants, and pending invitations. A direct or inherited grant that is not effective (a dependent whose manager is missing, trashed, off-root, or weaker) is left out. If that actor still has an effective grant on an ancestor, the inherited row remains.
 
 #### Upgrading to 0.32.0
 
@@ -1561,7 +1569,14 @@ RecordingStudioAccessible.authorized?(actor: user, recording: root_recording, ro
 
 # Equivalent namespaced form:
 RecordingStudioAccessible::Authorization.allowed?(actor: user, recording: root_recording, role: :edit)
+
+# Every actor with an effective role on this recording. Each entry is an
+# ActorAccess: entry.actor, entry.role. role matches role_for for that actor.
+# minimum_role defaults to :view (view < edit < admin).
+RecordingStudioAccessible.actors_with_access(recording: page_recording, minimum_role: :edit)
 ```
+
+`actors_with_access` walks the same path as `role_for`: the recording, its ancestors, and `root_recording_or_self`. It reads kept grants on that set in one query, drops a dependent grant that is not effective, and keeps the strongest role per actor. Actors are loaded per polymorphic type. A grant whose actor record is gone is skipped. Invitations and audience gates are not access grants, so they are not listed. There is no everyone row.
 
 Existing checks remain exact actor checks. For example, this checks whether the
 workspace itself has edit access to the recording:
