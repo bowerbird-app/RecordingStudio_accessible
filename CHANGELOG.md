@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Dependent voiding records the deleted events for a batch in one insert and
+  checks last-admin once per parent recording. Each voided grant is still
+  destroyed, so destroy callbacks still run. The grants removed, the deleted
+  events, and a last-admin rollback stay the same.
+
+### Upgrade notes
+- No migration and no caller change. A void that would remove the last admin
+  still rolls back the whole batch.
+
 ## [0.36.0] - 2026-11-14
 
 ### Breaking

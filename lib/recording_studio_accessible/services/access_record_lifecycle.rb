@@ -36,16 +36,19 @@ module RecordingStudioAccessible
           same_root?(recording, access_recording)
       end
 
-      def destroy_access_recording!(access_recording, manager_actor:)
-        access_id = access_recording.recordable_id
-        parent_recording = access_recording.parent_recording
+      def destroy_access_recording!(access_recording, manager_actor:, record_event: true)
+        if record_event
+          parent_recording = access_recording.parent_recording
+          target = parent_recording || access_recording
+          RecordingStudio.root_recording_or_self(target).log_event(
+            target,
+            action: "deleted",
+            actor: manager_actor,
+            metadata: { access_recording_id: access_recording.id, access_id: access_recording.recordable_id }
+          )
+        end
 
-        RecordingStudio.root_recording_or_self(parent_recording || access_recording).log_event(
-          parent_recording || access_recording,
-          action: "deleted",
-          actor: manager_actor,
-          metadata: { access_recording_id: access_recording.id, access_id: access_id }
-        )
+        access_id = access_recording.recordable_id
         access_recording.destroy!
         RecordingStudio::Access.where(id: access_id).delete_all if orphaned_access_id?(access_id)
       end
