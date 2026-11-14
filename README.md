@@ -34,7 +34,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", "~> 6.1", ">= 6.1.0"
+gem "recording_studio", "~> 6.1", ">= 6.13.0"
 gem "recording_studio_accessible"
 # Query-only trash helpers used by Accessible (pin by tag or host equivalent).
 # Prefer require: false; Accessible loads recording_studio_trashable/query.
@@ -405,8 +405,8 @@ request emails direct admins on the target and its parents. Replace that with
 
 ## Compatibility with RecordingStudio 6.1
 
-Recording Studio Accessible targets RecordingStudio `~> 6.1`, `>= 6.1.0` (currently
-tested with `v6.7.0`) and its capability-owned child recordable contract. RecordingStudio
+Recording Studio Accessible targets RecordingStudio `~> 6.1`, `>= 6.13.0` (currently
+tested with `v6.13.0`) and its capability-owned child recordable contract. RecordingStudio
 core no longer ships built-in access control, so this addon provides
 `RecordingStudio::Access` and `RecordingStudio::AccessRequest`, declares them
 as child-only recordables, and registers them as metadata for the `:accessible`
@@ -433,6 +433,10 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.40.0
+
+No Accessible migration. Install Recording Studio `~> 6.1`, `>= 6.13.0`. Dependent voiding still writes one deleted event per grant, in void order, and still rolls the batch back. Those events go through `RecordingStudio.record_events!` and store `root_recording_id`. Hosts that have not run Recording Studio's `root_recording_id` migration on `recording_studio_events` need that core migration. Recording Studio 6.13.0 adds no migration of its own.
 
 #### Upgrading to 0.39.0
 
@@ -2193,7 +2197,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v6.7.0`, FlatPack `v0.1.356`, Trashable `v0.14.0`, Attachable `v0.23.0`, Users `v0.28.1`, Metrics `v0.8.0`, Cache `v0.6.3`, Admin `v2.13.0`, Root Switchable `v0.15.0`, Notifications `v0.15.0`, and (dummy only) Recording Studio Internationalization `v0.2.0`. Dummy development/test also pins Recording Studio API `v0.23.0`, Logs `v0.7.4`, Icons `v0.2.1`, and Moveable `v4.1.1` so access member actions run through the real dispatcher. Those companions declare `recording_studio >= 6.1.0` in their own gemspecs, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v6.13.0`, FlatPack `v0.1.356`, Trashable `v0.14.0`, Attachable `v0.23.0`, Users `v0.28.1`, Metrics `v0.8.0`, Cache `v0.6.3`, Admin `v2.13.0`, Root Switchable `v0.15.0`, Notifications `v0.15.0`, and (dummy only) Recording Studio Internationalization `v0.2.0`. Dummy development/test also pins Recording Studio API `v0.23.0`, Logs `v0.7.4`, Icons `v0.2.1`, and Moveable `v4.1.1` so access member actions run through the real dispatcher. Those companions declare `recording_studio >= 6.1.0` in their own gemspecs, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 
