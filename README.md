@@ -434,6 +434,10 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.38.0
+
+No migration and no caller change. `effective_audience` and `authorized_action?` still take one recording. Audience checks load that root's rules and constraints once and reuse the query cache until a write clears it. Allow and deny stay the same.
+
 #### Upgrading to 0.37.0
 
 No migration and no caller change. Dependent voiding writes one deleted event per grant, then destroys the grant. Last-admin is checked once per parent. A void that would remove the last admin still rolls back the whole batch.
