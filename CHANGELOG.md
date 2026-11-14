@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.43.0] - 2026-11-14
+
+### Added
+- `config.admin_root_resolver` names the admin root recording. `admin_root(context: {})`
+  returns that recording when it is a root with no parent and `Recording.kept`
+  includes it. `admin?(actor:, role: :view, context: {})` is true when the actor
+  holds that role on the root. Both fail closed. A resolver error is logged at warn.
+
+### Upgrade notes
+- No migration. `authorized?` is unchanged. Install Recording Studio `~> 6.1`,
+  `>= 6.14.0` and Trashable `~> 0.10`, `>= 0.16.0`. Set `admin_root_resolver`.
+  This gem does not read Admin configuration.
+
 ## [0.42.0] - 2026-11-14
 
 ### Changed
@@ -1320,7 +1333,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.41.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.0...HEAD
+[0.43.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.39.0...v0.40.0

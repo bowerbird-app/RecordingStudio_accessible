@@ -82,6 +82,8 @@ class InstallGeneratorTest < Minitest::Test
       initializer = File.read(File.join(dir, "config/initializers/recording_studio_accessible.rb"))
       assert_includes initializer, 'config.access_actor_types = ["User"]'
       assert_includes initializer, "config.access_actor_types = :all"
+      assert_includes initializer, "config.admin_root_resolver = lambda do |context:|"
+      assert_includes initializer, "config.admin_root_resolver = -> { Current.admin_root_recording }"
       assert_includes initializer, "config.access_management_actor_scope = lambda do |_controller|"
       assert_includes initializer, "User.order(:email)"
       refute_includes initializer, "User.all"
