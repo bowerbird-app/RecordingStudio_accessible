@@ -5,6 +5,7 @@ module RecordingStudioAccessible
     module Attributes
       ACCESSORS = %i[
         warn_on_core_conflict
+        admin_root_resolver
         avatar_resolver
         access_management_actor_scope
         access_management_current_actor_resolver

@@ -10,6 +10,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 - optional dependent grants: one Access recording can be capped by and die with another Access recording on the same root. Dependents void in place when the manager Access is revised weaker, trashed, destroyed, or moved — they do not follow a move
 - optional per-action audiences (`public`, `signed_in`, `granted`, plus `register_audience`) with workspace limits and per-recording rules
 - `RecordingStudioAccessible.role_for`, `actors_with_access`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, and named-action checks
+- `admin_root` and `admin?` for a role held on the configured admin root recording
 - a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
 - Recording Studio API member actions (`list_access`, `grant_access`,
   `update_access`, `revoke_access`) that wrap the same grant path, when
@@ -105,6 +106,24 @@ A callable receives `controller:` and returns a layout name, `nil`, or
 checks. A denied actor stays denied when the callable raises. `false` renders
 the screen with no document layout. Access-request modal frames still render
 without a document layout, and they do not call the layout callable.
+
+## Admin check
+
+An admin is a person who holds a role on one root recording. Set that recording with `config.admin_root_resolver`. Other Recording Studio gems call `admin?` instead of resolving the root themselves.
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.admin_root_resolver = -> { Current.admin_root_recording }
+  # config.admin_root_resolver = ->(context:) { context[:recording] }
+end
+
+RecordingStudioAccessible.admin?(actor: current_actor)
+RecordingStudioAccessible.admin?(actor: current_actor, role: :edit, context: { recording: recording })
+```
+
+`admin_root(context: {})` calls the resolver. It passes `context:` when the callable accepts that keyword. A callable with no arguments still runs. The recording is returned when it is a `RecordingStudio::Recording`, it has no parent, and `Recording.kept` includes it. A missing resolver, a non-recording, a child recording, a row `kept` leaves out, or a raised error returns nil. Resolver errors are written to the Rails log at warn.
+
+`admin?(actor:, role: :view, context: {})` returns true or false. It is false when the actor is missing, the root is missing, the role is not valid on that root, or the check raises. Otherwise it calls `authorized?` for that actor, root, and role, so a custom authorization service still applies. Errors return false. Set the root on this gem. It does not read Admin configuration. `authorized?` is unchanged.
 
 ## Controller auth for sibling engines
 
@@ -437,6 +456,10 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.43.0
+
+No migration. `authorized?` is unchanged. Install Recording Studio `~> 6.1`, `>= 6.14.0`. Set `config.admin_root_resolver` to the admin root recording. `admin?(actor:, role: :view)` is true when that actor holds the role on that root. Leave the resolver unset and the check is false. `Recording.kept` decides whether that root still counts, including a trashed root once a kept filter hides it.
 
 #### Upgrading to 0.41.0
 

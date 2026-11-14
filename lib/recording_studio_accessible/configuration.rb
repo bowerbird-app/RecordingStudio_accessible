@@ -86,6 +86,7 @@ module RecordingStudioAccessible
 
     def assign_core_defaults
       @warn_on_core_conflict = true
+      @admin_root_resolver = nil
       @layout = nil
       @access_management_copy = nil
       @before_access_grant = nil

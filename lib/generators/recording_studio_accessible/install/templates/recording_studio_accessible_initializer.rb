@@ -124,6 +124,14 @@ RecordingStudioAccessible.configure do |config|
   #   }
   # end
 
+  # Optional: the admin root recording. An admin holds a role on this root.
+  # Leave unset and admin? is false. The callable can take context: or no
+  # arguments. A raised error is logged and the root is treated as missing.
+  # config.admin_root_resolver = lambda do |context:|
+  #   RecordingStudio::Recording.find_by(id: context[:admin_root_id])
+  # end
+  # config.admin_root_resolver = -> { Current.admin_root_recording }
+
   # Optional: customize who can manage access for a recording.
   # config.access_management_authorizer = lambda do |recording:, actor:, **|
   #   actor.present? && RecordingStudioAccessible.authorized?(
