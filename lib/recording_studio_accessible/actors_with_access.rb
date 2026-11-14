@@ -58,8 +58,9 @@ module RecordingStudioAccessible
     def load_grants
       return [] unless recording
 
-      path = RecordingStudio::Services::AccessPath.new(recording: recording).build.lookup_recordings
-      DirectAccessQuery.access_recordings_for_parents(path).to_a
+      path = RecordingStudio::Services::AccessPath.new(recording: recording).build
+      @path_recordings = path.path_recordings
+      DirectAccessQuery.access_recordings_for_parents(path.lookup_recordings).to_a
     end
 
     def effective_grants
@@ -143,5 +144,11 @@ module RecordingStudioAccessible
 
       klass
     end
+  end
+
+  require "recording_studio_accessible/actors_with_access/stored_grants"
+
+  class ActorsWithAccess
+    include StoredGrants
   end
 end

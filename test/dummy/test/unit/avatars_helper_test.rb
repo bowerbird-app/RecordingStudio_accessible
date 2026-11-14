@@ -7,6 +7,7 @@ require "ostruct"
 class AvatarsHelperTest < Minitest::Test
   AccessGrant = Struct.new(:actor)
   AccessRecording = Struct.new(:recordable)
+  ScopedGrant = Struct.new(:parent_recording_id, :recordable, :created_at, :id)
   Actor = Struct.new(:name, :avatar_url)
   Recording = Struct.new(:id, :to_param, :parent_recording)
 
@@ -166,18 +167,14 @@ class AvatarsHelperTest < Minitest::Test
       { name: access_holder.name, image_url: access_holder.avatar_url }
     end
 
-    resolver = lambda do |queried_recording|
-      case queried_recording
-      when recording
-        [access_recording_for(direct_actor), access_recording_for(duplicate_actor)]
-      when parent_recording
-        [access_recording_for(inherited_actor), access_recording_for(duplicate_actor)]
-      else
-        flunk("unexpected recording lookup: #{queried_recording.inspect}")
-      end
-    end
+    grants = [
+      scoped_grant(direct_actor, recording.id, 1),
+      scoped_grant(duplicate_actor, recording.id, 2),
+      scoped_grant(inherited_actor, parent_recording.id, 3),
+      scoped_grant(duplicate_actor, parent_recording.id, 4)
+    ]
 
-    html = RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for, resolver) do
+    html = RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_parents, ->(_recordings) { grants }) do
       ViewContext.new.recording_studio_accessible_avatars(recording, scope: :all)
     end
 
@@ -391,18 +388,14 @@ class AvatarsHelperTest < Minitest::Test
     recording = Recording.new(42, "42", parent_recording)
     menu = Menu.new
 
-    resolver = lambda do |queried_recording|
-      case queried_recording
-      when recording
-        [access_recording_for(direct_actor), access_recording_for(duplicate_actor)]
-      when parent_recording
-        [access_recording_for(inherited_actor), access_recording_for(duplicate_actor)]
-      else
-        flunk("unexpected recording lookup: #{queried_recording.inspect}")
-      end
-    end
+    grants = [
+      scoped_grant(direct_actor, recording.id, 1),
+      scoped_grant(duplicate_actor, recording.id, 2),
+      scoped_grant(inherited_actor, parent_recording.id, 3),
+      scoped_grant(duplicate_actor, parent_recording.id, 4)
+    ]
 
-    RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for, resolver) do
+    RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_parents, ->(_recordings) { grants }) do
       ViewContext.new.recording_studio_accessible_access_menu_item(recording, menu, scope: :all)
     end
 
@@ -473,6 +466,10 @@ class AvatarsHelperTest < Minitest::Test
 
   def access_recording_for(actor)
     AccessRecording.new(AccessGrant.new(actor))
+  end
+
+  def scoped_grant(actor, parent_id, sequence)
+    ScopedGrant.new(parent_id, AccessGrant.new(actor), Time.utc(2026, 1, 1, 0, 0, sequence), sequence.to_s)
   end
 
   def with_access_recordings(expected_recording, access_recordings, expected_calls: [expected_recording], &block)

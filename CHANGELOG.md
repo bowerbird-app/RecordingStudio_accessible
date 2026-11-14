@@ -9,10 +9,15 @@ All notable changes to this project will be documented in this file.
   the grants on every candidate child once, and the audience rules and
   constraints for those children once. Each child still uses the same role
   precedence as `role_for`. The children that stay are unchanged.
+- Manage access, the avatar rollup, and the last-admin check read one preloaded
+  grant set. Actors load per type, and each actor's effective role is computed
+  once. Inside a locked revoke or role change, `LastAdminGuard` keeps that
+  lookup and reads grants again after the write, with the query cache off.
 
 ### Upgrade notes
 - No migration and no caller change for `recordings_for`. A public audience
   still does not list a child with no grant.
+- No migration and no public API change. Effective roles are unchanged.
 
 ## [0.34.0] - 2026-11-14
 

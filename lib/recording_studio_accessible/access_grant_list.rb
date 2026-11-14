@@ -92,30 +92,15 @@ module RecordingStudioAccessible
     end
 
     def ordered_grants_for(recording)
-      Array(grants_by_parent_id[recording&.id]).sort_by { |grant| [grant.created_at, grant.id.to_s] }
-    end
-
-    def grants_by_parent_id
-      @grants_by_parent_id ||= lookup.grants.group_by(&:parent_recording_id)
+      lookup.grants_for(recording)
     end
 
     def ancestor_recordings
-      ancestors = []
-      current_recording = @recording.parent_recording
-
-      while current_recording
-        ancestors << current_recording
-        current_recording = current_recording.parent_recording
-      end
-
-      ancestors
+      lookup.ancestor_recordings
     end
 
     def actor_for(access_recording)
-      access = access_recording.recordable
-      return unless access
-
-      lookup.actor_at(access.actor_type, access.actor_id)
+      lookup.actor_for(access_recording)
     end
 
     def actor_key_for(actor)

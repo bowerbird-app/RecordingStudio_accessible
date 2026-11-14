@@ -1596,6 +1596,8 @@ RecordingStudioAccessible.actors_with_access(recording: page_recording, minimum_
 
 `actors_with_access` walks the same path as `role_for`: the recording, its ancestors, and `root_recording_or_self`. It reads kept grants on that set in one query, drops a dependent grant that is not effective, and keeps the strongest role per actor. Actors are loaded per polymorphic type. A grant whose actor record is gone is skipped. Invitations and audience gates are not access grants, so they are not listed. There is no everyone row.
 
+The manage-access page uses that lookup for each actor's effective role. A direct row is still shown when its own grant is not effective; the effective role on the row is the actor's real role, and it may be blank. The avatar rollup (`scope: :all` or `:effective`) loads kept grants for the recording and its ancestors in one query and preloads the actors. It still keeps the first grant it sees for an actor, including a dependent that is not effective. `LastAdminGuard` builds one lookup per recording after it takes the row locks. After the revoke or role change it reads grants again on that lookup, still inside the lock and with the query cache off. The answer from before the write is not reused.
+
 Existing checks remain exact actor checks. For example, this checks whether the
 workspace itself has edit access to the recording:
 

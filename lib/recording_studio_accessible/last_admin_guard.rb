@@ -13,9 +13,10 @@ module RecordingStudioAccessible
 
         RecordingStudio::Recording.transaction do
           lock_in_id_order!(lockable)
-          previously = previously_administered(lockable, allow_last_admin_removal)
+          lookups = admin_lookups(lockable, allow_last_admin_removal)
+          previously = previously_administered(lockable, lookups, allow_last_admin_removal)
           value = yield
-          assert_still_administered!(previously)
+          assert_still_administered!(previously, lookups)
           value
         end
       end
@@ -23,7 +24,7 @@ module RecordingStudioAccessible
       def administered?(recording)
         return false unless recording
 
-        RecordingStudioAccessible.actors_with_access(recording: recording, minimum_role: :admin).any?
+        ActorsWithAccess.new(recording).any_actor?(minimum_role: :admin)
       end
 
       def dependent_parent_recordings(access_recording)
@@ -38,15 +39,28 @@ module RecordingStudioAccessible
         recordings.sort_by { |recording| recording.id.to_s }.each(&:lock!)
       end
 
-      def previously_administered(recordings, allow_last_admin_removal)
-        return [] if allow_last_admin_removal
+      def admin_lookups(recordings, allow_last_admin_removal)
+        return {} if allow_last_admin_removal
 
-        recordings.select { |recording| administered?(recording) }
+        recordings.to_h { |recording| [recording.id, ActorsWithAccess.new(recording)] }
       end
 
-      def assert_still_administered!(recordings)
+      def previously_administered(recordings, lookups, allow_last_admin_removal)
+        return [] if allow_last_admin_removal
+
+        recordings.select { |recording| lookups.fetch(recording.id).any_actor?(minimum_role: :admin) }
+      end
+
+      # The same lookup is refreshed after the write. Locks are still held, so
+      # another transaction cannot remove the remaining admin before we commit.
+      # Refresh reads grants again with the query cache off; it does not reuse
+      # the pre-write answer.
+      def assert_still_administered!(recordings, lookups)
         recordings.each do |recording|
-          raise ::RecordingStudioAccessible::LastAdminError unless administered?(recording.reload)
+          recording.reload
+          lookup = lookups.fetch(recording.id)
+          lookup.refresh!
+          raise ::RecordingStudioAccessible::LastAdminError unless lookup.any_actor?(minimum_role: :admin)
         end
       end
 
