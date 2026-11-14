@@ -2,6 +2,7 @@
 
 require "recording_studio_accessible/extracted/recording_studio/access_roles"
 require_relative "authorization_class_methods/child_list"
+require_relative "effective_root_ids"
 
 module RecordingStudioAccessible
   module AuthorizationClassMethods
@@ -79,9 +80,7 @@ module RecordingStudioAccessible
     def effective_root_recording_ids(root_access_recordings)
       return root_access_recordings.select(:root_recording_id) unless DependentAccess.column_available?
 
-      root_access_recordings.includes(:recordable).filter_map do |access_recording|
-        access_recording.root_recording_id if DependentAccess.effective?(access_recording)
-      end
+      EffectiveRootIds.relation_for(root_access_recordings)
     end
 
     def exclude_shared_roots(relation)
