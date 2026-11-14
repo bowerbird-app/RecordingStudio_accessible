@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-11-14
+
 ### Changed
 - `recordings_for` loads the actor's grants on the shared ancestor path once,
   the grants on every candidate child once, and the audience rules and
@@ -1207,7 +1209,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.34.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.35.0...HEAD
+[0.35.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.31.0...v0.32.0

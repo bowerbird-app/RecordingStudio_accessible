@@ -434,6 +434,14 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.35.0
+
+No migration and no caller change. Effective roles are unchanged.
+
+`recordings_for` loads the actor's grants on the shared ancestor path once, the grants on every candidate child once, and the audience rules and constraints for those children once. Each child still uses the same role precedence as `role_for`. The children that stay are unchanged. A public audience still does not list a child with no grant.
+
+Manage access, the avatar rollup, and the last-admin check read one preloaded grant set. Actors load per type, and each actor's effective role is computed once. Inside a locked revoke or role change, `LastAdminGuard` keeps that lookup and reads grants again after the write, with the query cache off.
+
 #### Upgrading to 0.34.0
 
 No migration. The access-request index still uses the same page size and the same people can see a request.
