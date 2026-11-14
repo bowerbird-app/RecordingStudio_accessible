@@ -1058,7 +1058,10 @@ the actor has an independent grant, or a dependent grant whose every
 manager hop is still a kept Access recording on the same root, with a
 ranked role at least as strong, and the chain does not cycle. Audience
 limits do not add or remove roots. A background void job then
-destroys the dependent grant in place. If the manager Access recording is
+destroys the dependent grant in place. The job writes one deleted event per
+grant, on that grant's parent, then destroys the grant. Last-admin is checked
+once for each parent. A void that would remove the last admin rolls back the
+whole batch, including those events. If the manager Access recording is
 moved, dependents stay at the old node and are voided — they do not follow
 the move. Independent grants are not voided or relocated.
 

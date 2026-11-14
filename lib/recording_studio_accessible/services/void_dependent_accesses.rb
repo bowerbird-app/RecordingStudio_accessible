@@ -35,11 +35,10 @@ module RecordingStudioAccessible
             recordings: parent_recordings_for(to_void),
             allow_last_admin_removal: @allow_last_admin_removal
           ) do
-            to_void.each_slice(VOID_BATCH) do |batch|
-              batch.each do |access_recording|
-                destroy_access_recording!(access_recording, manager_actor: manager_actor)
-                voided << access_recording.id
-              end
+            write_deleted_events!(to_void)
+            to_void.each do |access_recording|
+              destroy_access_recording!(access_recording, manager_actor: manager_actor, record_event: false)
+              voided << access_recording.id
             end
           end
         end
@@ -51,10 +50,18 @@ module RecordingStudioAccessible
         unexpected_failure(e)
       end
 
+      # One deleted event per grant, in void order, with the same payload as
+      # destroy_access_recording!. The insert is one statement.
+      def write_deleted_events!(access_recordings)
+        DeletedAccessEvents.write!(access_recordings, actor: manager_actor)
+      end
+
       def parent_recordings_for(access_recordings)
         access_recordings.filter_map do |access_recording|
-          access_recording.parent_recording if access_recording.respond_to?(:parent_recording)
-        end
+          next unless access_recording.respond_to?(:parent_recording)
+
+          access_recording.parent_recording
+        end.uniq
       end
 
       def dependents

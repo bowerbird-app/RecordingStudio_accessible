@@ -24,14 +24,16 @@ module RecordingStudioAccessible
         RecordingStudio::Recording.stub(:transaction, ->(&block) { block.call }) do
           RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_depending_on, relation) do
             RecordingStudioAccessible::DependentAccess.stub(:effective?, false) do
-              service.stub(:destroy_access_recording!, lambda { |access_recording, manager_actor:|
-                destroyed << [access_recording, manager_actor]
-              }) do
-                result = service.send(:perform)
+              service.stub(:write_deleted_events!, nil) do
+                service.stub(:destroy_access_recording!, lambda { |access_recording, manager_actor:, **|
+                  destroyed << [access_recording, manager_actor]
+                }) do
+                  result = service.send(:perform)
 
-                assert result.success?
-                assert_equal [7], result.value
-                assert_equal [[dependent, nil]], destroyed
+                  assert result.success?
+                  assert_equal [7], result.value
+                  assert_equal [[dependent, nil]], destroyed
+                end
               end
             end
           end
@@ -72,14 +74,16 @@ module RecordingStudioAccessible
         RecordingStudio::Recording.stub(:transaction, ->(&block) { block.call }) do
           RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_depending_on, relation) do
             RecordingStudioAccessible::DependentAccess.stub(:effective?, true) do
-              service.stub(:destroy_access_recording!, lambda { |access_recording, manager_actor:|
-                destroyed << [access_recording, manager_actor]
-              }) do
-                result = service.send(:perform)
+              service.stub(:write_deleted_events!, nil) do
+                service.stub(:destroy_access_recording!, lambda { |access_recording, manager_actor:, **|
+                  destroyed << [access_recording, manager_actor]
+                }) do
+                  result = service.send(:perform)
 
-                assert result.success?
-                assert_equal [7], result.value
-                assert_equal [[dependent, nil]], destroyed
+                  assert result.success?
+                  assert_equal [7], result.value
+                  assert_equal [[dependent, nil]], destroyed
+                end
               end
             end
           end
