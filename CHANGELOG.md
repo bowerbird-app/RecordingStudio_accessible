@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.42.0] - 2026-11-14
+
+### Changed
+- Kept-recording filters use `RecordingStudio::Recording.kept` and
+  `RecordingStudio.kept_sql`. Accessible no longer calls
+  `recording_studio_trashable_kept_sql` or checks for a `trashed_at` column.
+- Development pins move to Recording Studio `v6.14.0` and Trashable `v0.16.0`.
+  The gemspec floors are `recording_studio ~> 6.1`, `>= 6.14.0` and
+  `recording_studio_trashable ~> 0.10`, `>= 0.16.0`.
+
+### Upgrade notes
+- No Accessible migration. Install Recording Studio `~> 6.1`, `>= 6.14.0`
+  and Trashable `~> 0.10`, `>= 0.16.0`.
+- With Trashable's query entry loaded, trashed grants stay hidden where they
+  were. `authorized?`, `authorized_root_recording_ids`, and
+  `authorized_recording_ids` still include a trashed recording when the grant
+  is kept.
+- Until a recording filter is registered, `kept` and `kept_sql` match every
+  recording. Accessible no longer hides a row by reading `trashed_at` itself.
+
 ## [0.41.0] - 2026-11-14
 
 ### Added
@@ -1301,6 +1321,7 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
 [Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.41.0...HEAD
+[0.42.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.38.0...v0.39.0

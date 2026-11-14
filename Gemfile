@@ -5,11 +5,12 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in recording_studio_accessible.gemspec
 gemspec
 
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.13.0"
-# Query-only trash helpers (pin by tag; gemspec is "~> 0.10"). require: false so
-# Bundler does not auto-load the Trashable engine; lib requires .../query.
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.14.0"
+# Query-only trash helpers (pin by tag; gemspec is "~> 0.10", ">= 0.16.0").
+# require: false so Bundler does not auto-load the Trashable engine. lib requires
+# recording_studio_trashable/query, which registers the :trashable recording filter.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",
-                                  tag: "v0.14.0", require: false
+                                  tag: "v0.16.0", require: false
 # Git-only companion deps. Pin by release tag so Bundler can resolve them.
 gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.356",
                  require: false

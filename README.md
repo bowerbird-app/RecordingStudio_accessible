@@ -34,11 +34,12 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", "~> 6.1", ">= 6.13.0"
+gem "recording_studio", "~> 6.1", ">= 6.14.0"
 gem "recording_studio_accessible"
 # Query-only trash helpers used by Accessible (pin by tag or host equivalent).
-# Prefer require: false; Accessible loads recording_studio_trashable/query.
-gem "recording_studio_trashable", "~> 0.10", require: false
+# Prefer require: false; Accessible loads recording_studio_trashable/query,
+# which registers the :trashable recording filter.
+gem "recording_studio_trashable", "~> 0.10", ">= 0.16.0", require: false
 ```
 
 Then run:
@@ -53,14 +54,15 @@ bin/rails db:migrate
 ```
 
 Accessible loads Trashable’s query entry point only
-(`require "recording_studio_trashable/query"`). Live-row predicates use
-`recording_studio_trashable_kept?` when the object responds to it, otherwise
-`trashed_at.nil?`. Scope filters use additive
-`where(recording_studio_trashable_kept_sql)` where main used
-`where(trashed_at: nil)`. It does not load the Trashable engine/importmap,
-register `:trashable`, or soft-void Access grants; revoke and dependent
-cleanup still destroy those rows. Hosts that want the trash UI install and
-mount Trashable separately.
+(`require "recording_studio_trashable/query"`). That file registers Trashable’s
+`:trashable` recording filter. Relation filters use `Recording.kept`. Raw and
+joined SQL uses `RecordingStudio.kept_sql(alias)`. Both match every recording
+until a filter is registered. In-memory grant checks call
+`recording_studio_trashable_kept?` when the object responds to it; otherwise
+the object counts as kept. Accessible does not load the Trashable
+engine/importmap or the `:trashable` capability, and it does not soft-void
+Access grants; revoke and dependent cleanup still destroy those rows. Hosts
+that want the trash UI install and mount Trashable separately.
 
 If you want the gem-provided mounted UI for managing direct access, then also run:
 
@@ -405,8 +407,10 @@ request emails direct admins on the target and its parents. Replace that with
 
 ## Compatibility with RecordingStudio 6.1
 
-Recording Studio Accessible targets RecordingStudio `~> 6.1`, `>= 6.13.0` (currently
-tested with `v6.13.0`) and its capability-owned child recordable contract. RecordingStudio
+Recording Studio Accessible targets RecordingStudio `~> 6.1`, `>= 6.14.0` (currently
+tested with `v6.14.0`) and Trashable `~> 0.10`, `>= 0.16.0` (currently tested
+with `v0.16.0`). It uses Recording Studio's capability-owned child recordable
+contract. RecordingStudio
 core no longer ships built-in access control, so this addon provides
 `RecordingStudio::Access` and `RecordingStudio::AccessRequest`, declares them
 as child-only recordables, and registers them as metadata for the `:accessible`
@@ -2229,7 +2233,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v6.13.0`, FlatPack `v0.1.356`, Trashable `v0.14.0`, Attachable `v0.23.0`, Users `v0.28.1`, Metrics `v0.8.0`, Cache `v0.6.3`, Admin `v2.13.0`, Root Switchable `v0.15.0`, Notifications `v0.15.0`, and (dummy only) Recording Studio Internationalization `v0.2.0`. Dummy development/test also pins Recording Studio API `v0.23.0`, Logs `v0.7.4`, Icons `v0.2.1`, and Moveable `v4.1.1` so access member actions run through the real dispatcher. Those companions declare `recording_studio >= 6.1.0` in their own gemspecs, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v6.14.0`, FlatPack `v0.1.356`, Trashable `v0.16.0`, Attachable `v0.23.0`, Users `v0.28.1`, Metrics `v0.8.0`, Cache `v0.6.3`, Admin `v2.13.0`, Root Switchable `v0.15.0`, Notifications `v0.15.0`, and (dummy only) Recording Studio Internationalization `v0.2.0`. Dummy development/test also pins Recording Studio API `v0.23.0`, Logs `v0.7.4`, Icons `v0.2.1`, and Moveable `v4.1.1` so access member actions run through the real dispatcher. Those companions declare `recording_studio >= 6.1.0` in their own gemspecs, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

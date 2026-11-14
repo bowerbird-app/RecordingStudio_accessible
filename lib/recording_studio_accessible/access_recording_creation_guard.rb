@@ -39,11 +39,7 @@ module RecordingStudioAccessible
       actor_type = access.actor_type.presence || RecordingStudioAccessible::ActorType.for(actor)
       actor_id = access.actor_id || actor.id
 
-      duplicate_scope = self.class.unscoped
-      # Additive kept filter (same as main). See DirectAccessQuery#active_recordings_scope.
-      if has_attribute?(:trashed_at)
-        duplicate_scope = duplicate_scope.where(self.class.recording_studio_trashable_kept_sql)
-      end
+      duplicate_scope = self.class.unscoped.kept
 
       duplicate_exists = duplicate_scope
                          .where(parent_recording_id: parent_recording_id, recordable_type: "RecordingStudio::Access")

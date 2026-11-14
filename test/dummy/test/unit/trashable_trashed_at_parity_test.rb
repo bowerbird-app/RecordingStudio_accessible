@@ -2,28 +2,26 @@
 
 require "test_helper"
 
-# Proves Accessible uses Trashable query helpers (kept_sql / kept?) with the same
-# additive semantics as main's where(trashed_at: nil) / trashed_at.nil?, and does
-# not call recording_studio_trashable_active (which unscopes :trashed_at).
+# Proves Accessible filters through Recording.kept and does not call removed
+# Trashable scopes. In-memory checks use recording_studio_trashable_kept? when
+# the object has it. A bare trashed_at attribute is not a filter.
 class TrashableTrashedAtParityTest < Minitest::Test
-  KEPT_SQL = '"recording_studio_recordings"."trashed_at" IS NULL'
-
   class RelationSpy
-    attr_reader :wheres, :trashable_active_calls
+    attr_reader :wheres, :kept_calls
 
     def initialize
       @wheres = []
-      @trashable_active_calls = 0
+      @kept_calls = 0
+    end
+
+    def kept
+      @kept_calls += 1
+      self
     end
 
     def where(*args)
       @wheres << args
       self
-    end
-
-    def recording_studio_trashable_active
-      @trashable_active_calls += 1
-      where(trashed_at: nil)
     end
 
     def joins(*)
@@ -59,58 +57,47 @@ class TrashableTrashedAtParityTest < Minitest::Test
 
   def test_query_entry_point_is_loaded_without_engine
     assert defined?(RecordingStudioTrashable)
-    assert_equal "0.14.0", RecordingStudioTrashable::VERSION
+    assert_equal "0.16.0", RecordingStudioTrashable::VERSION
     refute defined?(RecordingStudioTrashable::Engine)
   end
 
-  def test_direct_access_query_uses_kept_sql_not_trashable_active
-    with_unscoped_column_and_kept_sql(true) do
-      RecordingStudioAccessible::DirectAccessQuery.send(:active_recordings_scope)
-    end
-
-    assert_equal 0, @relation.trashable_active_calls
-    assert_includes @relation.wheres, [KEPT_SQL]
-  end
-
-  def test_direct_access_query_skips_kept_filter_when_column_missing
-    with_unscoped_column_and_kept_sql(false) do
+  def test_direct_access_query_uses_kept
+    with_unscoped do
       assert_same @relation, RecordingStudioAccessible::DirectAccessQuery.send(:active_recordings_scope)
     end
 
-    assert_equal 0, @relation.trashable_active_calls
+    assert_equal 1, @relation.kept_calls
     assert_empty @relation.wheres
   end
 
-  def test_audience_query_uses_kept_sql_not_trashable_active
-    with_unscoped_column_and_kept_sql(true) do
-      RecordingStudioAccessible::AudienceQuery.send(:live_recordings)
+  def test_audience_query_uses_kept
+    with_unscoped do
+      assert_same @relation, RecordingStudioAccessible::AudienceQuery.send(:live_recordings)
     end
 
-    assert_equal 0, @relation.trashable_active_calls
-    assert_includes @relation.wheres, [KEPT_SQL]
+    assert_equal 1, @relation.kept_calls
   end
 
-  def test_authorization_class_methods_use_kept_sql_not_trashable_active
+  def test_authorization_class_methods_use_kept
     host = Object.new
     host.extend(RecordingStudioAccessible::AuthorizationClassMethods)
 
-    with_unscoped_column_and_kept_sql(true) do
-      host.send(:active_recordings_scope)
+    with_unscoped do
+      assert_same @relation, host.send(:active_recordings_scope)
     end
 
-    assert_equal 0, @relation.trashable_active_calls
-    assert_includes @relation.wheres, [KEPT_SQL]
+    assert_equal 1, @relation.kept_calls
   end
 
-  def test_access_grant_integrity_uses_kept_sql_not_trashable_active
+  def test_access_grant_integrity_uses_kept
     service = RecordingStudioAccessible::Services::AccessGrantIntegrity.new
 
-    with_unscoped_column_and_kept_sql(true) do
+    with_unscoped do
       service.send(:active_access_recordings)
     end
 
-    assert_equal 0, @relation.trashable_active_calls
-    assert_includes @relation.wheres, [KEPT_SQL]
+    assert_equal 1, @relation.kept_calls
+    assert_includes @relation.wheres, [{ recordable_type: "RecordingStudio::Access" }]
   end
 
   def test_lifecycle_active_recording_delegates_to_trashable_kept
@@ -126,15 +113,14 @@ class TrashableTrashedAtParityTest < Minitest::Test
     assert harness.send(:active_recording?, Object.new)
   end
 
-  # Duck-typed objects may expose trashed_at without Trashable helpers (same as main).
-  def test_lifecycle_active_recording_falls_back_to_trashed_at_nil_without_helper
+  def test_lifecycle_active_recording_ignores_trashed_at_without_kept_helper
     harness = LifecycleHarness.new
     duck = Struct.new(:trashed_at).new(nil)
     trashed_duck = Struct.new(:trashed_at).new(Time.utc(2026, 10, 13))
 
     refute_respond_to duck, :recording_studio_trashable_kept?
     assert harness.send(:active_recording?, duck)
-    refute harness.send(:active_recording?, trashed_duck)
+    assert harness.send(:active_recording?, trashed_duck)
   end
 
   def test_dependent_access_active_recording_delegates_to_trashable_kept
@@ -145,16 +131,16 @@ class TrashableTrashedAtParityTest < Minitest::Test
     refute RecordingStudioAccessible::DependentAccess.send(:active_recording?, nil)
   end
 
-  def test_dependent_access_active_recording_falls_back_to_trashed_at_nil_without_helper
+  def test_dependent_access_ignores_trashed_at_without_kept_helper
     duck = Struct.new(:trashed_at).new(nil)
     trashed_duck = Struct.new(:trashed_at).new(Time.utc(2026, 10, 13))
 
     refute_respond_to duck, :recording_studio_trashable_kept?
     assert RecordingStudioAccessible::DependentAccess.send(:active_recording?, duck)
-    refute RecordingStudioAccessible::DependentAccess.send(:active_recording?, trashed_duck)
+    assert RecordingStudioAccessible::DependentAccess.send(:active_recording?, trashed_duck)
   end
 
-  def test_kept_predicate_matches_main_nil_check_for_datetime_values
+  def test_kept_predicate_matches_nil_check_for_datetime_values
     kept = RecordingStub.new(trashed_at: nil)
     trashed = RecordingStub.new(trashed_at: Time.utc(2026, 10, 13))
 
@@ -179,31 +165,25 @@ class TrashableTrashedAtParityTest < Minitest::Test
     refute_match(/require ["']recording_studio_trashable["']/, source)
   end
 
-  def test_scope_helpers_source_uses_kept_sql_not_active_call
-    paths = [
-      "lib/recording_studio_accessible/direct_access_query.rb",
-      "lib/recording_studio_accessible/audience_query.rb",
-      "lib/recording_studio_accessible/authorization_class_methods.rb",
-      "lib/recording_studio_accessible/services/access_grant_integrity.rb",
-      "lib/recording_studio_accessible/access_recording_creation_guard.rb"
-    ]
+  def test_sources_use_core_kept_and_not_removed_trashable_helpers
+    root = RecordingStudioAccessible::Engine.root
+    paths = Dir[root.join("{lib,app}/**/*.rb")]
+    combined = paths.map { |path| File.read(path) }.join("\n")
 
-    paths.each do |relative|
-      source = File.read(RecordingStudioAccessible::Engine.root.join(relative))
-      assert_includes source, "recording_studio_trashable_kept_sql", relative
-      refute_includes source, ".recording_studio_trashable_active", relative
-    end
+    assert_includes combined, ".kept"
+    assert_includes combined, "RecordingStudio.kept_sql"
+    refute_includes combined, "recording_studio_trashable_kept_sql"
+    refute_includes combined, "recording_studio_trashable_active"
+    refute_includes combined, "recording_studio_trashable_including_trashed"
+    refute_includes combined, "recording_studio_trashable_trashed_sql"
+    refute_includes combined, 'column_names.include?("trashed_at")'
+    refute_includes combined, "has_attribute?(:trashed_at)"
+    refute_includes combined, "trashed_at.nil?"
   end
 
   private
 
-  def with_unscoped_column_and_kept_sql(column_present, &block)
-    columns = column_present ? ["trashed_at"] : []
-    RecordingStudio::Recording.stub(:unscoped, @relation) do
-      RecordingStudio::Recording.stub(:column_names, columns) do
-        RecordingStudio::Recording.stub(:recording_studio_trashable_kept_sql, KEPT_SQL, &block)
-      end
-    end
+  def with_unscoped(&block)
+    RecordingStudio::Recording.stub(:unscoped, @relation, &block)
   end
-
 end

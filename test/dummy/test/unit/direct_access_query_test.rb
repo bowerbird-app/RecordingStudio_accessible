@@ -11,12 +11,18 @@ class DirectAccessQueryTest < Minitest::Test
   end
 
   class RelationSpy
-    attr_reader :wheres, :joins_sql, :orders
+    attr_reader :wheres, :joins_sql, :orders, :kept_calls
 
     def initialize
       @wheres = []
       @joins_sql = []
       @orders = []
+      @kept_calls = 0
+    end
+
+    def kept
+      @kept_calls += 1
+      self
     end
 
     def where(*args)
@@ -37,17 +43,12 @@ class DirectAccessQueryTest < Minitest::Test
 
   def test_access_recordings_for_filters_to_active_access_children
     relation = RelationSpy.new
-    kept_sql = '"recording_studio_recordings"."trashed_at" IS NULL'
 
     RecordingStudio::Recording.stub(:unscoped, relation) do
-      RecordingStudio::Recording.stub(:column_names, ["trashed_at"]) do
-        RecordingStudio::Recording.stub(:recording_studio_trashable_kept_sql, kept_sql) do
-          assert_same relation, RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(Recording.new(123))
-        end
-      end
+      assert_same relation, RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(Recording.new(123))
     end
 
-    assert_includes relation.wheres, [kept_sql]
+    assert_equal 1, relation.kept_calls
     assert_includes relation.wheres, [{ parent_recording_id: 123 }]
     assert_includes relation.wheres, [{ recordable_type: "RecordingStudio::Access" }]
   end
@@ -67,11 +68,9 @@ class DirectAccessQueryTest < Minitest::Test
     actor = Actor.new(456)
 
     RecordingStudio::Recording.stub(:unscoped, relation) do
-      RecordingStudio::Recording.stub(:column_names, []) do
-        assert_same relation,
-                    RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(recording: Recording.new(123),
-                                                                                             actor: actor)
-      end
+      assert_same relation,
+                  RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(recording: Recording.new(123),
+                                                                                           actor: actor)
     end
 
     assert_equal [RecordingStudioAccessible::DirectAccessQuery::ACCESS_JOIN_SQL], relation.joins_sql
@@ -94,11 +93,9 @@ class DirectAccessQueryTest < Minitest::Test
     actor = Actor.new(456)
 
     RecordingStudio::Recording.stub(:unscoped, relation) do
-      RecordingStudio::Recording.stub(:column_names, []) do
-        assert_same relation,
-                    RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor_in(recordings: [Recording.new(1), Recording.new(2)],
-                                                                                                actor: actor)
-      end
+      assert_same relation,
+                  RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor_in(recordings: [Recording.new(1), Recording.new(2)],
+                                                                                              actor: actor)
     end
 
     assert_includes relation.wheres, [{ parent_recording_id: [1, 2], recordable_type: "RecordingStudio::Access" }]
@@ -128,9 +125,7 @@ class DirectAccessQueryTest < Minitest::Test
 
     RecordingStudioAccessible::DependentAccess.stub(:column_available?, true) do
       RecordingStudio::Recording.stub(:unscoped, relation) do
-        RecordingStudio::Recording.stub(:column_names, []) do
-          assert_same relation, RecordingStudioAccessible::DirectAccessQuery.access_recordings_depending_on("manager-id")
-        end
+        assert_same relation, RecordingStudioAccessible::DirectAccessQuery.access_recordings_depending_on("manager-id")
       end
     end
 
