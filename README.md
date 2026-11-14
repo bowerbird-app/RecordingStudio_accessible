@@ -434,6 +434,16 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.34.0
+
+No migration. The access-request index still uses the same page size and the same people can see a request.
+
+The index finds parents the actor administers in SQL, then pages those requests. The default authorizer is still effective admin on the parent, an ancestor, or the root. A custom `access_management_authorizer` is still called for each parent.
+
+`root_recordings_for` and `root_recording_ids_for` apply the dependent-grant check in SQL. The roots are the same set as before. Callers do not need to change.
+
+Hosts on Recording Studio 6.5+ need `config.authorize_write`, or `config.allow_unauthorized_writes` when writes happen with no actor. Install Trashable `0.14.0`'s `purge_at` migration and restamp existing trash with `bin/rails recording_studio_trashable:restamp_purge_at`.
+
 #### Upgrading to 0.33.0
 
 No migration.
