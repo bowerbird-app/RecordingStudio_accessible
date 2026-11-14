@@ -12,12 +12,18 @@ class AccessRecordingCreationGuardTest < Minitest::Test
   ParentRecording = Struct.new(:id, :recordable_type, keyword_init: true)
 
   class DuplicateScope
-    attr_reader :wheres, :joins_sql
+    attr_reader :wheres, :joins_sql, :kept_calls
 
     def initialize(exists:)
       @exists = exists
       @wheres = []
       @joins_sql = []
+      @kept_calls = 0
+    end
+
+    def kept
+      @kept_calls += 1
+      self
     end
 
     def where(*args)
@@ -50,10 +56,6 @@ class AccessRecordingCreationGuardTest < Minitest::Test
       def validate(*); end
       def unscoped = scope
       def table_name = "recording_studio_recordings"
-
-      def recording_studio_trashable_kept_sql(_table = table_name)
-        '"recording_studio_recordings"."trashed_at" IS NULL'
-      end
     end
 
     include RecordingStudioAccessible::AccessRecordingCreationGuard
@@ -74,10 +76,6 @@ class AccessRecordingCreationGuardTest < Minitest::Test
 
     def association(_name)
       Association.new(recordable)
-    end
-
-    def has_attribute?(name) # rubocop:disable Naming/PredicatePrefix
-      name.to_s == "trashed_at"
     end
   end
 
@@ -213,7 +211,7 @@ class AccessRecordingCreationGuardTest < Minitest::Test
 
     duplicate = RecordingStudioAccessible::AccessRecordingCreationGuard::DUPLICATE_ACCESS_RECORDING_ERROR
     assert_english_details_match_main(recording.errors, :base, duplicate)
-    assert_includes Recording.scope.wheres, ['"recording_studio_recordings"."trashed_at" IS NULL']
+    assert_equal 1, Recording.scope.kept_calls
     assert_includes Recording.scope.wheres,
                     [{ recording_studio_accesses: { actor_type: "AccessRecordingCreationGuardTest::Actor", actor_id: 42 } }]
   end

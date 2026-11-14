@@ -62,12 +62,7 @@ module RecordingStudioAccessible
       private
 
       def active_recordings_scope
-        scope = RecordingStudio::Recording.unscoped
-        return scope unless RecordingStudio::Recording.column_names.include?("trashed_at")
-
-        # Additive kept filter (same as main's where(trashed_at: nil)). Do not use
-        # recording_studio_trashable_active — that scope unscopes(:trashed_at) first.
-        scope.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
+        RecordingStudio::Recording.unscoped.kept
       end
 
       def actor_filter(actor)

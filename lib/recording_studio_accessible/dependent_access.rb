@@ -138,13 +138,9 @@ module RecordingStudioAccessible
 
       def active_recording?(recording)
         return false unless recording
-        return true unless recording.respond_to?(:trashed_at)
+        return true unless recording.respond_to?(:recording_studio_trashable_kept?)
 
-        if recording.respond_to?(:recording_studio_trashable_kept?)
-          recording.recording_studio_trashable_kept?
-        else
-          recording.trashed_at.nil?
-        end
+        recording.recording_studio_trashable_kept?
       end
 
       def recordable_for(recording)

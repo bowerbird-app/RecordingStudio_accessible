@@ -63,10 +63,7 @@ module RecordingStudioAccessible
     end
 
     def kept_recordings
-      scope = self.class.unscoped
-      return scope unless has_attribute?(:trashed_at)
-
-      scope.where(self.class.recording_studio_trashable_kept_sql)
+      self.class.unscoped.kept
     end
 
     def pending_actor_clause(actor_type, actor_id)

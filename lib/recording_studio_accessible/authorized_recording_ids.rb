@@ -129,7 +129,7 @@ module RecordingStudioAccessible
         FROM #{recordings} rec
         INNER JOIN #{accesses} acc ON acc.id = rec.recordable_id
         WHERE rec.recordable_type = #{access_type_sql}
-          AND #{kept_sql('rec')}
+          AND #{RecordingStudio.kept_sql('rec')}
           AND acc.actor_type = #{actor_type_sql}
           AND acc.actor_id = #{actor_id_sql}
           AND #{role_rank_sql('TRIM(acc.role)')} >= #{@minimum}
@@ -181,7 +181,7 @@ module RecordingStudioAccessible
       [
         "NOT grant_walk.done",
         "manager.recordable_type = #{access_type_sql}",
-        kept_sql("manager"),
+        RecordingStudio.kept_sql("manager"),
         "NOT (manager.id = ANY(grant_walk.seen))",
         "COALESCE(manager.root_recording_id, manager.id) = grant_walk.node_root_id",
         "#{role_rank_sql('manager_access.role')} >= #{role_rank_sql('grant_walk.node_role')}"
@@ -264,12 +264,6 @@ module RecordingStudioAccessible
       return "" if @recordable_type.nil?
 
       "WHERE chosen.recordable_type = #{connection.quote(@recordable_type)}"
-    end
-
-    def kept_sql(table)
-      return "TRUE" unless RecordingStudio::Recording.column_names.include?("trashed_at")
-
-      RecordingStudio::Recording.recording_studio_trashable_kept_sql(table)
     end
 
     def role_rank_sql(expression)

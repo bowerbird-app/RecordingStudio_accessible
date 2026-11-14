@@ -180,6 +180,7 @@ class AuthorizationClassMethodsTest < Minitest::Test
       self
     end
 
+    def kept = self
     def select(*) = self
     def distinct = self
     def exists? = @exists_value

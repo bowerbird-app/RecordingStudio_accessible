@@ -20,15 +20,10 @@ class UsersController < ApplicationController
   end
 
   def active_recordings
-    scope = RecordingStudio::Recording.unscoped
-    # Additive kept filter (same as main). See DirectAccessQuery#active_recordings_scope.
-    if RecordingStudio::Recording.column_names.include?("trashed_at")
-      scope = scope.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
-    end
-
-    scope.where.not(recordable_type: [ "RecordingStudio::Access" ])
-         .includes(:recordable, :root_recording)
-         .order(:created_at)
+    RecordingStudio::Recording.unscoped.kept
+                              .where.not(recordable_type: [ "RecordingStudio::Access" ])
+                              .includes(:recordable, :root_recording)
+                              .order(:created_at)
   end
 
   def recordable_label_for(recordable)

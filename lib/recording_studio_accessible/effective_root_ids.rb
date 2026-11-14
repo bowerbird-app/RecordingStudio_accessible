@@ -80,7 +80,7 @@ module RecordingStudioAccessible
         [
           "NOT grant_walk.done",
           "manager.recordable_type = #{connection.quote('RecordingStudio::Access')}",
-          manager_kept_sql,
+          RecordingStudio.kept_sql("manager"),
           "NOT (manager.id = ANY(grant_walk.seen))",
           "COALESCE(manager.root_recording_id, manager.id) = grant_walk.node_root_id",
           "#{role_rank_sql('manager_access.role')} >= #{role_rank_sql('grant_walk.node_role')}"
@@ -89,12 +89,6 @@ module RecordingStudioAccessible
 
       def seed_recordings_sql(access_recordings)
         connection.unprepared_statement { access_recordings.to_sql }
-      end
-
-      def manager_kept_sql
-        return "TRUE" unless RecordingStudio::Recording.column_names.include?("trashed_at")
-
-        RecordingStudio::Recording.recording_studio_trashable_kept_sql("manager")
       end
 
       def role_rank_sql(expression)
