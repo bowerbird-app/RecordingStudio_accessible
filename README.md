@@ -1655,6 +1655,8 @@ An unranked stored grant such as `download` qualifies when `minimum_role` is omi
 
 Trashed children stay out. A trashed child can still pass `authorized?`. Trashed access grants do not count.
 
+Audience rules and narrowing constraints are not grants. A public audience does not add a child. A narrower audience does not remove a child that `role_for` still allows.
+
 The relation is the kept direct children, the optional type, and `id` in the ids that passed during the call. Chain `order`, `limit`, `includes`, and extra `where`. `unscope(:where)`, `rewhere(id:)`, and `or` drop that decision.
 
 These calls return `RecordingStudio::Recording.none`, and `recording_ids_for` returns `[]`:

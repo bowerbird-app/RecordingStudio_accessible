@@ -6,24 +6,23 @@ require "recording_studio_accessible/extracted/recording_studio/services/access_
 module RecordingStudio
   module Services
     class AccessResolver
-      def initialize(actor:, recording:)
+      def initialize(actor:, recording:, path: nil, lookup: nil)
         @actor = actor
         @recording = recording
+        @path = path
+        @lookup = lookup
       end
 
       def resolve_role
         return nil unless actor && recording
 
-        path.lookup_recordings
-            .filter_map { |path_recording| lookup.role_for(path_recording) }
-            .select { |role| RecordingStudio::AccessRoles.value_for(role) }
-            .max_by { |role| RecordingStudio::AccessRoles.value_for(role) }
+        RecordingStudio::AccessRoles.strongest(roles_on_path)
       end
 
       def any_effective_grant?
         return false unless actor && recording
 
-        path.lookup_recordings.any? { |path_recording| lookup.roles_for(path_recording).any? }
+        roles_on_path.any?
       end
 
       def any_role?(roles)
@@ -44,6 +43,10 @@ module RecordingStudio
       private
 
       attr_reader :actor, :recording
+
+      def roles_on_path
+        path.lookup_recordings.flat_map { |path_recording| lookup.roles_for(path_recording) }
+      end
 
       def path
         @path ||= AccessPath.new(recording: recording).build

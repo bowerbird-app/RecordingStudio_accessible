@@ -54,6 +54,23 @@ module RecordingStudioAccessible
           .order(created_at: :asc, id: :asc)
       end
 
+      # Kept rules on the recordings and constraints on their roots, newest first.
+      # One recordings query. Recordables preload separately.
+      def rows_for(recordings)
+        return [] unless tables_available?
+
+        parent_ids = parent_ids_for(recordings)
+        return [] if parent_ids.empty?
+
+        live_recordings
+          .where(parent_recording_id: parent_ids, recordable_type: [RULE_TYPE, CONSTRAINT_TYPE])
+          .preload(:recordable)
+          .order(created_at: :desc, id: :desc)
+          .to_a
+      rescue StandardError
+        []
+      end
+
       def live_duplicate_exists?(recordable_type:, parent_recording_id:, action:, except_id: nil)
         return false if parent_recording_id.blank? || action.blank?
         return false unless tables_available?
@@ -70,6 +87,16 @@ module RecordingStudioAccessible
       end
 
       private
+
+      def parent_ids_for(recordings)
+        ids = []
+        Array(recordings).compact.each do |recording|
+          ids << recording.id if recording.respond_to?(:id) && recording.id.present?
+          root = RecordingStudio.root_recording_or_self(recording)
+          ids << root.id if root.respond_to?(:id) && root.id.present?
+        end
+        ids.uniq
+      end
 
       def live_recordings
         scope = RecordingStudio::Recording.unscoped
@@ -99,6 +126,40 @@ module RecordingStudioAccessible
       rescue StandardError
         false
       end
+    end
+  end
+
+  # Newest kept rule or constraint per parent, type, and action.
+  class AudienceSnapshot
+    def self.load(recordings)
+      new(AudienceQuery.rows_for(recordings))
+    end
+
+    def initialize(rows)
+      @by_key = {}
+      Array(rows).each do |row|
+        recordable = row.recordable
+        next unless recordable
+
+        key = [row.parent_recording_id, row.recordable_type, recordable.action.to_s]
+        @by_key[key] ||= row
+      end
+    end
+
+    def rule_for(recording:, action:)
+      row_for(recording&.id, AudienceQuery::RULE_TYPE, action)
+    end
+
+    def constraint_for(root:, action:)
+      row_for(root&.id, AudienceQuery::CONSTRAINT_TYPE, action)
+    end
+
+    private
+
+    def row_for(parent_id, recordable_type, action)
+      return if parent_id.blank? || action.blank?
+
+      @by_key[[parent_id, recordable_type, action.to_s]]
     end
   end
 end

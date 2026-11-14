@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- `recordings_for` loads the actor's grants on the shared ancestor path once,
+  the grants on every candidate child once, and the audience rules and
+  constraints for those children once. Each child still uses the same role
+  precedence as `role_for`. The children that stay are unchanged.
+
+### Upgrade notes
+- No migration and no caller change for `recordings_for`. A public audience
+  still does not list a child with no grant.
+
 ## [0.34.0] - 2026-11-14
 
 ### Changed

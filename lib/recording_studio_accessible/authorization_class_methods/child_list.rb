@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "child_list_request"
+require_relative "child_list_evaluation"
 
 module RecordingStudioAccessible
   module AuthorizationClassMethods
@@ -40,13 +41,10 @@ module RecordingStudioAccessible
     end
 
     def allowed_child_ids(candidates, request)
-      candidates.filter_map do |child|
-        resolver = RecordingStudio::Services::AccessResolver.new(
-          actor: request.actor,
-          recording: child
-        )
-        child.id if request.floor.keep?(resolver)
-      end
+      children = candidates.preload(:parent_recording, :root_recording).to_a
+      return [] if children.empty?
+
+      ChildListEvaluation.new(children, request).allowed_ids
     end
   end
 end
