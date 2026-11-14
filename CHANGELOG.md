@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.38.0] - 2026-11-14
+
 ### Changed
 - Audience checks load the rules and constraints for a root in one recordings
   query and resolve each recording in memory. Allow and deny stay the same,
@@ -1252,7 +1254,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.37.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.38.0...HEAD
+[0.38.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.34.0...v0.35.0
