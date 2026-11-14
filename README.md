@@ -1966,6 +1966,13 @@ Accessible stores two child recordables under types that enable
 - `RecordingStudio::AccessRule` — `action`, `audience`. Lives on the target
   recording. At most one live rule per action per recording.
 
+Checking several recordings under one root reads that root's rules and
+constraints in one recordings query, then resolves each recording in memory.
+`effective_audience` and `authorized_action?` are still one recording at a
+time. A write in the same request clears the read, so the next check sees
+the new rule. Allow and deny match a per-recording read, including a narrowed
+audience, a dependent grant, and a trashed rule or recording.
+
 Do not insert those rows yourself. Use the public API:
 
 ```ruby

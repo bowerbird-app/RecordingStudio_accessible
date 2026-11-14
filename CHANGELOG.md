@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Audience checks load the rules and constraints for a root in one recordings
+  query and resolve each recording in memory. Allow and deny stay the same,
+  including a narrowed audience, a dependent grant, and a trashed rule or
+  recording.
+
+### Upgrade notes
+- No migration and no caller change. `effective_audience` and
+  `authorized_action?` still take one recording. Repeat checks for that root
+  reuse the query cache until a write clears it.
+
 ## [0.37.0] - 2026-11-14
 
 ### Changed
