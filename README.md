@@ -1024,7 +1024,12 @@ workspace, company, team, system actor, or another configured access actor.
 A grant may also depend on another Access recording on the same root. The
 dependent role cannot exceed that manager grant's role, and
 `authorized?` / `role_for` fail closed if the manager Access is later
-trashed, destroyed, off-root, or downgraded. A background void job then
+trashed, destroyed, off-root, or downgraded. `root_recordings_for` and
+`root_recording_ids_for` use that same chain. A root is listed only when
+the actor has an independent grant, or a dependent grant whose every
+manager hop is still a kept Access recording on the same root, with a
+ranked role at least as strong, and the chain does not cycle. Audience
+limits do not add or remove roots. A background void job then
 destroys the dependent grant in place. If the manager Access recording is
 moved, dependents stay at the old node and are voided — they do not follow
 the move. Independent grants are not voided or relocated.
