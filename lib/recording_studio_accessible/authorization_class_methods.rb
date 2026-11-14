@@ -3,6 +3,8 @@
 require "recording_studio_accessible/extracted/recording_studio/access_roles"
 require_relative "authorization_class_methods/child_list"
 require_relative "authorization_class_methods/root_ids"
+require_relative "authorized_recording_ids"
+require_relative "authorization_class_methods/recording_ids"
 require_relative "effective_root_ids"
 
 module RecordingStudioAccessible

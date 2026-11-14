@@ -434,6 +434,10 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.41.0
+
+No migration. `authorized?` is unchanged. `authorized_recording_ids(actor:, root:, role: :view, recordable_type: nil)` returns an unloaded one-column relation of recording ids under that root that `authorized?` allows. A custom authorization service must implement `authorized_recording_ids`, or callers keep using `authorized?`. `authorized_recording_ids_supported?` is false when the configured service does not implement the query, and calling it raises.
+
 #### Upgrading to 0.40.0
 
 No Accessible migration. Install Recording Studio `~> 6.1`, `>= 6.13.0`. Dependent voiding still writes one deleted event per grant, in void order, and still rolls the batch back. Those events go through `RecordingStudio.record_events!` and store `root_recording_id`. Hosts that have not run Recording Studio's `root_recording_id` migration on `recording_studio_events` need that core migration. Recording Studio 6.13.0 adds no migration of its own.
@@ -995,6 +999,10 @@ can still be revoked. Mounted access management returns `404` for shared roots.
 actor-owned bucket lists while descendant authorization continues to work.
 `authorized_root_recording_ids` follows `authorized?` on the root, so a shared
 root stays in that relation when a kept grant sits on the shared root itself.
+`authorized_recording_ids` follows `authorized?` for every recording under the
+root you pass. A legacy grant on the shared root covers that root and its
+descendants. A grant only on a child leaves the shared root out and covers
+that child and its descendants.
 `recordings_for` still lists direct children of a shared-root parent. See
 [Children under one parent](#children-under-one-parent).
 
@@ -1078,6 +1086,8 @@ ranked role at least as strong, and the chain does not cycle. Audience
 limits do not add or remove roots. `authorized_root_recording_ids` uses that
 same chain for grants whose parent is the root, and those ids match
 `authorized?` on each root. See [Root ids for one actor](#root-ids-for-one-actor).
+`authorized_recording_ids` uses that same chain for grants anywhere under the
+root you pass. See [Recording ids under one root](#recording-ids-under-one-root).
 A background void job then
 destroys the dependent grant in place. The job writes one deleted event per
 grant, on that grant's parent, then destroys the grant. Last-admin is checked
@@ -1673,6 +1683,28 @@ Shared roots are included when that check passes. `root_recordings_for` and `roo
 `authorized_root_recording_ids_supported?` is true for the default authorization service. A host that replaces the service and does not implement `authorized_root_recording_ids` gets false. Calling the query then raises `RecordingStudioAccessible::Error` and does not return a set. Use `authorized?` per recording in that case.
 
 The manage-access page uses that lookup for each actor's effective role. A direct row is still shown when its own grant is not effective; the effective role on the row is the actor's real role, and it may be blank. The avatar rollup (`scope: :all` or `:effective`) loads kept grants for the recording and its ancestors in one query and preloads the actors. It still keeps the first grant it sees for an actor, including a dependent that is not effective. `LastAdminGuard` builds one lookup per recording after it takes the row locks. After the revoke or role change it reads grants again on that lookup, still inside the lock and with the query cache off. The answer from before the write is not reused.
+
+### Recording ids under one root
+
+`authorized_recording_ids` returns the recording ids under one root that `authorized?` would allow for that actor and role. The value is an unloaded `ActiveRecord::Relation` with one `id` column. Pass it to `where` so the filter stays in one query:
+
+```ruby
+RecordingStudio::Recording.where(
+  id: RecordingStudioAccessible.authorized_recording_ids(actor: user, root: root_recording)
+).limit(20)
+```
+
+`role` defaults to `:view`. `:edit` and `:admin` keep recordings at that rank or higher. A nil actor, a root that is not a recording, or a role other than `view`, `edit`, or `admin`, returns `RecordingStudio::Recording.none`.
+
+The query is one recursive CTE over `parent_recording_id`. It does not load the children in Ruby and it does not paste an id list. A kept grant on a recording covers that recording and every descendant whose parent chain reaches the grant. A direct grant on a child does not cover the parent or a sibling. A stronger grant on an ancestor still covers the child. A grant on a recording's stored root counts for that recording even when the root sits off the parent chain. That grant does not cover a descendant that does not inherit it through the parent chain and does not store that same root.
+
+Dependent grants count only when every manager hop is still a kept access recording on the same root, with a ranked role at least as strong, and the chain does not cycle. A trashed grant, a destroyed grant, and a voided dependent stay out. A kept grant on a trashed recording still counts. A trashed recording stays in the relation when `authorized?` allows it. Filter `trashed_at` on the caller's query when the list should be live rows only.
+
+Audience rules and audience limits are not grants. They do not add or remove ids. Shared roots use the same check. A legacy grant on the shared root covers that root and the recordings under it. A grant that sits only on a child covers that child and its descendants, and leaves the shared root out.
+
+`recordable_type` limits which ids come back. Inheritance still uses grants on other types. Pass a class or the stored type name, such as `"Page"`. A blank type returns `Recording.none`.
+
+`authorized_recording_ids_supported?` is true for the default authorization service. A host that replaces the service and does not implement `authorized_recording_ids` gets false. Calling the query then raises `RecordingStudioAccessible::Error` and does not return a set. Use `authorized?` per recording in that case.
 
 Existing checks remain exact actor checks. For example, this checks whether the
 workspace itself has edit access to the recording:

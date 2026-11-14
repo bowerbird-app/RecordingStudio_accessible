@@ -97,6 +97,51 @@ class AuthorizationTest < Minitest::Test
     end
   end
 
+  def test_default_service_supports_authorized_recording_ids
+    assert_predicate RecordingStudioAccessible, :authorized_recording_ids_supported?
+    assert_respond_to RecordingStudioAccessible::AuthorizationService, :authorized_recording_ids
+  end
+
+  def test_authorized_recording_ids_delegates_to_the_configured_service
+    service = Class.new do
+      class << self
+        attr_reader :recording_ids_call
+
+        def authorized_recording_ids(**kwargs)
+          @recording_ids_call = kwargs
+          :recording_ids
+        end
+      end
+    end
+
+    RecordingStudioAccessible::Authorization.stub(:authorization_service, service) do
+      assert_predicate RecordingStudioAccessible, :authorized_recording_ids_supported?
+      assert_equal :recording_ids, RecordingStudioAccessible.authorized_recording_ids(actor: :actor, root: :root)
+      assert_equal({ actor: :actor, root: :root, role: :view, recordable_type: nil }, service.recording_ids_call)
+      assert_equal :recording_ids, RecordingStudioAccessible.authorized_recording_ids(
+        actor: :actor, root: :root, role: :admin, recordable_type: "Page"
+      )
+      assert_equal({ actor: :actor, root: :root, role: :admin, recordable_type: "Page" }, service.recording_ids_call)
+    end
+  end
+
+  def test_unsupported_authorization_service_refuses_the_recording_id_relation
+    service = Class.new do
+      def self.role_for(**)
+        :view
+      end
+    end
+
+    RecordingStudioAccessible::Authorization.stub(:authorization_service, service) do
+      refute_predicate RecordingStudioAccessible, :authorized_recording_ids_supported?
+      error = assert_raises(RecordingStudioAccessible::Error) do
+        RecordingStudioAccessible.authorized_recording_ids(actor: :actor, root: :root, role: :view)
+      end
+      assert_includes error.message, "authorized_recording_ids"
+      assert_includes error.message, "refusing to return a recording set"
+    end
+  end
+
   def test_unsupported_authorization_service_refuses_the_root_id_relation
     service = Class.new do
       def self.role_for(**)

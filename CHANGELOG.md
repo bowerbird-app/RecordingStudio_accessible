@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-11-14
+
+### Added
+- `authorized_recording_ids(actor:, root:, role: :view, recordable_type: nil)`
+  returns an unloaded one-column relation of recording ids under `root` that
+  `authorized?` allows. The query is a recursive CTE over `parent_recording_id`.
+  Pass it to `where`. `authorized_recording_ids_supported?` is false when the
+  configured authorization service does not implement the query, and calling
+  it raises instead of returning a set.
+
+### Upgrade notes
+- No migration. `authorized?` is unchanged. A custom authorization service
+  must implement `authorized_recording_ids`, or callers keep using `authorized?`.
+
 ## [0.40.0] - 2026-11-14
 
 ### Changed
@@ -1286,7 +1300,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.40.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.41.0...HEAD
+[0.41.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.37.0...v0.38.0

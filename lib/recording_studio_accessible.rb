@@ -45,6 +45,7 @@ require "recording_studio_accessible/roles"
 require "recording_studio_accessible/role_ceiling"
 require "recording_studio_accessible/authorization_class_methods"
 require "recording_studio_accessible/root_ids_api"
+require "recording_studio_accessible/recording_ids_api"
 require "recording_studio_accessible/configuration"
 require "recording_studio_accessible/authorization"
 require "recording_studio_accessible/direct_access_query"
@@ -99,6 +100,7 @@ module RecordingStudioAccessible
   extend AccessRequestApi
   extend AccessWriters
   extend RootIdsApi
+  extend RecordingIdsApi
 
   class << self
     def configuration
