@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- `authorized_root_recording_ids(actor:, role: :view)` returns a one-column
+  relation of root recording ids that `authorized?` allows on that root.
+  Pass it to `where`. `authorized_root_recording_ids_supported?` is false when
+  the configured authorization service does not implement the query, and
+  calling it raises instead of returning a set.
+
+### Upgrade notes
+- No migration. `root_recordings_for` and `root_recording_ids_for` are
+  unchanged. A custom authorization service must implement
+  `authorized_root_recording_ids`, or callers keep using `authorized?`.
+
 ## [0.38.0] - 2026-11-14
 
 ### Changed

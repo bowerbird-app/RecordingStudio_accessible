@@ -71,6 +71,49 @@ class AuthorizationTest < Minitest::Test
     AuthorizationServiceStub.reset!
   end
 
+  def test_default_service_supports_authorized_root_recording_ids
+    assert_predicate RecordingStudioAccessible, :authorized_root_recording_ids_supported?
+    assert_respond_to RecordingStudioAccessible::AuthorizationService, :authorized_root_recording_ids
+  end
+
+  def test_authorized_root_recording_ids_delegates_to_the_configured_service
+    service = Class.new do
+      class << self
+        attr_reader :root_ids_call
+
+        def authorized_root_recording_ids(**kwargs)
+          @root_ids_call = kwargs
+          :root_ids
+        end
+      end
+    end
+
+    RecordingStudioAccessible::Authorization.stub(:authorization_service, service) do
+      assert_predicate RecordingStudioAccessible, :authorized_root_recording_ids_supported?
+      assert_equal :root_ids, RecordingStudioAccessible.authorized_root_recording_ids(actor: :actor)
+      assert_equal({ actor: :actor, role: :view }, service.root_ids_call)
+      assert_equal :root_ids, RecordingStudioAccessible.authorized_root_recording_ids(actor: :actor, role: :admin)
+      assert_equal({ actor: :actor, role: :admin }, service.root_ids_call)
+    end
+  end
+
+  def test_unsupported_authorization_service_refuses_the_root_id_relation
+    service = Class.new do
+      def self.role_for(**)
+        :view
+      end
+    end
+
+    RecordingStudioAccessible::Authorization.stub(:authorization_service, service) do
+      refute_predicate RecordingStudioAccessible, :authorized_root_recording_ids_supported?
+      error = assert_raises(RecordingStudioAccessible::Error) do
+        RecordingStudioAccessible.authorized_root_recording_ids(actor: :actor, role: :view)
+      end
+      assert_includes error.message, "authorized_root_recording_ids"
+      assert_includes error.message, "refusing to return a root set"
+    end
+  end
+
   def test_module_level_authorization_api_delegates_to_authorization_service
     execute_module_level_authorization_api_delegation
     verify_module_level_authorization_api_delegation_stubs
