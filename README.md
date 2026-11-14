@@ -434,6 +434,16 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.36.0
+
+Breaking. `access_management_actor_scope` no longer defaults to every user. Manage access and actor-id grants raise `RecordingStudioAccessible::ConfigurationError` until the host sets a scoped lookup. `authorized?` and `role_for` are unchanged. Add:
+
+```ruby
+config.access_management_actor_scope = ->(_controller) { User.order(:email) }
+```
+
+Duplicate access repair, dependent voiding, and audience narrowing keep the same allow and deny results.
+
 #### Upgrading to 0.35.0
 
 No migration and no caller change. Effective roles are unchanged.

@@ -4,11 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Security
+## [0.36.0] - 2026-11-14
+
+### Breaking
 - `access_management_actor_scope` no longer defaults to every user. Manage
   access and actor-id grants raise `RecordingStudioAccessible::ConfigurationError`
   until the host sets a scoped lookup. This does not change `authorized?` or
-  `role_for`.
+  `role_for`. Hosts must add
+  `config.access_management_actor_scope = ->(_controller) { User.order(:email) }`.
 
 ### Changed
 - Duplicate access repair groups candidate grants in SQL and loads only those
@@ -1226,7 +1229,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.35.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.36.0...HEAD
+[0.36.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.32.0...v0.33.0
