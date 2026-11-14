@@ -434,6 +434,10 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.39.0
+
+No migration. `root_recordings_for` and `root_recording_ids_for` are unchanged. `authorized_root_recording_ids(actor:, role: :view)` returns a one-column relation of root recording ids that `authorized?` allows on that root. A custom authorization service must implement `authorized_root_recording_ids`, or callers keep using `authorized?`. `authorized_root_recording_ids_supported?` is false when the configured service does not implement the query, and calling it raises.
+
 #### Upgrading to 0.38.0
 
 No migration and no caller change. `effective_audience` and `authorized_action?` still take one recording. Audience checks load that root's rules and constraints once and reuse the query cache until a write clears it. Allow and deny stay the same.
