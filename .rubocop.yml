@@ -50,6 +50,7 @@ Metrics/ClassLength:
     - 'lib/recording_studio_accessible/services/bootstrap_owner_access.rb'
     - 'lib/recording_studio_accessible/services/set_audience.rb'
     - 'lib/recording_studio_accessible/services/set_audience_constraint.rb'
+    - 'lib/recording_studio_accessible/authorized_recording_ids.rb'
 
 Metrics/ModuleLength:
   Exclude:
@@ -89,6 +90,7 @@ Metrics/MethodLength:
     - 'lib/recording_studio_accessible/registry_class_methods.rb'
     - 'lib/recording_studio_accessible/compatibility.rb'
     - 'lib/recording_studio_accessible/dependent_access.rb'
+    - 'lib/recording_studio_accessible/authorized_recording_ids.rb'
     - 'lib/recording_studio_accessible/services/**/*'
 
 Metrics/AbcSize:
