@@ -15,8 +15,11 @@ class TrashableTrashedAtParityIntegrationTest < ActiveSupport::TestCase
     refute defined?(RecordingStudioTrashable::Engine)
     assert_respond_to RecordingStudio::Recording, :kept
     assert_respond_to @root, :recording_studio_trashable_kept?
-    refute_respond_to RecordingStudio::Recording, :recording_studio_trashable_kept_sql
     refute_respond_to RecordingStudio::Recording, :recording_studio_trashable_active
+    # Dummy-only bridge for recording_studio_api 0.23.3. The gem does not define this.
+    assert_equal RecordingStudio.kept_sql, RecordingStudio::Recording.recording_studio_trashable_kept_sql
+    assert_equal RecordingStudio.kept_sql("child"),
+                 RecordingStudio::Recording.recording_studio_trashable_kept_sql("child")
     refute_respond_to @root, :recording_studio_trashable_trash!
     refute_respond_to @root, :recording_studio_trashable_restore!
     refute_respond_to @root, :recording_studio_trashable_purge!
