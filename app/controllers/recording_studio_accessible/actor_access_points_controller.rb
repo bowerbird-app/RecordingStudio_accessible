@@ -65,11 +65,12 @@ module RecordingStudioAccessible
 
     def workspace_access_recordings
       RecordingStudio::Recording.unscoped.kept
-        .where(root_recording_id: @workspace_root_recording.id, recordable_type: "RecordingStudio::Access")
-        .joins(RecordingStudioAccessible::DirectAccessQuery::ACCESS_JOIN_SQL)
-        .where(recording_studio_accesses: { actor_type: @resolved_actor_type, actor_id: @actor_id })
-        .includes(:parent_recording, :recordable)
-        .order(created_at: :asc, id: :asc)
+                                .where(root_recording_id: @workspace_root_recording.id, recordable_type: "RecordingStudio::Access")
+                                .joins(RecordingStudioAccessible::DirectAccessQuery::ACCESS_JOIN_SQL)
+                                .where(recording_studio_accesses: { actor_type: @resolved_actor_type,
+                                                                    actor_id: @actor_id })
+                                .includes(:parent_recording, :recordable)
+                                .order(created_at: :asc, id: :asc)
     end
 
     def authorize_actor_access_points!
