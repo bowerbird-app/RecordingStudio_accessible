@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.40.0] - 2026-11-14
+
+### Changed
+- Dependent voiding appends its deleted events with
+  `RecordingStudio.record_events!`. Each voided grant still gets one deleted
+  event, in void order, and a failure still rolls the batch back. Each event
+  stores `root_recording_id`. `events_count` still updates once per recordable
+  after commit.
+- Development pins move to Recording Studio `v6.13.0`. The gemspec floor is
+  `recording_studio ~> 6.1`, `>= 6.13.0`.
+
+### Upgrade notes
+- No Accessible migration. Install Recording Studio `~> 6.1`, `>= 6.13.0`.
+- Hosts that have not run Recording Studio's `root_recording_id` migration on
+  `recording_studio_events` (added before 6.13.0) need that core migration.
+  Recording Studio 6.13.0 adds no migration of its own.
+- `DeletedAccessEventInsert` is gone. Access checks are unchanged.
+
 ## [0.39.0] - 2026-11-14
 
 ### Added
@@ -1268,7 +1286,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.39.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.40.0...HEAD
+[0.40.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.36.0...v0.37.0

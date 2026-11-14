@@ -51,7 +51,7 @@ module RecordingStudioAccessible
       end
 
       # One deleted event per grant, in void order, with the same payload as
-      # destroy_access_recording!. The insert is one statement.
+      # destroy_access_recording!. record_events! inserts that batch in one statement.
       def write_deleted_events!(access_recordings)
         DeletedAccessEvents.write!(access_recordings, actor: manager_actor)
       end

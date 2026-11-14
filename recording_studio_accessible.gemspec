@@ -22,6 +22,6 @@ Gem::Specification.new do |spec|
   end
 
   spec.add_dependency "rails", "~> 8.1.0"
-  spec.add_dependency "recording_studio", "~> 6.1", ">= 6.1.0"
+  spec.add_dependency "recording_studio", "~> 6.1", ">= 6.13.0"
   spec.add_dependency "recording_studio_trashable", "~> 0.10"
 end
