@@ -9,6 +9,7 @@ class AccessRequestIndexScopeTest < ActiveSupport::TestCase
     @configuration = RecordingStudioAccessible.configuration
     @authorizer = @configuration.access_management_authorizer
     @audiences = @configuration.action_audiences.to_h
+    @configuration.access_management_authorizer = @configuration.method(:default_access_management_authorizer)
 
     @admin = create_user("scope-admin@example.com")
     @editor = create_user("scope-editor@example.com")
