@@ -67,10 +67,7 @@ module RecordingStudioAccessible
       end
 
       def kept_recordings
-        scope = RecordingStudio::Recording.unscoped
-        return scope unless RecordingStudio::Recording.column_names.include?("trashed_at")
-
-        scope.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
+        RecordingStudio::Recording.unscoped.kept
       end
 
       def reachable(candidate_ids, granting_ids)

@@ -4,9 +4,9 @@ require "test_helper"
 
 class CompanionPinTest < Minitest::Test
   ROOT_PINS = {
-    "recording_studio" => "6.13.0",
+    "recording_studio" => "6.14.0",
     "flat_pack" => "0.1.356",
-    "recording_studio_trashable" => "0.14.0",
+    "recording_studio_trashable" => "0.16.0",
     "recording_studio_attachable" => "0.23.0",
     "recording_studio_user" => "0.28.1",
     "recording_studio_metrics" => "0.8.0",

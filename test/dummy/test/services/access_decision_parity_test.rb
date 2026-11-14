@@ -149,8 +149,7 @@ class AccessDecisionParityTest < ActiveSupport::TestCase
   end
 
   def reference_duplicate_groups
-    scope = RecordingStudio::Recording.unscoped.where(recordable_type: "RecordingStudio::Access")
-    scope = scope.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
+    scope = RecordingStudio::Recording.unscoped.kept.where(recordable_type: "RecordingStudio::Access")
     recordings = scope.joins(RecordingStudioAccessible::DirectAccessQuery::ACCESS_JOIN_SQL)
                       .includes(:recordable)
                       .order(created_at: :desc, id: :desc)

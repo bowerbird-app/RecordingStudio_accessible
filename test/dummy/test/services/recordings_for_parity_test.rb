@@ -196,10 +196,7 @@ class RecordingsForParityTest < ActiveSupport::TestCase
   end
 
   def kept_children(parent)
-    scope = RecordingStudio::Recording.unscoped.where(parent_recording_id: parent.id)
-    return scope.to_a unless RecordingStudio::Recording.column_names.include?("trashed_at")
-
-    scope.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql).to_a
+    RecordingStudio::Recording.unscoped.kept.where(parent_recording_id: parent.id).to_a
   end
 
   def rule_queries
