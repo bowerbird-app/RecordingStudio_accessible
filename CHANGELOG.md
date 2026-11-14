@@ -27,6 +27,12 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- The access-request index finds parents the actor administers in SQL, then
+  pages those requests. The default authorizer still means effective admin on
+  the parent, an ancestor, or the root, including dependent grants and trashed
+  rows the way `authorized?` does. A custom `access_management_authorizer` is
+  still called for each parent. A request stays hidden unless that check
+  allows its parent.
 - Development pins move to Recording Studio `v6.7.0`, FlatPack `v0.1.356`,
   Trashable `v0.14.0`, Attachable `v0.23.0`, Users `v0.28.1`, Metrics `v0.8.0`,
   Cache `v0.6.3`, Admin `v2.13.0`, Logs `v0.7.4`, API `v0.23.0`, Moveable
@@ -37,6 +43,8 @@ All notable changes to this project will be documented in this file.
   record before an actor is signed in.
 
 ### Upgrade notes
+- No migration and no API change for the access-request index. Page size and
+  who can see a request are unchanged.
 - No gemspec or version change. Re-bundle to pick up the release tags.
 - Hosts on Recording Studio 6.5+ need `config.authorize_write`, or
   `config.allow_unauthorized_writes` when writes happen with no actor.
