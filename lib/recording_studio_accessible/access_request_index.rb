@@ -47,10 +47,16 @@ module RecordingStudioAccessible
 
       def allowed_ids(ids, actor, controller)
         return [] if ids.blank? || actor.blank?
+        return AdministeredRecordings.ids(candidate_ids: ids, actor: actor) if default_authorizer?
 
         RecordingStudio::Recording.unscoped.where(id: ids).filter_map do |recording|
           recording.id if manageable?(recording, actor, controller)
         end
+      end
+
+      def default_authorizer?
+        configuration = RecordingStudioAccessible.configuration
+        configuration.access_management_authorizer == configuration.method(:default_access_management_authorizer)
       end
 
       def manageable?(recording, actor, controller)

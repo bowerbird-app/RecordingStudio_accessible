@@ -279,8 +279,11 @@ Both routes render it. A host page can render the same partial.
 <%= access_requests_index(recordings: press_kits, url: press_kit_requests_path) %>
 ```
 
-`recordings` is one recording or a relation of them. Rows are limited to
-recordings the actor may manage through `AccessManagementPolicy`. The
+`recordings` is one recording or a relation of them. A row is included only
+when `AccessManagementPolicy` allows its parent. The default authorizer is
+effective admin: a kept grant on that parent, an ancestor, or its root. The
+index finds those parents in SQL, then pages the requests. A replaced
+`access_management_authorizer` is still called for each parent. The
 collection route uses `config.access_request_index_recordings` when it is
 set, and otherwise every recording that already has a request.
 

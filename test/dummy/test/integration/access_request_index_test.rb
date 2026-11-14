@@ -168,6 +168,34 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert response.body.index("<tbody") < response.body.index("index-page-10@example.com")
   end
 
+  test "unauthorized requests never appear, including the page after the cursor" do
+    sign_in @manager
+    12.times do |index|
+      person = create_user("index-hidden-#{index}@example.com")
+      hidden = ask(person, @other, "hidden-#{index}")
+      hidden.update_columns(created_at: index.seconds.ago)
+    end
+    11.times do |index|
+      person = create_user("index-visible-#{index}@example.com")
+      visible = ask(person, @recording, "visible-#{index}")
+      visible.update_columns(created_at: (index + 30).seconds.ago)
+    end
+
+    get collection_path
+    assert_response :success
+    assert_hidden_requests_absent
+    assert_match "index-visible-0@example.com", response.body
+    refute_match "index-visible-10@example.com", response.body
+
+    url = css_select("[data-flat-pack--pagination-infinite-url-value]").first["data-flat-pack--pagination-infinite-url-value"]
+    get url
+    assert_response :success
+    assert_hidden_requests_absent
+    assert_match "index-visible-10@example.com", response.body
+    refute_match "index-visible-0@example.com", response.body
+    assert_select "table tbody tr", count: 1
+  end
+
   test "review opens the request and a save returns to the current filter" do
     request_recording = ask(@person, @recording, "Please open the notes")
     sign_in @manager
@@ -244,6 +272,10 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  def assert_hidden_requests_absent
+    12.times { |index| refute_match "index-hidden-#{index}@example.com", response.body }
+  end
 
   def create_user(email)
     User.find_by(email: email) || User.create!(email: email, password: "Password", password_confirmation: "Password")
