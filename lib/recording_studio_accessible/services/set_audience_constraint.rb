@@ -4,6 +4,7 @@ module RecordingStudioAccessible
   module Services
     class SetAudienceConstraint < BaseService
       FALLBACK_EVENT = "audience_fallback"
+      REWRITE_BATCH = 100
 
       def initialize(root:, action:, allowed_audiences:, actor:)
         @root = root
@@ -133,15 +134,33 @@ module RecordingStudioAccessible
       end
 
       def rewrite_disallowed_descendant_rules!
-        allowed = requested_audiences
-        AudienceQuery.descendant_rule_recordings(root: @root, action: @action).find_each do |rule_recording|
-          current = rule_recording.recordable.audience.to_s.strip.to_sym
-          next if allowed.include?(current)
-
-          previous_audience = current.to_s
-          revised = rewrite_rule_to_granted!(rule_recording)
-          log_fallback_event!(revised, previous_audience: previous_audience)
+        disallowed_rule_ids.each_slice(REWRITE_BATCH) do |ids|
+          rule_recordings_for(ids).each do |rule_recording|
+            previous_audience = rule_recording.recordable.audience.to_s.strip
+            revised = rewrite_rule_to_granted!(rule_recording)
+            log_fallback_event!(revised, previous_audience: previous_audience)
+          end
         end
+      end
+
+      def disallowed_rule_ids
+        names = requested_audiences.map { |audience| connection.quote(audience.to_s) }.join(", ")
+        AudienceQuery.descendant_rule_recordings(root: @root, action: @action)
+                     .unscope(:order)
+                     .where(
+                       "recording_studio_access_rules.audience IS NULL OR " \
+                       "BTRIM(recording_studio_access_rules.audience) NOT IN (#{names})"
+                     )
+                     .order("recording_studio_recordings.id")
+                     .pluck("recording_studio_recordings.id")
+      end
+
+      def rule_recordings_for(ids)
+        RecordingStudio::Recording.unscoped.where(id: ids).includes(:recordable).order(:id).to_a
+      end
+
+      def connection
+        RecordingStudio::Recording.connection
       end
 
       def rewrite_rule_to_granted!(rule_recording)

@@ -19,7 +19,7 @@ module RecordingStudioAccessible
         destroyed = []
 
         relation = Object.new
-        relation.define_singleton_method(:find_each) { |&block| [dependent].each(&block) }
+        relation.define_singleton_method(:find_each) { |**_kwargs, &block| [dependent].each(&block) }
 
         RecordingStudio::Recording.stub(:transaction, ->(&block) { block.call }) do
           RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_depending_on, relation) do
@@ -44,7 +44,7 @@ module RecordingStudioAccessible
         service = VoidDependentAccesses.new(manager_access_recording_id: "manager-id")
 
         relation = Object.new
-        relation.define_singleton_method(:find_each) { |&block| [dependent].each(&block) }
+        relation.define_singleton_method(:find_each) { |**_kwargs, &block| [dependent].each(&block) }
 
         RecordingStudio::Recording.stub(:transaction, ->(&block) { block.call }) do
           RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_depending_on, relation) do
@@ -67,7 +67,7 @@ module RecordingStudioAccessible
         destroyed = []
 
         relation = Object.new
-        relation.define_singleton_method(:find_each) { |&block| [dependent].each(&block) }
+        relation.define_singleton_method(:find_each) { |**_kwargs, &block| [dependent].each(&block) }
 
         RecordingStudio::Recording.stub(:transaction, ->(&block) { block.call }) do
           RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_depending_on, relation) do

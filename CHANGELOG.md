@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Security
+- `access_management_actor_scope` no longer defaults to every user. Manage
+  access and actor-id grants raise `RecordingStudioAccessible::ConfigurationError`
+  until the host sets a scoped lookup. This does not change `authorized?` or
+  `role_for`.
+
+### Changed
+- Duplicate access repair groups candidate grants in SQL and loads only those
+  rows. Dependent voiding destroys in batches and still runs destroy callbacks.
+  The last-admin check stays around the whole void. Audience narrowing rewrites
+  disallowed descendant rules in batches; each rewrite still revises the rule
+  and logs the fallback event.
+
+### Upgrade notes
+- Set `config.access_management_actor_scope` to the people manage access and
+  actor-id grants may list. An unset scope raises.
+
 ## [0.35.0] - 2026-11-14
 
 ### Changed

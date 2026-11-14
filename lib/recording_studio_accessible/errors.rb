@@ -3,6 +3,8 @@
 module RecordingStudioAccessible
   class Error < StandardError; end
 
+  class ConfigurationError < Error; end
+
   class AudienceUnauthorized < Error; end
   class AudienceNotAllowed < Error; end
   class AudienceInvalid < Error; end

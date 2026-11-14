@@ -12,6 +12,13 @@ RecordingStudioAccessible.configure do |config|
   # intentionally supported. :all does not enable actor access-point lookup.
   # config.access_actor_types = :all
 
+  # Required. Manage access and actor-id grants list these people. Scope this
+  # to actors the current person may grant. There is no default, and an unset
+  # scope raises instead of listing every user.
+  config.access_management_actor_scope = lambda do |_controller|
+    User.order(:email)
+  end
+
   # Optional: allow one actor to use another actor's access grants.
   # By default, actors may only act through themselves.
   # config.authorize_actor_through = lambda do |actor:, through:, recording: nil, role: nil, controller: nil, **|

@@ -4,7 +4,7 @@ module RecordingStudioAccessible
   class Configuration
     module GrantableTypes
       def grantable_actor_types_for(controller: nil)
-        types_from_grantable_scope(resolve_configurable(access_management_actor_scope, controller))
+        types_from_grantable_scope(configured_actor_scope(controller))
       end
 
       private
