@@ -256,45 +256,55 @@ module RecordingStudioAccessible
     end
 
     def build_direct_access_rows
-      direct_access_recordings.map do |access_recording|
-        actor = access_recording.recordable.actor
-
-        {
-          id: access_recording.id,
-          actor: actor,
-          actor_label: RecordingStudioAccessible.configuration.actor_label_for(actor),
-          actor_type: actor.class.name.demodulize,
-          email: actor_email_for(actor),
-          direct_role: access_recording.recordable.role,
-          effective_role: effective_role_for(actor)
-        }
+      access_lookup.grants_for(@recording).filter_map do |access_recording|
+        direct_access_row(access_recording)
       end
     end
 
+    def direct_access_row(access_recording)
+      actor = access_lookup.actor_for(access_recording)
+      return unless actor
+
+      {
+        id: access_recording.id,
+        actor: actor,
+        actor_label: RecordingStudioAccessible.configuration.actor_label_for(actor),
+        actor_type: actor.class.name.demodulize,
+        email: actor_email_for(actor),
+        direct_role: access_recording.recordable.role,
+        effective_role: access_lookup.effective_role_for(actor)
+      }
+    end
+
     def build_inherited_access_rows
-      direct_actor_keys = build_actor_keys(direct_access_recordings)
-
-      ancestor_access_recordings.each_with_object({}) do |access_recording, rows_by_actor|
-        actor = access_recording.recordable.actor
-        next unless actor
-
-        actor_key = actor_key_for(actor)
-        next if direct_actor_keys.include?(actor_key) || rows_by_actor.key?(actor_key)
-
-        effective_role = effective_role_for(actor)
-        next unless effective_role
-
-        rows_by_actor[actor_key] = {
-          actor: actor,
-          actor_label: RecordingStudioAccessible.configuration.actor_label_for(actor),
-          actor_type: actor.class.name.demodulize,
-          email: actor_email_for(actor),
-          source_label: recordable_label_for(access_recording.parent_recording&.recordable),
-          source_recording: access_recording.parent_recording,
-          source_role: access_recording.recordable.role,
-          effective_role: effective_role
-        }
+      seen = direct_actor_keys
+      access_lookup.ancestor_recordings.each_with_object({}) do |recording, rows_by_actor|
+        access_lookup.grants_for(recording).each do |access_recording|
+          remember_inherited_row(rows_by_actor, seen, recording, access_recording)
+        end
       end.values
+    end
+
+    def remember_inherited_row(rows_by_actor, seen, recording, access_recording)
+      actor = access_lookup.actor_for(access_recording)
+      return unless actor
+
+      actor_key = actor_key_for(actor)
+      return if seen.include?(actor_key) || rows_by_actor.key?(actor_key)
+
+      effective_role = access_lookup.effective_role_for(actor)
+      return unless effective_role
+
+      rows_by_actor[actor_key] = {
+        actor: actor,
+        actor_label: RecordingStudioAccessible.configuration.actor_label_for(actor),
+        actor_type: actor.class.name.demodulize,
+        email: actor_email_for(actor),
+        source_label: recordable_label_for(recording.recordable),
+        source_recording: recording,
+        source_role: access_recording.recordable.role,
+        effective_role: effective_role
+      }
     end
 
     def direct_access_recordings
@@ -302,30 +312,9 @@ module RecordingStudioAccessible
                                                                                 .order(created_at: :asc, id: :asc)
     end
 
-    def ancestor_access_recordings
-      ancestor_recordings.flat_map do |recording|
-        RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(recording)
-                                                    .order(created_at: :asc, id: :asc)
-      end
-    end
-
-    def ancestor_recordings
-      @ancestor_recordings ||= begin
-        ancestors = []
-        current_recording = @recording.parent_recording
-
-        while current_recording
-          ancestors << current_recording
-          current_recording = current_recording.parent_recording
-        end
-
-        ancestors
-      end
-    end
-
-    def build_actor_keys(access_recordings)
-      access_recordings.filter_map do |access_recording|
-        actor = access_recording.recordable.actor
+    def direct_actor_keys
+      access_lookup.grants_for(@recording).filter_map do |access_recording|
+        actor = access_lookup.actor_for(access_recording)
         actor_key_for(actor) if actor
       end.to_set
     end
@@ -334,8 +323,13 @@ module RecordingStudioAccessible
       [actor.class.base_class.name, actor.id]
     end
 
+    def access_lookup
+      @access_lookup ||= RecordingStudioAccessible::ActorsWithAccess.new(@recording)
+    end
+
     def effective_role_for(actor)
       return unless actor
+      return access_lookup.effective_role_for(actor) if defined?(@access_lookup) && @access_lookup
 
       RecordingStudioAccessible.role_for(actor: actor, recording: @recording)
     end

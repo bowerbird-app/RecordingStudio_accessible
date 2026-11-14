@@ -73,7 +73,7 @@ module RecordingStudioAccessible
       return [] unless recording
 
       access_recordings = recording_studio_accessible_access_recordings(recording, scope: scope)
-      access_recordings = access_recordings.order(created_at: :asc, id: :asc) if access_recordings.respond_to?(:order)
+      access_recordings = recording_studio_accessible_ordered_grants(access_recordings)
 
       access_recordings.filter_map do |access_recording|
         access_recording.recordable&.actor
@@ -93,24 +93,13 @@ module RecordingStudioAccessible
     end
 
     def recording_studio_accessible_all_access_recordings(recording)
-      recordings = [recording]
-      current_recording = recording.parent_recording
-
-      while current_recording
-        recordings << current_recording
-        current_recording = current_recording.parent_recording
-      end
-
+      recordings = recording_studio_accessible_recording_chain(recording)
+      grants_by_parent = recording_studio_accessible_grants_by_parent(recordings)
       seen_actor_keys = {}
 
       recordings.each_with_object([]) do |current_scope_recording, access_recordings|
-        direct_access_recordings = RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(current_scope_recording)
-        if direct_access_recordings.respond_to?(:order)
-          direct_access_recordings = direct_access_recordings.order(created_at: :asc,
-                                                                    id: :asc)
-        end
-
-        direct_access_recordings.each do |access_recording|
+        parent_id = current_scope_recording.respond_to?(:id) ? current_scope_recording.id : current_scope_recording
+        Array(grants_by_parent[parent_id]).each do |access_recording|
           actor = access_recording.recordable&.actor
           next unless actor
 
@@ -121,6 +110,44 @@ module RecordingStudioAccessible
           access_recordings << access_recording
         end
       end
+    end
+
+    def recording_studio_accessible_recording_chain(recording)
+      recordings = []
+      seen_ids = {}
+      current_recording = recording
+
+      while current_recording
+        marker = current_recording.respond_to?(:id) ? current_recording.id : current_recording.object_id
+        break if seen_ids[marker]
+
+        seen_ids[marker] = true
+        recordings << current_recording
+        current_recording = current_recording.parent_recording
+      end
+
+      recordings
+    end
+
+    def recording_studio_accessible_grants_by_parent(recordings)
+      loaded = RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_parents(recordings)
+      loaded = recording_studio_accessible_preload_grant_actors(loaded)
+      loaded = loaded.order(created_at: :asc, id: :asc) if loaded.respond_to?(:order)
+      grants = loaded.sort_by { |grant| [grant.created_at, grant.id.to_s] }
+      grants.group_by(&:parent_recording_id)
+    end
+
+    def recording_studio_accessible_ordered_grants(access_recordings)
+      access_recordings = recording_studio_accessible_preload_grant_actors(access_recordings)
+      return access_recordings.order(created_at: :asc, id: :asc) if access_recordings.respond_to?(:order)
+
+      access_recordings
+    end
+
+    def recording_studio_accessible_preload_grant_actors(access_recordings)
+      return access_recordings unless access_recordings.respond_to?(:preload)
+
+      access_recordings.preload(recordable: :actor)
     end
 
     def recording_studio_accessible_actor_key(actor)
