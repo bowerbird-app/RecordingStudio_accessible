@@ -985,6 +985,8 @@ Accessible rejects new and updated direct grants on shared roots. Legacy grants
 can still be revoked. Mounted access management returns `404` for shared roots.
 `root_recordings_for` and `root_recording_ids_for` exclude shared roots from
 actor-owned bucket lists while descendant authorization continues to work.
+`authorized_root_recording_ids` follows `authorized?` on the root, so a shared
+root stays in that relation when a kept grant sits on the shared root itself.
 `recordings_for` still lists direct children of a shared-root parent. See
 [Children under one parent](#children-under-one-parent).
 
@@ -1065,7 +1067,10 @@ trashed, destroyed, off-root, or downgraded. `root_recordings_for` and
 the actor has an independent grant, or a dependent grant whose every
 manager hop is still a kept Access recording on the same root, with a
 ranked role at least as strong, and the chain does not cycle. Audience
-limits do not add or remove roots. A background void job then
+limits do not add or remove roots. `authorized_root_recording_ids` uses that
+same chain for grants whose parent is the root, and those ids match
+`authorized?` on each root. See [Root ids for one actor](#root-ids-for-one-actor).
+A background void job then
 destroys the dependent grant in place. The job writes one deleted event per
 grant, on that grant's parent, then destroys the grant. Last-admin is checked
 once for each parent. A void that would remove the last admin rolls back the
@@ -1640,6 +1645,24 @@ RecordingStudioAccessible.actors_with_access(recording: page_recording, minimum_
 ```
 
 `actors_with_access` walks the same path as `role_for`: the recording, its ancestors, and `root_recording_or_self`. It reads kept grants on that set in one query, drops a dependent grant that is not effective, and keeps the strongest role per actor. Actors are loaded per polymorphic type. A grant whose actor record is gone is skipped. Invitations and audience gates are not access grants, so they are not listed. There is no everyone row.
+
+### Root ids for one actor
+
+`authorized_root_recording_ids` returns the root recording ids `authorized?` would allow for that actor and role. The value is an `ActiveRecord::Relation` with one `id` column, so another query can filter with it:
+
+```ruby
+Notification.where(
+  root_recording_id: RecordingStudioAccessible.authorized_root_recording_ids(actor: user)
+)
+```
+
+`role` defaults to `:view`. `:edit` and `:admin` keep roots at that rank or higher. A nil actor, or a role other than `view`, `edit`, or `admin`, returns `RecordingStudio::Recording.none`.
+
+A root is included only when a kept access grant for that actor sits on the root (`parent_recording_id` is the root). A grant that exists only on a child does not include the root. A dependent grant is included only when every manager hop is still a kept access recording on the same root, with a ranked role at least as strong, and the chain does not cycle. Trashed grants stay out. A trashed root stays in when `authorized?` still allows it.
+
+Shared roots are included when that check passes. `root_recordings_for` and `root_recording_ids_for` still leave shared roots out of the actor-owned bucket list, and they still include a root reached only through a child grant. Audience rules and audience limits are not grants. They do not add or remove a root here, and they do not change `authorized?` on the root.
+
+`authorized_root_recording_ids_supported?` is true for the default authorization service. A host that replaces the service and does not implement `authorized_root_recording_ids` gets false. Calling the query then raises `RecordingStudioAccessible::Error` and does not return a set. Use `authorized?` per recording in that case.
 
 The manage-access page uses that lookup for each actor's effective role. A direct row is still shown when its own grant is not effective; the effective role on the row is the actor's real role, and it may be blank. The avatar rollup (`scope: :all` or `:effective`) loads kept grants for the recording and its ancestors in one query and preloads the actors. It still keeps the first grant it sees for an actor, including a dependent that is not effective. `LastAdminGuard` builds one lookup per recording after it takes the row locks. After the revoke or role change it reads grants again on that lookup, still inside the lock and with the query cache off. The answer from before the write is not reused.
 
