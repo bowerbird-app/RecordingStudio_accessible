@@ -52,6 +52,7 @@ module RecordingStudioAccessible
         return [] unless settings[:valid]
         return [] if settings[:denied]
 
+        snapshot = ensure_snapshot(recording, snapshot)
         host_allowed = settings[:allowed]
         constraint = constraint_audiences(recording: recording, action: action, snapshot: snapshot)
         allowed = constraint ? (host_allowed & constraint) : host_allowed
@@ -69,6 +70,7 @@ module RecordingStudioAccessible
         return DENIED unless settings[:valid]
         return DENIED if settings[:denied]
 
+        snapshot = ensure_snapshot(recording, snapshot)
         allowed = allowed_audiences_for(recording: recording, action: action, snapshot: snapshot)
         return DENIED if allowed.empty?
 
@@ -132,6 +134,29 @@ module RecordingStudioAccessible
 
       def registered_audience?(name)
         RecordingStudioAccessible.registered_audience?(name)
+      end
+
+      # One load of this root's rules and constraints. The query cache serves
+      # the next check for that root until a write clears it.
+      def ensure_snapshot(recording, snapshot)
+        return snapshot if snapshot
+
+        root_snapshot(recording)
+      end
+
+      def root_snapshot(recording)
+        root = RecordingStudio.root_recording_or_self(recording)
+        return if root.blank? || !root.respond_to?(:id) || root.id.blank?
+
+        cache = ActiveRecord::Base.connection_pool.query_cache
+        return AudienceSnapshot.load_for_root(root) unless cache.enabled?
+
+        # Same lifetime as the query cache: a write clears this with the SQL.
+        cache.compute_if_absent([:recording_studio_accessible_audience_root, root.id]) do
+          AudienceSnapshot.load_for_root(root)
+        end
+      rescue StandardError
+        nil
       end
 
       def stored_audience(recording:, action:, snapshot: nil)

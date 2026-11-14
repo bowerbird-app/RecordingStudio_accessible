@@ -54,19 +54,13 @@ module RecordingStudioAccessible
           .order(created_at: :asc, id: :asc)
       end
 
-      # Kept rules on the recordings and constraints on their roots, newest first.
-      # One recordings query. Recordables preload separately.
       def rows_for(recordings)
         return [] unless tables_available?
 
         parent_ids = parent_ids_for(recordings)
         return [] if parent_ids.empty?
 
-        live_recordings
-          .where(parent_recording_id: parent_ids, recordable_type: [RULE_TYPE, CONSTRAINT_TYPE])
-          .preload(:recordable)
-          .order(created_at: :desc, id: :desc)
-          .to_a
+        kept_audience_rows.where(parent_recording_id: parent_ids).to_a
       rescue StandardError
         []
       end
@@ -87,6 +81,11 @@ module RecordingStudioAccessible
       end
 
       private
+
+      def kept_audience_rows
+        live_recordings.where(recordable_type: [RULE_TYPE, CONSTRAINT_TYPE])
+                       .preload(:recordable).order(created_at: :desc, id: :desc)
+      end
 
       def parent_ids_for(recordings)
         ids = []
@@ -129,10 +128,29 @@ module RecordingStudioAccessible
     end
   end
 
+  # Kept rules and constraints for every parent in one root. One recordings query.
+  class AudienceRootRows
+    def self.for(root)
+      return [] unless root.respond_to?(:id) && root.id.present?
+      return [] unless AudienceQuery.send(:tables_available?)
+
+      parents = RecordingStudio::Recording.unscoped
+      parent_ids = parents.where(root_recording_id: root.id).or(parents.where(id: root.id)).select(:id)
+      AudienceQuery.send(:kept_audience_rows).where(parent_recording_id: parent_ids).to_a
+    rescue StandardError
+      []
+    end
+  end
+  private_constant :AudienceRootRows
+
   # Newest kept rule or constraint per parent, type, and action.
   class AudienceSnapshot
     def self.load(recordings)
       new(AudienceQuery.rows_for(recordings))
+    end
+
+    def self.load_for_root(root)
+      new(AudienceRootRows.for(root))
     end
 
     def initialize(rows)

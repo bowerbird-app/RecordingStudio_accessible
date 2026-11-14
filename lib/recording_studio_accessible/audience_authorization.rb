@@ -6,11 +6,15 @@ module RecordingStudioAccessible
     GRANTED = AudienceRegistry::GRANTED
 
     class << self
-      def authorized?(actor:, action:, recording:, context: {})
+      def authorized?(actor:, action:, recording:, context: {}, snapshot: nil)
         return false unless recording
         return false unless AudienceResolver.configured?(action)
 
-        effective = AudienceResolver.effective_audience(recording: recording, action: action)
+        effective = AudienceResolver.effective_audience(
+          recording: recording,
+          action: action,
+          snapshot: snapshot
+        )
         return false if effective == DENIED
 
         eval_context = normalized_context(context).merge(action: action)
