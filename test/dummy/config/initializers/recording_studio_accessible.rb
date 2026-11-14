@@ -3,6 +3,12 @@
 RecordingStudioAccessible.configure do |config|
   config.access_actor_types = [ "User", "Workspace" ]
 
+  # Required. The demo grants among its own users. Hosts should scope this
+  # to the people the current actor may grant.
+  config.access_management_actor_scope = lambda do |_controller|
+    User.order(:email)
+  end
+
   config.authorize_actor_through = lambda do |actor:, through:, **|
     case through
     when Workspace

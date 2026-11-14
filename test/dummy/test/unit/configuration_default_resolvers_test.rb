@@ -12,9 +12,18 @@ class ConfigurationDefaultResolversTest < ActiveSupport::TestCase
     Current.actor = @original_actor
   end
 
-  test "default actor scope orders host users by email" do
+  test "actor scope is required and does not list every user" do
+    error = assert_raises(RecordingStudioAccessible::ConfigurationError) do
+      @configuration.grantable_actors_for(controller: :controller)
+    end
+
+    assert_equal RecordingStudioAccessible::Copy.t("errors.actor_scope_required"), error.message
+  end
+
+  test "configured actor scope orders host users by email" do
     later = create_user("resolver-zeta@example.com")
     earlier = create_user("resolver-ada@example.com")
+    @configuration.access_management_actor_scope = ->(_controller) { User.order(:email) }
 
     actors = @configuration.grantable_actors_for(controller: :controller)
     emails = actors.map(&:email)

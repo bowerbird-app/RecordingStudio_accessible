@@ -4,7 +4,7 @@ module RecordingStudioAccessible
   class Configuration
     module Actors
       def grantable_actors_for(controller:)
-        Array(resolve_configurable(access_management_actor_scope, controller))
+        Array(configured_actor_scope(controller))
       end
 
       def actor_label_for(actor)
@@ -42,7 +42,6 @@ module RecordingStudioAccessible
       private
 
       def assign_actor_defaults
-        @access_management_actor_scope = method(:default_access_management_actor_scope)
         @access_management_current_actor_resolver = method(:default_access_management_current_actor_resolver)
         @access_management_actor_label = method(:default_access_management_actor_label)
         @access_management_actor_avatar = method(:default_access_management_actor_avatar)
@@ -50,18 +49,11 @@ module RecordingStudioAccessible
         @access_actor_types = nil
       end
 
-      def default_access_management_actor_scope(_controller)
-        return [] unless defined?(::User)
+      def configured_actor_scope(controller)
+        callable = access_management_actor_scope
+        raise RecordingStudioAccessible::ConfigurationError, Copy.t("errors.actor_scope_required") if callable.nil?
 
-        ordered_user_scope(::User.all)
-      rescue StandardError
-        []
-      end
-
-      def ordered_user_scope(scope)
-        return scope.order(:email) if scope.respond_to?(:order) && ::User.column_names.include?("email")
-
-        scope
+        resolve_configurable(callable, controller)
       end
 
       def default_access_management_current_actor_resolver(controller: nil)

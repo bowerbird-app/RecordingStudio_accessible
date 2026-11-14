@@ -118,6 +118,7 @@ en:
         recording_not_persisted: "Recording must be persisted"
         actor_not_persisted: "Actor must be persisted"
         repair_manager_required: "A persisted manager actor with a GlobalID is required for repair"
+        actor_scope_required: "Set access_management_actor_scope to the people this screen may grant. Recording Studio Accessible does not list every user."
         repair_failed: "Some duplicate access grants could not be repaired"
         audience_unauthorized: "You cannot change who can do this"
         audience_not_allowed: "That choice is not available here"

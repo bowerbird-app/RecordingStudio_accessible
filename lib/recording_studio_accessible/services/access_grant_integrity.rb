@@ -50,12 +50,53 @@ module RecordingStudioAccessible
       end
 
       def duplicate_groups
-        active_access_recordings.includes(:recordable).to_a
-                                .group_by { |recording| group_key_for(recording) }
-                                .select { |_key, recordings| recordings.length > 1 }
-                                .map do |key, recordings|
-          group_from(key, recordings)
+        pairs = duplicate_parent_actor_pairs
+        return [] if pairs.empty?
+
+        recordings = recordings_for_parent_actor_pairs(pairs)
+        preload_access_actors(recordings)
+        recordings.group_by { |recording| group_key_for(recording) }
+                  .select { |_key, rows| rows.length > 1 }
+                  .map { |key, rows| group_from(key, rows) }
+      end
+
+      # Same parent and actor id is the candidate set. Stored actor types that
+      # normalize to one base class stay together; types that do not are split
+      # again in Ruby.
+      def duplicate_parent_actor_pairs
+        active_access_recordings
+          .unscope(:order)
+          .group("recording_studio_recordings.parent_recording_id", "recording_studio_accesses.actor_id")
+          .having("COUNT(recording_studio_recordings.id) > 1")
+          .pluck(
+            Arel.sql("recording_studio_recordings.parent_recording_id"),
+            Arel.sql("recording_studio_accesses.actor_id")
+          )
+      end
+
+      def recordings_for_parent_actor_pairs(pairs)
+        pairs.each_slice(500).flat_map do |slice|
+          tuples = slice.map { |parent_id, actor_id| "(#{quote(parent_id)}, #{quote(actor_id)})" }.join(", ")
+          active_access_recordings
+            .includes(:recordable)
+            .where(
+              Arel.sql(
+                "(recording_studio_recordings.parent_recording_id, recording_studio_accesses.actor_id) IN (#{tuples})"
+              )
+            )
+            .to_a
         end
+      end
+
+      def preload_access_actors(recordings)
+        accesses = recordings.filter_map(&:recordable)
+        return if accesses.empty?
+
+        ActiveRecord::Associations::Preloader.new(records: accesses, associations: :actor).call
+      end
+
+      def quote(value)
+        RecordingStudio::Recording.connection.quote(value)
       end
 
       def inspect_or_repair(group)
@@ -89,7 +130,9 @@ module RecordingStudioAccessible
       end
 
       def group_for_parent(parent, group)
-        recordings = active_access_recordings_for(parent).includes(:recordable).select do |recording|
+        recordings = active_access_recordings_for(parent).includes(:recordable).to_a
+        preload_access_actors(recordings)
+        recordings = recordings.select do |recording|
           group_key_for(recording) == [parent.id, group[:actor_type], group[:actor_id]]
         end
         return unless recordings.length > 1

@@ -182,6 +182,20 @@ class ConfigurationTest < Minitest::Test
     assert_equal %w[User Workspace], @configuration.access_actor_types
   end
 
+  def test_grantable_actors_require_a_configured_scope
+    message = RecordingStudioAccessible::Copy.t("errors.actor_scope_required")
+
+    error = assert_raises(RecordingStudioAccessible::ConfigurationError) do
+      @configuration.grantable_actors_for(controller: :controller)
+    end
+    assert_equal message, error.message
+
+    error = assert_raises(RecordingStudioAccessible::ConfigurationError) do
+      @configuration.grantable_actor_types_for
+    end
+    assert_equal message, error.message
+  end
+
   def test_grantable_actor_types_for_reads_a_relation_klass
     klass = Class.new do
       def self.name

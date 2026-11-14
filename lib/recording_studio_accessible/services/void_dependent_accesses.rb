@@ -5,6 +5,8 @@ module RecordingStudioAccessible
     class VoidDependentAccesses < BaseService
       include AccessRecordLifecycle
 
+      VOID_BATCH = 100
+
       def initialize(manager_access_recording_id:, manager_actor: nil, moved: false,
                      allow_last_admin_removal: false)
         @manager_access_recording_id = manager_access_recording_id
@@ -20,20 +22,24 @@ module RecordingStudioAccessible
       def perform
         return success([]) if @manager_access_recording_id.blank?
 
+        to_void = []
+        dependents.find_each(batch_size: VOID_BATCH) do |access_recording|
+          to_void << access_recording if should_void?(access_recording)
+        end
+
         voided = []
         RecordingStudio::Recording.transaction do
-          to_void = []
-          dependents.find_each do |access_recording|
-            to_void << access_recording if should_void?(access_recording)
-          end
+          next if to_void.empty?
 
           LastAdminGuard.protect!(
             recordings: parent_recordings_for(to_void),
             allow_last_admin_removal: @allow_last_admin_removal
           ) do
-            to_void.each do |access_recording|
-              destroy_access_recording!(access_recording, manager_actor: manager_actor)
-              voided << access_recording.id
+            to_void.each_slice(VOID_BATCH) do |batch|
+              batch.each do |access_recording|
+                destroy_access_recording!(access_recording, manager_actor: manager_actor)
+                voided << access_recording.id
+              end
             end
           end
         end

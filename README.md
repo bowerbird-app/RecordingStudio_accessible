@@ -1236,6 +1236,22 @@ end
 
 This is security-sensitive: `"all"`, `"*"`, and other values do not enable it.
 Prefer an explicit allowlist whenever the valid subject classes are known.
+
+Manage access, and API grants that pass `actor_id`, also need
+`access_management_actor_scope`. That lookup is the list of people the screen
+may grant. Set it to a scoped relation. There is no default. An unset scope
+raises `RecordingStudioAccessible::ConfigurationError` instead of listing every
+user.
+
+```ruby
+RecordingStudioAccessible.configure do |config|
+  config.access_management_actor_scope = lambda do |_controller|
+    User.order(:email)
+  end
+end
+```
+
+Narrow that relation to the actors the current person is allowed to grant.
 This setting only admits *new* grants. Existing access records remain readable,
 revocable, and effective for `role_for` and `authorized?` after the allowlist
 is changed or removed.
@@ -1374,8 +1390,8 @@ add a runtime gemspec dependency on `recording_studio_api`.
 Email is the people path and matches the manage-access form (`invite_access`).
 `actor_id` grants, updates, and revokes default `actor_type` to `User` when
 `User` is in `access_actor_types`. Otherwise `actor_type` is required. Grants
-are limited to the types the UI can grant (`grantable_actors_for`, users by
-default). Do not mix `email` with `actor_id`.
+are limited to the types returned by `access_management_actor_scope`
+(`grantable_actors_for`). Do not mix `email` with `actor_id`.
 `update_access` and `revoke_access` change or remove a direct grant for that
 actor on this recording. They refuse inherited grants; change the source
 recording instead. They also refuse a write that would remove the last
