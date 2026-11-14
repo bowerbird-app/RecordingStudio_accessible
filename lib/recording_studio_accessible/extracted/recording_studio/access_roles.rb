@@ -28,6 +28,13 @@ module RecordingStudio
       def normalize(role)
         role&.to_s
       end
+
+      # Strongest ranked name in the list. Unranked names are ignored.
+      # Empty and all-unranked lists return nil. Same rank comparison
+      # AccessGrantLookup and AccessResolver use.
+      def strongest(roles)
+        Array(roles).select { |role| value_for(role) }.max_by { |role| value_for(role) }
+      end
     end
   end
 end

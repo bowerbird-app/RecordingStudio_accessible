@@ -47,13 +47,13 @@ module RecordingStudioAccessible
         invalid_settings
       end
 
-      def allowed_audiences_for(recording:, action:)
+      def allowed_audiences_for(recording:, action:, snapshot: nil)
         settings = resolved_settings(action)
         return [] unless settings[:valid]
         return [] if settings[:denied]
 
         host_allowed = settings[:allowed]
-        constraint = constraint_audiences(recording: recording, action: action)
+        constraint = constraint_audiences(recording: recording, action: action, snapshot: snapshot)
         allowed = constraint ? (host_allowed & constraint) : host_allowed
         allowed |= [GRANTED]
         allowed.select { |name| registered_audience?(name) }.uniq
@@ -61,7 +61,7 @@ module RecordingStudioAccessible
         []
       end
 
-      def effective_audience(recording:, action:)
+      def effective_audience(recording:, action:, snapshot: nil)
         return DENIED unless recording
         return DENIED unless configured?(action)
 
@@ -69,10 +69,10 @@ module RecordingStudioAccessible
         return DENIED unless settings[:valid]
         return DENIED if settings[:denied]
 
-        allowed = allowed_audiences_for(recording: recording, action: action)
+        allowed = allowed_audiences_for(recording: recording, action: action, snapshot: snapshot)
         return DENIED if allowed.empty?
 
-        stored = stored_audience(recording: recording, action: action)
+        stored = stored_audience(recording: recording, action: action, snapshot: snapshot)
         if stored
           return stored if allowed.include?(stored)
           return GRANTED if registered_audience?(stored) && allowed.include?(GRANTED)
@@ -134,8 +134,12 @@ module RecordingStudioAccessible
         RecordingStudioAccessible.registered_audience?(name)
       end
 
-      def stored_audience(recording:, action:)
-        rule_recording = AudienceQuery.rule_recording_for(recording: recording, action: action)
+      def stored_audience(recording:, action:, snapshot: nil)
+        rule_recording = if snapshot
+                           snapshot.rule_for(recording: recording, action: action)
+                         else
+                           AudienceQuery.rule_recording_for(recording: recording, action: action)
+                         end
         audience = rule_recording&.recordable&.audience
         return if audience.blank?
 
@@ -144,11 +148,15 @@ module RecordingStudioAccessible
         nil
       end
 
-      def constraint_audiences(recording:, action:)
+      def constraint_audiences(recording:, action:, snapshot: nil)
         root = RecordingStudio.root_recording_or_self(recording)
         return unless root
 
-        constraint_recording = AudienceQuery.constraint_recording_for(root: root, action: action)
+        constraint_recording = if snapshot
+                                 snapshot.constraint_for(root: root, action: action)
+                               else
+                                 AudienceQuery.constraint_recording_for(root: root, action: action)
+                               end
         return unless constraint_recording
 
         names = Array(constraint_recording.recordable&.allowed_audiences).filter_map do |name|

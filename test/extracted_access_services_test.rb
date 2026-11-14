@@ -198,6 +198,34 @@ class ExtractedAccessServicesTest < Minitest::Test
     assert_equal 1, calls
   end
 
+  def test_access_grant_lookup_uses_preloaded_recordings_without_querying
+    actor = Actor.new(1)
+    parent = Recording.new(id: 10)
+    calls = 0
+    access_recordings = [AccessRecording.new(10, AccessRecordable.new("edit"))]
+
+    RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor_in, lambda { |**|
+      calls += 1
+      []
+    }) do
+      lookup = RecordingStudio::Services::AccessGrantLookup.new(
+        actor: actor,
+        recordings: [parent],
+        access_recordings: access_recordings
+      )
+
+      assert_equal "edit", lookup.role_for(parent)
+    end
+
+    assert_equal 0, calls
+  end
+
+  def test_access_roles_strongest_ignores_unranked_names
+    assert_equal "admin", RecordingStudio::AccessRoles.strongest(%w[view nope admin])
+    assert_nil RecordingStudio::AccessRoles.strongest(["download", nil, ""])
+    assert_nil RecordingStudio::AccessRoles.strongest([])
+  end
+
   def test_access_grant_lookup_skips_grants_that_are_not_effective_dependents
     actor = Actor.new(1)
     parent = Recording.new(id: 10)

@@ -3,14 +3,14 @@
 module RecordingStudio
   module Services
     class AccessGrantLookup
-      def initialize(actor:, recordings:)
+      def initialize(actor:, recordings:, access_recordings: nil)
         @actor = actor
         @recordings = Array(recordings).compact
+        @access_recordings = access_recordings
       end
 
       def role_for(recording)
-        ranked = roles_for(recording).select { |name| RecordingStudio::AccessRoles.value_for(name) }
-        ranked.max_by { |name| RecordingStudio::AccessRoles.value_for(name) }
+        RecordingStudio::AccessRoles.strongest(roles_for(recording))
       end
 
       def roles_for(recording)
@@ -19,21 +19,27 @@ module RecordingStudio
 
       private
 
-      attr_reader :actor, :recordings
+      attr_reader :actor, :recordings, :access_recordings
 
       def roles_by_parent_id
         @roles_by_parent_id ||= load_roles_by_parent_id
       end
 
       def load_roles_by_parent_id
-        return {} unless actor && recordings.any?
+        return {} unless actor && (recordings.any? || access_recordings)
+
+        grant_rows.each_with_object({}) do |access_recording, roles|
+          store_role(roles, access_recording)
+        end
+      end
+
+      def grant_rows
+        return access_recordings unless access_recordings.nil?
 
         RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor_in(
           recordings: recordings,
           actor: actor
-        ).each_with_object({}) do |access_recording, roles|
-          store_role(roles, access_recording)
-        end
+        )
       end
 
       def store_role(roles, access_recording)
