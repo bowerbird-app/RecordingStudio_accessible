@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 - Allow recording_studio < 8.0 (core 7 phase 1)
 
 ### Upgrade notes
-- No migration. The gemspec accepts Recording Studio `>= 6.14.0`, `< 8.0`.
+- No migration. The gemspec accepts Recording Studio `>= 6.1`, `>= 6.14.0`, `< 8.0`.
   This repo still tests Recording Studio `v6.14.0`.
 
 ## [0.43.0] - 2026-11-14

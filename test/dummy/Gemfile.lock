@@ -187,7 +187,7 @@ PATH
   specs:
     recording_studio_accessible (0.43.1)
       rails (~> 8.1.0)
-      recording_studio (>= 6.14.0, < 8.0)
+      recording_studio (>= 6.14.0, >= 6.1, < 8.0)
       recording_studio_trashable (~> 0.10, >= 0.16.0)
 
 GEM
