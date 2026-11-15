@@ -12,7 +12,12 @@ RecordingStudioAccessible.configure do |config|
   config.authorize_actor_through = lambda do |actor:, through:, **|
     case through
     when Workspace
-      workspace_root = RecordingStudio.root_recording_for(through)
+      workspace_root = RecordingStudio.create_root_recording!(
+        through,
+        actor: actor,
+        impersonator: nil,
+        metadata: {}
+      )
 
       RecordingStudioAccessible.authorized?(
         actor: actor,
@@ -97,8 +102,14 @@ RecordingStudioAccessible.register_action(
 RecordingStudioAccessible.define_check(:workspace_admin) do |actor:, **|
   workspace = Workspace.order(:name).first
   next false unless workspace
+  next false unless actor.present?
 
-  root = RecordingStudio.root_recording_for(workspace)
+  root = RecordingStudio.create_root_recording!(
+    workspace,
+    actor: actor,
+    impersonator: nil,
+    metadata: {}
+  )
   next false unless root
 
   RecordingStudioAccessible.authorized?(actor: actor, recording: root, role: :admin)

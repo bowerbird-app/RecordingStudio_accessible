@@ -22,9 +22,11 @@ class CompanionHackCleanupTest < ActiveSupport::TestCase
     refute_path_exists Rails.root.join("app/javascript/controllers/hello_controller.js")
   end
 
-  test "dummy allows recording writes before an actor is signed in" do
-    assert_equal true, RecordingStudio.configuration.allow_unauthorized_writes
-    assert RecordingStudio.configuration.authorize_write.call(actor: nil)
+  test "dummy authorizes a write when an actor is present" do
+    assert_equal false, RecordingStudio.configuration.allow_unauthorized_writes
+    authorizer = RecordingStudio.configuration.authorize_write
+    assert authorizer.call(actor: User.new, root_recording: nil)
+    refute authorizer.call(actor: nil, root_recording: nil)
   end
 
   test "recordings include purge_at for Trashable retention" do

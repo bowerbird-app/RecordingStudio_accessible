@@ -24,6 +24,7 @@ RecordingStudioAccessible.configure do |config|
   # config.authorize_actor_through = lambda do |actor:, through:, recording: nil, role: nil, controller: nil, **|
   #   case through
   #   when Workspace
+  #     # root_recording_for only finds an existing root.
   #     workspace_root = RecordingStudio.root_recording_for(through)
   #     RecordingStudioAccessible.authorized?(actor: actor, recording: workspace_root, role: :view)
   #   else
