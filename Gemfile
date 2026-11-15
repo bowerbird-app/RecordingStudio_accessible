@@ -36,7 +36,7 @@ gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: 
                              require: false
 gem "recording_studio_moveable", github: "bowerbird-app/RecordingStudio_moveable", tag: "v4.1.1",
                                  require: false
-gem "recording_studio_user", github: "bowerbird-app/RecordingStudio_users", tag: "v0.28.1",
+gem "recording_studio_user", github: "bowerbird-app/RecordingStudio_users", tag: "v0.30.0",
                              require: false
 
 gem "devise"

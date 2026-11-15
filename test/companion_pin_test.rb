@@ -8,7 +8,7 @@ class CompanionPinTest < Minitest::Test
     "flat_pack" => "0.1.356",
     "recording_studio_trashable" => "0.17.0",
     "recording_studio_attachable" => "0.23.0",
-    "recording_studio_user" => "0.28.1",
+    "recording_studio_user" => "0.30.0",
     "recording_studio_metrics" => "0.9.0",
     "recording_studio_cache" => "0.6.3",
     "recording_studio_admin" => "2.16.0",

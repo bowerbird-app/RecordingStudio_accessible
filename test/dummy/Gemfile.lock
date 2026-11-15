@@ -149,10 +149,10 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_users.git
-  revision: 35053bbdf2aeb1941fed62102fc1781e1232ba45
-  tag: v0.28.1
+  revision: 98c657f5956b8eb7b398da665097f00a15f5af7d
+  tag: v0.30.0
   specs:
-    recording_studio_user (0.28.1)
+    recording_studio_user (0.30.0)
       devise (~> 5.0)
       flat_pack (>= 0.1.328)
       omniauth (~> 2.1)
@@ -163,9 +163,9 @@ GIT
       omniauth-microsoft_graph (~> 2.0)
       omniauth-rails_csrf_protection (~> 2.0)
       rails (~> 8.1.0)
-      recording_studio (>= 6.1.0)
-      recording_studio_accessible (~> 0.11)
-      recording_studio_admin (~> 2.0)
+      recording_studio (>= 7.0, < 8.0)
+      recording_studio_accessible (>= 0.43.1, < 1)
+      recording_studio_admin (>= 2.16.0, < 3)
       recording_studio_attachable (~> 0.7)
       recording_studio_cache (>= 0.5, < 1)
       recording_studio_metrics (>= 0.3, < 1.0)
@@ -867,7 +867,7 @@ CHECKSUMS
   recording_studio_notifications (0.15.0)
   recording_studio_root_switchable (0.15.1)
   recording_studio_trashable (0.17.0)
-  recording_studio_user (0.28.1)
+  recording_studio_user (0.30.0)
   redis (5.4.1) sha256=b5e675b57ad22b15c9bcc765d5ac26f60b675408af916d31527af9bd5a81faae
   redis-client (0.31.0) sha256=6820cb2a21e6795a823141f50fd25e655de2b8dc8ff833b43509a27b0263fd75
   regexp_parser (2.12.0) sha256=35a916a1d63190ab5c9009457136ae5f3c0c7512d60291d0d1378ba18ce08ebb

@@ -9,14 +9,16 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Require Recording Studio `>= 7.0`, `< 8.0` and Trashable `>= 0.17.0`, `< 1.0`.
 - Development pins move to Recording Studio `v7.0.0`, Trashable `v0.17.0`,
-  Metrics `v0.9.0`, and Admin `v2.16.0`. The dummy also pins Root Switchable
-  `v0.15.1` and Internationalization `v0.3.0`.
+  Metrics `v0.9.0`, Admin `v2.16.0`, and Users `v0.30.0`. The dummy also pins
+  Root Switchable `v0.15.1` and Internationalization `v0.3.0`.
 - The dummy creates roots with `RecordingStudio.create_root_recording!`.
   Lookups stay on `root_recording_for`: the engine home and actor access
   points, and the workspace bootstrap assertion after create.
 - The dummy sets `config.authorize_write` so a present actor may write,
   including a new root where `root_recording` is nil. It does not set
   `allow_unauthorized_writes`.
+- The dummy sets Users `minimum_password_length` to 6. Users 0.30 defaults
+  that to 12, and the demo password is `Password`.
 
 ### Upgrade notes
 - No Accessible migration. `authorized?` is unchanged.

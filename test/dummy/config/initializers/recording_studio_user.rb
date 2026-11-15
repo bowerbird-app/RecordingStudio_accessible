@@ -8,4 +8,7 @@ RecordingStudioUser.configure do |config|
   config.mount_path = "/recording_studio_users"
   config.otp_enabled = true
   config.omniauth_providers = {}
+  # Users 0.30 defaults this to 12. Demo accounts and tests use "Password",
+  # and the dummy Devise range is 6..128.
+  config.minimum_password_length = 6
 end
