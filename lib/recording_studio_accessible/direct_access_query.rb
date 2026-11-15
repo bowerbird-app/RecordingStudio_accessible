@@ -26,11 +26,11 @@ module RecordingStudioAccessible
       def access_recordings_for_actor_in(recordings:, actor:)
         return RecordingStudio::Recording.none unless actor
 
-        recording_ids = Array(recordings).filter_map(&:id)
-        return RecordingStudio::Recording.none if recording_ids.empty?
+        parent_ids = parent_recording_ids(recordings)
+        return RecordingStudio::Recording.none if parent_ids.is_a?(Array) && parent_ids.empty?
 
         active_recordings_scope
-          .where(parent_recording_id: recording_ids, recordable_type: "RecordingStudio::Access")
+          .where(parent_recording_id: parent_ids, recordable_type: "RecordingStudio::Access")
           .joins(ACCESS_JOIN_SQL)
           .where(recording_studio_accesses: actor_filter(actor))
           .order(created_at: :desc, id: :desc)
@@ -63,6 +63,14 @@ module RecordingStudioAccessible
 
       def active_recordings_scope
         RecordingStudio::Recording.unscoped.kept
+      end
+
+      # A relation stays a subquery so a large child set is not loaded first.
+      # An array of recordings still becomes the parent ids, as before.
+      def parent_recording_ids(recordings)
+        return recordings.reselect(:id) if recordings.respond_to?(:reselect) && !recordings.is_a?(Array)
+
+        Array(recordings).filter_map(&:id)
       end
 
       def actor_filter(actor)

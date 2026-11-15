@@ -459,6 +459,10 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.44.1
+
+No migration and no caller change. `recordings_for` and `recording_ids_for` return the same children as before. The relation is still the ids from that call.
+
 #### Upgrading to 0.44.0
 
 No Accessible migration. `authorized?` is unchanged. Install Recording Studio `>= 7.0`, `< 8.0` and Trashable `>= 0.17.0`, `< 1.0`.
@@ -1804,7 +1808,9 @@ An unranked stored grant such as `download` qualifies when `minimum_role` is omi
 
 Trashed children stay out. A trashed child can still pass `authorized?`. Trashed access grants do not count.
 
-Audience rules and narrowing constraints are not grants. A public audience does not add a child. A narrower audience does not remove a child that `role_for` still allows.
+The actor's role on the parent is resolved once. That role is the strongest grant on the parent path, and a grant does not lower another grant. When the parent role is enough for `minimum_role`, every kept direct child stays, including a child with a weaker grant or with no grant of its own. When the parent role is not enough, a child stays if its own grant is enough. A child also stays when its root recording is not on the parent path and a grant on that root is enough.
+
+Audience rules and narrowing constraints are not grants. This list does not load them. A public audience does not add a child. A narrower audience does not remove a child that `role_for` still allows.
 
 The relation is the kept direct children, the optional type, and `id` in the ids that passed during the call. Chain `order`, `limit`, `includes`, and extra `where`. `unscope(:where)`, `rewhere(id:)`, and `or` drop that decision.
 

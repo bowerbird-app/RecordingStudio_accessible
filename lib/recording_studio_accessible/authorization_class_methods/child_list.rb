@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "child_list_request"
-require_relative "child_list_evaluation"
+require_relative "child_list_membership"
 
 module RecordingStudioAccessible
   module AuthorizationClassMethods
@@ -41,10 +41,7 @@ module RecordingStudioAccessible
     end
 
     def allowed_child_ids(candidates, request)
-      children = candidates.preload(:parent_recording, :root_recording).to_a
-      return [] if children.empty?
-
-      ChildListEvaluation.new(children, request).allowed_ids
+      ChildListMembership.new(candidates, request).ids
     end
   end
 end
