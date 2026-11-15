@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.43.1] - 2026-11-15
+
+### Changed
+- Allow recording_studio < 8.0 (core 7 phase 1)
+
+### Upgrade notes
+- No migration. The gemspec accepts Recording Studio `>= 6.1`, `>= 6.14.0`, `< 8.0`.
+  This repo still tests Recording Studio `v6.14.0`.
+
 ## [0.43.0] - 2026-11-14
 
 ### Added
@@ -1333,7 +1342,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.1...HEAD
+[0.43.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.0...v0.43.1
 [0.43.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.40.0...v0.41.0
