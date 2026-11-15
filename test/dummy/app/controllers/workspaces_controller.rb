@@ -16,7 +16,12 @@ class WorkspacesController < ApplicationController
 
     ActiveRecord::Base.transaction do
       workspace = Workspace.create!(name: name)
-      root = RecordingStudio.root_recording_for(workspace)
+      root = RecordingStudio.create_root_recording!(
+        workspace,
+        actor: current_user,
+        impersonator: nil,
+        metadata: {}
+      )
       result = RecordingStudioAccessible.bootstrap_owner_access!(
         recording: root,
         actor: current_user

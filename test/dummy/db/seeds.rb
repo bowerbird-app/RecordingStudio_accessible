@@ -56,7 +56,12 @@ def upsert_message_group(message_root:, name:, summary:, position:)
 end
 
 def ensure_root_recording(recordable)
-  RecordingStudio.root_recording_for(recordable)
+  RecordingStudio.create_root_recording!(
+    recordable,
+    actor: Current.actor,
+    impersonator: nil,
+    metadata: {}
+  )
 end
 
 def ensure_child_recording(recordable:, parent_recording:, root_recording:)
@@ -417,6 +422,7 @@ additional_users = {}
 end
 
 users.merge!(additional_users)
+Current.actor = users.fetch(:admin)
 
 workspace = Workspace.find_or_create_by!(name: "Accessible Demo Workspace")
 root_recording = ensure_root_recording(workspace)

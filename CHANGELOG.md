@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-11-15
+
+### Changed
+- Require Recording Studio `>= 7.0`, `< 8.0` and Trashable `>= 0.17.0`, `< 1.0`.
+- Development pins move to Recording Studio `v7.0.0`, Trashable `v0.17.0`,
+  Metrics `v0.9.0`, Admin `v2.16.0`, and Users `v0.30.0`. The dummy also pins
+  Root Switchable `v0.15.1` and Internationalization `v0.3.0`.
+- The dummy creates roots with `RecordingStudio.create_root_recording!`.
+  Lookups stay on `root_recording_for`: the engine home and actor access
+  points, and the workspace bootstrap assertion after create.
+- The dummy sets `config.authorize_write` so a present actor may write,
+  including a new root where `root_recording` is nil. It does not set
+  `allow_unauthorized_writes`.
+- The dummy sets Users `minimum_password_length` to 6. Users 0.30 defaults
+  that to 12, and the demo password is `Password`.
+
+### Upgrade notes
+- No Accessible migration. `authorized?` is unchanged.
+- Install Recording Studio `>= 7.0`, `< 8.0` and Trashable `>= 0.17.0`, `< 1.0`.
+- `root_recording_for` only finds a root. Create one with
+  `RecordingStudio.create_root_recording!(recordable, actor:, impersonator:, metadata:)`.
+- Set `config.authorize_write` and pass an actor on writes. Do not set
+  `allow_unauthorized_writes`.
+
 ## [0.43.1] - 2026-11-15
 
 ### Changed
@@ -1342,7 +1366,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.44.0...HEAD
+[0.44.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.1...v0.44.0
 [0.43.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.0...v0.43.1
 [0.43.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.41.0...v0.42.0

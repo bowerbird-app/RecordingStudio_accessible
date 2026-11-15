@@ -172,7 +172,12 @@ class HomeController < ApplicationController
   def root_recording_for(recordable)
     return unless recordable
 
-    RecordingStudio.root_recording_for(recordable)
+    RecordingStudio.create_root_recording!(
+      recordable,
+      actor: Current.actor,
+      impersonator: nil,
+      metadata: {}
+    )
   end
 
   def recording_for(recordable)

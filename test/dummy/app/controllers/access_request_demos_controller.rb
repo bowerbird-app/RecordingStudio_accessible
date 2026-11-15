@@ -16,6 +16,11 @@ class AccessRequestDemosController < ApplicationController
     workspace = Workspace.find_by(name: "Restricted Demo Workspace")
     return unless workspace
 
-    RecordingStudio.root_recording_for(workspace)
+    RecordingStudio.create_root_recording!(
+      workspace,
+      actor: Current.actor,
+      impersonator: nil,
+      metadata: {}
+    )
   end
 end
