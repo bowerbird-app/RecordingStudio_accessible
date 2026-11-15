@@ -5,12 +5,12 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in recording_studio_accessible.gemspec
 gemspec
 
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.14.0"
-# Query-only trash helpers (pin by tag; gemspec is "~> 0.10", ">= 0.16.0").
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.0.0"
+# Query-only trash helpers (pin by tag; gemspec is ">= 0.17.0", "< 1.0").
 # require: false so Bundler does not auto-load the Trashable engine. lib requires
 # recording_studio_trashable/query, which registers the :trashable recording filter.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",
-                                  tag: "v0.16.0", require: false
+                                  tag: "v0.17.0", require: false
 # Git-only companion deps. Pin by release tag so Bundler can resolve them.
 gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.356",
                  require: false
@@ -18,11 +18,11 @@ gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.356",
 gem "minitest", ">= 5.26", "< 6"
 gem "view_component", "4.19.0"
 
-gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.8.0",
+gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.9.0",
                                 require: false
 # Email-code accounts. Soft-required: Users already depends on Accessible.
 # Users, Admin, and Attachable gemspec deps are git-only; pin them so Bundler can resolve.
-gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.13.0",
+gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.16.0",
                               require: false
 gem "recording_studio_api", github: "bowerbird-app/RecordingStudio_api", tag: "v0.23.0",
                             require: false
