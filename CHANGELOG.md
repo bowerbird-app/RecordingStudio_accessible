@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.44.1] - 2026-11-15
+
+### Changed
+- `recordings_for` and `recording_ids_for` resolve the actor's role on the parent once. When that role meets `minimum_role`, every kept direct child is included. Otherwise one grant query keeps the children whose own grant meets `minimum_role`. A child whose root recording is not on the parent path can still qualify from a grant on that root.
+- This list no longer loads audience rules. A public audience still does not add a child, and a narrower audience still does not remove one.
+
+### Upgrade notes
+- No migration and no caller change. Allow and deny results are unchanged. The relation is still the ids that passed during the call, so a child created after the call stays out.
+
 ## [0.44.0] - 2026-11-15
 
 ### Changed

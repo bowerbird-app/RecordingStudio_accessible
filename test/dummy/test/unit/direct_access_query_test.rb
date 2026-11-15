@@ -88,6 +88,24 @@ class DirectAccessQueryTest < Minitest::Test
     end
   end
 
+  def test_access_recordings_for_actor_in_keeps_a_candidate_relation_as_a_subquery
+    relation = RelationSpy.new
+    candidates = Object.new
+    def candidates.reselect(column)
+      column
+    end
+
+    RecordingStudio::Recording.stub(:unscoped, relation) do
+      assert_same relation,
+                  RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor_in(
+                    recordings: candidates, actor: Actor.new(456)
+                  )
+    end
+
+    assert_includes relation.wheres, [{ parent_recording_id: :id, recordable_type: "RecordingStudio::Access" }]
+    assert_equal [RecordingStudioAccessible::DirectAccessQuery::ACCESS_JOIN_SQL], relation.joins_sql
+  end
+
   def test_access_recordings_for_actor_in_filters_parent_ids
     relation = RelationSpy.new
     actor = Actor.new(456)

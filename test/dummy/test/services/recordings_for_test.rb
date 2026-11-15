@@ -242,6 +242,48 @@ class RecordingsForTest < ActiveSupport::TestCase
     assert_includes full, limited.first
   end
 
+  test "a parent grant at the floor lists every direct child" do
+    grant_access(@user, :edit, @root)
+    grant_access(@user, :view, @folder_recording)
+    bare = add_folder("Bare")
+
+    ids = listed_ids(parent: @root, minimum_role: :edit)
+
+    assert_includes ids, @folder_recording.id
+    assert_includes ids, bare.id
+    assert_equal kept_direct_children(@root).map(&:id).sort, ids.sort
+  end
+
+  test "query count stays flat as kept children grow" do
+    grant_access(@user, :view, @root)
+    listed_ids(parent: @root)
+
+    small_ids = nil
+    small_sql = sql_count { small_ids = listed_ids(parent: @root) }
+    4.times { |index| add_folder("Scale #{index}") }
+    large_ids = nil
+    large_sql = sql_count { large_ids = listed_ids(parent: @root) }
+
+    assert_operator large_ids.length, :>, small_ids.length
+    assert_equal small_sql, large_sql
+  end
+
+  test "query count stays flat when the parent grant is below the floor" do
+    grant_access(@user, :view, @root)
+    grant_access(@user, :edit, @folder_recording)
+    listed_ids(parent: @root, minimum_role: :edit)
+
+    small_ids = nil
+    small_sql = sql_count { small_ids = listed_ids(parent: @root, minimum_role: :edit) }
+    4.times { |index| add_folder("Below #{index}") }
+    large_ids = nil
+    large_sql = sql_count { large_ids = listed_ids(parent: @root, minimum_role: :edit) }
+
+    assert_equal small_ids.sort, large_ids.sort
+    assert_includes large_ids, @folder_recording.id
+    assert_equal small_sql, large_sql
+  end
+
   test "a child created after the call stays out of that relation" do
     grant_access(@user, :view, @root)
     relation = listed(parent: @folder_recording)
@@ -267,6 +309,20 @@ class RecordingsForTest < ActiveSupport::TestCase
   end
 
   private
+
+  def sql_count
+    ActiveRecord::Base.connection.clear_query_cache
+    count = 0
+    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |_name, _start, _finish, _id, payload|
+      next if payload[:cached] || payload[:name] == "SCHEMA"
+
+      count += 1
+    end
+    yield
+    count
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
 
   def listed(actor: @user, parent:, minimum_role: nil, recordable_type: nil)
     RecordingStudioAccessible.recordings_for(

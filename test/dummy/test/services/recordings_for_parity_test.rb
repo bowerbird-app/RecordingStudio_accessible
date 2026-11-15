@@ -81,7 +81,7 @@ class RecordingsForParityTest < ActiveSupport::TestCase
     assert_equal oracle_ids(@root), listed_ids(@root)
     assert_includes listed_ids(@root), granted.id
     refute_includes listed_ids(@root), public_only.id
-    assert_equal 1, rule_queries { listed_ids(@root) }
+    assert_equal 0, rule_queries { listed_ids(@root) }
   end
 
   test "a voided dependent grant matches the resolver" do
@@ -168,7 +168,7 @@ class RecordingsForParityTest < ActiveSupport::TestCase
 
     ids = listed_ids(@root)
     assert_operator ids.length, :>=, 4
-    assert_equal 2, joins
+    assert_equal 1, joins
     assert_equal oracle_ids(@root), ids
   ensure
     ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
