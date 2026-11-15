@@ -35,7 +35,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", "~> 6.1", ">= 6.14.0"
+gem "recording_studio", ">= 6.14.0", "< 8.0"
 gem "recording_studio_accessible"
 # Query-only trash helpers used by Accessible (pin by tag or host equivalent).
 # Prefer require: false; Accessible loads recording_studio_trashable/query,
@@ -426,7 +426,7 @@ request emails direct admins on the target and its parents. Replace that with
 
 ## Compatibility with RecordingStudio 6.1
 
-Recording Studio Accessible targets RecordingStudio `~> 6.1`, `>= 6.14.0` (currently
+Recording Studio Accessible targets RecordingStudio `>= 6.14.0`, `< 8.0` (currently
 tested with `v6.14.0`) and Trashable `~> 0.10`, `>= 0.16.0` (currently tested
 with `v0.16.0`). It uses Recording Studio's capability-owned child recordable
 contract. RecordingStudio
@@ -456,6 +456,10 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.43.1
+
+No migration. The gemspec accepts Recording Studio `>= 6.14.0`, `< 8.0`. This repo still tests Recording Studio `v6.14.0`.
 
 #### Upgrading to 0.43.0
 
