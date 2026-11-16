@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.45.1] - 2026-11-16
+
+### Changed
+- Trashable is `>= 0.17.0`, `< 2.0`. Recording Studio stays `>= 7.0`, `< 8.0`.
+
+### Upgrade notes
+- No migration. Install Trashable `>= 0.17.0`, `< 2.0`. This repo still tests Trashable `v0.17.0`.
+
 ## [0.45.0] - 2026-11-16
 
 ### Changed

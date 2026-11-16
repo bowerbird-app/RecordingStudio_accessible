@@ -40,7 +40,7 @@ gem "recording_studio_accessible"
 # Query-only trash helpers used by Accessible (pin by tag or host equivalent).
 # Prefer require: false; Accessible loads recording_studio_trashable/query,
 # which registers the :trashable recording filter.
-gem "recording_studio_trashable", ">= 0.17.0", "< 1.0", require: false
+gem "recording_studio_trashable", ">= 0.17.0", "< 2.0", require: false
 ```
 
 Then run:
@@ -427,7 +427,7 @@ request emails direct admins on the target and its parents. Replace that with
 ## Compatibility with RecordingStudio 7.0
 
 Recording Studio Accessible targets RecordingStudio `>= 7.0`, `< 8.0` (currently
-tested with `v7.0.0`) and Trashable `>= 0.17.0`, `< 1.0` (currently tested
+tested with `v7.0.0`) and Trashable `>= 0.17.0`, `< 2.0` (currently tested
 with `v0.17.0`). `RecordingStudio.root_recording_for` only finds a root.
 Create one with `RecordingStudio.create_root_recording!(recordable, actor:, impersonator:, metadata:)`.
 Accessible uses Recording Studio's capability-owned child recordable
@@ -458,6 +458,10 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.45.1
+
+No migration. Install Trashable `>= 0.17.0`, `< 2.0`. Recording Studio stays `>= 7.0`, `< 8.0`. This repo still tests Trashable `v0.17.0`.
 
 #### Upgrading to 0.45.0
 

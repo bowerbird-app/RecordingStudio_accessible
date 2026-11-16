@@ -6,7 +6,7 @@ source "https://rubygems.org"
 gemspec
 
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.0.0"
-# Query-only trash helpers (pin by tag; gemspec is ">= 0.17.0", "< 1.0").
+# Query-only trash helpers (pin by tag; gemspec is ">= 0.17.0", "< 2.0").
 # require: false so Bundler does not auto-load the Trashable engine. lib requires
 # recording_studio_trashable/query, which registers the :trashable recording filter.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",
