@@ -44,9 +44,9 @@ module RecordingStudioAccessible
         admin_authorized?(actor: actor, recording: recording)
       end
 
-      def default_mounted_page_authorizer(controller:, actor: nil, recording: nil)
+      def default_mounted_page_authorizer(controller:, actor: nil)
         actor ||= current_actor_for(controller: controller)
-        admin_authorized?(actor: actor, recording: recording)
+        RecordingStudioAccessible.admin?(actor: actor, role: :admin)
       end
 
       def default_authorize_actor_through(actor:, through:, recording: nil, role: nil, controller: nil)

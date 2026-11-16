@@ -15,6 +15,7 @@ class EnglishFallbackTest < ActionDispatch::IntegrationTest
     @recording = create_root_recording(workspace)
     bootstrap = RecordingStudioAccessible.bootstrap_owner_access!(recording: @recording, actor: @admin)
     assert bootstrap.success?, bootstrap.error
+    ensure_staff_admin!(@admin)
     @previous_locales = I18n.available_locales
     I18n.available_locales = (@previous_locales + %i[en de fr]).uniq
   end

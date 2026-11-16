@@ -677,9 +677,29 @@ class ConfigurationTest < Minitest::Test
   end
 
   def test_default_authorizers_delegate_to_module_authorization
-    RecordingStudioAccessible.stub(:authorized?, true) do
-      assert @configuration.authorize_access_management?(recording: :recording, actor: :actor)
-      assert @configuration.authorize_mounted_page?(controller: :controller, recording: :recording, actor: :actor)
+    RecordingStudioAccessible.stub(:admin_root, nil) do
+      RecordingStudioAccessible.stub(:authorized?, true) do
+        assert @configuration.authorize_access_management?(recording: :recording, actor: :actor)
+        refute @configuration.authorize_mounted_page?(controller: :controller, recording: :recording, actor: :actor)
+      end
+    end
+  end
+
+  def test_default_mounted_page_authorizer_denies_a_nil_actor
+    @configuration.access_management_current_actor_resolver = ->(**) {}
+
+    refute @configuration.authorize_mounted_page?(controller: :controller, actor: nil, recording: :recording)
+  end
+
+  def test_default_mounted_page_authorizer_allows_admin_on_the_admin_root
+    root = Object.new
+    RecordingStudioAccessible.stub(:admin_root, root) do
+      RecordingStudioAccessible.stub(:authorized?, lambda { |actor:, recording:, role:|
+        actor == :actor && recording.equal?(root) && role == :admin
+      }) do
+        assert @configuration.authorize_mounted_page?(controller: :controller, actor: :actor, recording: :workspace)
+        refute @configuration.authorize_mounted_page?(controller: :controller, actor: :other, recording: :workspace)
+      end
     end
   end
 

@@ -13,6 +13,7 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
 
   test "dummy app recordables declare root and parent rules" do
     assert RecordingStudio.root_allowed?(MessageRoot)
+    assert RecordingStudio.root_allowed?(StaffRoot)
     assert RecordingStudio.root_allowed?(Workspace)
     refute RecordingStudio.root_allowed?(Folder)
     refute RecordingStudio.root_allowed?(MessageGroup)
@@ -20,6 +21,7 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
     refute RecordingStudio.root_allowed?(Card)
 
     assert RecordingStudio.shared_root_type?(MessageRoot)
+    refute RecordingStudio.shared_root_type?(StaffRoot)
     refute RecordingStudio.shared_root_type?(Workspace)
 
     assert_equal [ "MessageRoot" ], RecordingStudio.allowed_parent_types_for(MessageGroup)
@@ -34,7 +36,8 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
     assert_equal [], RecordingStudio.declared_allowed_parent_types_for(RecordingStudio::Access)
     assert_equal [ "RecordingStudio::Access", "RecordingStudio::AccessRequest" ],
                  RecordingStudio.capability_child_recordables_for(:accessible)
-    access_parents = [ "Folder", "MessageGroup", "RecordingStudioUser::Profile", "Workspace" ]
+    assert_equal "staff_roots", StaffRoot.table_name
+    access_parents = [ "Folder", "MessageGroup", "RecordingStudioUser::Profile", "StaffRoot", "Workspace" ]
     assert_equal access_parents, RecordingStudio.capability_allowed_parent_types_for(RecordingStudio::Access)
     assert_equal access_parents, RecordingStudio.allowed_parent_types_for(RecordingStudio::Access)
     assert_equal access_parents,
@@ -47,6 +50,8 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
       "RecordingStudio::AccessRule"
     ]
     assert_equal access_children, RecordingStudio.child_recordable_types_for(Workspace)
+    assert_equal [ "RecordingStudio::Access", "RecordingStudio::AccessRequest" ],
+                 RecordingStudio.child_recordable_types_for(StaffRoot)
     assert_equal access_children, RecordingStudio.child_recordable_types_for(Folder)
     refute_includes RecordingStudio.child_recordable_types_for(MessageRoot), "RecordingStudio::Access"
     refute_includes RecordingStudio.child_recordable_types_for(MessageRoot), "RecordingStudio::AccessRequest"

@@ -3,6 +3,13 @@
 RecordingStudioAccessible.configure do |config|
   config.access_actor_types = [ "User", "Workspace" ]
 
+  config.admin_root_resolver = lambda do
+    staff = StaffRoot.find_by(name: "Staff")
+    next unless staff
+
+    RecordingStudio.root_recording_for(staff)
+  end
+
   # Required. The demo grants among its own users. Hosts should scope this
   # to the people the current actor may grant.
   config.access_management_actor_scope = lambda do |_controller|

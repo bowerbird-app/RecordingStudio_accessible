@@ -459,6 +459,16 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.45.0
+
+No migration. `authorized?` and the access-management pages are unchanged.
+
+The mounted overview, docs, and email preview now require an admin grant on the recording from `config.admin_root_resolver`. A nil actor or a missing admin root is denied. The previous default allowed anyone with admin on the workspace whose name sorted first.
+
+Set the resolver and grant staff the admin role on that root. Or set `config.mounted_page_authorizer` to replace the check. Those pages pass `recording: nil`. An override that required the old workspace root has to resolve its own recording, or call `RecordingStudioAccessible.admin?(actor:, role: :admin)`.
+
+The index and email preview no longer read users or workspaces. The preview uses `viewer@example.com`, `admin@example.com`, and the label Sample workspace.
+
 #### Upgrading to 0.44.1
 
 No migration and no caller change. `recordings_for` and `recording_ids_for` return the same children as before. The relation is still the ids from that call.
@@ -1428,7 +1438,7 @@ That page shows the current actor's own access points, or another actor's
 access points when the viewer is allowed to manage access for the workspace
 root recording.
 
-The mounted addon overview, docs, and email-preview pages under `/recording_studio_accessible` are authorized separately from the recording-scoped access-management page. By default they are fail-closed unless the current actor has admin access to the resolved demo root recording. If your host app wants a different policy, override `config.mounted_page_authorizer`.
+The mounted overview, docs, and email-preview pages under `/recording_studio_accessible` are authorized separately from the recording-scoped access-management page. The default allows an actor with an admin grant on the recording from `config.admin_root_resolver`. A missing actor or a missing admin root is denied. Set `config.mounted_page_authorizer` to replace that check. Those pages pass `recording: nil`, and they render sample addresses (`viewer@example.com`, `admin@example.com`) instead of people or workspaces from the database.
 
 To set that up in a host app, run:
 
@@ -1586,12 +1596,8 @@ RecordingStudioAccessible.configure do |config|
       role: :admin
     )
   end
-  config.mounted_page_authorizer = lambda do |controller:, actor:, recording:|
-    actor.present? && recording.present? && RecordingStudioAccessible.authorized?(
-      actor: actor,
-      recording: recording,
-      role: :admin
-    )
+  config.mounted_page_authorizer = lambda do |actor:, **|
+    RecordingStudioAccessible.admin?(actor: actor, role: :admin)
   end
 end
 ```

@@ -8,6 +8,7 @@ class HomePageTest < ActionDispatch::IntegrationTest
     @viewer = create_user("viewer@admin.com")
     @page_owner = create_user("page_owner@admin.com")
     @outsider = create_user("outsider@admin.com")
+    ensure_staff_admin!(@admin)
 
     workspace = Workspace.create!(name: "000 Integration Workspace #{SecureRandom.hex(4)}")
     @root_recording = create_root_recording(workspace)
@@ -200,10 +201,15 @@ class HomePageTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "Recording Studio Accessible Demo"
     assert_includes @response.body, "Optional access-control addon"
     assert_includes @response.body, "Access check snapshot"
-    assert_includes @response.body, "Demo of how access works for the seeded workspace"
+    assert_includes @response.body, "Sample people only. Nobody here is real."
     assert_includes @response.body, "Integration mode:"
-    assert_includes @response.body, "Workspace:"
-    assert_includes @response.body, "Root recording:"
+    assert_includes @response.body, "admin@example.com"
+    assert_includes @response.body, "viewer@example.com"
+    refute_includes @response.body, "Workspace:"
+    refute_includes @response.body, "Root recording:"
+    refute_includes @response.body, @admin.email
+    refute_includes @response.body, @viewer.email
+    refute_includes @response.body, @outsider.email
   end
 
   test "non-admin users do not see mounted addon docs links" do
@@ -303,22 +309,24 @@ class HomePageTest < ActionDispatch::IntegrationTest
 
     get "/recording_studio_accessible/email_template"
 
-    shared_item_url_pattern = %r{http://[^/]+/workspaces/#{Regexp.escape(@root_recording.recordable.id.to_s)}}
-
     assert_response :success
     assert_includes @response.body, "Email template"
     assert_includes @response.body, "Default message sent when access is granted"
     assert_includes @response.body, "Message details"
     assert_includes @response.body, "HTML email preview"
-    assert_includes @response.body, "You were given access"
+    assert_includes @response.body, "You were given access to Sample workspace"
     assert_includes @response.body, "no-reply@example.com"
-    assert_includes @response.body, @viewer.email
+    assert_includes @response.body, "viewer@example.com"
+    assert_includes @response.body, "admin@example.com"
     assert_match %r{Granted by\s+Admin}, @response.body
     assert_includes @response.body, "HTML preview"
-    assert_match %r{Admin\s+granted you &lt;strong&gt;view&lt;/strong&gt; access to #{@root_recording.recordable.name}}, @response.body
-    assert_match %r{href=&quot;#{shared_item_url_pattern.source}&quot;}, @response.body
+    assert_match(/Admin\s+granted you &lt;strong&gt;view&lt;\/strong&gt; access to Sample workspace/, @response.body)
+    assert_match(/href=&quot;https:\/\/example.com\/sample&quot;/, @response.body)
     assert_includes @response.body, "Text preview"
-    assert_match %r{Admin granted you view access to #{@root_recording.recordable.name}\.\s*Open the shared item: #{shared_item_url_pattern.source}}, @response.body
+    assert_match(/Admin granted you view access to Sample workspace\.\s*Open the shared item: https:\/\/example\.com\/sample/, @response.body)
+    refute_includes @response.body, @viewer.email
+    refute_includes @response.body, @admin.email
+    refute_includes @response.body, @root_recording.recordable.name
   end
 
   test "home page renders access actions section" do
