@@ -12,6 +12,7 @@ def upsert_user(email)
   user = User.find_or_initialize_by(email: email)
   user.password = PASSWORD if user.new_record?
   user.password_confirmation = PASSWORD if user.new_record?
+  user.confirmed_at ||= Time.current if user.respond_to?(:confirmed_at)
   user.save! if user.changed?
   user
 end
