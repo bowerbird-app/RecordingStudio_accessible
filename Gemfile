@@ -10,7 +10,7 @@ gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.3.0"
 # require: false so Bundler does not auto-load the Trashable engine. lib requires
 # recording_studio_trashable/query, which registers the :trashable recording filter.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",
-                                  tag: "v1.0.0", require: false
+                                  tag: "v1.0.1", require: false
 # Git-only companion deps. Pin by release tag so Bundler can resolve them.
 gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.377",
                  require: false
