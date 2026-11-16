@@ -9,6 +9,7 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
     workspace = Workspace.create!(name: "000 Layout Workspace")
     @root_recording = create_root_recording(workspace)
     grant_access(@admin, :admin, @root_recording)
+    ensure_staff_admin!(@admin)
     @previous_layout = RecordingStudioAccessible.configuration.layout
     @previous_core_layout = RecordingStudio.configuration.layout
   end

@@ -14,11 +14,10 @@
       <%= render FlatPack::List::Item.new(key: accessible_t("home.index.integration_mode")) do %>
         <%= @integration_mode %>
       <% end %>
-      <%= render FlatPack::List::Item.new(key: accessible_t("home.index.workspace")) do %>
-        <%= @workspace&.name || accessible_t("home.index.not_available") %>
-      <% end %>
-      <%= render FlatPack::List::Item.new(key: accessible_t("home.index.root_recording")) do %>
-        <%= @root_recording&.id || accessible_t("home.index.not_available") %>
+      <% @sample_people.each do |person| %>
+        <%= render FlatPack::List::Item.new(key: person.fetch(:label)) do %>
+          <%= person.fetch(:email) %>
+        <% end %>
       <% end %>
     <% end %>
   </div>

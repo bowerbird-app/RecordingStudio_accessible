@@ -44,6 +44,15 @@ module RecordingStudioAccessibleTestHelpers
     )
   end
 
+  def ensure_staff_admin!(actor)
+    staff = StaffRoot.find_or_create_by!(name: "Staff")
+    root = RecordingStudio.root_recording_for(staff) || create_root_recording(staff)
+    return root if RecordingStudioAccessible.authorized?(actor: actor, recording: root, role: :admin)
+
+    create_direct_access_recording(actor: actor, role: :admin, parent_recording: root)
+    root
+  end
+
   def create_direct_access_recording(actor:, role:, parent_recording:)
     RecordingStudioAccessible::AccessCreationContext.allow do
       RecordingStudio.root_recording_or_self(parent_recording).record(

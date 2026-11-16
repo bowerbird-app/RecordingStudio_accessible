@@ -2,15 +2,20 @@
 
 module RecordingStudioAccessible
   class HomeController < ApplicationController
+    SAMPLE_RECIPIENT_EMAIL = "viewer@example.com"
+    SAMPLE_SENDER_EMAIL = "admin@example.com"
+    SAMPLE_SENDER_NAME = "Admin"
+    SAMPLE_RECORDING_LABEL = "Sample workspace"
+    SAMPLE_ACCESS_URL = "https://example.com/sample"
+
     before_action :authorize_mounted_page!
 
     def index
       @integration_mode = RecordingStudioAccessible::Compatibility.integration_mode
-      @workspace = demo_workspace
-      @root_recording = find_root_recording
-      @admin_user = resolve_admin_user
-      @viewer_user = resolve_viewer_user
-      @access_rows = build_access_rows
+      @sample_people = [
+        { label: Copy.t("home.index.sample_admin"), email: SAMPLE_SENDER_EMAIL },
+        { label: Copy.t("home.index.sample_viewer"), email: SAMPLE_RECIPIENT_EMAIL }
+      ]
     end
 
     def overview; end
@@ -189,25 +194,20 @@ module RecordingStudioAccessible
     end
 
     def email_template
-      @workspace ||= demo_workspace
-      @root_recording ||= find_root_recording
-      @admin_user ||= resolve_admin_user
-      @viewer_user ||= resolve_viewer_user
-
-      @preview_recipient = resolve_email_template_recipient
-      @preview_sender = resolve_email_template_sender || @preview_recipient
-      @preview_sender_label = RecordingStudioAccessible::AccessGrantedMailer.display_label_for(@preview_sender)
+      recipient = sample_actor(email: SAMPLE_RECIPIENT_EMAIL, name: "Viewer")
+      sender = sample_actor(email: SAMPLE_SENDER_EMAIL, name: SAMPLE_SENDER_NAME)
+      recording = sample_recording(SAMPLE_RECORDING_LABEL)
+      @preview_sender_label = RecordingStudioAccessible::AccessGrantedMailer.display_label_for(sender)
+      @preview_sender_email = SAMPLE_SENDER_EMAIL
       @preview_role = :view
-      @preview_access_url = resolve_preview_access_url
-      @preview_subject = resolve_preview_subject
 
       preview_params = {
-        recording: @root_recording,
-        actor: @preview_recipient,
+        recording: recording,
+        actor: recipient,
         role: @preview_role.to_s,
-        manager_actor: @preview_sender,
-        access_url: @preview_access_url,
-        subject: @preview_subject
+        manager_actor: sender,
+        access_url: SAMPLE_ACCESS_URL,
+        subject: Copy.t("mailers.granted.subject_with_recording", recording: SAMPLE_RECORDING_LABEL)
       }
 
       preview_message = RecordingStudioAccessible::AccessGrantedMailer.with(preview_params).access_granted.message
@@ -230,7 +230,7 @@ module RecordingStudioAccessible
       return if RecordingStudioAccessible.configuration.authorize_mounted_page?(
         controller: self,
         actor: current_actor,
-        recording: authorization_recording
+        recording: nil
       )
 
       redirect_to unauthorized_mounted_page_redirect_path
@@ -240,72 +240,19 @@ module RecordingStudioAccessible
       RecordingStudioAccessible.configuration.current_actor_for(controller: self)
     end
 
-    def authorization_recording
-      @authorization_recording ||= begin
-        @workspace ||= demo_workspace
-        @root_recording ||= find_root_recording
-      end
-    end
-
     def unauthorized_mounted_page_redirect_path
       return main_app.root_path if respond_to?(:main_app) && main_app.respond_to?(:root_path)
 
       "/"
     end
 
-    def demo_workspace
-      return unless defined?(::Workspace)
-
-      ::Workspace.order(:name, :id).first
+    def sample_actor(email:, name:)
+      Struct.new(:email, :name).new(email, name)
     end
 
-    def find_root_recording
-      return unless @workspace && defined?(::RecordingStudio::Recording)
-
-      RecordingStudio.root_recording_for(@workspace)
-    end
-
-    def resolve_admin_user
-      return current_actor if current_actor.present?
-      return unless defined?(::User)
-
-      ::User.find_by(email: "admin@admin.com") || ::User.first
-    end
-
-    def resolve_viewer_user
-      return unless defined?(::User)
-
-      ::User.where.not(id: @admin_user&.id).order(:email).first
-    end
-
-    def build_access_rows
-      return [] unless @root_recording
-
-      [
-        access_row(
-          label: @admin_user&.email || Copy.t("home.index.admin_fallback"),
-          actor: @admin_user,
-          minimum_role: :admin
-        ),
-        access_row(
-          label: @viewer_user&.email || Copy.t("home.index.viewer_fallback"),
-          actor: @viewer_user,
-          minimum_role: :view
-        ),
-        access_row(
-          label: Copy.t("home.index.anonymous"),
-          actor: nil,
-          minimum_role: :view
-        )
-      ]
-    end
-
-    def access_row(label:, actor:, minimum_role:)
-      {
-        label: label,
-        role: RecordingStudioAccessible.role_for(actor: actor, recording: @root_recording),
-        allowed: RecordingStudioAccessible.authorized?(actor: actor, recording: @root_recording, role: minimum_role)
-      }
+    def sample_recording(label)
+      recordable = Struct.new(:name).new(label)
+      Struct.new(:recordable).new(recordable)
     end
 
     def render_email_preview(format:, assigns:)
@@ -320,36 +267,6 @@ module RecordingStudioAccessible
     def normalize_preview_body(body)
       normalized = body.to_s.dup.force_encoding(Encoding::UTF_8)
       normalized.valid_encoding? ? normalized : normalized.scrub
-    end
-
-    def resolve_email_template_recipient
-      return ::User.find_by(email: "viewer@admin.com") if defined?(::User) && ::User.exists?(email: "viewer@admin.com")
-
-      @viewer_user || @admin_user || current_user
-    end
-
-    def resolve_email_template_sender
-      return ::User.find_by(email: "admin@admin.com") if defined?(::User) && ::User.exists?(email: "admin@admin.com")
-
-      @admin_user || current_user
-    end
-
-    def resolve_preview_access_url
-      RecordingStudioAccessible.configuration.access_granted_url_for(**preview_resolution_kwargs)
-    end
-
-    def resolve_preview_subject
-      RecordingStudioAccessible.configuration.access_granted_subject_for(**preview_resolution_kwargs)
-    end
-
-    def preview_resolution_kwargs
-      {
-        controller: self,
-        recording: @root_recording,
-        actor: @preview_recipient,
-        role: @preview_role,
-        manager_actor: @preview_sender
-      }
     end
   end
 end

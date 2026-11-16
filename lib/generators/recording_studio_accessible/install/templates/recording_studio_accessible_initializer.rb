@@ -183,15 +183,13 @@ RecordingStudioAccessible.configure do |config|
   #   "admin"
   # end
 
-  # Optional: customize who can view the mounted addon overview/docs/email-preview
-  # pages under /recording_studio_accessible. The default is fail-closed unless
-  # the current actor has admin access to the resolved demo root recording.
-  # config.mounted_page_authorizer = lambda do |controller:, actor:, recording:|
-  #   actor.present? && recording.present? && RecordingStudioAccessible.authorized?(
-  #     actor: actor,
-  #     recording: recording,
-  #     role: :admin
-  #   )
+  # Optional: who can open the mounted overview, docs, and email preview under
+  # /recording_studio_accessible. The default allows an actor with an admin
+  # grant on the recording from admin_root_resolver. A missing actor or a
+  # missing admin root is denied. Set this to replace that check. The demo
+  # pages pass recording: nil.
+  # config.mounted_page_authorizer = lambda do |actor:, **|
+  #   RecordingStudioAccessible.admin?(actor: actor, role: :admin)
   # end
 
   # Optional: per-action audiences. Opt-in. Existing named-action policies are

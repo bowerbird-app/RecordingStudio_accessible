@@ -426,6 +426,8 @@ Current.actor = users.fetch(:admin)
 
 workspace = Workspace.find_or_create_by!(name: "Accessible Demo Workspace")
 root_recording = ensure_root_recording(workspace)
+staff_root = StaffRoot.find_or_create_by!(name: "Staff")
+staff_root_recording = ensure_root_recording(staff_root)
 restricted_workspace = Workspace.find_or_create_by!(name: "Restricted Demo Workspace")
 restricted_root_recording = ensure_root_recording(restricted_workspace)
 teams_workspace = Workspace.find_or_create_by!(name: "Teams")
@@ -567,6 +569,11 @@ client_launch_thread_recording = ensure_child_recording(
   recordable: client_launch_thread,
   parent_recording: message_root_recording,
   root_recording: message_root_recording
+)
+
+sync_owned_root_access!(
+  root_recording: staff_root_recording,
+  owner: users[:admin]
 )
 
 sync_owned_root_access!(

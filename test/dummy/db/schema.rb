@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_14_075121) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_16_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -471,6 +471,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_14_075121) do
     t.string "time_zone", default: "UTC"
     t.uuid "user_id", null: false
     t.index ["user_id"], name: "index_recording_studio_user_profiles_on_user_id"
+  end
+
+  create_table "staff_roots", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

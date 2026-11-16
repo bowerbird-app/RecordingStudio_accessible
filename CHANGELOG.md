@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.45.0] - 2026-11-16
+
+### Changed
+- The default `mounted_page_authorizer` allows an actor with an admin grant on the recording from `admin_root_resolver`. A nil actor or a missing admin root is denied. A host-set `mounted_page_authorizer` still replaces the default.
+- The mounted demo pages no longer read a workspace, a root, or users. The index shows sample addresses. The email preview renders the access-granted template with `viewer@example.com`, `admin@example.com`, and the label Sample workspace.
+
+### Upgrade notes
+- This is a behavior change for hosts that relied on the old default, which treated admin on the first workspace root as enough. Set `config.admin_root_resolver` and grant those people the admin role on that root, or set `config.mounted_page_authorizer`.
+- The demo pages pass `recording: nil`. An override that required the old workspace root has to resolve its own recording, or call `RecordingStudioAccessible.admin?(actor:, role: :admin)`.
+- No migration. Access-management pages are unchanged.
+
 ## [0.44.1] - 2026-11-15
 
 ### Changed

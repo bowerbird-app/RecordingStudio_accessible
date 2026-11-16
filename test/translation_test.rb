@@ -13,7 +13,7 @@ class TranslationTest < Minitest::Test
     "recording_studio.accessible.flashes.access_granted" => "Access granted.",
     "recording_studio.accessible.layout.title" => "Recording Studio Accessible",
     "recording_studio.accessible.errors.unknown_actor" => "Unknown actor",
-    "recording_studio.accessible.home.index.anonymous" => "Anonymous"
+    "recording_studio.accessible.home.index.sample_viewer" => "Viewer"
   }.freeze
 
   def setup
