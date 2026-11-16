@@ -12,7 +12,7 @@ class RecordingStudioAccessibleTest < Minitest::Test
     assert_operator Gem::Version.new(RecordingStudio::VERSION), :<, Gem::Version.new("8.0.0")
     assert_operator Gem.loaded_specs.fetch("recording_studio").version, :>=, Gem::Version.new("7.0.0")
     assert_operator Gem::Version.new(RecordingStudioTrashable::VERSION), :>=, Gem::Version.new("0.17.0")
-    assert_operator Gem::Version.new(RecordingStudioTrashable::VERSION), :<, Gem::Version.new("1.0.0")
+    assert_operator Gem::Version.new(RecordingStudioTrashable::VERSION), :<, Gem::Version.new("2.0.0")
 
     gemspec = File.read(File.expand_path("../recording_studio_accessible.gemspec", __dir__))
     assert_includes gemspec, '"recording_studio", ">= 7.0", "< 8.0"'

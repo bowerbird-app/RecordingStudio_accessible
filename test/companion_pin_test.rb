@@ -4,23 +4,23 @@ require "test_helper"
 
 class CompanionPinTest < Minitest::Test
   ROOT_PINS = {
-    "recording_studio" => "7.0.0",
-    "flat_pack" => "0.1.356",
-    "recording_studio_trashable" => "0.17.0",
-    "recording_studio_attachable" => "0.23.0",
-    "recording_studio_user" => "0.30.0",
+    "recording_studio" => "7.3.0",
+    "flat_pack" => "0.1.377",
+    "recording_studio_trashable" => "1.0.0",
+    "recording_studio_attachable" => "0.31.0",
+    "recording_studio_user" => "0.32.0",
     "recording_studio_metrics" => "0.9.0",
-    "recording_studio_cache" => "0.6.3",
-    "recording_studio_admin" => "2.16.0",
-    "recording_studio_api" => "0.23.0",
-    "recording_studio_icons" => "0.2.1",
-    "recording_studio_logs" => "0.7.4",
-    "recording_studio_moveable" => "4.1.1"
+    "recording_studio_cache" => "0.7.0",
+    "recording_studio_admin" => "2.18.0",
+    "recording_studio_api" => "1.2.1",
+    "recording_studio_icons" => "0.4.0",
+    "recording_studio_logs" => "0.8.0",
+    "recording_studio_moveable" => "6.0.0"
   }.freeze
 
   DUMMY_ONLY_PINS = {
-    "recording_studio_root_switchable" => "0.15.1",
-    "recording_studio_notifications" => "0.15.0",
+    "recording_studio_root_switchable" => "0.16.0",
+    "recording_studio_notifications" => "0.19.1",
     "recording_studio_internationalization" => "0.3.0"
   }.freeze
 

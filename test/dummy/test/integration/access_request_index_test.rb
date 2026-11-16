@@ -321,7 +321,7 @@ class AccessRequestIndexTest < ActionDispatch::IntegrationTest
     assert_equal "Review", link.text.squish
     assert_equal "default", link["data-fp-style"]
     assert_equal "access_request", link["data-turbo-frame"]
-    assert_includes link["class"], "text-xs"
+    assert_includes link["class"], "fp-type-size-sm"
     assert_includes link["href"], "presentation=modal"
     assert_includes link["href"], "return_to=list"
     assert_includes link["href"], "list_status=#{status}"
