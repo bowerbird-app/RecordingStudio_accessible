@@ -3,7 +3,6 @@
 module RecordingStudioAccessible
   class AccessRequestsController < ApplicationController
     include AccessRequestsHelper
-    include RecordingStudioAccessible::NavigationUrlSafety
 
     helper AccessRequestsHelper
     helper_method :manager?
@@ -106,7 +105,10 @@ module RecordingStudioAccessible
       return false if current_actor.present?
 
       path = local_sign_in_path
-      return false if path.blank?
+      if path.blank?
+        head :unauthorized
+        return true
+      end
 
       store_access_request_return
       redirect_to path
@@ -114,13 +116,9 @@ module RecordingStudioAccessible
     end
 
     def local_sign_in_path
-      return unless main_app.respond_to?(:new_user_session_path)
+      return nil unless main_app.respond_to?(:new_user_session_path)
 
-      fallback = "/__request_sign_in_missing__"
-      safe = safe_local_navigation_url(main_app.new_user_session_path, fallback: fallback)
-      return if safe == fallback
-
-      safe
+      main_app.new_user_session_path
     end
 
     def store_access_request_return

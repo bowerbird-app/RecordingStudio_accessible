@@ -261,7 +261,8 @@ A person who already has the role gets a no-op success.
 Sign-in belongs to the host. A signed-out visitor who opens the request page,
 or posts the form, is redirected to the host sign-in (`new_user_session_path`
 when Devise is mounted). The return path is stored the same way Devise stores
-a location, so after sign-in they land on that same request URL. The form,
+a location, so after sign-in they land on that same request URL. A host with
+no sign-in path gets an unauthorized response, and the form is not shown. The form,
 the gate, and submit then run for the signed-in actor. Accessible does not
 collect an email or a one-time code, and it does not create the account.
 
@@ -445,14 +446,9 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 #### Upgrading to 0.52.0
 
-Run the migrations. The new one drops `recording_studio_access_request_intents`.
+No Accessible migration.
 
-```bash
-bin/rails generate recording_studio_accessible:migrations
-bin/rails db:migrate
-```
-
-Access requests no longer sign anyone in. A signed-out visitor is sent to the host sign-in and returns to the request URL. Remove host copy for the email and code steps. `authorized?` and request decisions are unchanged.
+Access requests no longer sign anyone in. A signed-out visitor is sent to the host sign-in and returns to the request URL. A host with no sign-in path gets an unauthorized response. Remove host copy for the email and code steps. `authorized?` and request decisions are unchanged.
 
 #### Upgrading to 0.51.0
 

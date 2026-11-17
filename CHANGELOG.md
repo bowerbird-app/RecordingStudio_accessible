@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 - A signed-out visitor on the request page is sent to the host sign-in and returns to that same request URL. Signed-in actors still use the request form, the gate, and the manager list.
 
 ### Upgrade notes
-- Run `rails generate recording_studio_accessible:migrations` and migrate. The new migration drops `recording_studio_access_request_intents`.
+- No Accessible migration. The intent table migrations are removed with the model.
 - Sign-in stays in the host app. Accessible does not collect an email or a one-time code for a request. `authorized?` and request decisions are unchanged.
 - Drop host copy that pointed at the email or code step (`email_title`, `verify_title`, and the other code-step keys).
 

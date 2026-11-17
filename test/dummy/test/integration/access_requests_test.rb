@@ -63,6 +63,23 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_equal 1, RecordingStudio::AccessRequest.where(status: "pending").count
   end
 
+  test "a signed-out visitor is unauthorized when the host has no sign-in path" do
+    controller = RecordingStudioAccessible::AccessRequestsController
+    original = controller.instance_method(:local_sign_in_path)
+    controller.define_method(:local_sign_in_path) { nil }
+
+    get new_request_path
+    assert_response :unauthorized
+
+    assert_no_difference -> { RecordingStudio::AccessRequest.count } do
+      post request_path, params: { access_request: { message: "No account" } }
+    end
+    assert_response :unauthorized
+  ensure
+    controller.define_method(:local_sign_in_path, original)
+    controller.send(:private, :local_sign_in_path)
+  end
+
   test "a signed-out create is sent to sign in and records nothing" do
     assert_no_difference -> { RecordingStudio::AccessRequest.count } do
       post request_path, params: {
