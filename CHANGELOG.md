@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.49.0] - 2026-11-17
+
+### Changed
+- Require Recording Studio `>= 7.5.0`, `< 8.0`. Development and dummy pins move to `v7.5.0`.
+- A kept grant on a root uses `Recording.within` (`for_root`) and trusts `root_recording_id`. The per-request stored-root check is gone.
+- A child grant no longer probes for a row outside the parent chain, and it no longer falls back to the full parent statement. The walk stops when a parent repeats.
+- A broad page whose anchor is a folder filters `root_recording_id` to that folder's workspace root, then keeps rows whose parents reach a seed. A limit can stop. The rows match `authorized_recording_ids`.
+
+### Upgrade notes
+- No Accessible migration. Install Recording Studio `>= 7.5.0`, `< 8.0` and run its migration that enforces `root_recording_id`. This repo tests Recording Studio `v7.5.0`.
+- `authorized?` is unchanged. On valid data, `authorized_recording_ids` and `authorized_recordings` return the same rows as before.
+- `root_recording_id` integrity is Recording Studio's responsibility. A parent cycle from a raw write is a core write-path concern.
+
 ## [0.48.0] - 2026-11-17
 
 ### Added

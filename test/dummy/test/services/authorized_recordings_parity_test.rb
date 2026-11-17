@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
+require "recording_studio/test_helpers"
 
 class AuthorizedRecordingsParityTest < ActiveSupport::TestCase
+  include RecordingStudio::TestHelpers
   setup do
     @actor_types = RecordingStudioAccessible.configuration.access_actor_types
     RecordingStudioAccessible.configuration.access_actor_types = [ "User" ]
@@ -18,6 +20,8 @@ class AuthorizedRecordingsParityTest < ActiveSupport::TestCase
     build_child_trees
     build_dependent_tree
     build_stored_root_tree
+    build_nested_anchor_tree
+    assert_root_invariant!
   end
 
   teardown do
@@ -69,15 +73,20 @@ class AuthorizedRecordingsParityTest < ActiveSupport::TestCase
   end
 
   test "a stored root matches authorized_recording_ids" do
-    page = recordings(actor: @member, root: @stored_root)
+    page = recordings(actor: @member, root: @stored_source)
     ids = page.pluck(:id)
 
-    assert_equal authorized_ids(@member, @stored_root), ids.sort
-    assert_includes ids, @stored_child.id
-    refute_includes ids, @plain_child.id
-    refute_includes ids, @stored_root.id
-    assert_parity(@member, @stored_root, ids)
-    assert_includes page.to_sql, "root_covered"
+    assert_equal authorized_ids(@member, @stored_source), ids.sort
+    assert_equal RecordingStudio::Recording.within(@stored_source).order(:id).pluck(:id), ids.sort
+    assert_parity(@member, @stored_source, ids)
+    assert_includes page.to_sql, "root_recording_id"
+    refute_includes page.to_sql, "WITH RECURSIVE"
+
+    other = recordings(actor: @member, root: @stored_root).pluck(:id)
+    assert_empty other
+    assert_empty authorized_ids(@member, @stored_root)
+    refute_includes other, @stored_child.id
+    refute_includes other, @plain_child.id
   end
 
   test "a dependent grant matches authorized_recording_ids and a weak manager stays out" do
@@ -110,8 +119,98 @@ class AuthorizedRecordingsParityTest < ActiveSupport::TestCase
     assert_equal pages.sort, scoped.pluck(:id).sort
   end
 
+  test "a nested anchor matches authorized_recording_ids" do
+    root_ids = recordings(actor: @nested_root_actor, root: @nested_anchor).pluck(:id)
+    assert_equal authorized_ids(@nested_root_actor, @nested_anchor), root_ids.sort
+    assert_includes root_ids, @nested_anchor.id
+    assert_includes root_ids, @nested_inner.id
+    assert_includes root_ids, @nested_inner_page.id
+    assert_includes root_ids, @nested_other.id
+    refute_includes root_ids, @nested_sibling.id
+    refute_includes root_ids, @nested_workspace.id
+    assert_parity(@nested_root_actor, @nested_anchor, root_ids)
+
+    child_ids = recordings(actor: @nested_child_actor, root: @nested_anchor).pluck(:id)
+    assert_equal authorized_ids(@nested_child_actor, @nested_anchor), child_ids.sort
+    assert_includes child_ids, @nested_inner.id
+    assert_includes child_ids, @nested_inner_page.id
+    refute_includes child_ids, @nested_anchor.id
+    refute_includes child_ids, @nested_other.id
+    refute_includes child_ids, @nested_sibling.id
+    assert_parity(@nested_child_actor, @nested_anchor, child_ids)
+
+    outside_ids = recordings(actor: @nested_outside_actor, root: @nested_anchor).pluck(:id)
+    assert_empty outside_ids
+    assert_empty authorized_ids(@nested_outside_actor, @nested_anchor)
+    assert_includes recordings(actor: @nested_outside_actor, root: @nested_sibling).pluck(:id), @nested_sibling.id
+  end
+
+  test "a broad nested anchor pages from the workspace root" do
+    with_broad_threshold(0) do
+      page = recordings(actor: @nested_root_actor, root: @nested_anchor)
+      ids = page.pluck(:id)
+      sql = page.to_sql
+
+      assert_equal authorized_ids(@nested_root_actor, @nested_anchor), ids.sort
+      assert_includes ids, @nested_inner_page.id
+      refute_includes ids, @nested_sibling.id
+      assert_includes sql, @nested_workspace.id
+      assert_includes sql, "seed_ids"
+      refute_includes sql, "OFFSET 0"
+      refute_includes sql, "root_covered"
+
+      expected = RecordingStudio::Recording.where(id: id_relation(@nested_root_actor, @nested_anchor))
+                                           .order(created_at: :desc, id: :desc)
+                                           .limit(2)
+                                           .pluck(:id)
+      actual = page.order(created_at: :desc, id: :desc).limit(2).pluck(:id)
+      assert_equal expected, actual
+    end
+  end
+
+  test "a parent cycle terminates and a root grant includes rows that claim that root" do
+    _workspace, root = owned("Recordings parent cycle")
+    sibling = add_folder(_workspace, root, "Outside cycle")
+    left = add_folder(_workspace, root, "Cycle left")
+    right = add_page(left.recordable, left, "Cycle right")
+    child_actor = create_user("recordings-cycle-child@example.com")
+    root_actor = create_user("recordings-cycle-root@example.com")
+    grant(child_actor, :view, left)
+    grant(root_actor, :view, root)
+
+    connection = ActiveRecord::Base.connection
+    connection.execute(<<~SQL.squish)
+      UPDATE recording_studio_recordings
+      SET parent_recording_id = #{connection.quote(right.id)}
+      WHERE id = #{connection.quote(left.id)}
+    SQL
+    connection.execute("SET CONSTRAINTS fk_rs_recordings_on_parent_and_root IMMEDIATE")
+    assert_root_invariant!
+
+    child_ids = recordings(actor: child_actor, root: left).pluck(:id)
+    assert_includes child_ids, left.id
+    assert_includes child_ids, right.id
+    refute_includes child_ids, sibling.id
+    refute_includes child_ids, root.id
+    assert_equal authorized_ids(child_actor, left), child_ids.sort
+
+    from_root = recordings(actor: child_actor, root: root).pluck(:id)
+    refute_includes from_root, left.id
+    refute_includes from_root, right.id
+    refute_includes from_root, sibling.id
+
+    root_page = recordings(actor: root_actor, root: root)
+    root_ids = root_page.pluck(:id)
+    assert_includes root_ids, left.id
+    assert_includes root_ids, right.id
+    assert_includes root_ids, sibling.id
+    assert_equal RecordingStudio::Recording.within(root).order(:id).pluck(:id), root_ids.sort
+    assert_equal authorized_ids(root_actor, root), root_ids.sort
+    refute_includes root_page.to_sql, "WITH RECURSIVE"
+  end
+
   test "a limited order is the same page as authorized_recording_ids" do
-    [ [ @member, @root ], [ @partial, @child_root ], [ @broad, @child_root ], [ @member, @stored_root ] ].each do |actor, root|
+    [ [ @member, @root ], [ @partial, @child_root ], [ @broad, @child_root ], [ @member, @stored_source ] ].each do |actor, root|
       expected = RecordingStudio::Recording.where(id: id_relation(actor, root))
                                            .order(created_at: :desc, id: :desc)
                                            .limit(2)
@@ -122,6 +221,17 @@ class AuthorizedRecordingsParityTest < ActiveSupport::TestCase
   end
 
   private
+
+  def with_broad_threshold(limit)
+    klass = RecordingStudioAccessible::AuthorizedRecordingIds
+    previous = klass::BROAD_SUBTREE_ROWS
+    klass.send(:remove_const, :BROAD_SUBTREE_ROWS)
+    klass.const_set(:BROAD_SUBTREE_ROWS, limit)
+    yield
+  ensure
+    klass.send(:remove_const, :BROAD_SUBTREE_ROWS)
+    klass.const_set(:BROAD_SUBTREE_ROWS, previous)
+  end
 
   def recordings(actor:, root:, scope: RecordingStudio::Recording.all, role: :view, recordable_type: nil)
     RecordingStudioAccessible.authorized_recordings(
@@ -190,11 +300,29 @@ class AuthorizedRecordingsParityTest < ActiveSupport::TestCase
   def build_stored_root_tree
     _workspace, source = owned("Recordings stored source")
     grant(@member, :view, source)
+    @stored_source = source
     workspace, root = owned("Recordings stored tree")
     @stored_root = root
     @stored_child = add_folder(workspace, root, "Stores source")
     @plain_child = add_folder(workspace, root, "Plain")
-    @stored_child.update_column(:root_recording_id, source.id)
+  end
+
+  def build_nested_anchor_tree
+    workspace, root = owned("Recordings nested anchor")
+    @nested_workspace = root
+    @nested_anchor = add_folder(workspace, root, "Anchor")
+    @nested_inner = add_folder(workspace, root, "Inner")
+    @nested_inner_page = add_page(@nested_inner.recordable, @nested_inner, "Inner page")
+    @nested_other = add_folder(workspace, root, "Other")
+    @nested_sibling = add_folder(workspace, root, "Sibling of anchor")
+    @nested_root_actor = create_user("recordings-nested-root@example.com")
+    @nested_child_actor = create_user("recordings-nested-child@example.com")
+    @nested_outside_actor = create_user("recordings-nested-outside@example.com")
+    grant(@nested_root_actor, :view, root)
+    grant(@nested_child_actor, :view, @nested_inner)
+    grant(@nested_outside_actor, :view, @nested_sibling)
+    @nested_inner.update_column(:parent_recording_id, @nested_anchor.id)
+    @nested_other.update_column(:parent_recording_id, @nested_anchor.id)
   end
 
   def owned(name)
