@@ -37,10 +37,6 @@ Add the gems to your host app:
 ```ruby
 gem "recording_studio", ">= 7.7.0", "< 8.0"
 gem "recording_studio_accessible"
-# Query-only trash helpers used by Accessible (pin by tag or host equivalent).
-# Prefer require: false; Accessible loads recording_studio_trashable/query,
-# which registers the :trashable recording filter.
-gem "recording_studio_trashable", ">= 0.17.0", "< 2.0", require: false
 ```
 
 Then run:
@@ -54,16 +50,16 @@ bin/rails generate recording_studio_accessible:migrations
 bin/rails db:migrate
 ```
 
-Accessible loads Trashable’s query entry point only
-(`require "recording_studio_trashable/query"`). That file registers Trashable’s
-`:trashable` recording filter. Relation filters use `Recording.kept`. Raw and
-joined SQL uses `RecordingStudio.kept_sql(alias)`. Both match every recording
-until a filter is registered. In-memory grant checks call
-`recording_studio_trashable_kept?` when the object responds to it; otherwise
-the object counts as kept. Accessible does not load the Trashable
-engine/importmap or the `:trashable` capability, and it does not soft-void
-Access grants; revoke and dependent cleanup still destroy those rows. Hosts
-that want the trash UI install and mount Trashable separately.
+Relation filters use `Recording.kept`. Raw and joined SQL uses
+`RecordingStudio.kept_sql(alias)`. In-memory grant checks call
+`recording.kept?`. The host app must register a kept filter, for example by
+installing Trashable, for trashed grants to be excluded from `role_for`,
+`authorized?`, `authorized_recording_ids`, `authorized_recordings`, and
+`access_grants_for`. Until a filter is registered, `kept`, `kept?`, and
+`kept_sql` match every recording, so a trashed grant counts. Accessible does
+not load Trashable and does not soft-void Access grants. Revoke and dependent
+cleanup still destroy those rows, including a trashed grant. Hosts that want
+the trash UI install and mount Trashable separately.
 
 If you want the gem-provided mounted UI for managing direct access, then also run:
 
@@ -427,8 +423,9 @@ request emails direct admins on the target and its parents. Replace that with
 ## Compatibility with RecordingStudio 7.0
 
 Recording Studio Accessible targets RecordingStudio `>= 7.7.0`, `< 8.0` (currently
-tested with `v7.7.0`) and Trashable `>= 0.17.0`, `< 2.0` (currently tested
-with `v1.0.0`). `RecordingStudio.root_recording_for` only finds a root.
+tested with `v7.7.0`). It does not depend on Trashable. The dummy app pins
+Trashable `v1.0.1` and loads `recording_studio_trashable/query` so a kept
+filter is registered there. `RecordingStudio.root_recording_for` only finds a root.
 Create one with `RecordingStudio.create_root_recording!(recordable, actor:, impersonator:, metadata:)`.
 Accessible uses Recording Studio's capability-owned child recordable
 contract. RecordingStudio
@@ -458,6 +455,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.51.0
+
+No Accessible migration. `authorized?` is unchanged when a kept filter is registered.
+
+Accessible no longer depends on Trashable and no longer loads it. Register a kept filter, for example by installing Trashable, so a trashed grant stays excluded. Until a filter is registered, `kept` and `kept?` match every recording, and a trashed grant counts. Revoke still destroys a trashed grant.
 
 #### Upgrading to 0.50.0
 
@@ -2352,7 +2355,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v7.7.0`, FlatPack `v0.1.377`, Trashable `v1.0.0`, Attachable `v0.31.0`, Users `v0.32.0`, Metrics `v0.9.0`, Cache `v0.7.0`, Admin `v2.18.0`, Root Switchable `v0.16.0`, Notifications `v0.19.1`, and (dummy only) Recording Studio Internationalization `v0.3.0`. Dummy development/test also pins Recording Studio API `v1.2.1`, Logs `v0.8.0`, Icons `v0.4.0`, and Moveable `v6.0.0` so access member actions run through the real dispatcher. Each pinned companion allows Recording Studio `7.7.0`, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v7.7.0`, FlatPack `v0.1.377`, Trashable `v1.0.1`, Attachable `v0.31.0`, Users `v0.32.0`, Metrics `v0.9.0`, Cache `v0.7.0`, Admin `v2.18.0`, Root Switchable `v0.16.0`, Notifications `v0.19.1`, and (dummy only) Recording Studio Internationalization `v0.3.0`. Trashable is a dummy dependency. The dummy loads `recording_studio_trashable/query`, which registers the kept filter, and does not load the Trashable engine. Dummy development/test also pins Recording Studio API `v1.2.1`, Logs `v0.8.0`, Icons `v0.4.0`, and Moveable `v6.0.0` so access member actions run through the real dispatcher. Each pinned companion allows Recording Studio `7.7.0`, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

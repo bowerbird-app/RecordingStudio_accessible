@@ -10,16 +10,14 @@ class TrashableTrashedAtParityIntegrationTest < ActiveSupport::TestCase
     RecordingStudioAccessible.bootstrap_owner_access!(recording: @root, actor: @user)
   end
 
-  test "query helpers are available without Trashable engine" do
+  test "core kept is available and the Trashable engine is not loaded" do
     assert_equal "1.0.1", RecordingStudioTrashable::VERSION
     refute defined?(RecordingStudioTrashable::Engine)
     assert_respond_to RecordingStudio::Recording, :kept
-    assert_respond_to @root, :recording_studio_trashable_kept?
+    assert_respond_to @root, :kept?
     refute_respond_to RecordingStudio::Recording, :recording_studio_trashable_active
-    # Dummy-only bridge for recording_studio_api 0.23.3. The gem does not define this.
-    assert_equal RecordingStudio.kept_sql, RecordingStudio::Recording.recording_studio_trashable_kept_sql
-    assert_equal RecordingStudio.kept_sql("child"),
-                 RecordingStudio::Recording.recording_studio_trashable_kept_sql("child")
+    assert_includes RecordingStudio.kept_sql, "trashed_at IS NULL"
+    assert_includes RecordingStudio.kept_sql("child"), "\"child\".trashed_at IS NULL"
     refute_respond_to @root, :recording_studio_trashable_trash!
     refute_respond_to @root, :recording_studio_trashable_restore!
     refute_respond_to @root, :recording_studio_trashable_purge!
@@ -38,25 +36,26 @@ class TrashableTrashedAtParityIntegrationTest < ActiveSupport::TestCase
     assert_includes kept_ids, @root.id
   end
 
-  test "kept? matches main trashed_at.nil? for live and trashed rows" do
+  test "kept? matches a live row and a row trashed through Trashable" do
     assert @root.trashed_at.nil?
-    assert @root.recording_studio_trashable_kept?
+    assert @root.kept?
 
-    @root.update_column(:trashed_at, Time.current)
+    RecordingStudioTrashable.void_recording!(@root)
     @root.reload
 
     refute @root.trashed_at.nil?
-    refute @root.recording_studio_trashable_kept?
+    refute @root.kept?
   end
 
-  test "direct access query excludes trashed grants the same as main" do
+  test "direct access query excludes grants trashed through Trashable" do
     grant = RecordingStudioAccessible.access_recordings_for_actor(recording: @root, actor: @user).first
     assert grant
     assert_includes RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(@root).pluck(:id), grant.id
 
-    grant.update_column(:trashed_at, Time.current)
+    RecordingStudioTrashable.void_recording!(grant)
 
     refute_includes RecordingStudioAccessible::DirectAccessQuery.access_recordings_for(@root).pluck(:id), grant.id
+    refute grant.reload.kept?
   end
 
   # Accessible starts from unscoped.kept. That adds the filter without
@@ -89,7 +88,7 @@ class TrashableTrashedAtParityIntegrationTest < ActiveSupport::TestCase
 
   test "kept is a no-op when the trashable filter is not registered" do
     grant = RecordingStudioAccessible.access_recordings_for_actor(recording: @root, actor: @user).first
-    grant.update_column(:trashed_at, Time.current)
+    RecordingStudioTrashable.void_recording!(grant)
     RecordingStudio.unregister_recording_filter(:trashable)
 
     assert_equal "1=1", RecordingStudio.kept_sql
