@@ -145,6 +145,12 @@ class AuthorizationClassMethodsTest < Minitest::Test
     end
   end
 
+  def test_access_grants_for_is_an_empty_relation_without_an_actor_or_for_an_unknown_role
+    assert_equal RecordingStudio::Recording.none.to_sql, Subject.access_grants_for(actor: nil).to_sql
+    assert_equal RecordingStudio::Recording.none.to_sql,
+                 Subject.access_grants_for(actor: Actor.new(7), role: :nope).to_sql
+  end
+
   def test_access_recording_helpers_delegate_to_direct_access_query
     access_recordings = [:access_recording]
 

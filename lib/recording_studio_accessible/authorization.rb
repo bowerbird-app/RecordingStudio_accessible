@@ -113,6 +113,8 @@ module RecordingStudioAccessible
         authorization_service.access_recordings_for_actor(recording: recording, actor: actor)
       end
 
+      def access_grants_for(actor:, role: nil) = authorization_service.access_grants_for(actor:, role:)
+
       private
 
       def authorization_service

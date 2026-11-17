@@ -68,6 +68,14 @@ module RecordingStudioAccessible
       RecordingStudioAccessible::DirectAccessQuery.access_recordings_for_actor(recording: recording, actor: actor)
     end
 
+    # Kept Access recordings for this actor on every root. `role` keeps
+    # grants at that rank or higher. Unknown roles and a nil actor are none.
+    def access_grants_for(actor:, role: nil)
+      return RecordingStudio::Recording.none unless actor
+
+      root_access_recordings_for(actor: actor, minimum_role: role)
+    end
+
     private
 
     def root_recordings_relation_for(actor:, minimum_role:)
