@@ -459,6 +459,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.48.0
+
+No Accessible migration. `authorized?` is unchanged, and `authorized_recording_ids` returns the same ids.
+
+Page an authorized list with `authorized_recordings`. The relation is unloaded: order it, add a keyset condition, and limit it. A custom authorization service must implement `authorized_recordings`, or callers keep using `authorized_recording_ids`. `authorized_recordings_supported?` is false when the configured service does not implement the query, and calling it raises.
+
 #### Upgrading to 0.47.1
 
 No Accessible migration. MCP and OpenAPI text for `grant_access`, `list_access`,
@@ -1781,6 +1787,28 @@ Audience rules and audience limits are not grants. They do not add or remove ids
 `recordable_type` limits which ids come back. Inheritance still uses grants on other types. Pass a class or the stored type name, such as `"Page"`. A blank type returns `Recording.none`.
 
 `authorized_recording_ids_supported?` is true for the default authorization service. A host that replaces the service and does not implement `authorized_recording_ids` gets false. Calling the query then raises `RecordingStudioAccessible::Error` and does not return a set. Use `authorized?` per recording in that case.
+
+### Paging an authorized list
+
+`where(id: authorized_recording_ids(...))` builds the id set before `ORDER BY` and `LIMIT`. A short page over a large child grant reads that subtree first.
+
+`authorized_recordings` returns the recordings, still unloaded. This is the way to page an authorized list:
+
+```ruby
+RecordingStudioAccessible.authorized_recordings(
+  actor: user,
+  root: root_recording,
+  recordable_type: "Page"
+).order(created_at: :desc, id: :desc).limit(50)
+```
+
+`scope` defaults to `RecordingStudio::Recording.all`. Where clauses already on that scope stay. `role` defaults to `:view`. A nil actor, a root that is not a recording, a blank `recordable_type`, or a role other than `view`, `edit`, or `admin` returns `scope.none`.
+
+A kept grant on the root uses `Recording.within` (`for_root`) when the stored root matches the parent chain. Pass `recordable_type`, or put that type on `scope`, so the page can use the index on `(root_recording_id, recordable_type, created_at, id)`.
+
+A child grant uses the same seeds as `authorized_recording_ids`: kept grants for that actor at that role, with the same manager chain. The seeds stay in the query as a subquery over those grants. They are not copied into an id list. A subtree of 2,000 recordings or fewer is a semi-join against the seeded walk. The walk looks up each seed and each child through the primary key and the parent index, then loads those rows by primary key. A larger subtree, when every stored root under the requested root matches the parent chain, is filtered from that creation index. Each row checks its parents until it hits a seed, so a limit can stop. A stored root the walk would miss still uses the full parent statement. The rows match `authorized_recording_ids` and `authorized?`.
+
+`authorized_recordings_supported?` is true for the default authorization service. A host that replaces the service and does not implement `authorized_recordings` gets false. Calling it then raises `RecordingStudioAccessible::Error`. Use `authorized_recording_ids` or `authorized?` in that case.
 
 Existing checks remain exact actor checks. For example, this checks whether the
 workspace itself has edit access to the recording:

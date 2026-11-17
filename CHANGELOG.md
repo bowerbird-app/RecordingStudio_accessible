@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-11-17
+
+### Added
+- `authorized_recordings(actor:, root:, scope: RecordingStudio::Recording.all, role: :view, recordable_type: nil)` returns an unloaded relation of the recordings `authorized?` would allow under that root. Order it, add a keyset condition, and limit it. A kept grant on the root still uses `Recording.within` when the stored root matches the parent chain. A child grant keeps its seeds in the query, joined from the actor's grants, and pages with a seeded semi-join or from the root creation index. The rows match `authorized_recording_ids`. `authorized_recordings_supported?` is false when a custom authorization service does not implement the query.
+
+### Upgrade notes
+- No Accessible migration. `authorized?` is unchanged. The ids from `authorized_recording_ids` are unchanged.
+- Page an authorized list with `authorized_recordings`. A custom authorization service must implement `authorized_recordings`, or callers keep using `authorized_recording_ids`. Calling it when the service does not implement it raises `RecordingStudioAccessible::Error`.
+
 ## [0.47.1] - 2026-11-17
 
 ### Changed

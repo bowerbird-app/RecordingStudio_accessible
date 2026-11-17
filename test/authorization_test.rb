@@ -125,6 +125,58 @@ class AuthorizationTest < Minitest::Test
     end
   end
 
+  def test_default_service_supports_authorized_recordings
+    assert_predicate RecordingStudioAccessible, :authorized_recordings_supported?
+    assert_respond_to RecordingStudioAccessible::AuthorizationService, :authorized_recordings
+  end
+
+  def test_authorized_recordings_delegates_to_the_configured_service
+    service = Class.new do
+      class << self
+        attr_reader :recordings_call
+
+        def authorized_recordings(**kwargs)
+          @recordings_call = kwargs
+          :recordings
+        end
+      end
+    end
+
+    RecordingStudioAccessible::Authorization.stub(:authorization_service, service) do
+      assert_predicate RecordingStudioAccessible, :authorized_recordings_supported?
+      scope = :scope
+      assert_equal :recordings, RecordingStudioAccessible.authorized_recordings(actor: :actor, root: :root, scope: scope)
+      assert_equal(
+        { actor: :actor, root: :root, scope: scope, role: :view, recordable_type: nil },
+        service.recordings_call
+      )
+      assert_equal :recordings, RecordingStudioAccessible.authorized_recordings(
+        actor: :actor, root: :root, scope: scope, role: :admin, recordable_type: "Page"
+      )
+      assert_equal(
+        { actor: :actor, root: :root, scope: scope, role: :admin, recordable_type: "Page" },
+        service.recordings_call
+      )
+    end
+  end
+
+  def test_unsupported_authorization_service_refuses_the_recording_relation
+    service = Class.new do
+      def self.role_for(**)
+        :view
+      end
+    end
+
+    RecordingStudioAccessible::Authorization.stub(:authorization_service, service) do
+      refute_predicate RecordingStudioAccessible, :authorized_recordings_supported?
+      error = assert_raises(RecordingStudioAccessible::Error) do
+        RecordingStudioAccessible.authorized_recordings(actor: :actor, root: :root, role: :view)
+      end
+      assert_includes error.message, "authorized_recordings"
+      assert_includes error.message, "refusing to return a recording relation"
+    end
+  end
+
   def test_unsupported_authorization_service_refuses_the_recording_id_relation
     service = Class.new do
       def self.role_for(**)

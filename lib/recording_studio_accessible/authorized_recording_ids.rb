@@ -18,9 +18,27 @@ module RecordingStudioAccessible
   # recordings stay in the set when authorized? would allow them. Trashed
   # grants and dependent grants that fail DependentAccess.effective? stay
   # out. The manager walk matches EffectiveRootIds.
+  #
+  # recordings_relation is that same set as rows the caller can order and
+  # limit. A root grant still uses Recording.within. A child grant keeps its
+  # seeds in SQL. A short subtree is a semi-join against the seeded walk. A
+  # long one filters the root creation index with a parent check, so a small
+  # limit can stop. The outside-root probe and the stored-root mismatch check
+  # are unchanged.
   class AuthorizedRecordingIds
+    # At or below this many recordings the seeded walk is a short nested loop.
+    # Above it, the creation index reaches a limited page without walking the
+    # rest. Measured on a root of about 100_000 recordings: both shapes are
+    # cheap on their own side of the line, and the other shape is not.
+    BROAD_SUBTREE_ROWS = 2_000
+    PROBE_DEPTH = 32
+
     def self.relation_for(actor:, root:, role:, recordable_type:)
       new(actor: actor, root: root, role: role, recordable_type: recordable_type).relation
+    end
+
+    def self.recordings_for(actor:, root:, scope:, role:, recordable_type:)
+      new(actor: actor, root: root, role: role, recordable_type: recordable_type).recordings_relation(scope)
     end
 
     def initialize(actor:, root:, role:, recordable_type:)
@@ -40,7 +58,217 @@ module RecordingStudioAccessible
       seeded_relation
     end
 
+    def recordings_relation(scope)
+      scoped = typed_scope(scope)
+      return scoped.within(@root) if root_grant_fast_path?
+
+      prepare_partial_grants
+      return scoped.where(id: legacy_relation) if partial_probe_hit?
+      return scoped.none if @seed_ids.empty?
+
+      return keyset_ancestry_relation(scoped) if broad_keyset_page?
+
+      seeded_semijoin_relation(scoped)
+    end
+
     private
+
+    def typed_scope(scope)
+      return scope if @recordable_type.nil?
+
+      scope.where(recordable_type: @recordable_type)
+    end
+
+    # The creation index is (root, type, created_at, id). A parent check on
+    # that scan stops at the caller's limit when most rows match. The mismatch
+    # check stays the existing query: a stored root that disagrees with the
+    # parent chain cannot use the root filter.
+    def broad_keyset_page?
+      return false unless subtree_exceeds?(BROAD_SUBTREE_ROWS)
+      return false if stored_root_mismatch?
+
+      true
+    end
+
+    def subtree_exceeds?(limit)
+      seen = @seed_ids.size
+      return true if seen > limit
+
+      frontier = nil
+      PROBE_DEPTH.times do
+        batch = descendant_batch(frontier, limit - seen + 1)
+        return false if batch.empty?
+
+        seen += batch.size
+        return true if seen > limit
+
+        frontier = batch
+      end
+      false
+    end
+
+    def descendant_batch(frontier, limit)
+      parents = if frontier.nil?
+                  seed_ids_sql
+                else
+                  "SELECT id FROM #{recordings} WHERE id IN (#{quoted_id_list(frontier)})"
+                end
+      connection.select_values(<<~SQL.squish)
+        SELECT child.id
+        FROM (#{parents}) parents
+        JOIN LATERAL (
+          SELECT id
+          FROM #{recordings}
+          WHERE parent_recording_id = parents.id
+          OFFSET 0
+        ) child ON TRUE
+        LIMIT #{Integer(limit)}
+      SQL
+    end
+
+    def keyset_ancestry_relation(scope)
+      scope.with(seed_ids: Arel.sql(seed_ids_sql))
+           .where(root_recording_id: @root.id)
+           .where(ancestry_exists_sql)
+    end
+
+    def ancestry_exists_sql
+      outer = recordings
+      <<~SQL.squish
+        EXISTS (
+          WITH RECURSIVE ancestry (id, parent_recording_id, seen) AS (
+            SELECT #{outer}.id, #{outer}.parent_recording_id, #{id_array("#{outer}.id")}
+            UNION ALL
+            SELECT parent.id, parent.parent_recording_id, ancestry.seen || parent.id
+            FROM #{recordings} parent
+            INNER JOIN ancestry ON parent.id = ancestry.parent_recording_id
+            WHERE NOT (parent.id = ANY(ancestry.seen))
+              AND NOT EXISTS (SELECT 1 FROM seed_ids WHERE seed_ids.id = ancestry.id)
+          )
+          SELECT 1 FROM ancestry
+          INNER JOIN seed_ids ON seed_ids.id = ancestry.id
+        )
+      SQL
+    end
+
+    # The walk carries the recording row. A second primary-key fetch of every
+    # estimated child makes the planner cost the page as a huge nested loop and
+    # compile it. OFFSET 0 keeps each child lookup a nested loop.
+    def seeded_semijoin_relation(scope)
+      scope.from(Arel.sql("(#{covered_from_seeds_sql}) #{recordings}"))
+    end
+
+    # Seeds are the same rows partial_seed_sql labels 'seed'. The walk joins
+    # them. It does not paste their ids.
+    def covered_from_seeds_sql
+      table = recordings
+      names = recording_column_names
+      <<~SQL.squish
+        WITH RECURSIVE seed_ids AS (
+          SELECT id FROM (#{seed_ids_sql}) seed_rows
+        ), covered (#{names}, path) AS (
+          SELECT #{recording_column_list('rec')}, #{id_array('rec.id')}
+          FROM seed_ids
+          JOIN LATERAL (
+            SELECT * FROM #{table} WHERE #{table}.id = seed_ids.id OFFSET 0
+          ) rec ON TRUE
+          UNION ALL
+          SELECT #{recording_column_list('child')}, covered.path || child.id
+          FROM covered
+          JOIN LATERAL (
+            SELECT * FROM #{table}
+            WHERE #{table}.parent_recording_id = covered.id
+            OFFSET 0
+          ) child ON TRUE
+          WHERE NOT (child.id = ANY(covered.path))
+        )
+        SELECT #{recording_column_list('covered')}
+        FROM covered
+      SQL
+    end
+
+    # A dependent grant needs the manager walk. An actor with none of those
+    # gets the same nodes from the grant's parent, and the smaller query stays
+    # a short nested loop.
+    def seed_ids_sql
+      return dependent_seed_ids_sql if dependent_actor_grants?
+
+      independent_seed_ids_sql
+    end
+
+    def independent_seed_ids_sql
+      granted = actor_grant_sql
+      if dependent_column?
+        granted = <<~SQL.squish
+          SELECT * FROM (#{granted}) granted
+          WHERE granted.depends_on_recording_id IS NULL
+        SQL
+      end
+      parts = [
+        "candidates AS (#{granted})",
+        "effective_nodes AS (#{independent_nodes_sql})",
+        "node_ascent AS (#{node_ascent_sql})",
+        "request_ascent AS (#{request_ascent_sql})"
+      ]
+      "WITH RECURSIVE #{parts.join(', ')} #{seed_only_select_sql}"
+    end
+
+    def independent_nodes_sql
+      <<~SQL.squish
+        SELECT candidates.parent_recording_id AS node_id
+        FROM candidates
+        WHERE candidates.parent_recording_id IS NOT NULL
+      SQL
+    end
+
+    def dependent_seed_ids_sql
+      parts = ["candidates AS (#{actor_grant_sql})"]
+      parts << grant_walk_cte if dependent_column?
+      parts << effective_nodes_cte
+      parts << "node_ascent AS (#{node_ascent_sql})"
+      parts << "request_ascent AS (#{request_ascent_sql})"
+      "WITH RECURSIVE #{parts.join(', ')} #{seed_only_select_sql}"
+    end
+
+    def dependent_actor_grants?
+      return @dependent_actor_grants if defined?(@dependent_actor_grants)
+      return @dependent_actor_grants = false unless dependent_column?
+
+      @dependent_actor_grants = connection.select_value("SELECT #{dependent_actor_grants_sql}") == true
+    end
+
+    def dependent_actor_grants_sql
+      <<~SQL.squish
+        EXISTS (
+          SELECT 1
+          FROM #{accesses} acc
+          INNER JOIN #{recordings} rec ON rec.recordable_id = acc.id
+          WHERE rec.recordable_type = #{access_type_sql}
+            AND #{RecordingStudio.kept_sql('rec')}
+            AND acc.actor_type = #{actor_type_sql}
+            AND acc.actor_id = #{actor_id_sql}
+            AND acc.depends_on_recording_id IS NOT NULL
+            AND #{role_rank_sql('TRIM(acc.role)')} >= #{@minimum}
+        )
+      SQL
+    end
+
+    def seed_only_select_sql
+      <<~SQL.squish
+        SELECT node_ascent.origin_id AS id
+        FROM node_ascent
+        WHERE node_ascent.id = #{root_sql}
+        UNION
+        SELECT rec.id AS id
+        FROM #{recordings} rec
+        WHERE rec.id = #{root_sql}
+          AND EXISTS (
+            SELECT 1
+            FROM effective_nodes
+            INNER JOIN request_ascent ON request_ascent.id = effective_nodes.node_id
+          )
+      SQL
+    end
 
     def statement
       "WITH RECURSIVE #{cte_list.join(', ')} #{final_select}"
@@ -570,6 +798,18 @@ module RecordingStudioAccessible
 
     def recordings
       quote_table(RecordingStudio::Recording.table_name)
+    end
+
+    def recording_column_names
+      quoted_recording_columns.join(", ")
+    end
+
+    def recording_column_list(qualifier)
+      quoted_recording_columns.map { |name| "#{qualifier}.#{name}" }.join(", ")
+    end
+
+    def quoted_recording_columns
+      RecordingStudio::Recording.column_names.map { |name| connection.quote_column_name(name) }
     end
 
     def accesses
