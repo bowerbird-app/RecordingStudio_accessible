@@ -12,8 +12,7 @@ module RecordingStudioAccessible
         def parent_recording_id = parent_recording&.id
         def destroy! = @destroyed = true
 
-        # Same predicate Trashable installs on Recording (kept? == !trashed_at.present?).
-        def recording_studio_trashable_kept?
+        def kept?
           trashed_at.nil?
         end
       end

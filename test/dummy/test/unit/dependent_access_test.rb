@@ -4,8 +4,7 @@ require "test_helper"
 
 class DependentAccessTest < Minitest::Test
   AccessRecording = Struct.new(:id, :recordable_type, :recordable, :trashed_at, :root_id, keyword_init: true) do
-    # Same predicate Trashable installs on Recording (kept? == !trashed_at.present?).
-    def recording_studio_trashable_kept?
+    def kept?
       trashed_at.nil?
     end
   end

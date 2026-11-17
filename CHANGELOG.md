@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.51.0] - 2026-11-17
+
+### Changed
+- Accessible no longer depends on `recording_studio_trashable` and no longer loads `recording_studio_trashable/query`.
+- In-memory grant checks call `Recording#kept?`. Relation filters still use `Recording.kept`. Joined SQL still uses `RecordingStudio.kept_sql`.
+
+### Upgrade notes
+- No Accessible migration. `authorized?` is unchanged when the host registers a kept filter.
+- Register a kept filter, for example by installing Trashable, so a trashed grant stays out of `role_for`, `authorized?`, `authorized_recording_ids`, `authorized_recordings`, and `access_grants_for`. Until a filter is registered, `kept` and `kept?` match every recording, and a trashed grant counts.
+- Revoke still destroys a trashed grant.
+
 ## [0.50.0] - 2026-11-17
 
 ### Added

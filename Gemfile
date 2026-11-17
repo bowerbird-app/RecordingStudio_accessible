@@ -6,9 +6,9 @@ source "https://rubygems.org"
 gemspec
 
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.7.0"
-# Query-only trash helpers (pin by tag; gemspec is ">= 0.17.0", "< 2.0").
-# require: false so Bundler does not auto-load the Trashable engine. lib requires
-# recording_studio_trashable/query, which registers the :trashable recording filter.
+# Git-only, and not an Accessible dependency. Admin and API depend on it, so
+# the root bundle needs this pin to resolve. require: false — Accessible does
+# not load Trashable. The dummy app loads the query entry itself.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable",
                                   tag: "v1.0.1", require: false
 # Git-only companion deps. Pin by release tag so Bundler can resolve them.
