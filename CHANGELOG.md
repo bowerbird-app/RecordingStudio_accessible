@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.54.0] - 2026-11-17
+
+### Changed
+- `AccessPath` builds `path_recordings` from `Recording#ancestors` on a saved recording: the recording, then the nearest parent, up to the top. That is one ancestor walk instead of a `parent_recording` query per level. A new recording with no id still walks `parent_recording` in memory.
+
+### Upgrade notes
+- No Accessible migration. Recording Studio `>= 7.7.0` is already required.
+- `role_for`, `authorized?`, and `authorized_recordings` are unchanged. A trashed ancestor stays on the path.
+
 ## [0.53.0] - 2026-11-17
 
 ### Changed
