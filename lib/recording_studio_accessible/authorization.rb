@@ -6,6 +6,8 @@ module RecordingStudioAccessible
                        "refusing to return a root set"
     MISSING_RECORDING_IDS = "authorization service does not implement authorized_recording_ids; " \
                             "refusing to return a recording set"
+    MISSING_RECORDINGS = "authorization service does not implement authorized_recordings; " \
+                         "refusing to return a recording relation"
 
     class << self
       def role_for(actor:, recording:)
@@ -69,6 +71,20 @@ module RecordingStudioAccessible
 
       def authorized_recording_ids_supported?
         authorization_service.respond_to?(:authorized_recording_ids)
+      end
+
+      def authorized_recordings(actor:, root:, scope: nil, role: :view, recordable_type: nil)
+        service = authorization_service
+        raise RecordingStudioAccessible::Error, MISSING_RECORDINGS unless service.respond_to?(:authorized_recordings)
+
+        scope ||= RecordingStudio::Recording.all
+        service.authorized_recordings(
+          actor: actor, root: root, scope: scope, role: role, recordable_type: recordable_type
+        )
+      end
+
+      def authorized_recordings_supported?
+        authorization_service.respond_to?(:authorized_recordings)
       end
 
       def recordings_for(actor:, parent_recording:, minimum_role: nil, recordable_type: nil)

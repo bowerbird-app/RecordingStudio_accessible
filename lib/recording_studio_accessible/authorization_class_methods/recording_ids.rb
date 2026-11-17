@@ -9,6 +9,13 @@ module RecordingStudioAccessible
       AuthorizedRecordingIds.relation_for(**request)
     end
 
+    def authorized_recordings(actor:, root:, scope: RecordingStudio::Recording.all, role: :view, recordable_type: nil)
+      request = recording_ids_request(actor, root, role, recordable_type)
+      return scope.none unless request
+
+      AuthorizedRecordingIds.recordings_for(**request, scope: scope)
+    end
+
     private
 
     def recording_ids_request(actor, root, role, recordable_type)
