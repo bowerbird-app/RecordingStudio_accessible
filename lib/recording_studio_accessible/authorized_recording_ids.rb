@@ -17,9 +17,14 @@ module RecordingStudioAccessible
   #
   # recordings_relation is that same set as rows the caller can order and
   # limit. A root grant still uses Recording.within. A nested anchor is not a
-  # root: its children store the workspace id. A short subtree is a semi-join
-  # against the seeded walk. A longer one filters the workspace creation
-  # index and keeps a row whose parents reach a seed, so a limit can stop.
+  # root: its children store the workspace id. A subtree the probe has already
+  # counted, at most 2,000 ids, is one array predicate. A longer subtree,
+  # with or without recordable_type, filters root_recording_id to that
+  # workspace. Each row checks ancestry against the seeds. Order by
+  # created_at, id and the caller limit stops on
+  # (root_recording_id, created_at, id). A type uses
+  # (root_recording_id, recordable_type, created_at, id). The filter is one
+  # row per recording.
   # Audience rules are not read. Trashed recordings stay in the set when
   # authorized? would allow them. Trashed grants and dependent grants that
   # fail DependentAccess.effective? stay out. The manager walk matches
@@ -57,9 +62,15 @@ module RecordingStudioAccessible
     def recordings_relation(scope)
       scoped = typed_scope(scope)
       return scoped.within(@root) if root_grant_fast_path?
-      return keyset_ancestry_relation(scoped) if broad_keyset_page?
 
-      seeded_semijoin_relation(scoped)
+      case subtree_shape
+      when :empty
+        scoped.none
+      when :ids
+        bound_id_relation(scoped, @bounded_ids)
+      else
+        keyset_ancestry_relation(scoped)
+      end
     end
 
     private
@@ -70,29 +81,49 @@ module RecordingStudioAccessible
       scope.where(recordable_type: @recordable_type)
     end
 
-    # The creation index is (root, type, created_at, id). Children store the
-    # workspace root, including when the anchor is a folder. A parent check on
-    # that scan stops at the caller's limit when most rows match.
-    def broad_keyset_page?
-      subtree_exceeds?(BROAD_SUBTREE_ROWS)
+    # :ids is a finished subtree of at most BROAD_SUBTREE_ROWS. :broad crossed
+    # that line. :deep ran out of probe levels before the subtree ended.
+    def subtree_shape
+      return @subtree_shape if defined?(@subtree_shape)
+
+      seen = {}
+      frontier = loaded_seed_ids
+      frontier.each { |id| seen[id] = true }
+      @subtree_shape = classify_subtree(seen, frontier)
     end
 
-    def subtree_exceeds?(limit)
-      frontier = loaded_seed_ids
-      seen = frontier.size
-      return false if seen.zero?
-      return true if seen > limit
+    def classify_subtree(seen, frontier)
+      return :empty if seen.empty?
+      return :broad if seen.size > BROAD_SUBTREE_ROWS
 
+      probe_subtree(seen, frontier)
+    end
+
+    def probe_subtree(seen, frontier)
       PROBE_DEPTH.times do
-        batch = descendant_batch(frontier, limit - seen + 1)
-        return false if batch.empty?
+        frontier = unseen_descendants(seen, frontier)
+        return :broad if seen.size > BROAD_SUBTREE_ROWS
+        next unless frontier.empty?
 
-        seen += batch.size
-        return true if seen > limit
-
-        frontier = batch
+        @bounded_ids = seen.keys
+        return :ids
       end
-      false
+      :deep
+    end
+
+    def unseen_descendants(seen, frontier)
+      fresh = []
+      descendant_batch(frontier, BROAD_SUBTREE_ROWS - seen.size + 1).each do |id|
+        next if seen[id]
+
+        seen[id] = true
+        fresh << id
+      end
+      fresh
+    end
+
+    def bound_id_relation(scope, ids)
+      scope.where("#{recordings}.id = ANY(?::#{id_sql_type}[])", "{#{ids.join(',')}}")
     end
 
     def loaded_seed_ids
@@ -113,6 +144,8 @@ module RecordingStudioAccessible
       SQL
     end
 
+    # Workspace rows, newest first once the caller orders by created_at, id.
+    # The per-row ancestry check keeps a sibling of the anchor out.
     def keyset_ancestry_relation(scope)
       scope.with(seed_ids: Arel.sql(seed_ids_sql))
            .where(root_recording_id: @root.root_recording_id)
@@ -135,42 +168,6 @@ module RecordingStudioAccessible
           SELECT 1 FROM ancestry
           INNER JOIN seed_ids ON seed_ids.id = ancestry.id
         )
-      SQL
-    end
-
-    # The walk carries the recording row. A second primary-key fetch of every
-    # estimated child makes the planner cost the page as a huge nested loop and
-    # compile it. OFFSET 0 keeps each child lookup a nested loop.
-    def seeded_semijoin_relation(scope)
-      scope.from(Arel.sql("(#{covered_from_seeds_sql}) #{recordings}"))
-    end
-
-    # Seeds are the same rows partial grants label as reaching this recording.
-    # The walk joins them. It does not paste their ids.
-    def covered_from_seeds_sql
-      table = recordings
-      names = recording_column_names
-      <<~SQL.squish
-        WITH RECURSIVE seed_ids AS (
-          SELECT id FROM (#{seed_ids_sql}) seed_rows
-        ), covered (#{names}, path) AS (
-          SELECT #{recording_column_list('rec')}, #{id_array('rec.id')}
-          FROM seed_ids
-          JOIN LATERAL (
-            SELECT * FROM #{table} WHERE #{table}.id = seed_ids.id OFFSET 0
-          ) rec ON TRUE
-          UNION ALL
-          SELECT #{recording_column_list('child')}, covered.path || child.id
-          FROM covered
-          JOIN LATERAL (
-            SELECT * FROM #{table}
-            WHERE #{table}.parent_recording_id = covered.id
-            OFFSET 0
-          ) child ON TRUE
-          WHERE NOT (child.id = ANY(covered.path))
-        )
-        SELECT #{recording_column_list('covered')}
-        FROM covered
       SQL
     end
 
@@ -498,18 +495,6 @@ module RecordingStudioAccessible
 
     def recordings
       quote_table(RecordingStudio::Recording.table_name)
-    end
-
-    def recording_column_names
-      quoted_recording_columns.join(", ")
-    end
-
-    def recording_column_list(qualifier)
-      quoted_recording_columns.map { |name| "#{qualifier}.#{name}" }.join(", ")
-    end
-
-    def quoted_recording_columns
-      RecordingStudio::Recording.column_names.map { |name| connection.quote_column_name(name) }
     end
 
     def accesses

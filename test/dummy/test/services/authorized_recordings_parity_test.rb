@@ -41,7 +41,7 @@ class AuthorizedRecordingsParityTest < ActiveSupport::TestCase
     refute_predicate page, :loaded?
   end
 
-  test "a narrow child grant matches authorized_recording_ids and does not paste seed ids" do
+  test "a narrow child grant matches authorized_recording_ids and binds one id array" do
     page = recordings(actor: @partial, root: @child_root)
     ids = page.pluck(:id)
 
@@ -53,10 +53,9 @@ class AuthorizedRecordingsParityTest < ActiveSupport::TestCase
     assert_parity(@partial, @child_root, ids)
 
     sql = page.to_sql
-    assert_includes sql, "recording_studio_accesses"
-    assert_includes sql, "OFFSET 0"
-    refute_includes sql, @narrow_folder.id
-    refute_includes sql, @narrow_page.id
+    assert_match(/ANY\(\?::uuid\[\]\)|ANY\('\{[0-9a-f-]+(?:,[0-9a-f-]+)*\}'::uuid\[\]\)/, sql)
+    refute_includes sql, "OFFSET 0"
+    refute_match(/\bIN\s*\(/i, sql)
     refute_predicate page, :loaded?
   end
 
@@ -147,24 +146,73 @@ class AuthorizedRecordingsParityTest < ActiveSupport::TestCase
 
   test "a broad nested anchor pages from the workspace root" do
     with_broad_threshold(0) do
-      page = recordings(actor: @nested_root_actor, root: @nested_anchor)
+      page = recordings(actor: @nested_root_actor, root: @nested_anchor, recordable_type: "Page")
       ids = page.pluck(:id)
       sql = page.to_sql
 
-      assert_equal authorized_ids(@nested_root_actor, @nested_anchor), ids.sort
+      assert_equal authorized_ids(@nested_root_actor, @nested_anchor, recordable_type: "Page"), ids.sort
       assert_includes ids, @nested_inner_page.id
       refute_includes ids, @nested_sibling.id
       assert_includes sql, @nested_workspace.id
       assert_includes sql, "seed_ids"
+      assert_includes sql, "EXISTS"
       refute_includes sql, "OFFSET 0"
       refute_includes sql, "root_covered"
 
-      expected = RecordingStudio::Recording.where(id: id_relation(@nested_root_actor, @nested_anchor))
+      expected = RecordingStudio::Recording.where(id: id_relation(@nested_root_actor, @nested_anchor, recordable_type: "Page"))
                                            .order(created_at: :desc, id: :desc)
                                            .limit(2)
                                            .pluck(:id)
       actual = page.order(created_at: :desc, id: :desc).limit(2).pluck(:id)
       assert_equal expected, actual
+      assert_equal actual.uniq, actual
+
+      untyped = recordings(actor: @nested_root_actor, root: @nested_anchor)
+      untyped_ids = untyped.pluck(:id)
+      assert_equal authorized_ids(@nested_root_actor, @nested_anchor), untyped_ids.sort
+      assert_equal untyped_ids.uniq, untyped_ids
+      assert_includes untyped.to_sql, @nested_workspace.id
+      assert_includes untyped.to_sql, "seed_ids"
+      assert_includes untyped.to_sql, "EXISTS"
+      refute_includes untyped.to_sql, "OFFSET 0"
+      untyped_page = untyped.order(created_at: :desc, id: :desc).limit(2).pluck(:id)
+      assert_equal untyped_page.uniq, untyped_page
+    end
+  end
+
+  test "overlapping seeds page each recording once" do
+    workspace, root = owned("Recordings overlapping seeds")
+    folder = add_folder(workspace, root, "Overlap folder")
+    child = add_folder(workspace, root, "Overlap child")
+    page = add_page(child.recordable, child, "Overlap page")
+    actor = create_user("recordings-overlap@example.com")
+    grant(actor, :view, folder)
+    grant(actor, :view, child)
+    child.update_column(:parent_recording_id, folder.id)
+
+    listed = recordings(actor: actor, root: root).order(created_at: :desc, id: :desc)
+    ids = listed.pluck(:id)
+    assert_equal ids.uniq, ids
+    assert_equal authorized_ids(actor, root), ids.sort
+    assert_includes ids, folder.id
+    assert_includes ids, child.id
+    assert_includes ids, page.id
+    paged = listed.limit(2).pluck(:id)
+    assert_equal 2, paged.size
+    assert_equal paged.uniq, paged
+    assert_equal ids.first(2), paged
+
+    with_broad_threshold(0) do
+      nested = recordings(actor: actor, root: folder).order(created_at: :desc, id: :desc)
+      nested_ids = nested.pluck(:id)
+      assert_includes nested.to_sql, "EXISTS"
+      assert_includes nested.to_sql, root.id
+      refute_includes nested.to_sql, "OFFSET 0"
+      assert_equal nested_ids.uniq, nested_ids
+      assert_equal authorized_ids(actor, folder), nested_ids.sort
+      nested_page = nested.limit(2).pluck(:id)
+      assert_equal nested_page.uniq, nested_page
+      assert_equal nested_ids.first(2), nested_page
     end
   end
 

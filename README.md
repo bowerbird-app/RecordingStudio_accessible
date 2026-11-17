@@ -35,7 +35,7 @@ Use `RecordingStudioAccessible.*` as the public access API for new host-app code
 Add the gems to your host app:
 
 ```ruby
-gem "recording_studio", ">= 7.5.0", "< 8.0"
+gem "recording_studio", ">= 7.7.0", "< 8.0"
 gem "recording_studio_accessible"
 # Query-only trash helpers used by Accessible (pin by tag or host equivalent).
 # Prefer require: false; Accessible loads recording_studio_trashable/query,
@@ -426,8 +426,8 @@ request emails direct admins on the target and its parents. Replace that with
 
 ## Compatibility with RecordingStudio 7.0
 
-Recording Studio Accessible targets RecordingStudio `>= 7.5.0`, `< 8.0` (currently
-tested with `v7.5.0`) and Trashable `>= 0.17.0`, `< 2.0` (currently tested
+Recording Studio Accessible targets RecordingStudio `>= 7.7.0`, `< 8.0` (currently
+tested with `v7.7.0`) and Trashable `>= 0.17.0`, `< 2.0` (currently tested
 with `v1.0.0`). `RecordingStudio.root_recording_for` only finds a root.
 Create one with `RecordingStudio.create_root_recording!(recordable, actor:, impersonator:, metadata:)`.
 Accessible uses Recording Studio's capability-owned child recordable
@@ -463,7 +463,7 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 No Accessible migration. `authorized?` is unchanged. On valid data, `authorized_recording_ids` and `authorized_recordings` return the same rows.
 
-Install Recording Studio `>= 7.5.0`, `< 8.0` and run its migration that enforces `root_recording_id`. This repo tests Recording Studio `v7.5.0`. A kept grant on a root uses `Recording.within` (`for_root`). A page whose anchor is a folder reads that folder's workspace root. `root_recording_id` integrity is Recording Studio's responsibility. A parent cycle from a raw write is a core write-path concern.
+Install Recording Studio `>= 7.7.0`, `< 8.0` and run its migrations. That includes the migration that enforces `root_recording_id` and the migration that replaces `index_rs_recordings_on_root_recording` with `index_rs_recordings_on_root_created_at_id` on `(root_recording_id, created_at, id)`. This repo tests Recording Studio `v7.7.0`. A kept grant on a root uses `Recording.within` (`for_root`). A page whose anchor is a folder reads that folder's workspace root. `root_recording_id` integrity is Recording Studio's responsibility. A parent cycle from a raw write is a core write-path concern.
 
 #### Upgrading to 0.48.0
 
@@ -1810,9 +1810,9 @@ RecordingStudioAccessible.authorized_recordings(
 
 `scope` defaults to `RecordingStudio::Recording.all`. Where clauses already on that scope stay. `role` defaults to `:view`. A nil actor, a root that is not a recording, a blank `recordable_type`, or a role other than `view`, `edit`, or `admin` returns `scope.none`.
 
-A kept grant on a root uses `Recording.within` (`for_root`). Pass `recordable_type`, or put that type on `scope`, so the page can use the index on `(root_recording_id, recordable_type, created_at, id)`.
+A kept grant on a root uses `Recording.within` (`for_root`). Pass `recordable_type`, or put that type on `scope`, so the page can use the index on `(root_recording_id, recordable_type, created_at, id)`. Without a type, order by `created_at`, `id` so the page can use `(root_recording_id, created_at, id)`.
 
-A child grant, or a grant read through a folder, uses the same seeds as `authorized_recording_ids`: kept grants for that actor at that role, with the same manager chain. The seeds stay in the query as a subquery over those grants. They are not copied into an id list. A subtree of 2,000 recordings or fewer is a semi-join against the seeded walk. The walk looks up each seed and each child through the primary key and the parent index, then loads those rows by primary key. A larger subtree is filtered from that creation index on the anchor's workspace `root_recording_id` (the anchor itself when the anchor is a root). Each row checks its parents until it hits a seed, so a limit can stop. The rows match `authorized_recording_ids` and `authorized?`.
+A child grant, or a grant read through a folder, uses the same seeds as `authorized_recording_ids`: kept grants for that actor at that role, with the same manager chain. A subtree of 2,000 recordings or fewer is one `id = ANY` array of the ids the probe already counted. A larger subtree filters `root_recording_id` to the workspace and checks ancestry on each row. A type uses `(root_recording_id, recordable_type, created_at, id)`. A folder anchor and an untyped list use `(root_recording_id, created_at, id)`. Order by `created_at`, `id` and the limit stops. The ancestry check is an `EXISTS`, so each recording appears once. The rows match `authorized_recording_ids` and `authorized?`.
 
 `authorized_recordings_supported?` is true for the default authorization service. A host that replaces the service and does not implement `authorized_recordings` gets false. Calling it then raises `RecordingStudioAccessible::Error`. Use `authorized_recording_ids` or `authorized?` in that case.
 
@@ -2341,7 +2341,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v7.5.0`, FlatPack `v0.1.377`, Trashable `v1.0.0`, Attachable `v0.31.0`, Users `v0.32.0`, Metrics `v0.9.0`, Cache `v0.7.0`, Admin `v2.18.0`, Root Switchable `v0.16.0`, Notifications `v0.19.1`, and (dummy only) Recording Studio Internationalization `v0.3.0`. Dummy development/test also pins Recording Studio API `v1.2.1`, Logs `v0.8.0`, Icons `v0.4.0`, and Moveable `v6.0.0` so access member actions run through the real dispatcher. Each pinned companion allows Recording Studio `7.5.0`, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v7.7.0`, FlatPack `v0.1.377`, Trashable `v1.0.0`, Attachable `v0.31.0`, Users `v0.32.0`, Metrics `v0.9.0`, Cache `v0.7.0`, Admin `v2.18.0`, Root Switchable `v0.16.0`, Notifications `v0.19.1`, and (dummy only) Recording Studio Internationalization `v0.3.0`. Dummy development/test also pins Recording Studio API `v1.2.1`, Logs `v0.8.0`, Icons `v0.4.0`, and Moveable `v6.0.0` so access member actions run through the real dispatcher. Each pinned companion allows Recording Studio `7.7.0`, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 
