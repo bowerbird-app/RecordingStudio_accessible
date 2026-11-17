@@ -33,6 +33,23 @@ class AccessPathCycleTest < ActiveSupport::TestCase
     assert_equal :edit, RecordingStudioAccessible.role_for(actor: @actor, recording: page)
   end
 
+  test "role_for on an unsaved recording with an id walks the unsaved parent to the root grant" do
+    create_direct_access_recording(actor: @actor, role: :admin, parent_recording: @root)
+    parent = RecordingStudio::Recording.new(parent_recording: @root)
+    recording = RecordingStudio::Recording.new(id: SecureRandom.uuid, parent_recording: parent)
+
+    assert recording.id.present?
+    refute recording.persisted?
+    refute parent.persisted?
+    assert_nil parent.id
+
+    path = RecordingStudio::Services::AccessPath.new(recording: recording).build
+    assert_same recording, path.path_recordings[0]
+    assert_same parent, path.path_recordings[1]
+    assert_equal @root.id, path.path_recordings[2]&.id
+    assert_equal :admin, RecordingStudioAccessible.role_for(actor: @actor, recording: recording)
+  end
+
   private
 
   def create_user(email)
