@@ -111,14 +111,40 @@ class ApiTest < Minitest::Test
   end
 
   def test_generic_access_descriptions_are_the_approved_defaults
+    copy = RecordingStudioAccessible::Api::OpenapiCopy
+
+    assert_equal copy::GRANT_ACCESS_SUMMARY, openapi_for(:grant_access).fetch(:summary)
     assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION,
                  openapi_for(:grant_access).fetch(:description)
+    assert_equal copy::LIST_ACCESS_SUMMARY, openapi_for(:list_access).fetch(:summary)
     assert_equal RecordingStudioAccessible::Api::LIST_ACCESS_DESCRIPTION,
                  openapi_for(:list_access).fetch(:description)
+    assert_equal copy::REVOKE_ACCESS_SUMMARY, openapi_for(:revoke_access).fetch(:summary)
     assert_equal RecordingStudioAccessible::Api::REVOKE_ACCESS_DESCRIPTION,
                  openapi_for(:revoke_access).fetch(:description)
+    assert_equal copy::UPDATE_ACCESS_SUMMARY, openapi_for(:update_access).fetch(:summary)
     assert_equal RecordingStudioAccessible::Api::UPDATE_ACCESS_DESCRIPTION,
                  openapi_for(:update_access).fetch(:description)
+  end
+
+  def test_access_action_copy_omits_caller_permission_wording
+    RecordingStudioAccessible::Api::ACTION_NAMES.each do |name|
+      definition = RecordingStudioAccessible::Api::ACTION_DEFINITIONS.fetch(name)
+      blob = [
+        definition.fetch(:openapi).fetch(:summary),
+        definition.fetch(:openapi).fetch(:description),
+        definition.fetch(:fields).values.filter_map { |field| field[:description] }
+      ].flatten.join(" ")
+
+      refute_match(/requires .* role/i, blob)
+      refute_match(/\badmin only\b/i, blob)
+      refute_includes blob, ":edit"
+      refute_includes blob, "Access:"
+      refute_includes blob, "You cannot grant a role higher"
+      refute_includes blob, "unless you are an admin"
+      refute_includes blob, "Press Kit"
+      refute_includes blob, "Press Center"
+    end
   end
 
   def test_openapi_override_is_per_type
