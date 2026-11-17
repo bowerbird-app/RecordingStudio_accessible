@@ -13,6 +13,12 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     @holder = create_user("recording-ids-holder@example.com")
     @member = create_user("recording-ids-member@example.com")
     @stranger = create_user("recording-ids-stranger@example.com")
+    @partial = create_user("recording-ids-partial@example.com")
+    @broad_actor = create_user("recording-ids-broad@example.com")
+    @multi_actor = create_user("recording-ids-multi@example.com")
+    @chain_holder = create_user("recording-ids-chain-holder@example.com")
+    @chain_actor = create_user("recording-ids-chain@example.com")
+    @blocked_actor = create_user("recording-ids-blocked@example.com")
     @workspace = Workspace.create!(name: "Recording ids actor")
     @scenarios = []
     @names = {}
@@ -26,6 +32,10 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     build_shared_trees
     build_off_path_tree
     build_workspace_actor_tree
+    build_partial_grant_tree
+    build_stored_root_cover_tree
+    build_stored_sibling_tree
+    build_nested_outside_tree
     _, @audience_root = owned("audience", "Recording ids audience")
     grant(@member, :view, @audience_root)
   end
@@ -224,6 +234,150 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     refute RecordingStudioAccessible.authorized?(actor: @stranger, recording: rule, role: :view)
   end
 
+  test "a narrow child grant walks that subtree" do
+    built = relation(actor: @partial, root: @partial_root, role: :view)
+    sql = built.to_sql
+
+    refute_predicate built, :loaded?
+    assert_includes sql, "OFFSET 0"
+    assert_includes sql, @narrow_folder.id
+    refute_includes sql, "relevant_parents"
+    refute_includes sql, @broad_folder.id
+    refute_includes sql, @partial_root.id
+    refute_includes sql, @narrow_page.id
+    assert_equal 0, uncached_sql_count { built.to_sql }
+
+    ids = built.pluck(:id)
+    assert_includes ids, @narrow_folder.id
+    assert_includes ids, @narrow_page.id
+    refute_includes ids, @broad_folder.id
+    refute_includes ids, @broad_grandchild.id
+    refute_includes ids, @partial_root.id
+    refute_includes ids, @ungranted_folder.id
+
+    pages = authorized_ids(@partial, @partial_root, :view, recordable_type: "Page")
+    assert_includes pages, @narrow_page.id
+    refute_includes pages, @narrow_folder.id
+
+    @narrow_page.update_column(:trashed_at, Time.current)
+    assert_includes authorized_ids(@partial, @partial_root, :view), @narrow_page.id
+    assert RecordingStudioAccessible.authorized?(actor: @partial, recording: @narrow_page.reload, role: :view)
+
+    composed = RecordingStudio::Recording.where(id: relation(actor: @partial, root: @partial_root, role: :view)).limit(50)
+    found = composed.pluck(:id)
+    assert_operator found.length, :<=, 50
+    assert_empty found - authorized_ids(@partial, @partial_root, :view)
+  end
+
+  test "a broad child grant walks that subtree" do
+    sql = relation(actor: @broad_actor, root: @partial_root, role: :view).to_sql
+
+    assert_includes sql, "OFFSET 0"
+    assert_includes sql, @broad_folder.id
+    refute_includes sql, "relevant_parents"
+    refute_includes sql, @narrow_folder.id
+    refute_includes sql, @partial_root.id
+    refute_includes sql, @broad_grandchild.id
+
+    ids = authorized_ids(@broad_actor, @partial_root, :view)
+    assert_includes ids, @broad_folder.id
+    assert_includes ids, @broad_child.id
+    assert_includes ids, @broad_grandchild.id
+    refute_includes ids, @narrow_folder.id
+    refute_includes ids, @narrow_page.id
+    refute_includes ids, @partial_root.id
+    refute_includes ids, @ungranted_folder.id
+    ids.each do |id|
+      recording = RecordingStudio::Recording.unscoped.find(id)
+      assert RecordingStudioAccessible.authorized?(actor: @broad_actor, recording: recording, role: :view)
+    end
+  end
+
+  test "multiple child grants walk each subtree" do
+    sql = relation(actor: @multi_actor, root: @partial_root, role: :view).to_sql
+
+    assert_includes sql, "OFFSET 0"
+    assert_includes sql, @narrow_folder.id
+    assert_includes sql, @broad_folder.id
+    refute_includes sql, "relevant_parents"
+    refute_includes sql, @partial_root.id
+    refute_includes sql, @ungranted_folder.id
+
+    ids = authorized_ids(@multi_actor, @partial_root, :view)
+    assert_includes ids, @narrow_folder.id
+    assert_includes ids, @narrow_page.id
+    assert_includes ids, @broad_folder.id
+    assert_includes ids, @broad_child.id
+    assert_includes ids, @broad_grandchild.id
+    refute_includes ids, @ungranted_folder.id
+    refute_includes ids, @partial_root.id
+  end
+
+  test "a dependent child grant walks when the manager chain holds" do
+    sql = relation(actor: @chain_actor, root: @partial_root, role: :view).to_sql
+
+    assert_includes sql, "OFFSET 0"
+    assert_includes sql, @chain_folder.id
+    refute_includes sql, "relevant_parents"
+    refute_includes sql, @narrow_folder.id
+
+    ids = authorized_ids(@chain_actor, @partial_root, :view)
+    assert_includes ids, @chain_folder.id
+    refute_includes ids, @narrow_folder.id
+    refute_includes ids, @weak_folder.id
+
+    blocked = relation(actor: @blocked_actor, root: @partial_root, role: :edit)
+    refute_includes blocked.to_sql, "relevant_parents"
+    refute_includes blocked.to_sql, @weak_folder.id
+    assert_empty blocked.pluck(:id)
+  end
+
+  test "a grant on another root falls back when a child stores that root" do
+    sql = relation(actor: @member, root: @stored_root_b, role: :view).to_sql
+
+    assert_includes sql, "relevant_parents"
+    assert_includes sql, "root_covered"
+    refute_includes sql, "OFFSET 0"
+
+    ids = authorized_ids(@member, @stored_root_b, :view)
+    assert_includes ids, @stored_under_b.id
+    assert_includes ids, @stored_under_b_child.id
+    refute_includes ids, @plain_under_b.id
+    refute_includes ids, @stored_root_b.id
+    assert_stored_root_parity(@member, @stored_root_b, ids)
+  end
+
+  test "a sibling that stores the granted folder falls back to the full statement" do
+    sql = relation(actor: @member, root: @sibling_store_root, role: :view).to_sql
+
+    assert_includes sql, "root_covered"
+    refute_includes sql, "OFFSET 0"
+
+    ids = authorized_ids(@member, @sibling_store_root, :view)
+    assert_includes ids, @sibling_store_folder.id
+    assert_includes ids, @sibling_store_page.id
+    assert_includes ids, @stored_sibling.id
+    assert_includes ids, @stored_sibling_child.id
+    refute_includes ids, @sibling_store_root.id
+    assert_stored_root_parity(@member, @sibling_store_root, ids)
+  end
+
+  test "a nested request includes a child that stores an outside root" do
+    sql = relation(actor: @member, root: @nested_request, role: :view).to_sql
+
+    assert_includes sql, "root_covered"
+    refute_includes sql, "OFFSET 0"
+
+    ids = authorized_ids(@member, @nested_request, :view)
+    assert_includes ids, @nested_outside_child.id
+    refute_includes ids, @nested_plain_child.id
+    refute_includes ids, @nested_request.id
+    recordings_under(@nested_request).each do |recording|
+      allowed = RecordingStudioAccessible.authorized?(actor: @member, recording: recording, role: :view)
+      assert_equal allowed, ids.include?(recording.id), recording.id
+    end
+  end
+
   private
 
   def scenario(name)
@@ -233,7 +387,8 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
   end
 
   def actors
-    [ nil, @member, @admin, @holder, @stranger, @workspace ]
+    [ nil, @member, @admin, @holder, @stranger, @workspace, @partial, @broad_actor, @multi_actor,
+      @chain_holder, @chain_actor, @blocked_actor ]
   end
 
   def roles
@@ -370,6 +525,73 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     grant(@workspace, :edit, root)
   end
 
+  def build_partial_grant_tree
+    workspace, root = owned("partial grants", "Recording ids partial")
+    @partial_root = root
+    @narrow_folder = add_folder(workspace, root, "Narrow folder")
+    @narrow_page = add_page(@narrow_folder.recordable, @narrow_folder, "Narrow page")
+    @broad_folder = add_folder(workspace, root, "Broad folder")
+    @broad_child = add_page(@broad_folder.recordable, @broad_folder, "Broad page")
+    card = Card.create!(page: @broad_child.recordable, title: "Broad card", body: "Card", position: 1)
+    @broad_grandchild = create_child_recording(recordable: card, parent_recording: @broad_child)
+    @ungranted_folder = add_folder(workspace, root, "Ungranted folder")
+    grant(@partial, :view, @narrow_folder)
+    grant(@broad_actor, :view, @broad_folder)
+    grant(@multi_actor, :view, @narrow_folder)
+    grant(@multi_actor, :view, @broad_folder)
+    @chain_folder = add_folder(workspace, root, "Chain folder")
+    holder_grant = grant(@chain_holder, :edit, @chain_folder)
+    grant(@chain_actor, :view, @chain_folder, depends_on: holder_grant)
+    @weak_folder = add_folder(workspace, root, "Weak manager folder")
+    weak_grant = grant(@chain_holder, :edit, @weak_folder)
+    grant(@blocked_actor, :edit, @weak_folder, depends_on: weak_grant)
+    store_role!(weak_grant, :view)
+  end
+
+  def build_stored_root_cover_tree
+    _source_workspace, source = owned("stored root source", "Recording ids stored source")
+    @stored_root_a = source
+    grant(@member, :view, source)
+    workspace, root = owned("stored root tree", "Recording ids stored tree")
+    @stored_root_b = root
+    @stored_under_b = add_folder(workspace, root, "Stores source")
+    @stored_under_b_child = add_page(@stored_under_b.recordable, @stored_under_b, "Stores source page")
+    @plain_under_b = add_folder(workspace, root, "Plain under b")
+    @stored_under_b.update_column(:root_recording_id, source.id)
+    @stored_under_b_child.update_column(:root_recording_id, source.id)
+  end
+
+  def build_stored_sibling_tree
+    workspace, root = owned("stored sibling", "Recording ids stored sibling")
+    @sibling_store_root = root
+    @sibling_store_folder = add_folder(workspace, root, "Granted folder")
+    @sibling_store_page = add_page(@sibling_store_folder.recordable, @sibling_store_folder, "Granted page")
+    @stored_sibling = add_folder(workspace, root, "Stores folder")
+    @stored_sibling_child = add_page(@stored_sibling.recordable, @stored_sibling, "Stores folder child")
+    @stored_sibling.update_column(:root_recording_id, @sibling_store_folder.id)
+    @stored_sibling_child.update_column(:root_recording_id, @sibling_store_folder.id)
+    grant(@member, :view, @sibling_store_folder)
+  end
+
+  def build_nested_outside_tree
+    _outside_workspace, outside = owned("nested outside root", "Recording ids nested outside")
+    @nested_outside_root = outside
+    grant(@member, :view, outside)
+    workspace, root = owned("nested outside tree", "Recording ids nested tree")
+    @nested_tree_root = root
+    @nested_request = add_folder(workspace, root, "Nested request")
+    @nested_plain_child = add_page(@nested_request.recordable, @nested_request, "Nested plain")
+    @nested_outside_child = add_page(@nested_request.recordable, @nested_request, "Nested special")
+    @nested_outside_child.update_column(:root_recording_id, outside.id)
+  end
+
+  def assert_stored_root_parity(actor, root, ids)
+    tree_for(root).each do |recording|
+      allowed = RecordingStudioAccessible.authorized?(actor: actor, recording: recording, role: :view)
+      assert_equal allowed, ids.include?(recording.id), "#{recording.id} authorized=#{allowed}"
+    end
+  end
+
   def owned(label, name)
     workspace = Workspace.create!(name: name)
     recording = create_root_recording(workspace)
@@ -385,6 +607,11 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     recording
   end
   alias track watch
+
+  def add_folder(workspace, parent, name)
+    folder = Folder.create!(workspace: workspace, name: name, summary: name, position: 1)
+    create_child_recording(recordable: folder, parent_recording: parent)
+  end
 
   def add_page(folder, folder_recording, title)
     page = Page.create!(folder: folder, title: title, summary: title, position: 1)
