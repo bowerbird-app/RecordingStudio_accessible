@@ -9,9 +9,6 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `access_grants_for(actor:, role: nil)` returns an unloaded relation of the actor's kept Access recordings on every root. The actor type is `ActorType.for`. `role` keeps grants at that rank or higher. A nil actor or an unknown role returns `Recording.none`. A trashed grant is left out.
 
-### Changed
-- `role_for` builds its `actor` and `recording` service arguments in one helper. `Authorization` and `AuthorizationClassMethods` both use it.
-
 ### Upgrade notes
 - No Accessible migration. `authorized?` and `role_for` are unchanged.
 

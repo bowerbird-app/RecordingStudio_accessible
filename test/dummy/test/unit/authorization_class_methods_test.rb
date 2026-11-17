@@ -45,16 +45,6 @@ class AuthorizationClassMethodsTest < Minitest::Test
     assert_equal [{ actor: :actor, recording: :recording }], Subject.calls
   end
 
-  def test_role_for_builds_call_arguments_in_one_helper
-    from_authorization = RecordingStudioAccessible::Authorization.singleton_class
-                                                                 .instance_method(:role_call_arguments)
-    from_class_methods = RecordingStudioAccessible::AuthorizationClassMethods.instance_method(:role_call_arguments)
-
-    assert_equal from_class_methods.owner, from_authorization.owner
-    assert_equal({ actor: :actor, recording: :recording },
-                 from_class_methods.bind_call(Object.new, actor: :actor, recording: :recording))
-  end
-
   def test_allowed_fails_closed_for_missing_inputs_and_invalid_roles
     refute Subject.allowed?(actor: nil, recording: :recording, role: :view)
     refute Subject.allowed?(actor: :actor, recording: nil, role: :view)

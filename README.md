@@ -463,7 +463,7 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 No Accessible migration. `authorized?` and `role_for` are unchanged.
 
-`access_grants_for(actor:, role: nil)` lists that actor's kept access grants across roots. `role_for` builds `actor` and `recording` in one helper.
+`access_grants_for(actor:, role: nil)` lists that actor's kept access grants across roots.
 
 #### Upgrading to 0.49.0
 

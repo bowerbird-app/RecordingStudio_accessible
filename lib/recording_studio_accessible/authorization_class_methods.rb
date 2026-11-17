@@ -8,23 +8,11 @@ require_relative "authorization_class_methods/recording_ids"
 require_relative "effective_root_ids"
 
 module RecordingStudioAccessible
-  # Keywords `role_for` passes into the authorization service.
-  module RoleCallArguments
-    private
-
-    def role_call_arguments(actor:, recording:)
-      { actor: actor, recording: recording }
-    end
-  end
-  private_constant :RoleCallArguments
-
   module AuthorizationClassMethods
-    include RoleCallArguments
-
     def role_for(actor:, recording:)
       return nil unless actor
 
-      call(**role_call_arguments(actor: actor, recording: recording)).value
+      call(actor: actor, recording: recording).value
     end
 
     def allowed?(actor:, recording:, role:)
