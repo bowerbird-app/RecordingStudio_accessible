@@ -113,8 +113,8 @@ module RecordingStudioAccessible
       yield(configuration) if block_given?
     end
 
-    def role_for(actor:, recording:)
-      Authorization.role_for(actor: actor, recording: recording)
+    def role_for(actor:, recording:, include_trashed: false)
+      Authorization.role_for(actor: actor, recording: recording, include_trashed: include_trashed)
     end
 
     # Actors who hold an effective role on the recording at or above
