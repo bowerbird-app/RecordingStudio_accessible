@@ -637,7 +637,7 @@ bin/rails generate recording_studio_accessible:migrations
 bin/rails db:migrate
 ```
 
-3. New tables are `recording_studio_access_requests` and `recording_studio_access_request_intents`. `gate_metadata` is added to `recording_studio_access_requests`.
+3. The new table is `recording_studio_access_requests`. `gate_metadata` is added to `recording_studio_access_requests`.
 4. Accessible does not depend on Users in the gemspec. Hosts that want the email-code screens add `recording_studio_user` the same way Messages does. Without Users, `request_access` still works for a signed-in actor.
 
 #### Upgrading to 0.14.0
