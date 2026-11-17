@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.47.1] - 2026-11-17
+
+### Changed
+- MCP and OpenAPI copy for `grant_access`, `list_access`, `revoke_access`, and
+  `update_access`. Summaries, action descriptions, and input field descriptions
+  now say what each action does, where ids come from, what is rejected, what a
+  repeat call does, and what it returns. Caller-permission wording is gone.
+  Action names, fields, and behavior are unchanged.
+
+### Upgrade notes
+- Bump to `0.47.1`. No migration. MCP and OpenAPI text for Accessible access
+  actions changed. Action names and fields did not.
+
 ## [0.47.0] - 2026-11-17
 
 ### Changed

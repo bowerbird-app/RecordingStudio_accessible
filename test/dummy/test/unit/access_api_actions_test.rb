@@ -329,6 +329,43 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     end
   end
 
+  test "registered access actions expose MCP copy without caller-permission wording" do
+    skip "Recording Studio API is not loaded" unless defined?(RecordingStudioApi)
+    skip unless RecordingStudioApi.respond_to?(:capability_action)
+
+    copy = RecordingStudioAccessible::Api::OpenapiCopy
+    expected = {
+      grant_access: [ copy::GRANT_ACCESS_SUMMARY, copy::GRANT_ACCESS ],
+      list_access: [ copy::LIST_ACCESS_SUMMARY, copy::LIST_ACCESS ],
+      revoke_access: [ copy::REVOKE_ACCESS_SUMMARY, copy::REVOKE_ACCESS ],
+      update_access: [ copy::UPDATE_ACCESS_SUMMARY, copy::UPDATE_ACCESS ]
+    }
+
+    expected.each do |name, (summary, description)|
+      action = registered_capability_action(name)
+      openapi = action.respond_to?(:openapi) ? action.openapi : action.fetch(:openapi)
+      openapi = openapi.with_indifferent_access if openapi.respond_to?(:with_indifferent_access)
+
+      assert_equal summary, openapi[:summary] || openapi["summary"]
+      assert_equal description, openapi[:description] || openapi["description"]
+
+      blob = [
+        openapi[:summary] || openapi["summary"],
+        openapi[:description] || openapi["description"],
+        registered_field_descriptions(action, name)
+      ].flatten.join(" ")
+
+      refute_match(/requires .* role/i, blob)
+      refute_match(/\badmin only\b/i, blob)
+      refute_includes blob, ":edit"
+      refute_includes blob, "Access:"
+      refute_includes blob, "You cannot grant a role higher"
+      refute_includes blob, "unless you are an admin"
+      refute_includes blob, "Press Kit"
+      refute_includes blob, "Press Center"
+    end
+  end
+
   test "openapi override reaches Recording Studio API output per type" do
     skip "Recording Studio API is not loaded" unless defined?(RecordingStudioApi)
     skip unless RecordingStudioApi.respond_to?(:openapi_document)
@@ -569,6 +606,41 @@ class AccessApiActionsTest < ActiveSupport::TestCase
 
   def not_found_error_class
     api_error_class(:NotFoundError, RecordingStudioAccessible::Api::NotFoundError)
+  end
+
+  def registered_capability_action(name)
+    parameters = RecordingStudioApi.method(:capability_action).parameters
+    named_api = parameters.any? { |type, param| param == :api && %i[key keyreq keyrest].include?(type) }
+    action = named_api ? RecordingStudioApi.capability_action(name, api: :public) : RecordingStudioApi.capability_action(name)
+    refute_nil action, "expected #{name} in the Recording Studio API registry"
+    action
+  end
+
+  def registered_field_descriptions(action, name)
+    contract = if action.respond_to?(:input_contract)
+      action.input_contract
+    elsif action.is_a?(Hash)
+      action[:input_contract]
+    end
+    fields = fields_from_contract(contract)
+    expected_keys = RecordingStudioAccessible::Api::ACTION_DEFINITIONS.fetch(name).fetch(:fields).keys
+    if expected_keys.any?
+      refute fields.blank?, "expected #{name} input fields on the registered contract"
+    end
+    fields.values.filter_map { |field| field[:description] || field["description"] }
+  end
+
+  def fields_from_contract(contract)
+    return {} if contract.nil?
+
+    if contract.respond_to?(:as_json)
+      json = contract.as_json
+      json = json.with_indifferent_access if json.respond_to?(:with_indifferent_access)
+      return json[:fields] || json["fields"] || {}
+    end
+    return contract[:fields] || contract["fields"] || {} if contract.is_a?(Hash)
+
+    {}
   end
 
   def member_action_operation(document, resource_name, action_name)

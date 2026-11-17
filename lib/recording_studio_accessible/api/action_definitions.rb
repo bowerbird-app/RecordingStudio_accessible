@@ -16,7 +16,7 @@ RecordingStudioAccessible::Api.const_set(
       handler: RecordingStudioAccessible::Api::ListAccess,
       fields: {},
       openapi: {
-        summary: "List access",
+        summary: RecordingStudioAccessible::Api::OpenapiCopy::LIST_ACCESS_SUMMARY,
         description: RecordingStudioAccessible::Api::LIST_ACCESS_DESCRIPTION,
         responses: {
           "200" => {
@@ -53,38 +53,40 @@ RecordingStudioAccessible::Api.const_set(
           type: :string,
           allow_blank: false,
           description:
-            "The id of an existing person to grant. Required together with actor_type when you are not " \
-            "inviting by email. Do not pass this with email."
+            "The id of an existing person to grant. Take it from list_access results or the host's people " \
+            "lookup. Required together with actor_type when you are not inviting by email. Do not pass this " \
+            "with email."
         },
         actor_type: {
           type: :string,
           allow_blank: false,
           description:
             "The type of that person, for example User. When granting by actor_id, leave it out to default " \
-            "to User when User is allowed, matching update_access and revoke_access. The type must be one " \
-            "the host allows you to grant."
+            "to User when User is allowed, matching update_access and revoke_access. An unknown or " \
+            "disallowed type is rejected."
         },
         email: {
           type: :string,
           allow_blank: false,
           description:
-            "An email to invite when you are not naming an existing person by actor_id. Do not pass this " \
-            "with actor_id. The address is stored in lowercase. If the host can resolve it to an existing " \
-            "account, the grant is written immediately. Otherwise an invitation is stored and sent. A second " \
-            "invite to the same open address updates the role and resends."
+            "The email to invite when you are not naming an existing person by actor_id. Take the address " \
+            "from the person you want to invite. Do not pass this with actor_id. The address is stored in " \
+            "lowercase. If the host can resolve it to an existing account, the grant is written immediately. " \
+            "Otherwise an invitation is stored and sent. A second invite to the same open address updates " \
+            "the role and resends."
         },
         role: {
           type: :string,
           required: true,
           allow_blank: false,
           description:
-            "Required. The role to give this person. #{RecordingStudioAccessible::Api::OpenapiCopy::DEFAULT_ROLE} " \
+            "The role to give this person. #{RecordingStudioAccessible::Api::OpenapiCopy::DEFAULT_ROLE} " \
             "An unrecognized role is rejected. If this person already has a direct grant on this recording, " \
-            "this call revises that grant to the new role. You cannot grant a role higher than the one you hold."
+            "this call revises that grant to the new role. A role above what the caller may assign is rejected."
         }
       },
       openapi: {
-        summary: "Grant access",
+        summary: RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_SUMMARY,
         description: RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION,
         responses: {
           "200" => {
@@ -115,27 +117,29 @@ RecordingStudioAccessible::Api.const_set(
           type: :string,
           required: true,
           allow_blank: false,
-          description: "The id of the person whose direct grant to change. Required."
+          description:
+            "The id of the person whose direct grant to change. Take it from list_access results or the " \
+            "host's people lookup."
         },
         actor_type: {
           type: :string,
           allow_blank: false,
           description:
             "The type of that person, for example User. Leave it out to default to User when User is " \
-            "allowed, matching revoke_access and grant_access. The type must be one the host allows."
+            "allowed, matching revoke_access and grant_access. An unknown or disallowed type is rejected."
         },
         role: {
           type: :string,
           required: true,
           allow_blank: false,
           description:
-            "The new role for this direct grant. Required. " \
-            "#{RecordingStudioAccessible::Api::OpenapiCopy::DEFAULT_ROLE} You can only assign a role you " \
-            "already hold, or a weaker one, unless you are an admin."
+            "The new role for this direct grant. " \
+            "#{RecordingStudioAccessible::Api::OpenapiCopy::DEFAULT_ROLE} An unrecognized role is rejected. " \
+            "A role above what the caller may assign is rejected."
         }
       },
       openapi: {
-        summary: "Update access",
+        summary: RecordingStudioAccessible::Api::OpenapiCopy::UPDATE_ACCESS_SUMMARY,
         description: RecordingStudioAccessible::Api::UPDATE_ACCESS_DESCRIPTION,
         responses: {
           "200" => {
@@ -159,18 +163,20 @@ RecordingStudioAccessible::Api.const_set(
           type: :string,
           required: true,
           allow_blank: false,
-          description: "The id of the person whose direct grant to remove. Required."
+          description:
+            "The id of the person whose direct grant to remove. Take it from list_access results or the " \
+            "host's people lookup."
         },
         actor_type: {
           type: :string,
           allow_blank: false,
           description:
             "The type of that person, for example User. Leave it out to default to User when User is " \
-            "allowed, matching update_access and grant_access. The type must be one the host allows."
+            "allowed, matching update_access and grant_access. An unknown or disallowed type is rejected."
         }
       },
       openapi: {
-        summary: "Revoke access",
+        summary: RecordingStudioAccessible::Api::OpenapiCopy::REVOKE_ACCESS_SUMMARY,
         description: RecordingStudioAccessible::Api::REVOKE_ACCESS_DESCRIPTION,
         responses: {
           "200" => {

@@ -459,6 +459,11 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.47.1
+
+No Accessible migration. MCP and OpenAPI text for `grant_access`, `list_access`,
+`revoke_access`, and `update_access` changed. Action names and fields did not.
+
 #### Upgrading to 0.47.0
 
 No Accessible migration. `authorized?` is unchanged, and `authorized_recording_ids` returns the same ids.
@@ -1524,7 +1529,7 @@ RecordingStudioAccessible::Api.override_openapi(
 )
 ```
 
-The generic copy stays on `ACTION_DEFINITIONS`. `openapi_for(:grant_access, type: "Folder")` applies the override. Accessible registers that lookup as `openapi_for:` on each capability action so Recording Studio API OpenAPI and the MCP catalog use the per-type copy.
+The generic copy stays on `ACTION_DEFINITIONS`. Each action has a short summary and a description that names prerequisites, where ids come from, rejections, repeat-call behavior, and the return shape. Field descriptions say what the value is and where it comes from. `openapi_for(:grant_access, type: "Folder")` applies the override. Accessible registers that lookup as `openapi_for:` on each capability action so Recording Studio API OpenAPI and the MCP catalog use the per-type copy.
 
 Each action is `capability: :accessible`, `required_role: :admin`, member
 scope. Handlers call `AccessManagementPolicy` and the Grant / Invite / Update /
