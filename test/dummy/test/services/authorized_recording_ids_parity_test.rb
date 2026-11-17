@@ -104,12 +104,53 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     assert_empty RecordingStudio::Recording.where(id: empty)
   end
 
+  test "a root grant matches within when the stored root agrees with the parent chain" do
+    within_ids = RecordingStudio::Recording.within(@inherited).pluck(:id)
+    view_ids = authorized_ids(@member, @inherited, :view)
+    assert_equal within_ids.sort, view_ids.sort
+    view_ids.each do |id|
+      recording = RecordingStudio::Recording.unscoped.find(id)
+      assert RecordingStudioAccessible.authorized?(actor: @member, recording: recording, role: :view)
+    end
+
+    edit_ids = authorized_ids(@member, @inherited, :edit)
+    refute_equal within_ids.sort, edit_ids.sort
+    assert_includes edit_ids, @page.id
+    refute_includes edit_ids, @sibling_page.id
+    refute_includes authorized_ids(@member, @inherited, :admin), @inherited.id
+
+    child_root = scenario("child only")
+    child_ids = authorized_ids(@member, child_root, :edit)
+    child_within = RecordingStudio::Recording.within(child_root).pluck(:id)
+    assert_operator child_ids.length, :<, child_within.length
+    refute_includes child_ids, child_root.id
+    child_ids.each do |id|
+      recording = RecordingStudio::Recording.unscoped.find(id)
+      assert RecordingStudioAccessible.authorized?(actor: @member, recording: recording, role: :edit)
+    end
+
+    source = scenario("off path source")
+    source_ids = authorized_ids(@member, source, :view)
+    source_within = RecordingStudio::Recording.within(source).pluck(:id)
+    refute_equal source_within.sort, source_ids.sort
+    assert_empty(source_ids - tree_for(source).map(&:id))
+    (source_within - source_ids).each do |id|
+      recording = RecordingStudio::Recording.unscoped.find(id)
+      next if tree_for(source).map(&:id).include?(id)
+
+      assert RecordingStudioAccessible.authorized?(actor: @member, recording: recording, role: :view)
+      refute_includes source_ids, id
+    end
+  end
+
   test "the relation stays unloaded and composes inside one where query" do
     built = relation(actor: @member, root: @inherited, role: :view)
     refute_predicate built, :loaded?
     sql = built.to_sql
     assert_includes sql, "WITH RECURSIVE"
     assert_includes sql, "parent_recording_id"
+    assert_includes sql, RecordingStudioAccessible::AuthorizedRecordingIds::PARENT_CHAIN_FUNCTION
+    refute_includes sql, "chain_covered"
     refute_includes sql, @page.id
     refute_includes sql, @inherited_folder.id
 
@@ -181,6 +222,12 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
   end
 
   private
+
+  def scenario(name)
+    found = @scenarios.find { |recording| @names[recording.id] == name }
+    assert found, name
+    found
+  end
 
   def actors
     [ nil, @member, @admin, @holder, @stranger, @workspace ]

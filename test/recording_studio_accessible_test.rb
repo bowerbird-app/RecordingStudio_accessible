@@ -4,18 +4,18 @@ require "test_helper"
 
 class RecordingStudioAccessibleTest < Minitest::Test
   def test_version_matches_the_current_release
-    assert_equal "0.45.1", RecordingStudioAccessible::VERSION
+    assert_equal "0.46.0", RecordingStudioAccessible::VERSION
   end
 
-  def test_recording_studio_version_is_at_least_7_0
-    assert_operator Gem::Version.new(RecordingStudio::VERSION), :>=, Gem::Version.new("7.0.0")
+  def test_recording_studio_version_is_at_least_7_4
+    assert_operator Gem::Version.new(RecordingStudio::VERSION), :>=, Gem::Version.new("7.4.0")
     assert_operator Gem::Version.new(RecordingStudio::VERSION), :<, Gem::Version.new("8.0.0")
-    assert_operator Gem.loaded_specs.fetch("recording_studio").version, :>=, Gem::Version.new("7.0.0")
+    assert_operator Gem.loaded_specs.fetch("recording_studio").version, :>=, Gem::Version.new("7.4.0")
     assert_operator Gem::Version.new(RecordingStudioTrashable::VERSION), :>=, Gem::Version.new("0.17.0")
     assert_operator Gem::Version.new(RecordingStudioTrashable::VERSION), :<, Gem::Version.new("2.0.0")
 
     gemspec = File.read(File.expand_path("../recording_studio_accessible.gemspec", __dir__))
-    assert_includes gemspec, '"recording_studio", ">= 7.0", "< 8.0"'
+    assert_includes gemspec, '"recording_studio", ">= 7.4.0", "< 8.0"'
     assert_includes gemspec, '"recording_studio_trashable", ">= 0.17.0", "< 2.0"'
   end
 

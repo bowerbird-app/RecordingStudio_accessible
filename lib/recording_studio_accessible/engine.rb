@@ -28,6 +28,8 @@ module RecordingStudioAccessible
       RecordingStudioAccessible::Compatibility.ensure_recordable_types_registered!
       RecordingStudioAccessible::Compatibility.ensure_creation_guards!
       RecordingStudioAccessible.install_action_audience_policies!
+      require "recording_studio_accessible/parent_chain_ids_function"
+      RecordingStudioAccessible::ParentChainIdsFunction.install!
     end
 
     initializer "recording_studio_accessible.register_shipped_english",
