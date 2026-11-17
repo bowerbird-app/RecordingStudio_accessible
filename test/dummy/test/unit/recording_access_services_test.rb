@@ -230,7 +230,7 @@ module RecordingStudioAccessible
 
       def test_update_access_revises_valid_access_recording
         recording = Recording.new(id: 1)
-        access_recording = valid_access_recording(recording)
+        access_recording = access_recording_with_role(recording, "view")
         service = UpdateRecordingAccess.new(recording: recording, access_recording: access_recording, role: :admin,
                                             manager_actor: :manager)
 
@@ -264,7 +264,7 @@ module RecordingStudioAccessible
 
       def test_revoke_access_returns_last_admin_error_without_unexpected_copy
         recording = Recording.new(id: 1)
-        access_recording = valid_access_recording(recording)
+        access_recording = access_recording_with_role(recording, "admin")
         service = RevokeRecordingAccess.new(recording: recording, access_recording: access_recording,
                                             manager_actor: :manager)
 
@@ -285,7 +285,7 @@ module RecordingStudioAccessible
 
       def test_revoke_access_destroys_valid_access_recording
         recording = Recording.new(id: 1)
-        access_recording = valid_access_recording(recording)
+        access_recording = access_recording_with_role(recording, "view")
         service = RevokeRecordingAccess.new(recording: recording, access_recording: access_recording,
                                             manager_actor: :manager)
 

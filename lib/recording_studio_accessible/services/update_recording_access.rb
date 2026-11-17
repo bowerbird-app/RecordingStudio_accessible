@@ -106,17 +106,6 @@ module RecordingStudioAccessible
       def role_within_manager?
         RoleCeiling.allowed?(recording: @recording, manager: manager_actor, role: @role)
       end
-
-      def existing_grant_within_manager?
-        RoleCeiling.allowed?(recording: @recording, manager: manager_actor, role: existing_grant_role)
-      end
-
-      def existing_grant_role
-        recordable = @access_recording.recordable if @access_recording.respond_to?(:recordable)
-        return unless recordable.respond_to?(:role)
-
-        recordable.role
-      end
     end
   end
 end

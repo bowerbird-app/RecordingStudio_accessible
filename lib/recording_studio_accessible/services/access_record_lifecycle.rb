@@ -119,6 +119,14 @@ module RecordingStudioAccessible
       def access_management_allowed?(recording)
         RecordingStudioAccessible::Compatibility.access_management_allowed?(recording)
       end
+
+      def existing_grant_within_manager?
+        RoleCeiling.allowed?(
+          recording: @recording,
+          manager: manager_actor,
+          role: @access_recording.recordable.role
+        )
+      end
     end
   end
 end
