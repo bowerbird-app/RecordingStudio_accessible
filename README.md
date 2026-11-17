@@ -444,6 +444,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.54.0
+
+No Accessible migration. `role_for`, `authorized?`, and `authorized_recordings` are unchanged.
+
+On a saved recording, `role_for` loads ancestors with `Recording#ancestors`: the recording, then the nearest parent, up to the top. A trashed ancestor stays on the path. A new recording with no id still walks `parent_recording` in memory.
+
 #### Upgrading to 0.53.0
 
 No Accessible migration. `role_for`, `authorized?`, and `authorized_recordings` are unchanged.
@@ -1753,7 +1759,7 @@ RecordingStudioAccessible.access_grants_for(actor: user, role: :edit)
 
 `access_grants_for(actor:, role: nil)` returns an unloaded relation of that actor's kept Access recordings on every root. The actor type is `ActorType.for`. Pass `role:` to keep grants at that rank or higher (`view`, then `edit`, then `admin`). A nil actor, or a role other than those three, returns `Recording.none`. A trashed grant is left out. Chain `where`, `order`, and `limit` on the relation.
 
-`actors_with_access` walks the same path as `role_for`: the recording, its ancestors, and `root_recording_or_self`. It reads kept grants on that set in one query, drops a dependent grant that is not effective, and keeps the strongest role per actor. Actors are loaded per polymorphic type. A grant whose actor record is gone is skipped. Invitations and audience gates are not access grants, so they are not listed. There is no everyone row.
+`actors_with_access` walks the same path as `role_for`: the recording, its ancestors, and `root_recording_or_self`. On a saved recording that ancestor list is `Recording#ancestors`, with the recording first and the nearest parent next, up to the top. A trashed ancestor stays on the path. A new recording with no id still walks `parent_recording` in memory. The lookup reads kept grants on that set in one query, drops a dependent grant that is not effective, and keeps the strongest role per actor. Actors are loaded per polymorphic type. A grant whose actor record is gone is skipped. Invitations and audience gates are not access grants, so they are not listed. There is no everyone row.
 
 ### Root ids for one actor
 
