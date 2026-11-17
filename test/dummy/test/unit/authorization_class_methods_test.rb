@@ -35,15 +35,7 @@ class AuthorizationClassMethodsTest < Minitest::Test
 
   def test_role_for_returns_nil_without_actor
     assert_nil Subject.role_for(actor: nil, recording: :recording)
-    assert_nil Subject.role_for(actor: nil, recording: :recording, include_trashed: true)
     assert_empty Subject.calls
-  end
-
-  def test_role_for_forwards_include_trashed_only_when_opted_in
-    Subject.call_value = :view
-
-    assert_equal :view, Subject.role_for(actor: :actor, recording: :recording, include_trashed: true)
-    assert_equal [{ actor: :actor, recording: :recording, include_trashed: true }], Subject.calls
   end
 
   def test_role_for_delegates_to_service_call
@@ -51,6 +43,16 @@ class AuthorizationClassMethodsTest < Minitest::Test
 
     assert_equal :admin, Subject.role_for(actor: :actor, recording: :recording)
     assert_equal [{ actor: :actor, recording: :recording }], Subject.calls
+  end
+
+  def test_role_for_builds_call_arguments_in_one_helper
+    from_authorization = RecordingStudioAccessible::Authorization.singleton_class
+                                                                 .instance_method(:role_call_arguments)
+    from_class_methods = RecordingStudioAccessible::AuthorizationClassMethods.instance_method(:role_call_arguments)
+
+    assert_equal from_class_methods.owner, from_authorization.owner
+    assert_equal({ actor: :actor, recording: :recording },
+                 from_class_methods.bind_call(Object.new, actor: :actor, recording: :recording))
   end
 
   def test_allowed_fails_closed_for_missing_inputs_and_invalid_roles
