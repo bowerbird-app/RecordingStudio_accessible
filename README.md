@@ -444,6 +444,14 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.53.0
+
+No Accessible migration. `role_for`, `authorized?`, and `authorized_recordings` are unchanged.
+
+Revoke and role changes use the same role ceiling as grants. A manager cannot revoke a grant, or change its role, when that grant's current role is above the manager's ceiling. The failure is `errors.role_exceeds_manager`, the same copy a grant above the ceiling already returns.
+
+`config.access_actor_types = :all` is no longer an opt-in. List the actor type names, for example `["User", "Workspace"]`. API lookup constantizes only a name from that list. The symbol `:all` is stored as the type name `"all"`.
+
 #### Upgrading to 0.52.0
 
 No Accessible migration.
@@ -941,9 +949,10 @@ Version 0.5.0 changes new-grant handling and effective-role resolution.
   end
   ```
 
-  A blank or `nil` value now rejects every new grant. Use `:all` only when the
-  application intentionally supports arbitrary persisted actor types. Existing
-  grants remain readable, effective, revocable, and updatable.
+  A blank or `nil` value now rejects every new grant. 0.5.0 accepted the exact
+  symbol `:all` for arbitrary persisted actor types. 0.53.0 removes that
+  opt-in; list actor type names. Existing grants remain readable, effective,
+  revocable, and updatable.
 
 2. Review authorization flows that assumed a weaker direct grant on a child
   recording restricted access inherited from an ancestor. Effective access now
@@ -1357,18 +1366,8 @@ end
 Strings and classes are supported; classes are normalized to their base
 polymorphic type, so STI subclasses match their stored base type. Blank lists
 and `nil` reject every new grant. Grant subjects must be persisted records.
-
-Hosts that intentionally support arbitrary persisted polymorphic subjects may
-opt in with the exact symbol `:all`:
-
-```ruby
-RecordingStudioAccessible.configure do |config|
-  config.access_actor_types = :all
-end
-```
-
-This is security-sensitive: `"all"`, `"*"`, and other values do not enable it.
-Prefer an explicit allowlist whenever the valid subject classes are known.
+`:all`, `"all"`, and `"*"` are ordinary values, not an allow-every-type
+setting. A host lists each actor type name.
 
 Manage access, and API grants that pass `actor_id`, also need
 `access_management_actor_scope`. That lookup is the list of people the screen
@@ -1389,9 +1388,9 @@ This setting only admits *new* grants. Existing access records remain readable,
 revocable, and effective for `role_for` and `authorized?` after the allowlist
 is changed or removed.
 
-The mounted actor access-point page also depends on a finite allowlist. It
-fails closed for blank configuration and for `:all`; `:all` never broadens
-request-driven type lookup, so request params cannot probe arbitrary application
+The mounted actor access-point page and API actor lookup use that same list.
+A blank list fails closed. Lookup constantizes a request type only when the
+name is in the list, so request params cannot probe arbitrary application
 constants.
 
 For example, a host app may grant access to a workspace:
@@ -1527,8 +1526,10 @@ are limited to the types returned by `access_management_actor_scope`
 (`grantable_actors_for`). Do not mix `email` with `actor_id`.
 `update_access` and `revoke_access` change or remove a direct grant for that
 actor on this recording. They refuse inherited grants; change the source
-recording instead. They also refuse a write that would remove the last
-effective admin (HTTP 422). Revoke uses
+recording instead. They also refuse when the grant's current role is above the
+manager's ceiling. That failure is `errors.role_exceeds_manager`, the same copy
+a grant above the ceiling already returns. They also refuse a write that would
+remove the last effective admin (HTTP 422). Revoke uses
 `recording_studio.accessible.errors.last_admin`. A last-admin role change uses
 `errors.last_admin_role_change`.
 

@@ -246,29 +246,20 @@ class ConfigurationTest < Minitest::Test
     assert @configuration.allowed_access_actor_type?(user)
   end
 
-  def test_all_access_actor_types_is_an_explicit_opt_in
+  def test_all_does_not_allow_every_actor_type
     user = actor_named("User", id: 1)
 
-    @configuration.access_actor_types = :all
-
-    assert_equal :all, @configuration.access_actor_types
-    assert @configuration.all_access_actor_types_allowed?
-    assert @configuration.allowed_access_actor_type?(user)
-  end
-
-  def test_all_like_strings_do_not_allow_every_actor_type
-    user = actor_named("User", id: 1)
-
-    ["all", "*", true].each do |types|
+    [:all, "all", "*", true].each do |types|
       @configuration.access_actor_types = types
 
-      refute @configuration.all_access_actor_types_allowed?
+      refute_equal :all, @configuration.access_actor_types
+      refute_respond_to @configuration, :all_access_actor_types_allowed?
       refute @configuration.allowed_access_actor_type?(user)
     end
   end
 
   def test_nil_and_unpersisted_actors_are_rejected
-    @configuration.access_actor_types = :all
+    @configuration.access_actor_types = ["User"]
     unpersisted_actor = actor_named("User", id: 1)
     unpersisted_actor.define_singleton_method(:persisted?) { false }
 

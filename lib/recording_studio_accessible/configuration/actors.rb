@@ -20,20 +20,11 @@ module RecordingStudioAccessible
       end
 
       def access_actor_types=(types)
-        @access_actor_types = if types == :all
-                                :all
-                              else
-                                Array(types).filter_map { |type| normalize_access_actor_type(type) }.presence
-                              end
-      end
-
-      def all_access_actor_types_allowed?
-        access_actor_types == :all
+        @access_actor_types = Array(types).filter_map { |type| normalize_access_actor_type(type) }.presence
       end
 
       def allowed_access_actor_type?(actor)
         return false unless valid_access_actor?(actor)
-        return true if all_access_actor_types_allowed?
         return false if access_actor_types.blank?
 
         access_actor_types.include?(RecordingStudioAccessible::ActorType.for(actor))

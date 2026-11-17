@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.53.0] - 2026-11-17
+
+### Changed
+- Revoke and role changes refuse when the grant's current role is above the manager's ceiling. The check is `RoleCeiling.allowed?`, the same check grants use. The failure is `errors.role_exceeds_manager` ("You can only grant a role you already hold.").
+- `access_actor_types` no longer accepts `:all`. Hosts list actor type names. `Configuration#all_access_actor_types_allowed?` is gone. API actor lookup constantizes and finds a record only for a type name in that list.
+
+### Upgrade notes
+- No Accessible migration. `role_for`, `authorized?`, and `authorized_recordings` are unchanged.
+- A permissive `access_management_authorizer` can still let an editor manage access. That editor cannot revoke a grant, or change its role, when the grant's current role is above the editor's ceiling.
+- Replace `config.access_actor_types = :all` with the actor type names that may receive grants, for example `["User", "Workspace"]`. The symbol `:all` is stored as the type name `"all"` and does not admit every class.
+
 ## [0.52.0] - 2026-11-17
 
 ### Changed

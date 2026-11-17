@@ -230,6 +230,59 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     RecordingStudioAccessible.configuration.access_management_authorizer = previous
   end
 
+  test "role ceiling blocks revoking or changing a grant above the manager role" do
+    previous = RecordingStudioAccessible.configuration.access_management_authorizer
+    RecordingStudioAccessible.configuration.access_management_authorizer = ->(**) { true }
+
+    error = assert_raises(invalid_input_error_class) do
+      RecordingStudioAccessible::Api::RevokeAccess.call(
+        actor_context(@editor, @root, actor_id: @admin.id.to_s, actor_type: "User")
+      )
+    end
+    assert_equal "You can only grant a role you already hold.", error.message
+    assert_equal :admin, RecordingStudioAccessible.role_for(actor: @admin, recording: @root)
+    assert RecordingStudioAccessible.authorized?(actor: @admin, recording: @root, role: :admin)
+
+    error = assert_raises(invalid_input_error_class) do
+      RecordingStudioAccessible::Api::UpdateAccess.call(
+        actor_context(@editor, @root, actor_id: @admin.id.to_s, actor_type: "User", role: "edit")
+      )
+    end
+    assert_equal "You can only grant a role you already hold.", error.message
+    assert_equal :admin, RecordingStudioAccessible.role_for(actor: @admin, recording: @root)
+
+    updated = RecordingStudioAccessible::Api::UpdateAccess.call(
+      admin_context(@root, actor_id: @editor.id.to_s, actor_type: "User", role: "view")
+    )
+    assert_equal "view", updated.fetch(:role)
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: @editor, recording: @root)
+  ensure
+    RecordingStudioAccessible.configuration.access_management_authorizer = previous
+  end
+
+  test "symbol all does not constantize an actor type" do
+    previous = RecordingStudioAccessible.configuration.access_actor_types
+    RecordingStudioAccessible.configuration.access_actor_types = :all
+
+    error = assert_raises(invalid_input_error_class) do
+      RecordingStudioAccessible::Api::GrantAccess.call(
+        admin_context(@root, actor_id: @viewer.id.to_s, actor_type: "User", role: "view")
+      )
+    end
+    assert_equal "Actor type is not allowed for access", error.message
+
+    error = assert_raises(invalid_input_error_class) do
+      RecordingStudioAccessible::Api::RevokeAccess.call(
+        admin_context(@root, actor_id: @editor.id.to_s, actor_type: "Kernel")
+      )
+    end
+    assert_equal "Actor type is not allowed for access", error.message
+    assert_equal :edit, RecordingStudioAccessible.role_for(actor: @editor, recording: @root)
+    refute RecordingStudioAccessible.authorized?(actor: @viewer, recording: @root, role: :view)
+  ensure
+    RecordingStudioAccessible.configuration.access_actor_types = previous
+  end
+
   test "update_access cannot self-escalate past the manager role" do
     previous = RecordingStudioAccessible.configuration.access_management_authorizer
     RecordingStudioAccessible.configuration.access_management_authorizer = ->(**) { true }

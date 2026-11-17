@@ -28,6 +28,7 @@ module RecordingStudioAccessible
         return authorization_result unless authorization_result == true
         return failure(copy("errors.access_recording_invalid")) unless revocable_access_recording?(recording: @recording,
                                                                                                    access_recording: @access_recording)
+        return failure(copy("errors.role_exceeds_manager")) unless existing_grant_within_manager?
 
         ensure_current_impersonator_accessor!
 
@@ -61,6 +62,17 @@ module RecordingStudioAccessible
 
       def manager_actor
         @manager_actor ||= effective_manager_actor(manager_actor: @manager_actor, controller: @controller)
+      end
+
+      def existing_grant_within_manager?
+        RoleCeiling.allowed?(recording: @recording, manager: manager_actor, role: existing_grant_role)
+      end
+
+      def existing_grant_role
+        recordable = @access_recording.recordable if @access_recording.respond_to?(:recordable)
+        return unless recordable.respond_to?(:role)
+
+        recordable.role
       end
     end
   end

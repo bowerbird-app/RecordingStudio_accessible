@@ -122,17 +122,19 @@ class ActorAccessPointsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "all actor types configuration does not broaden actor access point lookup" do
+  test "symbol all does not broaden actor access point lookup" do
     RecordingStudioAccessible.configuration.access_actor_types = :all
     sign_in @admin
 
-    get actor_access_points_path, params: {
-      actor_type: "Kernel",
-      actor_id: @actor.id
-    }
+    %w[User Kernel].each do |actor_type|
+      get actor_access_points_path, params: {
+        actor_type: actor_type,
+        actor_id: @actor.id
+      }
 
-    assert_response :not_found
-    refute_includes @response.body, @actor.email
+      assert_response :not_found
+      refute_includes @response.body, @actor.email
+    end
   end
 
   test "actor access point lookup does not reveal actors without workspace access" do
