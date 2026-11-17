@@ -35,7 +35,15 @@ class AuthorizationClassMethodsTest < Minitest::Test
 
   def test_role_for_returns_nil_without_actor
     assert_nil Subject.role_for(actor: nil, recording: :recording)
+    assert_nil Subject.role_for(actor: nil, recording: :recording, include_trashed: true)
     assert_empty Subject.calls
+  end
+
+  def test_role_for_forwards_include_trashed_only_when_opted_in
+    Subject.call_value = :view
+
+    assert_equal :view, Subject.role_for(actor: :actor, recording: :recording, include_trashed: true)
+    assert_equal [{ actor: :actor, recording: :recording, include_trashed: true }], Subject.calls
   end
 
   def test_role_for_delegates_to_service_call

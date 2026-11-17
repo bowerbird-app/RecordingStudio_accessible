@@ -9,10 +9,10 @@ require_relative "effective_root_ids"
 
 module RecordingStudioAccessible
   module AuthorizationClassMethods
-    def role_for(actor:, recording:)
+    def role_for(actor:, recording:, include_trashed: false)
       return nil unless actor
 
-      call(actor: actor, recording: recording).value
+      call(**role_call_arguments(actor: actor, recording: recording, include_trashed: include_trashed)).value
     end
 
     def allowed?(actor:, recording:, role:)
@@ -77,6 +77,14 @@ module RecordingStudioAccessible
     end
 
     private
+
+    # Default calls stay `actor` and `recording` only. `include_trashed` is
+    # forwarded only when a restore or trash screen opts in.
+    def role_call_arguments(actor:, recording:, include_trashed:)
+      arguments = { actor: actor, recording: recording }
+      arguments[:include_trashed] = true if include_trashed
+      arguments
+    end
 
     def root_recordings_relation_for(actor:, minimum_role:)
       root_access_recordings = root_access_recordings_for(actor: actor, minimum_role: minimum_role)
