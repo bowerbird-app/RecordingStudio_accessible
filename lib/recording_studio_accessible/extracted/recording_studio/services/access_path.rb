@@ -23,16 +23,18 @@ module RecordingStudio
       private
 
       # ancestors is root-first. path_recordings stays this recording, then the
-      # nearest parent, up to the top. A new recording has no id, so it is not
-      # in that walk; follow parent_recording in memory, as before.
+      # nearest parent, up to the top. A recording that is not persisted, or a
+      # walk that hits a cycle or the depth cap, follows parent_recording.
       def ancestor_path
         return in_memory_path unless saved_with_ancestors?
 
         [recording, *recording.ancestors.reverse]
+      rescue RecordingStudio::TreeWalkError
+        in_memory_path
       end
 
       def saved_with_ancestors?
-        recording&.id.present? && recording.respond_to?(:ancestors)
+        recording.respond_to?(:ancestors) && recording.persisted?
       end
 
       def in_memory_path
