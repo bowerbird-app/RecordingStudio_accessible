@@ -4,27 +4,31 @@ module RecordingStudioAccessible
   # Ids authorized? would allow under one recording.
   #
   # A kept grant on a real root, at the requested role, with a valid manager
-  # chain, uses Recording.within (for_root) when the stored root matches the
-  # parent chain. Every other case seeds from the actor's kept grants. The
-  # seed query uses the same role rank, kept check, and manager chain as the
-  # statement below, then walks parents only. A grant node whose parents
-  # reach the requested recording is a seed. A grant on an ancestor seeds the
-  # requested recording. Each seed walks its children through
-  # parent_recording_id, including the seed. That walk quotes the seed ids.
+  # chain, uses Recording.within (for_root). That reads root_recording_id.
+  # Recording Studio enforces that column. This query does not check it again.
   #
-  # The child walk misses a recording allowed only because it stores a root
-  # off the parent chain. Two index probes look for those rows. A hit uses
-  # the statement below, unchanged. Audience rules are not read. Trashed
-  # recordings stay in the set when authorized? would allow them. Trashed
-  # grants and dependent grants that fail DependentAccess.effective? stay
-  # out. The manager walk matches EffectiveRootIds.
+  # Every other case seeds from the actor's kept grants. The seed query uses
+  # the same role rank, kept check, and manager chain as authorized?, then
+  # walks parents only. A grant node whose parents reach the requested
+  # recording is a seed. A grant on an ancestor seeds the requested recording.
+  # Each seed walks its children through parent_recording_id, including the
+  # seed. The walk stops when a parent repeats. It does not read
+  # root_recording_id and it does not stop at a depth cap.
   #
   # recordings_relation is that same set as rows the caller can order and
-  # limit. A root grant still uses Recording.within. A child grant keeps its
-  # seeds in SQL. A short subtree is a semi-join against the seeded walk. A
-  # long one filters the root creation index with a parent check, so a small
-  # limit can stop. The outside-root probe and the stored-root mismatch check
-  # are unchanged.
+  # limit. A root grant still uses Recording.within. A nested anchor is not a
+  # root: its children store the workspace id. A subtree the probe has already
+  # counted, at most 2,000 ids, is one array predicate. A longer subtree,
+  # with or without recordable_type, filters root_recording_id to that
+  # workspace. Each row checks ancestry against the seeds. Order by
+  # created_at, id and the caller limit stops on
+  # (root_recording_id, created_at, id). A type uses
+  # (root_recording_id, recordable_type, created_at, id). The filter is one
+  # row per recording.
+  # Audience rules are not read. Trashed recordings stay in the set when
+  # authorized? would allow them. Trashed grants and dependent grants that
+  # fail DependentAccess.effective? stay out. The manager walk matches
+  # EffectiveRootIds.
   class AuthorizedRecordingIds
     # At or below this many recordings the seeded walk is a short nested loop.
     # Above it, the creation index reaches a limited page without walking the
@@ -52,9 +56,6 @@ module RecordingStudioAccessible
     def relation
       return within_ids if root_grant_fast_path?
 
-      prepare_partial_grants
-      return legacy_relation if partial_probe_hit?
-
       seeded_relation
     end
 
@@ -62,13 +63,14 @@ module RecordingStudioAccessible
       scoped = typed_scope(scope)
       return scoped.within(@root) if root_grant_fast_path?
 
-      prepare_partial_grants
-      return scoped.where(id: legacy_relation) if partial_probe_hit?
-      return scoped.none if @seed_ids.empty?
-
-      return keyset_ancestry_relation(scoped) if broad_keyset_page?
-
-      seeded_semijoin_relation(scoped)
+      case subtree_shape
+      when :empty
+        scoped.none
+      when :ids
+        bound_id_relation(scoped, @bounded_ids)
+      else
+        keyset_ancestry_relation(scoped)
+      end
     end
 
     private
@@ -79,43 +81,59 @@ module RecordingStudioAccessible
       scope.where(recordable_type: @recordable_type)
     end
 
-    # The creation index is (root, type, created_at, id). A parent check on
-    # that scan stops at the caller's limit when most rows match. The mismatch
-    # check stays the existing query: a stored root that disagrees with the
-    # parent chain cannot use the root filter.
-    def broad_keyset_page?
-      return false unless subtree_exceeds?(BROAD_SUBTREE_ROWS)
-      return false if stored_root_mismatch?
+    # :ids is a finished subtree of at most BROAD_SUBTREE_ROWS. :broad crossed
+    # that line. :deep ran out of probe levels before the subtree ended.
+    def subtree_shape
+      return @subtree_shape if defined?(@subtree_shape)
 
-      true
+      seen = {}
+      frontier = loaded_seed_ids
+      frontier.each { |id| seen[id] = true }
+      @subtree_shape = classify_subtree(seen, frontier)
     end
 
-    def subtree_exceeds?(limit)
-      seen = @seed_ids.size
-      return true if seen > limit
+    def classify_subtree(seen, frontier)
+      return :empty if seen.empty?
+      return :broad if seen.size > BROAD_SUBTREE_ROWS
 
-      frontier = nil
+      probe_subtree(seen, frontier)
+    end
+
+    def probe_subtree(seen, frontier)
       PROBE_DEPTH.times do
-        batch = descendant_batch(frontier, limit - seen + 1)
-        return false if batch.empty?
+        frontier = unseen_descendants(seen, frontier)
+        return :broad if seen.size > BROAD_SUBTREE_ROWS
+        next unless frontier.empty?
 
-        seen += batch.size
-        return true if seen > limit
-
-        frontier = batch
+        @bounded_ids = seen.keys
+        return :ids
       end
-      false
+      :deep
+    end
+
+    def unseen_descendants(seen, frontier)
+      fresh = []
+      descendant_batch(frontier, BROAD_SUBTREE_ROWS - seen.size + 1).each do |id|
+        next if seen[id]
+
+        seen[id] = true
+        fresh << id
+      end
+      fresh
+    end
+
+    def bound_id_relation(scope, ids)
+      scope.where("#{recordings}.id = ANY(?::#{id_sql_type}[])", "{#{ids.join(',')}}")
+    end
+
+    def loaded_seed_ids
+      connection.select_values("SELECT id FROM (#{seed_ids_sql}) seed_rows").uniq
     end
 
     def descendant_batch(frontier, limit)
-      parents = if frontier.nil?
-                  seed_ids_sql
-                else
-                  "SELECT id FROM #{recordings} WHERE id IN (#{quoted_id_list(frontier)})"
-                end
       connection.select_values(<<~SQL.squish)
         SELECT child.id
-        FROM (#{parents}) parents
+        FROM (SELECT id FROM #{recordings} WHERE id IN (#{quoted_id_list(frontier)})) parents
         JOIN LATERAL (
           SELECT id
           FROM #{recordings}
@@ -126,9 +144,11 @@ module RecordingStudioAccessible
       SQL
     end
 
+    # Workspace rows, newest first once the caller orders by created_at, id.
+    # The per-row ancestry check keeps a sibling of the anchor out.
     def keyset_ancestry_relation(scope)
       scope.with(seed_ids: Arel.sql(seed_ids_sql))
-           .where(root_recording_id: @root.id)
+           .where(root_recording_id: @root.root_recording_id)
            .where(ancestry_exists_sql)
     end
 
@@ -148,42 +168,6 @@ module RecordingStudioAccessible
           SELECT 1 FROM ancestry
           INNER JOIN seed_ids ON seed_ids.id = ancestry.id
         )
-      SQL
-    end
-
-    # The walk carries the recording row. A second primary-key fetch of every
-    # estimated child makes the planner cost the page as a huge nested loop and
-    # compile it. OFFSET 0 keeps each child lookup a nested loop.
-    def seeded_semijoin_relation(scope)
-      scope.from(Arel.sql("(#{covered_from_seeds_sql}) #{recordings}"))
-    end
-
-    # Seeds are the same rows partial_seed_sql labels 'seed'. The walk joins
-    # them. It does not paste their ids.
-    def covered_from_seeds_sql
-      table = recordings
-      names = recording_column_names
-      <<~SQL.squish
-        WITH RECURSIVE seed_ids AS (
-          SELECT id FROM (#{seed_ids_sql}) seed_rows
-        ), covered (#{names}, path) AS (
-          SELECT #{recording_column_list('rec')}, #{id_array('rec.id')}
-          FROM seed_ids
-          JOIN LATERAL (
-            SELECT * FROM #{table} WHERE #{table}.id = seed_ids.id OFFSET 0
-          ) rec ON TRUE
-          UNION ALL
-          SELECT #{recording_column_list('child')}, covered.path || child.id
-          FROM covered
-          JOIN LATERAL (
-            SELECT * FROM #{table}
-            WHERE #{table}.parent_recording_id = covered.id
-            OFFSET 0
-          ) child ON TRUE
-          WHERE NOT (child.id = ANY(covered.path))
-        )
-        SELECT #{recording_column_list('covered')}
-        FROM covered
       SQL
     end
 
@@ -270,22 +254,8 @@ module RecordingStudioAccessible
       SQL
     end
 
-    def statement
-      "WITH RECURSIVE #{cte_list.join(', ')} #{final_select}"
-    end
-
-    def legacy_relation
-      id_relation(statement)
-    end
-
     def seeded_relation
-      return empty_id_relation if @seed_ids.empty?
-
       id_relation(seeded_statement)
-    end
-
-    def empty_id_relation
-      id_relation("SELECT NULL::#{id_sql_type} AS id WHERE FALSE")
     end
 
     def id_relation(body)
@@ -296,43 +266,10 @@ module RecordingStudioAccessible
                                 .distinct
     end
 
-    def prepare_partial_grants
-      @seed_ids = []
-      @outside_ids = []
-      connection.select_rows(partial_seed_sql).each do |kind, id|
-        bucket = kind == "seed" ? @seed_ids : @outside_ids
-        bucket << id.to_s.downcase
-      end
-      @seed_ids.uniq!
-      @outside_ids.uniq!
-    end
-
-    def partial_probe_hit?
-      clause = partial_probe_clause
-      return false if clause.nil?
-
-      connection.select_value("SELECT #{clause}") == true
-    end
-
-    def partial_probe_clause
-      parts = []
-      parts << seed_root_probe_sql if child_seed_ids.any?
-      parts << outside_root_probe_sql if @outside_ids.any?
-      return if parts.empty?
-
-      parts.join(" OR ")
-    end
-
-    def child_seed_ids
-      requested = @root.id.to_s.downcase
-      @seed_ids.reject { |id| id == requested }
-    end
-
-    # within equals the parent walk only for a real root whose stored root
-    # matches the parent chain. A child grant, a weaker role, a nested
-    # recording, or a mismatch keeps the walk above.
+    # within equals the parent walk for a real root. A child grant, a weaker
+    # role, or a nested recording keeps the walk above.
     def root_grant_fast_path?
-      stored_root? && root_grant? && !stored_root_mismatch?
+      stored_root? && root_grant?
     end
 
     def within_ids
@@ -349,139 +286,12 @@ module RecordingStudioAccessible
       RecordingStudioAccessible.authorized?(actor: @actor, recording: @root, role: @role)
     end
 
-    def stored_root_mismatch?
-      connection.select_value("SELECT #{stored_root_mismatch_sql}") == true
-    end
-
-    def stored_root_mismatch_sql
-      <<~SQL.squish
-        EXISTS (
-          SELECT 1
-          FROM #{recordings} child
-          INNER JOIN #{recordings} parent ON parent.id = child.parent_recording_id
-          WHERE (parent.id = #{root_sql} OR parent.root_recording_id = #{root_sql})
-            AND child.root_recording_id IS DISTINCT FROM #{root_sql}
-        ) OR EXISTS (
-          SELECT 1
-          FROM #{recordings} child
-          LEFT JOIN #{recordings} parent ON parent.id = child.parent_recording_id
-          WHERE child.root_recording_id = #{root_sql}
-            AND child.id <> #{root_sql}
-            AND (
-              child.parent_recording_id IS NULL
-              OR parent.id IS NULL
-              OR (
-                parent.id <> #{root_sql}
-                AND parent.root_recording_id IS DISTINCT FROM #{root_sql}
-              )
-            )
-        )
-      SQL
-    end
-
-    def cte_list
-      parts = [lookup_cte, tree_cte, relevant_parents_cte, candidates_cte]
-      parts << grant_walk_cte if dependent_column?
-      parts << effective_nodes_cte
-      parts.push(chain_seeds_cte, chain_covered_cte, root_covered_cte)
-    end
-
-    def lookup_cte
-      "lookup AS (#{lookup_sql})"
-    end
-
-    def tree_cte
-      "tree AS (#{tree_sql})"
-    end
-
-    def relevant_parents_cte
-      "relevant_parents AS (#{relevant_parents_sql})"
-    end
-
-    def candidates_cte
-      "candidates AS (#{candidates_sql})"
-    end
-
     def grant_walk_cte
       "grant_walk AS (#{grant_walk_sql})"
     end
 
     def effective_nodes_cte
       "effective_nodes AS (#{effective_nodes_sql})"
-    end
-
-    def chain_seeds_cte
-      "chain_seeds AS (#{chain_seeds_sql})"
-    end
-
-    def chain_covered_cte
-      "chain_covered AS (#{chain_covered_sql})"
-    end
-
-    def root_covered_cte
-      "root_covered AS (#{root_covered_sql})"
-    end
-
-    def lookup_sql
-      <<~SQL.squish
-        SELECT id, parent_recording_id, #{id_array('id')} AS seen
-        FROM #{recordings}
-        WHERE id = #{root_sql}
-        UNION ALL
-        SELECT parent.id, parent.parent_recording_id, lookup.seen || parent.id
-        FROM #{recordings} parent
-        INNER JOIN lookup ON lookup.parent_recording_id = parent.id
-        WHERE NOT (parent.id = ANY(lookup.seen))
-      SQL
-    end
-
-    def tree_sql
-      <<~SQL.squish
-        SELECT id, parent_recording_id, #{id_array('id')} AS seen
-        FROM #{recordings}
-        WHERE id = #{root_sql}
-        UNION ALL
-        SELECT child.id, child.parent_recording_id, tree.seen || child.id
-        FROM #{recordings} child
-        INNER JOIN tree ON child.parent_recording_id = tree.id
-        WHERE NOT (child.id = ANY(tree.seen))
-      SQL
-    end
-
-    def relevant_parents_sql
-      <<~SQL.squish
-        SELECT id FROM tree
-        UNION
-        SELECT id FROM lookup
-        UNION
-        SELECT COALESCE(node.root_recording_id, node.id)
-        FROM #{recordings} node
-        INNER JOIN tree ON tree.id = node.id
-      SQL
-    end
-
-    def candidates_sql
-      <<~SQL.squish
-        SELECT rec.id AS id,
-               rec.parent_recording_id AS parent_recording_id,
-               rec.root_recording_id AS root_recording_id,
-               #{depends_on_select}
-               acc.role AS role
-        FROM #{recordings} rec
-        INNER JOIN #{accesses} acc ON acc.id = rec.recordable_id
-        WHERE rec.recordable_type = #{access_type_sql}
-          AND #{RecordingStudio.kept_sql('rec')}
-          AND acc.actor_type = #{actor_type_sql}
-          AND acc.actor_id = #{actor_id_sql}
-          AND #{role_rank_sql('TRIM(acc.role)')} >= #{@minimum}
-          AND rec.parent_recording_id IN (SELECT id FROM relevant_parents)
-      SQL
-    end
-
-    def depends_on_select
-      return "" unless dependent_column?
-
-      "acc.depends_on_recording_id AS depends_on_recording_id,"
     end
 
     def grant_walk_sql
@@ -553,62 +363,14 @@ module RecordingStudioAccessible
       SQL
     end
 
-    def chain_seeds_sql
-      <<~SQL.squish
-        SELECT effective_nodes.node_id AS id
-        FROM effective_nodes
-        INNER JOIN tree ON tree.id = effective_nodes.node_id
-        UNION
-        SELECT #{root_sql} AS id
-        WHERE EXISTS (
-          SELECT 1
-          FROM effective_nodes
-          INNER JOIN lookup ON lookup.id = effective_nodes.node_id
-        )
-      SQL
-    end
-
-    def chain_covered_sql
-      <<~SQL.squish
-        SELECT chain_seeds.id AS id FROM chain_seeds
-        UNION
-        SELECT child.id
-        FROM tree child
-        INNER JOIN chain_covered ON child.parent_recording_id = chain_covered.id
-      SQL
-    end
-
-    def root_covered_sql
-      <<~SQL.squish
-        SELECT tree.id AS id
-        FROM tree
-        INNER JOIN #{recordings} node ON node.id = tree.id
-        INNER JOIN effective_nodes
-          ON effective_nodes.node_id = COALESCE(node.root_recording_id, node.id)
-      SQL
-    end
-
-    def final_select
-      <<~SQL.squish
-        SELECT covered.id
-        FROM (
-          SELECT chain_covered.id FROM chain_covered
-          UNION
-          SELECT root_covered.id FROM root_covered
-        ) covered
-        INNER JOIN #{recordings} chosen ON chosen.id = covered.id
-        #{type_filter_sql}
-      SQL
-    end
-
     def type_filter_sql
       return "" if @recordable_type.nil?
 
       "WHERE chosen.recordable_type = #{connection.quote(@recordable_type)}"
     end
 
-    # Same grant rows as candidates, without the tree filter. The parent
-    # ascent below decides which of them belong to this recording.
+    # Kept grants for this actor at this role. The parent ascent below decides
+    # which of them belong to this recording.
     def actor_grant_sql
       <<~SQL.squish
         SELECT rec.id AS id,
@@ -626,13 +388,10 @@ module RecordingStudioAccessible
       SQL
     end
 
-    def partial_seed_sql
-      parts = ["candidates AS (#{actor_grant_sql})"]
-      parts << grant_walk_cte if dependent_column?
-      parts << effective_nodes_cte
-      parts << "node_ascent AS (#{node_ascent_sql})"
-      parts << "request_ascent AS (#{request_ascent_sql})"
-      "WITH RECURSIVE #{parts.join(', ')} #{partial_seed_select_sql}"
+    def depends_on_select
+      return "" unless dependent_column?
+
+      "acc.depends_on_recording_id AS depends_on_recording_id,"
     end
 
     def node_ascent_sql
@@ -667,43 +426,11 @@ module RecordingStudioAccessible
       SQL
     end
 
-    def partial_seed_select_sql
-      <<~SQL.squish
-        SELECT 'seed' AS kind, node_ascent.origin_id AS id
-        FROM node_ascent
-        WHERE node_ascent.id = #{root_sql}
-        UNION
-        SELECT 'seed' AS kind, rec.id AS id
-        FROM #{recordings} rec
-        WHERE rec.id = #{root_sql}
-          AND EXISTS (
-            SELECT 1
-            FROM effective_nodes
-            INNER JOIN request_ascent ON request_ascent.id = effective_nodes.node_id
-          )
-        UNION
-        SELECT 'outside' AS kind, effective_nodes.node_id AS id
-        FROM effective_nodes
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM node_ascent
-            WHERE node_ascent.origin_id = effective_nodes.node_id
-              AND node_ascent.id = #{root_sql}
-          )
-          AND NOT EXISTS (
-            SELECT 1
-            FROM request_ascent
-            WHERE request_ascent.id = effective_nodes.node_id
-          )
-      SQL
-    end
-
     def seeded_statement
       <<~SQL.squish
         WITH RECURSIVE covered (id, path) AS (
           SELECT seed.id, #{id_array('seed.id')}
-          FROM #{recordings} seed
-          WHERE seed.id IN (#{quoted_id_list(@seed_ids)})
+          FROM (#{seed_ids_sql}) seed
           UNION ALL
           SELECT child.id, covered.path || child.id
           FROM covered
@@ -719,36 +446,6 @@ module RecordingStudioAccessible
         FROM covered
         INNER JOIN #{recordings} chosen ON chosen.id = covered.id
         #{type_filter_sql}
-      SQL
-    end
-
-    def seed_root_probe_sql
-      <<~SQL.squish
-        EXISTS (
-          SELECT 1
-          FROM #{recordings}
-          WHERE root_recording_id IN (#{quoted_id_list(child_seed_ids)})
-        )
-      SQL
-    end
-
-    def outside_root_probe_sql
-      <<~SQL.squish
-        EXISTS (
-          SELECT 1
-          FROM #{recordings} child
-          LEFT JOIN #{recordings} parent ON parent.id = child.parent_recording_id
-          WHERE child.root_recording_id IN (#{quoted_id_list(@outside_ids)})
-            AND child.id <> child.root_recording_id
-            AND (
-              child.parent_recording_id IS NULL
-              OR parent.id IS NULL
-              OR (
-                parent.id <> child.root_recording_id
-                AND parent.root_recording_id IS DISTINCT FROM child.root_recording_id
-              )
-            )
-        )
       SQL
     end
 
@@ -798,18 +495,6 @@ module RecordingStudioAccessible
 
     def recordings
       quote_table(RecordingStudio::Recording.table_name)
-    end
-
-    def recording_column_names
-      quoted_recording_columns.join(", ")
-    end
-
-    def recording_column_list(qualifier)
-      quoted_recording_columns.map { |name| "#{qualifier}.#{name}" }.join(", ")
-    end
-
-    def quoted_recording_columns
-      RecordingStudio::Recording.column_names.map { |name| connection.quote_column_name(name) }
     end
 
     def accesses

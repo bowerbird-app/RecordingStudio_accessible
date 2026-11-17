@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
+require "recording_studio/test_helpers"
 
 class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
+  include RecordingStudio::TestHelpers
   KIT = :"parity.recordings.kit_download"
 
   setup do
@@ -38,6 +40,7 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     build_nested_outside_tree
     _, @audience_root = owned("audience", "Recording ids audience")
     grant(@member, :view, @audience_root)
+    assert_root_invariant!
   end
 
   teardown do
@@ -143,17 +146,10 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
 
     source = scenario("off path source")
     source_ids = authorized_ids(@member, source, :view)
-    assert_includes relation(actor: @member, root: source, role: :view).to_sql, "WITH RECURSIVE"
-    source_within = RecordingStudio::Recording.within(source).pluck(:id)
-    refute_equal source_within.sort, source_ids.sort
-    assert_empty(source_ids - tree_for(source).map(&:id))
-    (source_within - source_ids).each do |id|
-      recording = RecordingStudio::Recording.unscoped.find(id)
-      next if tree_for(source).map(&:id).include?(id)
-
-      assert RecordingStudioAccessible.authorized?(actor: @member, recording: recording, role: :view)
-      refute_includes source_ids, id
-    end
+    source_sql = relation(actor: @member, root: source, role: :view).to_sql
+    assert_includes source_sql, "root_recording_id"
+    refute_includes source_sql, "WITH RECURSIVE"
+    assert_equal RecordingStudio::Recording.within(source).pluck(:id).sort, source_ids.sort
   end
 
   test "the relation stays unloaded and composes inside one where query" do
@@ -240,10 +236,9 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
 
     refute_predicate built, :loaded?
     assert_includes sql, "OFFSET 0"
-    assert_includes sql, @narrow_folder.id
+    refute_includes sql, @narrow_folder.id
     refute_includes sql, "relevant_parents"
     refute_includes sql, @broad_folder.id
-    refute_includes sql, @partial_root.id
     refute_includes sql, @narrow_page.id
     assert_equal 0, uncached_sql_count { built.to_sql }
 
@@ -273,10 +268,9 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     sql = relation(actor: @broad_actor, root: @partial_root, role: :view).to_sql
 
     assert_includes sql, "OFFSET 0"
-    assert_includes sql, @broad_folder.id
+    refute_includes sql, @broad_folder.id
     refute_includes sql, "relevant_parents"
     refute_includes sql, @narrow_folder.id
-    refute_includes sql, @partial_root.id
     refute_includes sql, @broad_grandchild.id
 
     ids = authorized_ids(@broad_actor, @partial_root, :view)
@@ -297,10 +291,9 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     sql = relation(actor: @multi_actor, root: @partial_root, role: :view).to_sql
 
     assert_includes sql, "OFFSET 0"
-    assert_includes sql, @narrow_folder.id
-    assert_includes sql, @broad_folder.id
+    refute_includes sql, @narrow_folder.id
+    refute_includes sql, @broad_folder.id
     refute_includes sql, "relevant_parents"
-    refute_includes sql, @partial_root.id
     refute_includes sql, @ungranted_folder.id
 
     ids = authorized_ids(@multi_actor, @partial_root, :view)
@@ -317,7 +310,7 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     sql = relation(actor: @chain_actor, root: @partial_root, role: :view).to_sql
 
     assert_includes sql, "OFFSET 0"
-    assert_includes sql, @chain_folder.id
+    refute_includes sql, @chain_folder.id
     refute_includes sql, "relevant_parents"
     refute_includes sql, @narrow_folder.id
 
@@ -332,46 +325,44 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     assert_empty blocked.pluck(:id)
   end
 
-  test "a grant on another root falls back when a child stores that root" do
+  test "a grant on another root does not include this root" do
     sql = relation(actor: @member, root: @stored_root_b, role: :view).to_sql
 
-    assert_includes sql, "relevant_parents"
-    assert_includes sql, "root_covered"
-    refute_includes sql, "OFFSET 0"
-
+    refute_includes sql, "root_covered"
     ids = authorized_ids(@member, @stored_root_b, :view)
-    assert_includes ids, @stored_under_b.id
-    assert_includes ids, @stored_under_b_child.id
+    assert_empty ids
+    refute_includes ids, @stored_under_b.id
     refute_includes ids, @plain_under_b.id
-    refute_includes ids, @stored_root_b.id
     assert_stored_root_parity(@member, @stored_root_b, ids)
+
+    source_ids = authorized_ids(@member, @stored_root_a, :view)
+    assert_equal RecordingStudio::Recording.within(@stored_root_a).pluck(:id).sort, source_ids.sort
   end
 
-  test "a sibling that stores the granted folder falls back to the full statement" do
+  test "a sibling of a granted folder stays out of that grant" do
     sql = relation(actor: @member, root: @sibling_store_root, role: :view).to_sql
 
-    assert_includes sql, "root_covered"
-    refute_includes sql, "OFFSET 0"
+    assert_includes sql, "OFFSET 0"
+    refute_includes sql, "root_covered"
 
     ids = authorized_ids(@member, @sibling_store_root, :view)
     assert_includes ids, @sibling_store_folder.id
     assert_includes ids, @sibling_store_page.id
-    assert_includes ids, @stored_sibling.id
-    assert_includes ids, @stored_sibling_child.id
+    refute_includes ids, @stored_sibling.id
+    refute_includes ids, @stored_sibling_child.id
     refute_includes ids, @sibling_store_root.id
     assert_stored_root_parity(@member, @sibling_store_root, ids)
   end
 
-  test "a nested request includes a child that stores an outside root" do
+  test "a nested request does not include a child of another root" do
     sql = relation(actor: @member, root: @nested_request, role: :view).to_sql
 
-    assert_includes sql, "root_covered"
-    refute_includes sql, "OFFSET 0"
+    refute_includes sql, "root_covered"
 
     ids = authorized_ids(@member, @nested_request, :view)
-    assert_includes ids, @nested_outside_child.id
+    assert_empty ids
+    refute_includes ids, @nested_outside_child.id
     refute_includes ids, @nested_plain_child.id
-    refute_includes ids, @nested_request.id
     recordings_under(@nested_request).each do |recording|
       allowed = RecordingStudioAccessible.authorized?(actor: @member, recording: recording, role: :view)
       assert_equal allowed, ids.include?(recording.id), recording.id
@@ -515,9 +506,7 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     folder = Folder.create!(workspace: workspace, name: "Off path folder", summary: "Folder", position: 1)
     folder_recording = create_child_recording(recordable: folder, parent_recording: root)
     add_page(folder, folder_recording, "Off path normal")
-    shared_page = add_page(folder, folder_recording, "Off path shared root")
-    folder_recording.update_column(:root_recording_id, source.id)
-    shared_page.update_column(:root_recording_id, source.id)
+    add_page(folder, folder_recording, "Off path shared root")
   end
 
   def build_workspace_actor_tree
@@ -557,8 +546,6 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     @stored_under_b = add_folder(workspace, root, "Stores source")
     @stored_under_b_child = add_page(@stored_under_b.recordable, @stored_under_b, "Stores source page")
     @plain_under_b = add_folder(workspace, root, "Plain under b")
-    @stored_under_b.update_column(:root_recording_id, source.id)
-    @stored_under_b_child.update_column(:root_recording_id, source.id)
   end
 
   def build_stored_sibling_tree
@@ -568,8 +555,6 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     @sibling_store_page = add_page(@sibling_store_folder.recordable, @sibling_store_folder, "Granted page")
     @stored_sibling = add_folder(workspace, root, "Stores folder")
     @stored_sibling_child = add_page(@stored_sibling.recordable, @stored_sibling, "Stores folder child")
-    @stored_sibling.update_column(:root_recording_id, @sibling_store_folder.id)
-    @stored_sibling_child.update_column(:root_recording_id, @sibling_store_folder.id)
     grant(@member, :view, @sibling_store_folder)
   end
 
@@ -582,7 +567,6 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     @nested_request = add_folder(workspace, root, "Nested request")
     @nested_plain_child = add_page(@nested_request.recordable, @nested_request, "Nested plain")
     @nested_outside_child = add_page(@nested_request.recordable, @nested_request, "Nested special")
-    @nested_outside_child.update_column(:root_recording_id, outside.id)
   end
 
   def assert_stored_root_parity(actor, root, ids)

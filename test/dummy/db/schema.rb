@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_17_002509) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_17_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -397,17 +397,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_002509) do
     t.uuid "parent_recording_id"
     t.uuid "recordable_id", null: false
     t.string "recordable_type", null: false
-    t.uuid "root_recording_id"
+    t.uuid "root_recording_id", null: false
     t.datetime "trashed_at"
     t.datetime "updated_at", null: false
     t.datetime "purge_at"
+    t.index ["id", "root_recording_id"], name: "index_rs_recordings_on_id_and_root", unique: true
     t.index ["parent_recording_id"], name: "index_recording_studio_recordings_on_parent_recording_id"
     t.index ["purge_at"], name: "idx_rs_recordings_due_purge_at", where: "(trashed_at IS NOT NULL)"
     t.index ["recordable_id", "root_recording_id"], name: "idx_rs_recordings_root_access", where: "(((recordable_type)::text = 'RecordingStudio::Access'::text) AND (parent_recording_id IS NOT NULL) AND (trashed_at IS NULL))"
     t.index ["recordable_type", "recordable_id", "parent_recording_id", "trashed_at"], name: "index_recording_studio_recordings_on_recordable_parent_trashed"
     t.index ["recordable_type", "recordable_id"], name: "index_recording_studio_recordings_on_recordable"
+    t.index ["root_recording_id", "created_at", "id"], name: "index_rs_recordings_on_root_created_at_id", order: { created_at: :desc, id: :desc }
     t.index ["root_recording_id", "recordable_type", "created_at", "id"], name: "index_rs_recordings_on_root_type_created_at_id", order: { created_at: :desc, id: :desc }
-    t.index ["root_recording_id"], name: "index_rs_recordings_on_root_recording"
+    t.check_constraint "parent_recording_id IS NOT NULL OR root_recording_id = id", name: "chk_rs_recordings_parentless_own_root"
   end
 
   create_table "recording_studio_root_switchable_selections", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -519,6 +521,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_002509) do
   add_foreign_key "recording_studio_notifications_deliveries", "recording_studio_notifications_notifications", column: "notification_id"
   add_foreign_key "recording_studio_recordings", "recording_studio_recordings", column: "parent_recording_id"
   add_foreign_key "recording_studio_recordings", "recording_studio_recordings", column: "root_recording_id"
+  add_foreign_key "recording_studio_recordings", "recording_studio_recordings", column: ["parent_recording_id", "root_recording_id"], primary_key: ["id", "root_recording_id"], name: "fk_rs_recordings_on_parent_and_root", deferrable: :deferred
   add_foreign_key "recording_studio_root_switchable_selections", "recording_studio_recordings", column: "root_recording_id"
   add_foreign_key "recording_studio_user_identities", "users"
   add_foreign_key "recording_studio_user_otp_challenges", "users"
