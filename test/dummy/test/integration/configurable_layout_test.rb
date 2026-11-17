@@ -136,6 +136,7 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
       calls += 1
       raise "layout failed closed"
     end
+    sign_in @outsider
 
     get "/recording_studio_accessible/recordings/#{@root_recording.id}/access_requests/new",
         params: { presentation: "modal" },
@@ -144,7 +145,7 @@ class ConfigurableLayoutTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal 0, calls
     assert_select "turbo-frame#access_request"
-    assert_select "h1", text: "Request access"
+    assert_select "h1", text: "Ask for access"
     refute_match(/<html/i, @response.body)
   end
 
