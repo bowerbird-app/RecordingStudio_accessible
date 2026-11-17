@@ -9,7 +9,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 - child-only `RecordingStudio::Access` recordables for direct grants under opted-in recordings
 - optional dependent grants: one Access recording can be capped by and die with another Access recording on the same root. Dependents void in place when the manager Access is revised weaker, trashed, destroyed, or moved — they do not follow a move
 - optional per-action audiences (`public`, `signed_in`, `granted`, plus `register_audience`) with workspace limits and per-recording rules
-- `RecordingStudioAccessible.role_for` (optional `include_trashed` for a restore or trash screen), `access_grants_for`, `actors_with_access`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, and named-action checks
+- `RecordingStudioAccessible.role_for`, `access_grants_for`, `actors_with_access`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, and named-action checks
 - `admin_root` and `admin?` for a role held on the configured admin root recording
 - a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
 - Recording Studio API member actions (`list_access`, `grant_access`,
@@ -461,9 +461,9 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 #### Upgrading to 0.50.0
 
-No Accessible migration. `authorized?` is unchanged. `role_for` without `include_trashed` is unchanged.
+No Accessible migration. `authorized?` and `role_for` are unchanged.
 
-`access_grants_for(actor:, role: nil)` lists that actor's kept access grants across roots. `role_for(actor:, recording:, include_trashed: true)` is for a restore or trash screen.
+`access_grants_for(actor:, role: nil)` lists that actor's kept access grants across roots.
 
 #### Upgrading to 0.49.0
 
@@ -1741,9 +1741,6 @@ child's direct role remains `view` while its effective role is `admin`.
 RecordingStudioAccessible.role_for(actor: user, recording: root_recording)
 RecordingStudioAccessible.authorized?(actor: user, recording: root_recording, role: :edit)
 
-# Restore and trash screens. The default, false, is the call above.
-RecordingStudioAccessible.role_for(actor: user, recording: page_recording, include_trashed: true)
-
 # Equivalent namespaced form:
 RecordingStudioAccessible::Authorization.allowed?(actor: user, recording: root_recording, role: :edit)
 
@@ -1755,8 +1752,6 @@ RecordingStudioAccessible.actors_with_access(recording: page_recording, minimum_
 # Kept Access recordings for this actor on every root. Unloaded.
 RecordingStudioAccessible.access_grants_for(actor: user, role: :edit)
 ```
-
-`role_for(actor:, recording:, include_trashed: false)` reads the strongest role on that recording and its ancestors. Leave `include_trashed` off and the result is unchanged. Pass `include_trashed: true` from a restore or trash screen when the recording may already be trashed. The role is the one that recording would have if it were kept: the same grant chain and the same dependent-grant rules. A grant that is itself trashed or voided still does not count. The flag does not grant a role the recording would not have while kept.
 
 `access_grants_for(actor:, role: nil)` returns an unloaded relation of that actor's kept Access recordings on every root. The actor type is `ActorType.for`. Pass `role:` to keep grants at that rank or higher (`view`, then `edit`, then `admin`). A nil actor, or a role other than those three, returns `Recording.none`. A trashed grant is left out. Chain `where`, `order`, and `limit` on the relation.
 

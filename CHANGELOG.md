@@ -8,10 +8,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - `access_grants_for(actor:, role: nil)` returns an unloaded relation of the actor's kept Access recordings on every root. The actor type is `ActorType.for`. `role` keeps grants at that rank or higher. A nil actor or an unknown role returns `Recording.none`. A trashed grant is left out.
-- `role_for(actor:, recording:, include_trashed: false)` accepts `include_trashed`. The default is unchanged. `true` is for a restore or trash screen: a trashed recording is evaluated as if it were kept. A trashed or voided grant still does not count.
 
 ### Upgrade notes
-- No Accessible migration. `authorized?` is unchanged. `role_for` without `include_trashed` is unchanged.
+- No Accessible migration. `authorized?` and `role_for` are unchanged.
 
 ## [0.49.0] - 2026-11-17
 

@@ -2,7 +2,7 @@
 
 require "test_helper"
 
-class AccessGrantsAndTrashedRoleTest < ActiveSupport::TestCase
+class AccessGrantsForTest < ActiveSupport::TestCase
   setup do
     @user = create_user("grants-user@example.com")
     @other = create_user("grants-other@example.com")
@@ -70,68 +70,6 @@ class AccessGrantsAndTrashedRoleTest < ActiveSupport::TestCase
     remove_actor_subclass("AccessGrantsSpecialUser")
   end
 
-  test "role_for include_trashed false is unchanged and true matches the kept role" do
-    grant(@user, :view, @root_a)
-    grant(@user, :admin, @folder)
-    kept_role = RecordingStudioAccessible.role_for(actor: @user, recording: @folder)
-    assert_equal :admin, kept_role
-    assert_equal kept_role,
-                 RecordingStudioAccessible.role_for(actor: @user, recording: @folder, include_trashed: true)
-
-    @folder.update_column(:trashed_at, Time.current)
-
-    default_role = RecordingStudioAccessible.role_for(actor: @user, recording: @folder)
-    assert_equal default_role,
-                 RecordingStudioAccessible.role_for(actor: @user, recording: @folder, include_trashed: false)
-    assert_equal kept_role,
-                 RecordingStudioAccessible.role_for(actor: @user, recording: @folder, include_trashed: true)
-    assert_equal kept_role,
-                 RecordingStudioAccessible::Authorization.role_for(
-                   actor: @user, recording: @folder, include_trashed: true
-                 )
-    assert RecordingStudioAccessible.authorized?(actor: @user, recording: @folder, role: :admin)
-  end
-
-  test "include_trashed still ignores a trashed grant and a voided dependent" do
-    folder_grant = grant(@user, :admin, @folder)
-    grant(@user, :view, @root_a)
-    folder_grant.update_column(:trashed_at, Time.current)
-    @folder.update_column(:trashed_at, Time.current)
-
-    assert_equal :view, RecordingStudioAccessible.role_for(actor: @user, recording: @folder)
-    assert_equal :view, RecordingStudioAccessible.role_for(actor: @user, recording: @folder, include_trashed: false)
-    assert_equal :view, RecordingStudioAccessible.role_for(actor: @user, recording: @folder, include_trashed: true)
-
-    only_trashed = create_user("grants-only-trashed@example.com")
-    only_grant = grant(only_trashed, :admin, @folder)
-    only_grant.update_column(:trashed_at, Time.current)
-    assert_nil RecordingStudioAccessible.role_for(actor: only_trashed, recording: @folder, include_trashed: true)
-
-    holder = create_user("grants-holder@example.com")
-    manager = grant(holder, :edit, @root_a)
-    dependent_user = create_user("grants-dependent@example.com")
-    child = create_child_recording(
-      recordable: Folder.create!(workspace: @root_a.recordable, name: "Dependent folder", summary: "Folder", position: 1),
-      parent_recording: @root_a
-    )
-    grant_dependent(actor: dependent_user, role: :view, parent: child, manager: manager)
-    assert_equal :view, RecordingStudioAccessible.role_for(actor: dependent_user, recording: child)
-
-    manager.update_column(:trashed_at, Time.current)
-    child.update_column(:trashed_at, Time.current)
-
-    assert_nil RecordingStudioAccessible.role_for(actor: dependent_user, recording: child)
-    assert_nil RecordingStudioAccessible.role_for(actor: dependent_user, recording: child, include_trashed: true)
-  end
-
-  test "role_for returns nil for a nil actor when include_trashed is set" do
-    assert_nil RecordingStudioAccessible.role_for(actor: nil, recording: @folder)
-    assert_nil RecordingStudioAccessible.role_for(actor: nil, recording: @folder, include_trashed: true)
-    assert_nil RecordingStudioAccessible::Authorization.role_for(
-      actor: nil, recording: @folder, include_trashed: true
-    )
-  end
-
   private
 
   def create_user(email)
@@ -140,20 +78,6 @@ class AccessGrantsAndTrashedRoleTest < ActiveSupport::TestCase
 
   def grant(actor, role, parent_recording)
     create_direct_access_recording(actor: actor, role: role, parent_recording: parent_recording)
-  end
-
-  def grant_dependent(actor:, role:, parent:, manager:)
-    RecordingStudioAccessible::AccessCreationContext.allow do
-      RecordingStudio.root_recording_or_self(parent).record(
-        RecordingStudio::Access,
-        parent_recording: parent,
-        actor: RecordingWriteActor.resolve
-      ) do |access|
-        access.actor = actor
-        access.role = role
-        access.depends_on_recording_id = manager.id
-      end
-    end
   end
 
   def define_actor_subclass(name)

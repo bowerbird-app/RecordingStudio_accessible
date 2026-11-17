@@ -10,10 +10,8 @@ module RecordingStudioAccessible
                          "refusing to return a recording relation"
 
     class << self
-      def role_for(actor:, recording:, include_trashed: false)
-        arguments = { actor: actor, recording: recording }
-        arguments[:include_trashed] = true if include_trashed
-        authorization_service.role_for(**arguments)
+      def role_for(actor:, recording:)
+        authorization_service.role_for(actor: actor, recording: recording)
       end
 
       def allowed?(actor:, recording:, role:)
