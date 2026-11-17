@@ -3,15 +3,17 @@
 module RecordingStudioAccessible
   # Ids authorized? would allow under one recording.
   #
-  # One statement. Recursive CTEs walk parent_recording_id. No child list is
-  # built in Ruby. A kept grant covers its recording and descendants reached
-  # through parents. A grant on a stored root covers recordings that store
-  # that root, including when the root sits off the parent chain, and does
-  # not cover descendants that do not store it and do not inherit it.
-  # Audience rules are not read. Trashed recordings stay in the set when
-  # authorized? would allow them. Trashed grants and dependent grants that
-  # fail DependentAccess.effective? stay out. The manager walk matches
-  # EffectiveRootIds.
+  # A kept grant on a real root, at the requested role, with a valid manager
+  # chain, uses Recording.within (for_root) when the stored root matches the
+  # parent chain. Every other case is one statement. Recursive CTEs walk
+  # parent_recording_id. No child list is built in Ruby. A kept grant covers
+  # its recording and descendants reached through parents. A grant on a stored
+  # root covers recordings that store that root, including when the root sits
+  # off the parent chain, and does not cover descendants that do not store it
+  # and do not inherit it. Audience rules are not read. Trashed recordings
+  # stay in the set when authorized? would allow them. Trashed grants and
+  # dependent grants that fail DependentAccess.effective? stay out. The
+  # manager walk matches EffectiveRootIds.
   class AuthorizedRecordingIds
     def self.relation_for(actor:, root:, role:, recordable_type:)
       new(actor: actor, root: root, role: role, recordable_type: recordable_type).relation
@@ -20,11 +22,14 @@ module RecordingStudioAccessible
     def initialize(actor:, root:, role:, recordable_type:)
       @actor = actor
       @root = root
+      @role = role
       @minimum = Integer(RecordingStudio::AccessRoles.value_for(role))
       @recordable_type = recordable_type
     end
 
     def relation
+      return within_ids if root_grant_fast_path?
+
       quoted = connection.quote_table_name(RecordingStudio::Recording.table_name)
       RecordingStudio::Recording.unscoped
                                 .from(Arel.sql("(#{statement}) AS #{quoted}(id)"))
@@ -36,6 +41,57 @@ module RecordingStudioAccessible
 
     def statement
       "WITH RECURSIVE #{cte_list.join(', ')} #{final_select}"
+    end
+
+    # within equals the parent walk only for a real root whose stored root
+    # matches the parent chain. A child grant, a weaker role, a nested
+    # recording, or a mismatch keeps the walk above.
+    def root_grant_fast_path?
+      stored_root? && root_grant? && !stored_root_mismatch?
+    end
+
+    def within_ids
+      scope = RecordingStudio::Recording.unscoped.within(@root)
+      scope = scope.where(recordable_type: @recordable_type) if @recordable_type
+      scope.reselect(:id)
+    end
+
+    def stored_root?
+      @root.parent_recording_id.nil? && @root.root_recording_id == @root.id
+    end
+
+    def root_grant?
+      RecordingStudioAccessible.authorized?(actor: @actor, recording: @root, role: @role)
+    end
+
+    def stored_root_mismatch?
+      connection.select_value("SELECT #{stored_root_mismatch_sql}") == true
+    end
+
+    def stored_root_mismatch_sql
+      <<~SQL.squish
+        EXISTS (
+          SELECT 1
+          FROM #{recordings} child
+          INNER JOIN #{recordings} parent ON parent.id = child.parent_recording_id
+          WHERE (parent.id = #{root_sql} OR parent.root_recording_id = #{root_sql})
+            AND child.root_recording_id IS DISTINCT FROM #{root_sql}
+        ) OR EXISTS (
+          SELECT 1
+          FROM #{recordings} child
+          LEFT JOIN #{recordings} parent ON parent.id = child.parent_recording_id
+          WHERE child.root_recording_id = #{root_sql}
+            AND child.id <> #{root_sql}
+            AND (
+              child.parent_recording_id IS NULL
+              OR parent.id IS NULL
+              OR (
+                parent.id <> #{root_sql}
+                AND parent.root_recording_id IS DISTINCT FROM #{root_sql}
+              )
+            )
+        )
+      SQL
     end
 
     def cte_list
