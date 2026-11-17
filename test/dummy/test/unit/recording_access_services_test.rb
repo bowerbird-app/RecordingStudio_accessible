@@ -230,7 +230,7 @@ module RecordingStudioAccessible
 
       def test_update_access_revises_valid_access_recording
         recording = Recording.new(id: 1)
-        access_recording = valid_access_recording(recording)
+        access_recording = access_recording_with_role(recording, "view")
         service = UpdateRecordingAccess.new(recording: recording, access_recording: access_recording, role: :admin,
                                             manager_actor: :manager)
 
@@ -264,37 +264,87 @@ module RecordingStudioAccessible
 
       def test_revoke_access_returns_last_admin_error_without_unexpected_copy
         recording = Recording.new(id: 1)
-        access_recording = valid_access_recording(recording)
+        access_recording = access_recording_with_role(recording, "admin")
         service = RevokeRecordingAccess.new(recording: recording, access_recording: access_recording,
                                             manager_actor: :manager)
 
         service.stub(:revocable_access_recording?, true) do
-          RecordingStudioAccessible::LastAdminGuard.stub(:protect!, lambda { |**|
-            raise RecordingStudioAccessible::LastAdminError
-          }) do
-            result = service.send(:perform)
+          RecordingStudioAccessible::RoleCeiling.stub(:allowed?, true) do
+            RecordingStudioAccessible::LastAdminGuard.stub(:protect!, lambda { |**|
+              raise RecordingStudioAccessible::LastAdminError
+            }) do
+              result = service.send(:perform)
 
-            assert result.failure?
-            assert_equal "Add another admin before removing the last one.", result.error
-            assert_kind_of RecordingStudioAccessible::LastAdminError, result.errors.first
+              assert result.failure?
+              assert_equal "Add another admin before removing the last one.", result.error
+              assert_kind_of RecordingStudioAccessible::LastAdminError, result.errors.first
+            end
           end
         end
       end
 
       def test_revoke_access_destroys_valid_access_recording
         recording = Recording.new(id: 1)
-        access_recording = valid_access_recording(recording)
+        access_recording = access_recording_with_role(recording, "view")
         service = RevokeRecordingAccess.new(recording: recording, access_recording: access_recording,
                                             manager_actor: :manager)
 
         service.stub(:revocable_access_recording?, true) do
-          service.stub(:destroy_access_recording!, true) do
-            result = service.send(:perform)
+          RecordingStudioAccessible::RoleCeiling.stub(:allowed?, true) do
+            service.stub(:destroy_access_recording!, true) do
+              result = service.send(:perform)
 
-            assert result.success?
-            assert_equal true, result.value
+              assert result.success?
+              assert_equal true, result.value
+            end
           end
         end
+      end
+
+      def test_revoke_access_refuses_an_existing_role_above_the_manager
+        recording = Recording.new(id: 1)
+        access_recording = access_recording_with_role(recording, "admin")
+        service = RevokeRecordingAccess.new(recording: recording, access_recording: access_recording,
+                                            manager_actor: :manager)
+        checked_roles = []
+
+        service.stub(:revocable_access_recording?, true) do
+          RecordingStudioAccessible::RoleCeiling.stub(:allowed?, lambda { |**kwargs|
+            checked_roles << kwargs[:role]
+            false
+          }) do
+            result = service.send(:perform)
+
+            assert result.failure?
+            assert_equal "You can only grant a role you already hold.", result.error
+          end
+        end
+
+        assert_equal ["admin"], checked_roles
+      end
+
+      def test_update_access_refuses_when_the_existing_role_is_above_the_manager
+        recording = Recording.new(id: 1)
+        access_recording = access_recording_with_role(recording, "admin")
+        service = UpdateRecordingAccess.new(recording: recording, access_recording: access_recording, role: :view,
+                                            manager_actor: :manager)
+        checked_roles = []
+
+        RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+          service.stub(:valid_access_recording_for_parent?, true) do
+            RecordingStudioAccessible::RoleCeiling.stub(:allowed?, lambda { |**kwargs|
+              checked_roles << kwargs[:role].to_s
+              kwargs[:role].to_s != "admin"
+            }) do
+              result = service.send(:perform)
+
+              assert result.failure?
+              assert_equal "You can only grant a role you already hold.", result.error
+            end
+          end
+        end
+
+        assert_equal ["admin"], checked_roles
       end
 
       private
@@ -329,6 +379,13 @@ module RecordingStudioAccessible
       def valid_access_recording(recording)
         Recording.new(id: 2, parent_recording_id: recording.id, recordable_type: "RecordingStudio::Access",
                       root_id: recording.root_id)
+      end
+
+      def access_recording_with_role(recording, role)
+        access_recording = valid_access_recording(recording)
+        access = Struct.new(:role, :actor).new(role, nil)
+        access_recording.define_singleton_method(:recordable) { access }
+        access_recording
       end
 
     end

@@ -16,6 +16,77 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     Current.actor = nil if defined?(Current) && Current.respond_to?(:actor=)
   end
 
+  test "an editor cannot revoke or change an admin grant above their ceiling" do
+    configuration = RecordingStudioAccessible.configuration
+    previous = configuration.access_management_authorizer
+    editor = create_user("ceiling-editor@example.com")
+    other_admin = create_user("ceiling-other-admin@example.com")
+    viewer = create_user("ceiling-viewer@example.com")
+    admin_grant = create_legacy_direct_access_recording(other_admin, :admin, @recording)
+    view_grant = create_legacy_direct_access_recording(viewer, :view, @recording)
+    create_legacy_direct_access_recording(editor, :edit, @recording)
+    configuration.access_management_authorizer = ->(**) { true }
+
+    revoked = RecordingStudioAccessible.revoke_access(
+      recording: @recording, access_recording: admin_grant, manager_actor: editor
+    )
+    changed = RecordingStudioAccessible.update_access(
+      recording: @recording, access_recording: admin_grant, role: :edit, manager_actor: editor
+    )
+
+    refute revoked.success?
+    assert_equal "You can only grant a role you already hold.", revoked.error
+    refute changed.success?
+    assert_equal "You can only grant a role you already hold.", changed.error
+    assert_equal "admin", admin_grant.reload.recordable.role
+    assert_equal :admin, RecordingStudioAccessible.role_for(actor: other_admin, recording: @recording)
+    assert RecordingStudioAccessible.authorized?(actor: other_admin, recording: @recording, role: :admin)
+    assert_includes authorized_recording_ids_for(other_admin), @recording.id
+
+    editor_revoke = RecordingStudioAccessible.revoke_access(
+      recording: @recording, access_recording: view_grant, manager_actor: editor
+    )
+    assert editor_revoke.success?
+    refute RecordingStudioAccessible.authorized?(actor: viewer, recording: @recording, role: :view)
+
+    updated = RecordingStudioAccessible.update_access(
+      recording: @recording, access_recording: admin_grant, role: :edit, manager_actor: @manager_actor
+    )
+    assert updated.success?
+    assert_equal "edit", updated.value.recordable.role
+
+    admin_revoke = RecordingStudioAccessible.revoke_access(
+      recording: @recording, access_recording: updated.value, manager_actor: @manager_actor
+    )
+    assert admin_revoke.success?
+    refute RecordingStudioAccessible.authorized?(actor: other_admin, recording: @recording, role: :edit)
+  ensure
+    configuration.access_management_authorizer = previous
+  end
+
+  test "the default authorizer still rejects an editor before the role ceiling" do
+    editor = create_user("default-ceiling-editor@example.com")
+    other_admin = create_user("default-ceiling-admin@example.com")
+    admin_grant = create_legacy_direct_access_recording(other_admin, :admin, @recording)
+    create_legacy_direct_access_recording(editor, :edit, @recording)
+
+    revoked = RecordingStudioAccessible.revoke_access(
+      recording: @recording, access_recording: admin_grant, manager_actor: editor
+    )
+    changed = RecordingStudioAccessible.update_access(
+      recording: @recording, access_recording: admin_grant, role: :view, manager_actor: editor
+    )
+
+    refute revoked.success?
+    assert_equal "Not authorized to manage access", revoked.error
+    refute changed.success?
+    assert_equal "Not authorized to manage access", changed.error
+    assert_equal "admin", admin_grant.reload.recordable.role
+    assert_equal :admin, RecordingStudioAccessible.role_for(actor: other_admin, recording: @recording)
+    assert RecordingStudioAccessible.authorized?(actor: other_admin, recording: @recording, role: :admin)
+    assert_includes authorized_recording_ids_for(other_admin), @recording.id
+  end
+
   test "a manager cannot grant a role above their own" do
     configuration = RecordingStudioAccessible.configuration
     previous = configuration.access_management_authorizer
@@ -225,7 +296,7 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     end
   end
 
-  test "explicit all allows persisted actor types" do
+  test "symbol all does not admit an unlisted actor type" do
     RecordingStudioAccessible.configuration.access_actor_types = :all
 
     result = RecordingStudioAccessible.grant_access(
@@ -235,8 +306,9 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
       manager_actor: @manager_actor
     )
 
-    assert result.success?
-    assert_equal @workspace, result.value.recordable.actor
+    assert result.failure?
+    assert_equal "Actor type is not allowed for access", result.error
+    refute RecordingStudioAccessible.authorized?(actor: @workspace, recording: @recording, role: :view)
   end
 
   test "STI actors are admitted through their stored base polymorphic type" do
@@ -262,7 +334,7 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
   end
 
   test "unpersisted actors cannot receive grants even with an assigned ID" do
-    RecordingStudioAccessible.configuration.access_actor_types = :all
+    RecordingStudioAccessible.configuration.access_actor_types = ["User"]
     unpersisted_user = User.new(email: "unpersisted@example.com", password: "Password", password_confirmation: "Password")
     unpersisted_user.id = SecureRandom.uuid
 
@@ -485,6 +557,10 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
 
   def create_legacy_direct_access_recording(user, role, parent_recording)
     create_direct_access_recording(actor: user, role: role, parent_recording: parent_recording)
+  end
+
+  def authorized_recording_ids_for(actor)
+    RecordingStudioAccessible.authorized_recordings(actor: actor, root: @recording).pluck(:id)
   end
 
   def direct_access_recordings_for(user)

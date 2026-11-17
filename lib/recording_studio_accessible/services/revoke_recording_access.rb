@@ -28,6 +28,7 @@ module RecordingStudioAccessible
         return authorization_result unless authorization_result == true
         return failure(copy("errors.access_recording_invalid")) unless revocable_access_recording?(recording: @recording,
                                                                                                    access_recording: @access_recording)
+        return failure(copy("errors.role_exceeds_manager")) unless existing_grant_within_manager?
 
         ensure_current_impersonator_accessor!
 

@@ -56,10 +56,7 @@ module RecordingStudioAccessible
         return false if type_name.blank?
         return false unless type_name.match?(ACTOR_TYPE_NAME)
 
-        configuration = RecordingStudioAccessible.configuration
-        return true if configuration.all_access_actor_types_allowed?
-
-        Array(configuration.access_actor_types).include?(type_name)
+        Array(RecordingStudioAccessible.configuration.access_actor_types).include?(type_name)
       end
 
       def grantable_actor_type_name?(type_name)
@@ -67,6 +64,8 @@ module RecordingStudioAccessible
       end
 
       def resolve_actor(actor_id, type_name)
+        return unless allowed_actor_type_name?(type_name)
+
         klass = type_name.safe_constantize
         return unless klass.respond_to?(:find_by)
 

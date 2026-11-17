@@ -64,12 +64,10 @@ end
   allowlist of supported polymorphic actor types, such as `["User", "Workspace"]`.
 - Blank or missing configuration rejects new grants. Existing stored grants
   continue to authorize and remain revocable after the setting changes.
-- `config.access_actor_types = :all` is a security-sensitive opt-in for hosts
-  that intentionally support arbitrary persisted actor types. Values such as
-  `"all"` and `"*"` do not enable this mode.
-- The actor access-point route always requires a finite allowlist, including
-  when grant admission uses `:all`, and does not resolve request-provided types
-  to application constants.
+- Hosts list actor type names. `:all`, `"all"`, and `"*"` do not admit every
+  class.
+- The actor access-point route and API actor lookup require a name from that
+  list. They do not resolve request-provided types to application constants.
 
 ## Known Limitations
 

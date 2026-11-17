@@ -8,9 +8,6 @@ RecordingStudioAccessible.configure do |config|
   # New access grants fail closed until their polymorphic actor types are listed.
   # Add each supported host actor class, for example: ["User", "Workspace"].
   config.access_actor_types = ["User"]
-  # Set this exact symbol only when arbitrary persisted polymorphic actors are
-  # intentionally supported. :all does not enable actor access-point lookup.
-  # config.access_actor_types = :all
 
   # Required. Manage access and actor-id grants list these people. Scope this
   # to actors the current person may grant. There is no default, and an unset
