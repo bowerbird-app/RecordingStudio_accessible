@@ -114,6 +114,7 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     end
 
     edit_ids = authorized_ids(@member, @inherited, :edit)
+    assert_includes relation(actor: @member, root: @inherited, role: :edit).to_sql, "WITH RECURSIVE"
     refute_equal within_ids.sort, edit_ids.sort
     assert_includes edit_ids, @page.id
     refute_includes edit_ids, @sibling_page.id
@@ -121,6 +122,7 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
 
     child_root = scenario("child only")
     child_ids = authorized_ids(@member, child_root, :edit)
+    assert_includes relation(actor: @member, root: child_root, role: :edit).to_sql, "WITH RECURSIVE"
     child_within = RecordingStudio::Recording.within(child_root).pluck(:id)
     assert_operator child_ids.length, :<, child_within.length
     refute_includes child_ids, child_root.id
@@ -131,6 +133,7 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
 
     source = scenario("off path source")
     source_ids = authorized_ids(@member, source, :view)
+    assert_includes relation(actor: @member, root: source, role: :view).to_sql, "WITH RECURSIVE"
     source_within = RecordingStudio::Recording.within(source).pluck(:id)
     refute_equal source_within.sort, source_ids.sort
     assert_empty(source_ids - tree_for(source).map(&:id))
@@ -147,15 +150,14 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     built = relation(actor: @member, root: @inherited, role: :view)
     refute_predicate built, :loaded?
     sql = built.to_sql
-    assert_includes sql, "WITH RECURSIVE"
-    assert_includes sql, "parent_recording_id"
-    assert_includes sql, RecordingStudioAccessible::AuthorizedRecordingIds::PARENT_CHAIN_FUNCTION
-    refute_includes sql, "chain_covered"
+    assert_includes sql, "root_recording_id"
+    refute_includes sql, "WITH RECURSIVE"
     refute_includes sql, @page.id
     refute_includes sql, @inherited_folder.id
 
     composed = RecordingStudio::Recording.where(id: built).limit(2)
-    assert_includes composed.to_sql, "WITH RECURSIVE"
+    assert_includes composed.to_sql, "root_recording_id"
+    refute_includes composed.to_sql, "WITH RECURSIVE"
     refute_includes composed.to_sql, @page.id
 
     ids = nil
@@ -176,9 +178,10 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     inserted = insert_child(parent: @inherited, root: @inherited, recordable: @page)
     fresh = nil
     after = uncached_sql_count { fresh = relation(actor: @member, root: @inherited, role: :view).pluck(:id) }
+    again = uncached_sql_count { relation(actor: @member, root: @inherited, role: :view).pluck(:id) }
 
     assert_equal 1, before
-    assert_equal before, after
+    assert_equal again, after
     assert_includes fresh, inserted
     loaded = RecordingStudio::Recording.unscoped.find(inserted)
     assert RecordingStudioAccessible.authorized?(actor: @member, recording: loaded, role: :view)

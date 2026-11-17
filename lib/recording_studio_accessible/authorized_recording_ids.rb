@@ -3,38 +3,18 @@
 module RecordingStudioAccessible
   # Ids authorized? would allow under one recording.
   #
-  # One statement. No child list is built in Ruby. A kept grant covers its
-  # recording and descendants reached through parents. A grant on a stored
+  # A kept grant on a real root, at the requested role, with a valid manager
+  # chain, uses Recording.within (for_root) when the stored root matches the
+  # parent chain. Every other case is one statement. Recursive CTEs walk
+  # parent_recording_id. No child list is built in Ruby. A kept grant covers
+  # its recording and descendants reached through parents. A grant on a stored
   # root covers recordings that store that root, including when the root sits
   # off the parent chain, and does not cover descendants that do not store it
   # and do not inherit it. Audience rules are not read. Trashed recordings
   # stay in the set when authorized? would allow them. Trashed grants and
   # dependent grants that fail DependentAccess.effective? stay out. The
   # manager walk matches EffectiveRootIds.
-  #
-  # A kept grant on the root itself, with a valid manager chain, covers the
-  # whole parent chain. Recording.within reads that set from root_recording_id
-  # and does not walk. That equals the parent chain only when every descendant
-  # stores the root and every recording that stores the root is in the chain.
-  # A mismatch, a child-only grant, or a recording that is not a root still
-  # uses the parent walk. On a real root the walk is
-  # recording_studio_accessible_parent_chain_ids, created at boot. The
-  # statement calls it only when the root grant is missing or the stored root
-  # disagrees with the parent chain, so that path is not planned on a match.
   class AuthorizedRecordingIds
-    PARENT_CHAIN_FUNCTION = "recording_studio_accessible_parent_chain_ids"
-    PARAM_ROOT = "p_root_id"
-    PARAM_ACTOR_TYPE = "p_actor_type"
-    PARAM_ACTOR_ID = "p_actor_id"
-    PARAM_MINIMUM = "p_minimum"
-    PARAM_RECORDABLE_TYPE = "p_recordable_type"
-
-    def self.parent_chain_sql
-      builder = allocate
-      builder.instance_variable_set(:@parameterized, true)
-      builder.send(:walked_statement)
-    end
-
     def self.relation_for(actor:, root:, role:, recordable_type:)
       new(actor: actor, root: root, role: role, recordable_type: recordable_type).relation
     end
@@ -42,155 +22,53 @@ module RecordingStudioAccessible
     def initialize(actor:, root:, role:, recordable_type:)
       @actor = actor
       @root = root
+      @role = role
       @minimum = Integer(RecordingStudio::AccessRoles.value_for(role))
       @recordable_type = recordable_type
     end
 
     def relation
+      return within_ids if root_grant_fast_path?
+
       quoted = connection.quote_table_name(RecordingStudio::Recording.table_name)
-      scope = RecordingStudio::Recording.unscoped
-                                        .from(Arel.sql("(#{statement}) AS #{quoted}(id)"))
-                                        .reselect("#{quoted}.id")
-      stored_root? ? scope : scope.distinct
+      RecordingStudio::Recording.unscoped
+                                .from(Arel.sql("(#{statement}) AS #{quoted}(id)"))
+                                .reselect("#{quoted}.id")
+                                .distinct
     end
 
     private
 
     def statement
-      return walked_statement unless stored_root?
-
-      "WITH #{root_grant_cte}, #{root_mismatch_cte} #{gated_select}"
-    end
-
-    def walked_statement
       "WITH RECURSIVE #{cte_list.join(', ')} #{final_select}"
     end
 
-    # A real root stores itself. within then uses for_root and does not walk.
+    # within equals the parent walk only for a real root whose stored root
+    # matches the parent chain. A child grant, a weaker role, a nested
+    # recording, or a mismatch keeps the walk above.
+    def root_grant_fast_path?
+      stored_root? && root_grant? && !stored_root_mismatch?
+    end
+
+    def within_ids
+      scope = RecordingStudio::Recording.unscoped.within(@root)
+      scope = scope.where(recordable_type: @recordable_type) if @recordable_type
+      scope.reselect(:id)
+    end
+
     def stored_root?
       @root.parent_recording_id.nil? && @root.root_recording_id == @root.id
     end
 
-    def root_grant_cte
-      "root_grant AS (SELECT #{root_grant_exists_sql} AS ok)"
+    def root_grant?
+      RecordingStudioAccessible.authorized?(actor: @actor, recording: @root, role: @role)
     end
 
-    def root_mismatch_cte
-      "root_mismatch AS (SELECT #{root_mismatch_case_sql} AS bad)"
+    def stored_root_mismatch?
+      connection.select_value("SELECT #{stored_root_mismatch_sql}") == true
     end
 
-    def gated_select
-      <<~SQL.squish
-        SELECT fast.id
-        FROM (#{fast_id_sql}) fast
-        WHERE (SELECT ok FROM root_grant) AND NOT (SELECT bad FROM root_mismatch)
-        UNION ALL
-        SELECT DISTINCT walked.id
-        FROM #{parent_chain_call_sql} AS walked(id)
-        WHERE NOT (SELECT ok FROM root_grant) OR (SELECT bad FROM root_mismatch)
-      SQL
-    end
-
-    def fast_id_sql
-      scope = RecordingStudio::Recording.within(@root)
-      scope = scope.where(recordable_type: @recordable_type) if @recordable_type
-      scope.reselect(:id).to_sql
-    end
-
-    def root_grant_exists_sql
-      if dependent_column?
-        "EXISTS (#{root_grant_walk_sql})"
-      else
-        "EXISTS (#{root_grant_rows_sql} LIMIT 1)"
-      end
-    end
-
-    def root_grant_walk_sql
-      <<~SQL.squish
-        WITH RECURSIVE root_grant_walk AS (
-          #{root_grant_seed_sql}
-          UNION ALL
-          #{root_grant_step_sql}
-        )
-        SELECT 1 FROM root_grant_walk WHERE root_grant_walk.done LIMIT 1
-      SQL
-    end
-
-    def root_grant_rows_sql
-      <<~SQL.squish
-        SELECT 1
-        FROM #{recordings} rec
-        INNER JOIN #{accesses} acc ON acc.id = rec.recordable_id
-        WHERE #{root_grant_filters_sql}
-      SQL
-    end
-
-    def root_grant_seed_sql
-      <<~SQL.squish
-        SELECT rec.id AS id,
-               COALESCE(rec.root_recording_id, rec.id) AS node_root_id,
-               acc.depends_on_recording_id AS depends_on_recording_id,
-               acc.role AS node_role,
-               #{id_array('rec.id')} AS seen,
-               (acc.depends_on_recording_id IS NULL) AS done
-        FROM #{recordings} rec
-        INNER JOIN #{accesses} acc ON acc.id = rec.recordable_id
-        WHERE #{root_grant_filters_sql}
-      SQL
-    end
-
-    def root_grant_filters_sql
-      [
-        "rec.parent_recording_id = #{root_sql}",
-        "rec.recordable_type = #{access_type_sql}",
-        RecordingStudio.kept_sql("rec"),
-        "acc.actor_type = #{actor_type_sql}",
-        "acc.actor_id = #{actor_id_sql}",
-        "#{role_rank_sql('TRIM(acc.role)')} >= #{minimum_sql}"
-      ].join(" AND ")
-    end
-
-    def root_grant_step_sql
-      <<~SQL.squish
-        SELECT manager.id,
-               COALESCE(manager.root_recording_id, manager.id),
-               manager_access.depends_on_recording_id,
-               manager_access.role,
-               root_grant_walk.seen || manager.id,
-               (manager_access.depends_on_recording_id IS NULL)
-        FROM root_grant_walk
-        INNER JOIN #{recordings} manager ON manager.id = root_grant_walk.depends_on_recording_id
-        INNER JOIN #{accesses} manager_access ON manager_access.id = manager.recordable_id
-        WHERE #{root_grant_step_filters_sql}
-      SQL
-    end
-
-    def root_grant_step_filters_sql
-      [
-        "NOT root_grant_walk.done",
-        "manager.recordable_type = #{access_type_sql}",
-        RecordingStudio.kept_sql("manager"),
-        "NOT (manager.id = ANY(root_grant_walk.seen))",
-        "COALESCE(manager.root_recording_id, manager.id) = root_grant_walk.node_root_id",
-        "#{role_rank_sql('manager_access.role')} >= #{role_rank_sql('root_grant_walk.node_role')}"
-      ].join(" AND ")
-    end
-
-    # for_root misses a descendant whose stored root differs, and it includes
-    # a recording that stores this root but is not in the parent chain.
-    # Either one falls back to the walk. A cycle that never touches a parent
-    # with a different stored root is still the walk's answer only; saves
-    # reject that shape.
-    def root_mismatch_case_sql
-      <<~SQL.squish
-        CASE
-          WHEN NOT (SELECT ok FROM root_grant) THEN FALSE
-          ELSE #{descendant_root_mismatch_sql} OR #{off_chain_root_sql}
-        END
-      SQL
-    end
-
-    def descendant_root_mismatch_sql
+    def stored_root_mismatch_sql
       <<~SQL.squish
         EXISTS (
           SELECT 1
@@ -198,13 +76,7 @@ module RecordingStudioAccessible
           INNER JOIN #{recordings} parent ON parent.id = child.parent_recording_id
           WHERE (parent.id = #{root_sql} OR parent.root_recording_id = #{root_sql})
             AND child.root_recording_id IS DISTINCT FROM #{root_sql}
-        )
-      SQL
-    end
-
-    def off_chain_root_sql
-      <<~SQL.squish
-        EXISTS (
+        ) OR EXISTS (
           SELECT 1
           FROM #{recordings} child
           LEFT JOIN #{recordings} parent ON parent.id = child.parent_recording_id
@@ -316,7 +188,7 @@ module RecordingStudioAccessible
           AND #{RecordingStudio.kept_sql('rec')}
           AND acc.actor_type = #{actor_type_sql}
           AND acc.actor_id = #{actor_id_sql}
-          AND #{role_rank_sql('TRIM(acc.role)')} >= #{minimum_sql}
+          AND #{role_rank_sql('TRIM(acc.role)')} >= #{@minimum}
           AND rec.parent_recording_id IN (SELECT id FROM relevant_parents)
       SQL
     end
@@ -445,34 +317,9 @@ module RecordingStudioAccessible
     end
 
     def type_filter_sql
-      if parameterized?
-        "WHERE (#{PARAM_RECORDABLE_TYPE}::text IS NULL OR chosen.recordable_type = #{PARAM_RECORDABLE_TYPE})"
-      elsif @recordable_type.nil?
-        ""
-      else
-        "WHERE chosen.recordable_type = #{connection.quote(@recordable_type)}"
-      end
-    end
+      return "" if @recordable_type.nil?
 
-    def parent_chain_call_sql
-      "#{PARENT_CHAIN_FUNCTION}(#{root_sql}, #{actor_type_sql}::text, " \
-        "#{actor_id_sql}::#{actor_id_sql_type}, #{minimum_sql}, #{recordable_type_argument_sql})"
-    end
-
-    def recordable_type_argument_sql
-      return "NULL::text" if @recordable_type.nil?
-
-      "#{connection.quote(@recordable_type)}::text"
-    end
-
-    def minimum_sql
-      return "#{PARAM_MINIMUM}::integer" if parameterized?
-
-      Integer(@minimum).to_s
-    end
-
-    def parameterized?
-      @parameterized == true
+      "WHERE chosen.recordable_type = #{connection.quote(@recordable_type)}"
     end
 
     def role_rank_sql(expression)
@@ -494,28 +341,15 @@ module RecordingStudioAccessible
     end
 
     def root_sql
-      return "#{PARAM_ROOT}::#{id_sql_type}" if parameterized?
-
       "#{connection.quote(@root.id)}::#{id_sql_type}"
     end
 
     def actor_type_sql
-      return "#{PARAM_ACTOR_TYPE}::text" if parameterized?
-
       connection.quote(RecordingStudioAccessible::ActorType.for(@actor))
     end
 
     def actor_id_sql
-      return "#{PARAM_ACTOR_ID}::#{actor_id_sql_type}" if parameterized?
-
       connection.quote(@actor.id)
-    end
-
-    def actor_id_sql_type
-      type = RecordingStudio::Access.columns_hash.fetch("actor_id").sql_type
-      raise ArgumentError, "unsupported actor id type" unless type.match?(/\A[a-z0-9_]+\z/)
-
-      type
     end
 
     def access_type_sql

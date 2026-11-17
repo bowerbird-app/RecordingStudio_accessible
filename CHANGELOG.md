@@ -12,19 +12,14 @@ All notable changes to this project will be documented in this file.
 - `authorized_recording_ids` uses `Recording.within` (`for_root`) when the
   actor's kept grant on the root meets the role and the manager chain is
   valid, and the stored root matches the parent chain. That path does not
-  walk descendants. A child grant, a weaker root grant, or a stored root that
-  disagrees with the parent chain still uses the parent walk. The ids match
-  `authorized?` on the recordings under that root.
-- Boot creates `recording_studio_accessible_parent_chain_ids`. The root-grant
-  statement calls that function only when it still needs the parent walk, so
-  Postgres does not plan the walk on a match.
+  walk descendants. A child grant, a weaker root grant, a recording that is
+  not a root, or a stored root that disagrees with the parent chain still
+  uses the parent walk. The ids match `authorized?` on the recordings under
+  that root.
 
 ### Upgrade notes
 - No Accessible migration. `authorized?` is unchanged. The ids from
   `authorized_recording_ids` are unchanged.
-- The database role needs permission to create
-  `recording_studio_accessible_parent_chain_ids`. The app creates or replaces
-  that function on boot.
 - Install Recording Studio `>= 7.4.0`, `< 8.0`. Run its migration for
   `index_rs_recordings_on_root_type_created_at_id` on
   `recording_studio_recordings (root_recording_id, recordable_type, created_at, id)`,
