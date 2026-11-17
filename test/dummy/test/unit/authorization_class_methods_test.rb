@@ -35,7 +35,15 @@ class AuthorizationClassMethodsTest < Minitest::Test
 
   def test_role_for_returns_nil_without_actor
     assert_nil Subject.role_for(actor: nil, recording: :recording)
+    assert_nil Subject.role_for(actor: nil, recording: :recording, include_trashed: true)
     assert_empty Subject.calls
+  end
+
+  def test_role_for_forwards_include_trashed_only_when_opted_in
+    Subject.call_value = :view
+
+    assert_equal :view, Subject.role_for(actor: :actor, recording: :recording, include_trashed: true)
+    assert_equal [{ actor: :actor, recording: :recording, include_trashed: true }], Subject.calls
   end
 
   def test_role_for_delegates_to_service_call
@@ -143,6 +151,12 @@ class AuthorizationClassMethodsTest < Minitest::Test
         end
       end
     end
+  end
+
+  def test_access_grants_for_is_an_empty_relation_without_an_actor_or_for_an_unknown_role
+    assert_equal RecordingStudio::Recording.none.to_sql, Subject.access_grants_for(actor: nil).to_sql
+    assert_equal RecordingStudio::Recording.none.to_sql,
+                 Subject.access_grants_for(actor: Actor.new(7), role: :nope).to_sql
   end
 
   def test_access_recording_helpers_delegate_to_direct_access_query
