@@ -49,10 +49,6 @@ module RecordingStudioAccessible
       AccessGrantedMailer.recordable_label_for(@recording).presence
     end
 
-    def access_request_name_required?
-      AccessRequestIntake.name_required?
-    end
-
     def access_request_role_label(role)
       return accessible_t("requests.role_unset") if role.blank?
 

@@ -87,8 +87,6 @@ require_relative "../app/mailers/recording_studio_accessible/access_granted_mail
 require_relative "../app/mailers/recording_studio_accessible/access_invitation_mailer"
 require_relative "../app/mailers/recording_studio_accessible/access_request_submitted_mailer"
 require "recording_studio_accessible/access_request_submitted_notifier"
-require "recording_studio_accessible/access_request_intake"
-require "recording_studio_accessible/access_request_account"
 require "recording_studio_accessible/access_request_api"
 require_relative "../app/controllers/concerns/recording_studio_accessible/controller_auth"
 

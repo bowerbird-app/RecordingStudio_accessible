@@ -93,23 +93,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_200000) do
     t.check_constraint "accepted_at IS NULL OR revoked_at IS NULL", name: "access_invitations_not_accepted_and_revoked"
   end
 
-  create_table "recording_studio_access_request_intents", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.string "action"
-    t.datetime "created_at", null: false
-    t.string "email", null: false
-    t.datetime "expires_at", null: false
-    t.datetime "fulfilled_at"
-    t.uuid "otp_challenge_id", null: false
-    t.uuid "recording_id", null: false
-    t.string "role"
-    t.string "submitted_name"
-    t.uuid "user_id", null: false
-    t.index ["recording_id"], name: "index_recording_studio_access_request_intents_on_recording_id"
-    t.check_constraint "action IS NULL OR char_length(action::text) <= 120", name: "recording_studio_access_request_intents_action_length"
-    t.check_constraint "char_length(email::text) <= 255", name: "recording_studio_access_request_intents_email_length"
-    t.check_constraint "submitted_name IS NULL OR char_length(submitted_name::text) <= 120", name: "recording_studio_access_request_intents_name_length"
-  end
-
   create_table "recording_studio_access_requests", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "access_recording_id"
     t.string "action"

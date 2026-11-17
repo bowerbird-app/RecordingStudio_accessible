@@ -258,24 +258,13 @@ One open request per person and target. Asking again revises that request.
 A partial unique index on the live pending row enforces the same limit in the database.
 A person who already has the role gets a no-op success.
 
-The email-code screens use Recording Studio Users `request_otp!`. A throttled
-result shows the rate-limit message. An issued result and a suppressed result
-both show the same code page. `verify_otp!` and `complete_email_proof!` finish
-the proof. The email step collects a name and passes `first_name` and
-`last_name` into `complete_email_proof!`, the same way Messages does for
-public contact. The field is required when the user model validates `name` or
-`first_name`, and optional otherwise. Accessible cannot list Users as a gem
-dependency, because Users already depends on Accessible. Add Users in the host
-app, with OTP enabled. Signed-in actors can call `request_access` without that
-stack.
-
-One-time codes count through `Rails.cache`. The store has to be shared and
-atomic across processes. Redis or Memcached is that store. The dummy test and
-development environments use an in-process memory store. Its increments are
-atomic inside one process, which is enough for the test suite, and they do
-not enforce the limit across processes. The host users table needs a
-case-insensitive unique index on `email`. A unique index on `LOWER(email)`
-is the usual shape.
+Sign-in belongs to the host. A signed-out visitor who opens the request page,
+or posts the form, is redirected to the host sign-in (`new_user_session_path`
+when Devise is mounted). The return path is stored the same way Devise stores
+a location, so after sign-in they land on that same request URL. A host with
+no sign-in path gets an unauthorized response, and the form is not shown. The form,
+the gate, and submit then run for the signed-in actor. Accessible does not
+collect an email or a one-time code, and it does not create the account.
 
 Routes live under the mounted engine:
 
@@ -316,9 +305,9 @@ Approved and denied rows use the default badge.
 next page with Flatpack infinite scroll. The cursor is the last row's time and
 id. The page size is 10.
 
-The name column shows the requester's name, from the profile collected at the
-email step or already on the user record, with the email underneath. A person
-with no name is shown by email alone. The list has no note column. A single
+The name column shows the requester's name when the user record has one, with
+the email underneath. A person with no name is shown by email alone. The list
+has no note column. A single
 recording hides the recording column. More than one shows the recording's name
 or title, linked when the host can route to that recordable. The name links to
 the request page. Every row has a Review button. Review opens that same request
@@ -329,10 +318,10 @@ filter. A save from the full request page stays on that page. A list rendered
 on the collection route returns there. Any other list URL returns to that
 recording's request list.
 
-`new` is the email step, the code step, or the request form. The email step
-shows the recording's name or title under the heading. Later steps do not.
-Visitors do not pick a role. Pass an optional `role:` or `action:` when the
-caller already knows a suggestion. The request page heading names who asked
+`new` is the request form for a signed-in actor. A signed-out visitor is sent
+to the host sign-in and comes back to this URL. Visitors do not pick a role.
+Pass an optional `role:` or `action:` when the caller already knows a
+suggestion. The request page heading names who asked
 and which recording. The date they asked is the subtitle under that heading.
 The message stays on the page, in quotes. Gate
 answers are labelled rows, flush with that heading. A manager uses Approve
@@ -345,21 +334,20 @@ role choice defaults to the suggestion when it is allowed, then to the
 action's granted roles, then to `roles_for`. Events stay on the recordable.
 The page does not list them.
 
-The email, code, and request steps, and the request page, each render as a
-full page and inside the `access_request` Turbo frame. Pass
+The request form and the request page each render as a full page and inside
+the `access_request` Turbo frame. Pass
 `presentation=modal` and load that frame to use the modal. Open access-request
 modals hide before Turbo caches the page, so Back/Forward does not restore a
 stale dialog.
 
 Visitor copy defaults to `recording_studio.accessible.requests`. Override one
 flow with `copy:` or an I18n `scope:`. Scope keys match the relative request
-keys, such as `cta` and `email_title`. A missing key falls back to the default.
-The overrides follow every step of that flow.
+keys, such as `cta` and `form_title`. A missing key falls back to the default.
+The overrides follow that flow.
 
 ```erb
 <%= access_request_modal(recording, copy: {
   cta: "Request early access",
-  email_title: "Request early access",
   form_title: "Ask for early access"
 }) %>
 <%= access_request_modal(recording, scope: "press_kit.early_access", role: "view") %>
@@ -388,7 +376,7 @@ Register a class or any object. Every method is optional:
 | `metadata_for(recording:, actor:)` | Flat hash copied onto the request when it is submitted or submitted again. |
 | `metadata_labels` | Optional key to label hash for the manager review list. |
 
-The check runs after the email code, and again for a signed-in visitor opening the form. `create` checks `satisfied?` again before it writes. While the gate is open, the visitor is redirected to `continuation_url` with the presentation params. A modal redirect stays in the `access_request` Turbo frame. A full page redirect stays a full page.
+The check runs when a signed-in visitor opens the form. `create` checks `satisfied?` again before it writes. While the gate is open, the visitor is redirected to `continuation_url` with the presentation params. A modal redirect stays in the `access_request` Turbo frame. A full page redirect stays a full page.
 
 A continuation URL on another host is not followed. If `satisfied?` or `continuation_url` raises, or the URL is missing, the visitor sees a Flatpack alert and the request is not recorded.
 
@@ -455,6 +443,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.52.0
+
+No Accessible migration.
+
+Access requests no longer sign anyone in. A signed-out visitor is sent to the host sign-in and returns to the request URL. A host with no sign-in path gets an unauthorized response. Remove host copy for the email and code steps. `authorized?` and request decisions are unchanged.
 
 #### Upgrading to 0.51.0
 
@@ -643,7 +637,7 @@ bin/rails generate recording_studio_accessible:migrations
 bin/rails db:migrate
 ```
 
-3. New tables are `recording_studio_access_requests` and `recording_studio_access_request_intents`. `gate_metadata` is added to `recording_studio_access_requests`.
+3. The new table is `recording_studio_access_requests`. `gate_metadata` is added to `recording_studio_access_requests`.
 4. Accessible does not depend on Users in the gemspec. Hosts that want the email-code screens add `recording_studio_user` the same way Messages does. Without Users, `request_access` still works for a signed-in actor.
 
 #### Upgrading to 0.14.0
