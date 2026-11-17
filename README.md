@@ -459,6 +459,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.47.0
+
+No Accessible migration. `authorized?` is unchanged, and `authorized_recording_ids` returns the same ids.
+
+A kept grant on the root still uses `Recording.within` when the stored root matches the parent chain. A child grant walks the granted subtrees. A stored root that those subtrees would miss still uses the full parent statement.
+
 #### Upgrading to 0.46.0
 
 No Accessible migration. `authorized?` is unchanged, and `authorized_recording_ids` returns the same ids.
@@ -1755,7 +1761,13 @@ RecordingStudio::Recording.where(
 
 `role` defaults to `:view`. `:edit` and `:admin` keep recordings at that rank or higher. A nil actor, a root that is not a recording, or a role other than `view`, `edit`, or `admin`, returns `RecordingStudio::Recording.none`.
 
-A kept grant on the root, with a valid manager chain, uses `Recording.within` (`for_root`) when the stored root matches the parent chain. That reads `root_recording_id` and does not walk descendants. It matches the parent chain when every descendant stores that root and every recording that stores the root is in the chain. A child grant, a root grant below the requested role, a recording that is not a root, a descendant whose stored root differs, or a recording that stores the root but sits outside the parent chain, still uses the parent walk, so the ids stay the same. That walk is one unloaded query. It does not load the children in Ruby and it does not paste an id list. A kept grant on a recording covers that recording and every descendant whose parent chain reaches the grant. A direct grant on a child does not cover the parent or a sibling, and that case still walks. A stronger grant on an ancestor still covers the child. A grant on a recording's stored root counts for that recording even when the root sits off the parent chain. That grant does not cover a descendant that does not inherit it through the parent chain and does not store that same root.
+A kept grant on the root, with a valid manager chain, uses `Recording.within` (`for_root`) when the stored root matches the parent chain. That reads `root_recording_id` and does not walk descendants. It matches the parent chain when every descendant stores that root and every recording that stores the root is in the chain.
+
+Any other kept grant builds one unloaded query from the actor's grants. The grant has to meet the role, stay kept, and pass the same manager chain as `authorized?`. The query walks up from those grants. A grant node whose parents reach the recording you passed becomes a seed. A grant on an ancestor makes that recording the seed. The relation then walks down from each seed through `parent_recording_id`, including the seed. The walk quotes those seed ids. It does not read `root_recording_id` and it does not stop at a depth cap.
+
+Before that relation is returned, two index probes look for rows the parent walk would miss. One probe finds a row whose `root_recording_id` is a seed other than the recording you passed. The other finds a grant outside that tree and a row that stores the grant while its parent does not. If either probe finds a row, the call uses the full parent statement, which still covers a stored root that sits off the parent chain. The ids are the same on both paths.
+
+A kept grant on a recording covers that recording and every descendant whose parent chain reaches the grant. A direct grant on a child does not cover the parent or a sibling. A stronger grant on an ancestor still covers the child. A grant on a recording's stored root counts for that recording even when the root sits off the parent chain. That grant does not cover a descendant that does not inherit it through the parent chain and does not store that same root.
 
 Dependent grants count only when every manager hop is still a kept access recording on the same root, with a ranked role at least as strong, and the chain does not cycle. A trashed grant, a destroyed grant, and a voided dependent stay out. A kept grant on a trashed recording still counts. A trashed recording stays in the relation when `authorized?` allows it. Filter `trashed_at` on the caller's query when the list should be live rows only.
 

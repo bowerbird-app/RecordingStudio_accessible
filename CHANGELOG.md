@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.47.0] - 2026-11-17
+
+### Changed
+- `authorized_recording_ids` seeds a child grant, a weaker root grant, or a
+  request for a recording that is not a root from that actor's kept grants.
+  It walks up from those grants, then walks down only the seeded subtrees.
+  A kept grant on the root still uses `Recording.within` when the stored root
+  matches the parent chain. If a row stores a seed other than the recording
+  you asked for, or a grant outside that tree has a row that stores it while
+  its parent does not, that call uses the previous full statement. The ids
+  match `authorized?`.
+
+### Upgrade notes
+- No Accessible migration. `authorized?` is unchanged. The ids from
+  `authorized_recording_ids` are unchanged.
+
 ## [0.46.0] - 2026-11-17
 
 ### Changed
