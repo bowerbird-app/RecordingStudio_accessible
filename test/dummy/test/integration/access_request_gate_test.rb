@@ -170,24 +170,6 @@ class AccessRequestGateTest < ActionDispatch::IntegrationTest
     assert_equal({}, pending_request.recordable.gate_metadata)
   end
 
-  test "the gate runs after the email code and before the note" do
-    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
-
-    sign_out @person
-    get new_request_path(access_action: "gate_test")
-    assert_match "Next", response.body
-
-    post email_path, params: { email: "gate-otp@example.com", name: "Gate User", access_action: "gate_test" }
-    follow_redirect!
-    assert_match "Check your email", response.body
-
-    post verify_path, params: { code: otp_code }
-    assert_response :redirect
-    assert_includes response.redirect_url, "/continue-gate"
-    assert_includes response.redirect_url, "access_action=gate_test"
-    assert_equal 0, RecordingStudio::AccessRequest.count
-  end
-
   test "managers see gate answers and the requester does not" do
     ExampleAccessRequestGate.open = true
     request_recording = RecordingStudioAccessible.request_access(
@@ -269,21 +251,8 @@ class AccessRequestGateTest < ActionDispatch::IntegrationTest
     recording_studio_accessible.recording_access_requests_path(@recording)
   end
 
-  def email_path
-    recording_studio_accessible.email_recording_access_requests_path(@recording)
-  end
-
-  def verify_path
-    recording_studio_accessible.verify_recording_access_requests_path(@recording)
-  end
-
   def pending_request
     RecordingStudioAccessible::AccessRequestQuery.pending_for(recording: @recording, actor: @person).first
-  end
-
-  def otp_code
-    intent = RecordingStudioAccessible::AccessRequestIntent.order(:created_at).last
-    RecordingStudioUser.otp_message(intent.otp_challenge_id).fetch(:body)[/\d{6}/]
   end
 
   def show_path(request_recording, **params)

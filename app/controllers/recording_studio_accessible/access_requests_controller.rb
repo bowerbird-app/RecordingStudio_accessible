@@ -3,7 +3,7 @@
 module RecordingStudioAccessible
   class AccessRequestsController < ApplicationController
     include AccessRequestsHelper
-    include AccessRequestSignIn
+    include RecordingStudioAccessible::NavigationUrlSafety
 
     helper AccessRequestsHelper
     helper_method :manager?
@@ -29,50 +29,14 @@ module RecordingStudioAccessible
     end
 
     def new
-      return render(:email) unless current_actor
+      return if redirect_unsigned_visitor?
       return if hold_for_gate?
 
       render :form
     end
 
-    def submit_email
-      AccessRequestIntake.start!(**intake_args)
-      redirect_to verify_recording_access_requests_path(@recording, **presentation_params)
-    rescue AccessRequestIntake::Error => e
-      flash.now[:alert] = e.message
-      render :email, status: :unprocessable_entity
-    end
-
-    def verify
-      @intent = open_intent
-      head :not_found unless @intent
-    end
-
-    def submit_verification
-      @intent = open_intent
-      return head :not_found unless @intent
-
-      sign_in_verified_requester(AccessRequestIntake.verify!(intent: @intent, code: params[:code], session: session))
-      redirect_after_verification
-    rescue AccessRequestIntake::Error => e
-      flash.now[:alert] = e.message
-      render :verify, status: :unprocessable_entity
-    end
-
-    def resend
-      @intent = open_intent
-      return head :not_found unless @intent
-
-      AccessRequestIntake.resend!(intent: @intent, request: request, session: session)
-      redirect_to verify_recording_access_requests_path(@recording, **presentation_params),
-                  notice: access_request_t("flashes.code_resent")
-    rescue AccessRequestIntake::Error => e
-      flash.now[:alert] = e.message
-      render :verify, status: :unprocessable_entity
-    end
-
     def create
-      return redirect_to new_recording_access_request_path(@recording, **kept_params) unless current_actor
+      return if redirect_unsigned_visitor?
       return if hold_for_gate?
 
       result = submit_request
@@ -138,11 +102,37 @@ module RecordingStudioAccessible
       RecordingStudioAccessible.configuration.current_actor_for(controller: self)
     end
 
-    def intake_args
-      {
-        recording: @recording, email: params[:email], name: params[:name], role: requested_role,
-        action: requested_action, request: request, session: session
-      }
+    def redirect_unsigned_visitor?
+      return false if current_actor.present?
+
+      path = local_sign_in_path
+      return false if path.blank?
+
+      store_access_request_return
+      redirect_to path
+      true
+    end
+
+    def local_sign_in_path
+      return unless main_app.respond_to?(:new_user_session_path)
+
+      fallback = "/__request_sign_in_missing__"
+      safe = safe_local_navigation_url(main_app.new_user_session_path, fallback: fallback)
+      return if safe == fallback
+
+      safe
+    end
+
+    def store_access_request_return
+      return unless respond_to?(:store_location_for, true)
+
+      store_location_for(:user, access_request_return_path)
+    end
+
+    def access_request_return_path
+      return request.fullpath if request.get?
+
+      new_recording_access_request_path(@recording, **kept_params.compact_blank)
     end
 
     def requested_role
@@ -151,17 +141,6 @@ module RecordingStudioAccessible
 
     def requested_action
       params[:access_action].presence || params.dig(:access_request, :action).presence
-    end
-
-    def open_intent
-      intent = AccessRequestIntent.find_by(id: session[AccessRequestIntake::SESSION_KEY])
-      intent if intent && intent.recording_id == @recording.id
-    end
-
-    def redirect_after_verification
-      return if hold_for_gate?(role: @intent.role, action: @intent.action)
-
-      redirect_to form_after_verification
     end
 
     def hold_for_gate?(role: requested_role, action: requested_action)
@@ -189,12 +168,6 @@ module RecordingStudioAccessible
         render :gate_closed, status: :unprocessable_entity
       end
       true
-    end
-
-    def form_after_verification
-      new_recording_access_request_path(
-        @recording, role: @intent.role, access_action: @intent.action, **presentation_params
-      )
     end
 
     def submit_request

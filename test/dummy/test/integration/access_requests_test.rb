@@ -37,102 +37,51 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_access_request_screen("form", page: false)
   end
 
-  test "visitor verifies an email code then sends a request" do
-    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
+  test "a signed-out visitor is sent to sign in and returns to the request form" do
+    path = new_request_path(role: "view", access_action: "read")
 
-    get new_request_path
-    assert_email_step
-    assert_access_request_screen("email", page: true)
+    get path
 
-    post email_path, params: {
-      email: "new-requester@example.com", name: "Ada Lovelace", role: "view", access_action: "read"
-    }
+    assert_redirected_to "/users/sign_in"
+    assert_equal path, session["user_return_to"]
+
+    post "/users/sign_in", params: { user: { email: @person.email, password: "Password" } }
+    assert_redirected_to path
+
     follow_redirect!
-    assert_match "Check your email", response.body
-    refute_recording_subtitle
-    assert_access_request_screen("verify", page: true)
-    assert_select "[data-access-request-step=verify] form .pt-6 button[type=submit]", text: "Confirm"
-    get verify_path(presentation: "modal"), headers: modal_headers
-    assert_match "Check your email", response.body
-    refute_recording_subtitle
-    assert_access_request_screen("verify", page: false)
-
-    post verify_path, params: { code: otp_code }
-    follow_redirect!
+    assert_response :success
     assert_match "Ask for access", response.body
     assert_match "Add a note", response.body
     refute_role_picker
-    refute_recording_subtitle
     assert_access_request_screen("form", page: true)
-    get new_request_path(presentation: "modal"), headers: modal_headers
-    assert_match "Ask for access", response.body
-    refute_role_picker
-    refute_recording_subtitle
-    assert_access_request_screen("form", page: false)
 
-    requester = User.find_by!(email: "new-requester@example.com")
-    assert_equal "Ada Lovelace", RecordingStudioUser.display_name_for(requester)
-
-    post request_path, params: { access_request: { message: "Hello from the visitor", action: "read" } }
+    assert_difference -> { RecordingStudio::AccessRequest.count }, 1 do
+      post request_path, params: { access_request: { message: "After sign in", role: "view", action: "read" } }
+    end
     follow_redirect!
     assert_match "Request sent", response.body
-    refute_recording_subtitle
-    get sent_path(presentation: "modal"), headers: modal_headers
-    assert_match "Request sent", response.body
-    refute_recording_subtitle
-    assert_access_request_screen("sent", page: false)
     assert_equal 1, RecordingStudio::AccessRequest.where(status: "pending").count
-
-    sign_in @manager
-    get requests_path
-    assert_match "Ada Lovelace", response.body
-    refute_match "Hello from the visitor", response.body
-    assert_select "a[data-modal-id=access-request-review][data-fp-style=default]", text: "Review"
-    refute_match "Not chosen yet", response.body
   end
 
-  test "visitor copy overrides follow every step" do
-    get new_request_path(copy: { email_title: "Request early access", verify_title: "Early code" }, copy_scope: "")
-    assert_select "h1", text: "Request early access"
+  test "a signed-out create is sent to sign in and records nothing" do
+    assert_no_difference -> { RecordingStudio::AccessRequest.count } do
+      post request_path, params: {
+        role: "view", access_action: "read", access_request: { message: "Not yet" }
+      }
+    end
 
-    post email_path, params: {
-      email: "early-access@example.com", name: "Early User",
-      copy: { verify_title: "Early code" }, copy_scope: ""
-    }
-    follow_redirect!
-    assert_select "h1", text: "Early code"
-    refute_match "Check your email", response.body
+    assert_redirected_to "/users/sign_in"
+    assert_equal new_request_path(role: "view", access_action: "read"), session["user_return_to"]
+  end
+
+  test "visitor copy overrides follow the request form" do
+    sign_in @person
+
+    get new_request_path(copy: { form_title: "Ask for early access" }, copy_scope: "")
+    assert_match "Ask for early access", response.body
 
     get new_request_path(copy_scope: "early_access_demo")
-    assert_select "h1", text: "Request early access"
-  end
-
-  test "email step keeps a blank name when the account does not require one" do
-    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
-
-    refute RecordingStudioAccessible::AccessRequestIntake.name_required?
-
-    post email_path, params: { email: "blank-name@example.com", name: "", role: "view", access_action: "read" }
-    follow_redirect!
-    assert_match "Check your email", response.body
-    refute_recording_subtitle
-    assert_nil RecordingStudioAccessible::AccessRequestIntent.order(:created_at).last.submitted_name
-  end
-
-  test "email step rejects a name that is too long" do
-    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
-
-    post email_path, params: { email: "long-name@example.com", name: "A" * 121, role: "view" }
-    assert_response :unprocessable_entity
-    assert_match "Name is too long", response.body
-  end
-
-  test "email step inside a modal frame has no document layout" do
-    get new_request_path(presentation: "modal"), headers: { "Turbo-Frame" => "access_request" }
-
-    assert_response :success
-    assert_email_step
-    assert_access_request_screen("email", page: false)
+    assert_match "Ask for early access", response.body
   end
 
   test "manager reviews and approves a request" do
@@ -234,38 +183,6 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     refute_match note, response.body
   end
 
-  test "a disabled email gets the same code page as any other email" do
-    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
-
-    disabled = create_user("disabled-requester@example.com")
-    disabled.confirm if disabled.respond_to?(:confirm)
-    with_inactive_email(disabled.email) do
-      post email_path, params: { email: disabled.email, name: "Pat Disabled" }
-    end
-
-    assert_response :redirect
-    follow_redirect!
-    assert_match "Check your email", response.body
-    refute_match "can&#39;t be used", response.body
-    refute_match "can't be used", response.body
-    assert_equal 1, User.where(email: disabled.email).count
-    assert_nil open_otp_challenge(disabled)
-  end
-
-  test "a throttled new email shows the rate limit and creates no user" do
-    skip "Recording Studio Users is required for email codes" unless defined?(::RecordingStudioUser)
-
-    email = "throttled-new@example.com"
-    digest = RecordingStudioUser::Services::OtpRateLimiter.email_key(email)
-    RecordingStudioUser::Services::OtpRateLimiter.allow_request!(scope: :issue, key: digest)
-
-    post email_path, params: { email: email, name: "Ada Lovelace" }
-
-    assert_response :unprocessable_entity
-    assert_match "Wait a minute", response.body
-    assert_nil User.find_by(email: email)
-  end
-
   test "locked screen helper renders a modal and a page link" do
     get access_request_demo_path(recording_id: @recording.id)
 
@@ -298,14 +215,6 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
   def requests_path
     request_path
-  end
-
-  def email_path
-    recording_studio_accessible.email_recording_access_requests_path(@recording)
-  end
-
-  def verify_path(**params)
-    recording_studio_accessible.verify_recording_access_requests_path(@recording, **params)
   end
 
   def sent_path(**params)
@@ -358,41 +267,6 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
       assert_select "input[type=radio][name=role][value=?]", role do |inputs|
         assert_select inputs.first.parent, "[data-flat-pack--icon-name-value=?]", icon
       end
-    end
-  end
-
-  def assert_email_step
-    assert_match "Request access", response.body
-    assert_match @workspace.name, response.body
-    assert_match "Next", response.body
-    assert_select "input[name=name]"
-    assert_select "input[name=name][required]", count: 0
-    assert_select "form .pt-6 button[type=submit]", text: "Next"
-    assert_select "h1", text: "Request access"
-    assert_select "h2", text: "Request access", count: 0
-    refute_match "Tell us where to send the code", response.body
-    refute_match "Send code", response.body
-  end
-
-  def otp_code
-    intent = RecordingStudioAccessible::AccessRequestIntent.order(:created_at).last
-    RecordingStudioUser.otp_message(intent.otp_challenge_id).fetch(:body)[/\d{6}/]
-  end
-
-  def open_otp_challenge(user)
-    RecordingStudioUser::OtpChallenge.find_by(user: user, consumed_at: nil, revoked_at: nil)
-  end
-
-  def with_inactive_email(email)
-    find_by = User.method(:find_by)
-    User.stub(:find_by, lambda { |*args, **kwargs|
-      user = find_by.call(*args, **kwargs)
-      if user&.email == email
-        user.define_singleton_method(:active_for_authentication?) { false }
-      end
-      user
-    }) do
-      yield
     end
   end
 end

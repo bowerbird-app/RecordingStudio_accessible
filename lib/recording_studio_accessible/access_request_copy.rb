@@ -4,9 +4,8 @@ module RecordingStudioAccessible
   class AccessRequestCopy
     SESSION_KEY = :recording_studio_accessible_access_request_copy
     KEYS = %w[
-      cta email_title name email_label email_submit verify_title verify_intro
-      code confirm resend form_title message submit sent_title sent_body
-      page_link already flashes.submitted flashes.code_resent
+      cta form_title message submit sent_title sent_body
+      page_link already flashes.submitted
     ].freeze
 
     def self.remember(session, recording_id, params)

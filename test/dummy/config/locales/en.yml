@@ -30,7 +30,6 @@
 en:
   hello: "Hello world"
   early_access_demo:
-    email_title: "Request early access"
     form_title: "Ask for early access"
   featured_in:
     teams:
