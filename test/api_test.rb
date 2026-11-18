@@ -161,11 +161,14 @@ class ApiTest < Minitest::Test
 
     assert_equal "Folder - Grant Access", folder.fetch(:title)
     assert_equal "Folder-only grant copy.", folder.fetch(:description)
+    refute folder.key?(:tag_suffix)
     refute folder.equal?(RecordingStudioAccessible::Api::ACTION_DEFINITIONS.fetch(:grant_access).fetch(:openapi))
     assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, workspace.fetch(:description)
     refute workspace.key?(:title)
+    refute workspace.key?(:tag_suffix)
     assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, generic.fetch(:description)
     refute generic.key?(:title)
+    refute generic.key?(:tag_suffix)
   ensure
     RecordingStudioAccessible::Api::OpenapiOverrides.reset!
   end
@@ -185,9 +188,130 @@ class ApiTest < Minitest::Test
       assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION,
                    grant.fetch(:openapi).fetch(:description)
       refute grant.fetch(:openapi).key?(:title)
+      refute grant.fetch(:openapi).key?(:tag_suffix)
     end
   ensure
     RecordingStudioAccessible::Api::OpenapiOverrides.reset!
+  end
+
+  def test_tag_suffix_is_returned_for_that_type_only
+    RecordingStudioAccessible::Api.override_openapi(
+      type: "PressCenter",
+      action: :grant_access,
+      tag_suffix: "Access",
+      description: "Grant a role on this press center."
+    )
+
+    press_center = RecordingStudioAccessible::Api.openapi_for(:grant_access, type: "PressCenter")
+    folder = RecordingStudioAccessible::Api.openapi_for(:grant_access, type: "Folder")
+    generic = RecordingStudioAccessible::Api.openapi_for(:grant_access)
+    listed = RecordingStudioAccessible::Api.openapi_for(:list_access, type: "PressCenter")
+
+    assert_equal "Access", press_center.fetch(:tag_suffix)
+    assert_equal "Grant a role on this press center.", press_center.fetch(:description)
+    refute press_center.key?(:title)
+    assert_equal RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_SUMMARY, press_center.fetch(:summary)
+    refute folder.key?(:tag_suffix)
+    assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, folder.fetch(:description)
+    refute generic.key?(:tag_suffix)
+    refute listed.key?(:tag_suffix)
+    assert_equal RecordingStudioAccessible::Api::LIST_ACCESS_DESCRIPTION, listed.fetch(:description)
+  ensure
+    RecordingStudioAccessible::Api::OpenapiOverrides.reset!
+  end
+
+  def test_tag_suffix_alone_keeps_the_generic_title_and_description
+    RecordingStudioAccessible::Api.override_openapi(
+      type: "PressCenter",
+      action: :grant_access,
+      tag_suffix: "Access"
+    )
+
+    press_center = RecordingStudioAccessible::Api.openapi_for(:grant_access, type: "PressCenter")
+
+    assert_equal "Access", press_center.fetch(:tag_suffix)
+    assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, press_center.fetch(:description)
+    refute press_center.key?(:title)
+    refute RecordingStudioAccessible::Api.openapi_for(:grant_access).key?(:tag_suffix)
+  ensure
+    RecordingStudioAccessible::Api::OpenapiOverrides.reset!
+  end
+
+  def test_registered_openapi_for_returns_tag_suffix_for_that_type
+    RecordingStudioAccessible::Api.override_openapi(
+      type: "PressCenter",
+      action: :grant_access,
+      tag_suffix: "Access"
+    )
+
+    with_fake_recording_studio_api do |api|
+      RecordingStudioAccessible::Api.register_capability_actions!
+      grant = api.registrations.find { |registration| registration.fetch(:name) == :grant_access }
+      lookup = grant.fetch(:openapi_for)
+
+      press_center = lookup.call(type: "PressCenter", action: :grant_access)
+      workspace = lookup.call(type: "Workspace", action: :grant_access)
+
+      assert_equal "Access", press_center.fetch(:tag_suffix)
+      assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, press_center.fetch(:description)
+      refute press_center.key?(:title)
+      refute workspace.key?(:tag_suffix)
+      refute grant.fetch(:openapi).key?(:tag_suffix)
+    end
+  ensure
+    RecordingStudioAccessible::Api::OpenapiOverrides.reset!
+  end
+
+  def test_openapi_override_accepts_a_title_without_a_description
+    RecordingStudioAccessible::Api.override_openapi(
+      type: "Folder",
+      action: :update_access,
+      title: "Folder - Update Access"
+    )
+
+    folder = RecordingStudioAccessible::Api.openapi_for(:update_access, type: "Folder")
+
+    assert_equal "Folder - Update Access", folder.fetch(:title)
+    assert_equal RecordingStudioAccessible::Api::UPDATE_ACCESS_DESCRIPTION, folder.fetch(:description)
+    refute folder.key?(:tag_suffix)
+    refute RecordingStudioAccessible::Api.openapi_for(:update_access).key?(:title)
+  ensure
+    RecordingStudioAccessible::Api::OpenapiOverrides.reset!
+  end
+
+  def test_openapi_override_rejects_a_call_with_no_fields
+    assert_raises(ArgumentError) do
+      RecordingStudioAccessible::Api.override_openapi(type: "PressCenter", action: :grant_access)
+    end
+  end
+
+  def test_openapi_override_rejects_unknown_action_and_missing_type
+    assert_raises(ArgumentError) do
+      RecordingStudioAccessible::Api.override_openapi(
+        type: "PressCenter",
+        action: :not_an_action,
+        tag_suffix: "Access"
+      )
+    end
+
+    assert_raises(ArgumentError) do
+      RecordingStudioAccessible::Api.override_openapi(type: nil, action: :grant_access, tag_suffix: "Access")
+    end
+
+    assert_raises(ArgumentError) do
+      RecordingStudioAccessible::Api.override_openapi(type: "", action: :grant_access, tag_suffix: "Access")
+    end
+  end
+
+  def test_openapi_override_still_rejects_a_nil_description
+    assert_raises(ArgumentError) do
+      RecordingStudioAccessible::Api.override_openapi(
+        type: "Folder",
+        action: :grant_access,
+        title: "Folder - Grant Access",
+        description: nil
+      )
+    end
   end
 
   def test_list_access_contract_rejects_unknown_keys_after_filtering_route_params

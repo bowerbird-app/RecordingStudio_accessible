@@ -17,8 +17,8 @@ module RecordingStudioAccessible
     ACTION_NAMES = %i[list_access grant_access update_access revoke_access].freeze
 
     class << self
-      def override_openapi(type:, action:, title:, description:)
-        OpenapiOverrides.store(type: type, action: action, title: title, description: description)
+      def override_openapi(type:, action:, **overrides)
+        OpenapiOverrides.store(type: type, action: action, **overrides)
       end
 
       def openapi_for(action, type: nil)

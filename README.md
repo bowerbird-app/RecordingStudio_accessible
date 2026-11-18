@@ -444,6 +444,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.55.0
+
+No Accessible migration. Tool names, auth, required roles, and grant behavior stay the same.
+
+`override_openapi` accepts `tag_suffix`. Pass it for one recordable type so that type's access actions can sit in their own docs group. `title` is optional. Pass at least one of `title`, `description`, or `tag_suffix`. Keys you leave out stay on the generic copy. `openapi_for` adds `tag_suffix` only for a type that set it.
+
 #### Upgrading to 0.54.1
 
 No Accessible migration. The gem still requires Recording Studio `>= 7.7.0`, `< 8.0`. This repo tests Recording Studio `v7.7.1`.
@@ -1545,19 +1551,22 @@ remove the last effective admin (HTTP 422). Revoke uses
 `recording_studio.accessible.errors.last_admin`. A last-admin role change uses
 `errors.last_admin_role_change`.
 
-Host gems can override OpenAPI title and description for one recordable type
-without changing other types:
+Host gems can set the OpenAPI title, description, and docs-group `tag_suffix` for one recordable type. Other types keep the generic Accessible copy.
 
 ```ruby
 RecordingStudioAccessible::Api.override_openapi(
-  type: "Folder",
+  type: "PressCenter",
   action: :grant_access,
-  title: "Folder - Grant Access",
-  description: "Grant a role on this folder."
+  tag_suffix: "Access",
+  description: "Grant a role on this press center."
 )
 ```
 
-The generic copy stays on `ACTION_DEFINITIONS`. Each action has a short summary and a description that names prerequisites, where ids come from, rejections, repeat-call behavior, and the return shape. Field descriptions say what the value is and where it comes from. `openapi_for(:grant_access, type: "Folder")` applies the override. Accessible registers that lookup as `openapi_for:` on each capability action so Recording Studio API OpenAPI and the MCP catalog use the per-type copy.
+The generic copy stays on `ACTION_DEFINITIONS`. Each action has a short summary and a description. The description names prerequisites, where ids come from, rejections, repeat-call behavior, and the return shape. Field descriptions say what the value is and where it comes from.
+
+`openapi_for(:grant_access, type: "PressCenter")` applies the override, including `tag_suffix`. Accessible registers that lookup as `openapi_for:` on each capability action. Recording Studio API and the MCP catalog read the hash. MCP uses `tag_suffix` as the group suffix. `PressCenter` with `tag_suffix: "Access"` is the Press Center Access group.
+
+`title` is optional. A call that passes only `tag_suffix` keeps the generic title and description. Pass at least one of `title`, `description`, or `tag_suffix`. A call with `title` and `description` still works.
 
 Each action is `capability: :accessible`, `required_role: :admin`, member
 scope. Handlers call `AccessManagementPolicy` and the Grant / Invite / Update /
