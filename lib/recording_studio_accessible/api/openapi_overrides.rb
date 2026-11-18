@@ -3,16 +3,16 @@
 module RecordingStudioAccessible
   module Api
     module OpenapiOverrides
+      OVERRIDE_FIELDS = %i[title description tag_suffix].freeze
+
       module_function
 
-      def store(type:, action:, title:, description:)
+      def store(type:, action:, **overrides)
         type_name = normalized_type!(type)
         name = normalized_action!(action)
-        raise ArgumentError, "title is required" if title.nil?
-        raise ArgumentError, "description is required" if description.nil?
 
         entries[type_name] ||= {}
-        entries[type_name][name] = { title: title, description: description }.freeze
+        entries[type_name][name] = overlay!(overrides)
       end
 
       def fetch(type, action)
@@ -33,6 +33,19 @@ module RecordingStudioAccessible
 
       def entries
         @entries ||= {}
+      end
+
+      def overlay!(overrides)
+        fields = overrides.transform_keys(&:to_sym)
+        unknown = fields.keys - OVERRIDE_FIELDS
+        raise ArgumentError, "Unknown OpenAPI override #{unknown.first.inspect}" if unknown.any?
+        raise ArgumentError, "pass title, description, or tag_suffix" if fields.empty?
+
+        fields.each do |key, value|
+          raise ArgumentError, "#{key} is required" if value.nil?
+        end
+
+        fields.freeze
       end
 
       def normalized_type!(type)

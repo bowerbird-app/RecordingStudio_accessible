@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.55.0] - 2026-11-18
+
+### Added
+- `RecordingStudioAccessible::Api.override_openapi` accepts optional `tag_suffix`. A host can put the four access actions in their own docs group for one recordable type. `title` is optional. Pass at least one of `title`, `description`, or `tag_suffix`. Only keys you pass are stored, so a `tag_suffix` alone keeps the generic title and description.
+
+### Upgrade notes
+- No Accessible migration. Tool names, auth, required roles, and grant behavior stay the same.
+- `openapi_for(action, type:)` includes `tag_suffix` only for a type that set it. Other types, and a call with no type, stay the same.
+
 ## [0.54.1] - 2026-11-18
 
 ### Changed
@@ -1527,7 +1536,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.54.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.55.0...HEAD
+[0.55.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.54.1...v0.55.0
 [0.54.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.54.0...v0.54.1
 [0.44.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.1...v0.44.0
 [0.43.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.0...v0.43.1
