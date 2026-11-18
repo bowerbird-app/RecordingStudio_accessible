@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.54.1] - 2026-11-18
+
+### Changed
+- Development and dummy pins move to Recording Studio `v7.7.1`, FlatPack `v0.1.378`, Trashable `v1.2.0`, Metrics `v0.9.1`, Admin `v2.19.0`, API `v1.15.0`, Attachable `v0.32.1`, Icons `v0.4.1`, Logs `v0.8.1`, Moveable `v6.0.1`, Users `v0.36.0`, and Notifications `v0.19.4`. Cache `v0.7.0`, Root Switchable `v0.16.0`, and Internationalization `v0.3.0` stay where they are.
+- The dummy copies Recording Studio API `v1.15.0`'s `add_owner_to_recording_studio_api_api_clients` migration so an API client can store `owner_type` and `owner_id`. It also ships a minimal `config/recording_studio_api.yml` (`shared: {}`) so API `1.12+` can boot.
+
+### Upgrade notes
+- No Accessible migration. The gemspec still requires Recording Studio `>= 7.7.0`, `< 8.0`.
+- A host that loads Recording Studio API `1.12` or newer needs `config/recording_studio_api.yml`. The dummy ships a minimal file with `shared: {}`.
+
 ## [0.54.0] - 2026-11-17
 
 ### Changed
@@ -1517,7 +1527,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.44.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.54.1...HEAD
+[0.54.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.54.0...v0.54.1
 [0.44.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.1...v0.44.0
 [0.43.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.0...v0.43.1
 [0.43.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.42.0...v0.43.0

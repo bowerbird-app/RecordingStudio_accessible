@@ -160,8 +160,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_200000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "api_key", default: "public", null: false
+    t.string "owner_type"
+    t.uuid "owner_id"
     t.index ["access_recording_id"], name: "index_recording_studio_api_api_clients_on_access_recording_id", unique: true
     t.index ["api_key"], name: "index_recording_studio_api_api_clients_on_api_key"
+    t.index ["owner_type", "owner_id"], name: "index_rs_api_clients_on_owner"
   end
 
   create_table "recording_studio_api_api_credentials", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

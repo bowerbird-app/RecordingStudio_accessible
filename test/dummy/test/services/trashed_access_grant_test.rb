@@ -24,7 +24,7 @@ class TrashedAccessGrantTest < ActiveSupport::TestCase
   end
 
   test "a grant trashed through Trashable does not authorize" do
-    assert_equal "1.0.1", RecordingStudioTrashable::VERSION
+    assert_equal "1.2.0", RecordingStudioTrashable::VERSION
     refute defined?(RecordingStudioTrashable::Engine)
     assert_includes RecordingStudio.kept_sql, "trashed_at IS NULL"
     assert @grant.kept?

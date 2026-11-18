@@ -1,0 +1,3 @@
+# Minimal host config so Recording Studio API 1.12+ can boot.
+# Shared settings stay unset; the dummy uses the gem defaults.
+shared: {}
