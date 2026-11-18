@@ -11,7 +11,7 @@ class TrashableTrashedAtParityIntegrationTest < ActiveSupport::TestCase
   end
 
   test "core kept is available and the Trashable engine is not loaded" do
-    assert_equal "1.0.1", RecordingStudioTrashable::VERSION
+    assert_equal "1.2.0", RecordingStudioTrashable::VERSION
     refute defined?(RecordingStudioTrashable::Engine)
     assert_respond_to RecordingStudio::Recording, :kept
     assert_respond_to @root, :kept?
