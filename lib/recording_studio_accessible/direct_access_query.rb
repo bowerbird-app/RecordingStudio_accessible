@@ -33,6 +33,7 @@ module RecordingStudioAccessible
           .where(parent_recording_id: parent_ids, recordable_type: "RecordingStudio::Access")
           .joins(ACCESS_JOIN_SQL)
           .where(recording_studio_accesses: actor_filter(actor))
+          .includes(:recordable)
           .order(created_at: :desc, id: :desc)
       end
 
