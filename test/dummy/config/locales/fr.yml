@@ -229,10 +229,6 @@ fr:
         empty_title: "Rien pour l’instant"
         empty_subtitle: "Quand quelqu’un partage quelque chose avec vous, ça apparaît ici."
         workspace_fallback: "Espace"
-        columns:
-          name: "Nom"
-          role: "Rôle"
-          workspace: "Espace"
       mailers:
         someone: "Quelqu’un"
         hello: "Bonjour %{email},"

@@ -189,10 +189,6 @@ en:
         empty_title: "Nothing here yet"
         empty_subtitle: "When someone shares something with you, it shows up here."
         workspace_fallback: "Workspace"
-        columns:
-          name: "Name"
-          role: "Role"
-          workspace: "Workspace"
       mailers:
         someone: "Someone"
         hello: "Hello %{email},"

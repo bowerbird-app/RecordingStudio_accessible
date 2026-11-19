@@ -1,37 +1,34 @@
 <% content_for :title, accessible_t("shared_with.title") %>
 <% content_for :subtitle, accessible_t("shared_with.subtitle") %>
+<% recording_studio_page_width(:narrow) %>
 
 <%= turbo_frame_tag RecordingStudioAccessible::SharedWith::FRAME_ID do %>
   <% if @page.items.any? %>
-    <%= render FlatPack::Table::Component.new(
-      data: @page.items,
-      tbody_data: { pagination_content: true }
-    ) do |table| %>
-      <% table.column(title: accessible_t("shared_with.columns.name")) do |item| %>
-        <% shared_with_name(item) %>
-      <% end %>
-      <% table.column(title: accessible_t("shared_with.columns.role")) do |item| %>
-        <% item.role_label %>
-      <% end %>
-      <% table.column(title: accessible_t("shared_with.columns.workspace")) do |item| %>
-        <% item.workspace %>
+    <%= render FlatPack::List::Component.new(
+          layout: :items,
+          divider: true,
+          class: "min-w-0 w-full",
+          data: { pagination_content: true }
+        ) do %>
+      <% @page.items.each do |item| %>
+        <%= shared_with_item(item) %>
       <% end %>
     <% end %>
 
     <% if @page.has_more %>
       <%= render FlatPack::PaginationInfinite::Component.new(
-        url: RecordingStudioAccessible::SharedWith.next_url(@list_url, @page.next_cursor),
-        has_more: true,
-        loading_variant: :table,
-        cursor_selector: "tr:last-child [data-pagination-cursor]",
-        cursor_param: "cursor",
-        observe_root_selector: "body"
-      ) %>
+            url: RecordingStudioAccessible::SharedWith.next_url(@list_url, @page.next_cursor),
+            has_more: true,
+            loading_variant: :inline,
+            cursor_selector: "li:last-child [data-pagination-cursor]",
+            cursor_param: "cursor",
+            observe_root_selector: "body"
+          ) %>
     <% end %>
   <% else %>
     <%= render FlatPack::EmptyState::Component.new(
-      title: accessible_t("shared_with.empty_title"),
-      description: accessible_t("shared_with.empty_subtitle")
-    ) %>
+          title: accessible_t("shared_with.empty_title"),
+          description: accessible_t("shared_with.empty_subtitle")
+        ) %>
   <% end %>
 <% end %>

@@ -33,12 +33,8 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
     assert_select "turbo-frame#shared_with_index"
     assert_match "Shared with me", response.body
     assert_match "Everything shared with you, one by one.", response.body
-    assert_match @folder.name, response.body
-    assert_match "Edit", response.body
-    assert_match @workspace.name, response.body
-    assert_select "td a[href=?]", main_workspace_path, text: @folder.name
-    assert_select "td", text: "Edit"
-    assert_select "td", text: @workspace.name
+    assert_select "table", count: 0
+    assert_shared_row(@folder.name, "Edit", @workspace.name, main_workspace_path)
 
     sign_in @outsider
     get recording_studio_accessible.shared_with_path
@@ -76,13 +72,36 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
     get recording_studio_accessible.shared_with_path
 
     assert_response :success
-    assert_select "td a[href=?]", "/kits/#{@recording.id}", text: @folder.name
+    assert_shared_row(@folder.name, "Edit", @workspace.name, "/kits/#{@recording.id}")
     refute_match hidden.name, response.body
     refute_match "polymorphic", response.body
 
     get recording_studio_accessible.shared_with_path(cursor: "nope")
 
     assert_response :bad_request
+  end
+
+  test "another page keeps a cursor on the last row" do
+    10.times do |index|
+      folder = Folder.create!(
+        workspace: @workspace,
+        name: "Extra kit #{index} #{SecureRandom.hex(2)}",
+        summary: "Kit",
+        position: index + 1
+      )
+      recording = create_child_recording(recordable: folder, parent_recording: @root)
+      create_direct_access_recording(actor: @person, role: :view, parent_recording: recording)
+    end
+    sign_in @person
+
+    get recording_studio_accessible.shared_with_path
+
+    assert_response :success
+    assert_select "ul[data-pagination-content] li", count: RecordingStudioAccessible::SharedWith::PAGE_SIZE
+    assert_select "li:last-child [data-pagination-cursor]"
+    assert_select "[data-flat-pack--pagination-infinite-loading-variant-value=?]", "inline"
+    assert_select "[data-flat-pack--pagination-infinite-cursor-selector-value=?]",
+                  "li:last-child [data-pagination-cursor]"
   end
 
   test "an unset resolver hides every row" do
@@ -105,5 +124,17 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
 
   def main_workspace_path
     Rails.application.routes.url_helpers.workspace_path(@workspace)
+  end
+
+  def assert_shared_row(title, role, workspace, href)
+    assert_select "li" do |rows|
+      row = rows.find { |candidate| candidate.at("a")&.text&.squish == title }
+      assert row, "expected a row for #{title}"
+      assert_equal href, row.at("a")["href"]
+      assert_includes row.at("a")["class"].to_s, "underline"
+      assert_includes row.text, role
+      assert_includes row.text, workspace
+      assert row.at("[data-pagination-cursor]")
+    end
   end
 end
