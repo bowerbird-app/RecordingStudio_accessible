@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- `authorized?` and `role_for` load a saved recording's ancestors in one query, then reuse that parent chain for the rest of the request. Sibling checks no longer repeat the recursive walk and the per-id recording load. A cycle or a chain past the depth cap still walks `parent_recording` in memory. Roles are unchanged.
+- `access_recordings_for_actor_in` preloads the Access row with the grant recordings, so one lookup does not load each access record on its own.
+
 ## [0.55.0] - 2026-11-18
 
 ### Added

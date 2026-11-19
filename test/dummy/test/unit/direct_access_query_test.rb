@@ -39,6 +39,10 @@ class DirectAccessQueryTest < Minitest::Test
       @orders << ordering
       self
     end
+
+    def includes(*)
+      self
+    end
   end
 
   def test_access_recordings_for_filters_to_active_access_children
