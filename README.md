@@ -433,7 +433,7 @@ end
 
 Return nil, or leave out the title or the url, and that row is hidden. Leave the resolver unset and every row is hidden. The screen does not guess a url with `polymorphic_url`.
 
-The mounted page is `GET /recording_studio_accessible/shared_with`. Any signed-in actor can open it. A blank actor gets 403. The host sign-in filter still runs first, so a signed-out visit follows that filter. Each row is the item name as a link, with the role and workspace on the line under it. The link is the resolver url. Opening the item does not grant the workspace. The list is the same at every width.
+The mounted page is `GET /recording_studio_accessible/shared_with`. Any signed-in actor can open it. A blank actor gets 403. The host sign-in filter still runs first, so a signed-out visit follows that filter. Each row is the item name as a link, with the workspace on the line under it. The link is the resolver url. Opening the item does not grant the workspace. The list sits in a card and is the same at every width.
 
 Copy lives at `recording_studio.accessible.shared_with`.
 

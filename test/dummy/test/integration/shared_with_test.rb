@@ -34,7 +34,8 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
     assert_match "Shared with me", response.body
     assert_match "Everything shared with you, one by one.", response.body
     assert_select "table", count: 0
-    assert_shared_row(@folder.name, "Edit", @workspace.name, main_workspace_path)
+    assert_select ".fp-card.border ul.flat-pack-list-divided[data-pagination-content]"
+    assert_shared_row(@folder.name, @workspace.name, main_workspace_path, hidden_role: "Edit")
 
     sign_in @outsider
     get recording_studio_accessible.shared_with_path
@@ -43,6 +44,7 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
     assert_match "Nothing here yet", response.body
     assert_match "When someone shares something with you, it shows up here.", response.body
     refute_match @folder.name, response.body
+    assert_select ".fp-card", count: 0
   end
 
   test "a signed-out visit redirects and a blank actor is forbidden" do
@@ -72,7 +74,7 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
     get recording_studio_accessible.shared_with_path
 
     assert_response :success
-    assert_shared_row(@folder.name, "Edit", @workspace.name, "/kits/#{@recording.id}")
+    assert_shared_row(@folder.name, @workspace.name, "/kits/#{@recording.id}", hidden_role: "Edit")
     refute_match hidden.name, response.body
     refute_match "polymorphic", response.body
 
@@ -126,14 +128,15 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
     Rails.application.routes.url_helpers.workspace_path(@workspace)
   end
 
-  def assert_shared_row(title, role, workspace, href)
+  def assert_shared_row(title, workspace, href, hidden_role:)
     assert_select "li" do |rows|
       row = rows.find { |candidate| candidate.at("a")&.text&.squish == title }
       assert row, "expected a row for #{title}"
       assert_equal href, row.at("a")["href"]
       assert_includes row.at("a")["class"].to_s, "underline"
-      assert_includes row.text, role
-      assert_includes row.text, workspace
+      detail = row.at(".fp-list-item-subtitle")
+      assert_equal workspace, detail.text.squish
+      refute_includes detail.text, hidden_role
       assert row.at("[data-pagination-cursor]")
     end
   end

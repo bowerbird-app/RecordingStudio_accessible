@@ -4,14 +4,15 @@
 
 <%= turbo_frame_tag RecordingStudioAccessible::SharedWith::FRAME_ID do %>
   <% if @page.items.any? %>
-    <%= render FlatPack::List::Component.new(
-          layout: :items,
-          divider: true,
-          class: "min-w-0 w-full",
-          data: { pagination_content: true }
-        ) do %>
-      <% @page.items.each do |item| %>
-        <%= shared_with_item(item) %>
+    <%= render FlatPack::Card::Component.new(border: :default, padding: :none, class: "min-w-0 w-full") do %>
+      <%= render FlatPack::List::Component.new(
+            layout: :items,
+            divider: true,
+            data: { pagination_content: true }
+          ) do %>
+        <% @page.items.each do |item| %>
+          <%= shared_with_item(item) %>
+        <% end %>
       <% end %>
     <% end %>
 

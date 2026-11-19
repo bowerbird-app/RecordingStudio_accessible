@@ -29,7 +29,7 @@ module RecordingStudioAccessible
 
     def shared_with_detail(item)
       render FlatPack::Text::Component.new(
-        text: [item.role_label, item.workspace].compact_blank.join(" · "),
+        text: item.workspace.to_s,
         size: :sm,
         style: :muted,
         as: :p,
