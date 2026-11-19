@@ -103,7 +103,9 @@ class AuthorizedRecordingsParityTest < ActiveSupport::TestCase
     assert_equal RecordingStudio::Recording.none.to_sql, empty.to_sql
     assert_empty empty
 
-    assert_equal RecordingStudio::Recording.none.to_sql, recordings(actor: @member, root: @root, role: :download).to_sql
+    download = recordings(actor: @member, root: @root, role: :download)
+    assert_empty download
+    refute RecordingStudioAccessible.authorized?(actor: @member, recording: @root, role: :download)
     assert_equal RecordingStudio::Recording.none.to_sql, recordings(actor: @member, root: "root").to_sql
     assert_equal RecordingStudio::Recording.none.to_sql,
                  recordings(actor: @member, root: @root, recordable_type: "").to_sql

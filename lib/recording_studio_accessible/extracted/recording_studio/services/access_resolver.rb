@@ -16,7 +16,33 @@ module RecordingStudio
       def resolve_role
         return nil unless actor && recording
 
-        RecordingStudio::AccessRoles.strongest(roles_on_path)
+        best_name = nil
+        best_rank = nil
+        path.lookup_recordings.each do |node|
+          lookup.roles_for(node).each do |role|
+            best_name, best_rank = stronger_role(best_name, best_rank, node, role)
+          end
+        end
+        best_name
+      end
+
+      def stronger_role(best_name, best_rank, node, role)
+        rank = RecordingStudioAccessible::RoleRegistry.rank_on(node, role)
+        return [best_name, best_rank] unless rank
+        return [best_name, best_rank] if best_rank && rank <= best_rank
+
+        [role, rank]
+      end
+
+      def meets?(minimum_role)
+        return false unless actor && recording
+        return false if closed_custom_role?(recording, minimum_role)
+
+        path.lookup_recordings.any? do |node|
+          lookup.roles_for(node).any? do |role|
+            RecordingStudioAccessible::RoleRegistry.meets?(node, role, minimum_role)
+          end
+        end
       end
 
       def any_effective_grant?
@@ -34,6 +60,11 @@ module RecordingStudio
         path.lookup_recordings.any? do |path_recording|
           lookup.roles_for(path_recording).intersect?(wanted)
         end
+      end
+
+      def closed_custom_role?(node, role)
+        RecordingStudioAccessible::RoleRegistry.custom_name?(role) &&
+          !RecordingStudioAccessible::RoleRegistry.declares?(node, role)
       end
 
       def normalized_role_names(roles)

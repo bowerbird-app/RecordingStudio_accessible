@@ -17,7 +17,7 @@ class RecordingsForParityTest < ActiveSupport::TestCase
   teardown do
     RecordingStudioAccessible.configuration.action_audiences.replace(@original_action_audiences)
     if Folder.instance_variable_defined?(:@accessible_role_set)
-      Folder.remove_instance_variable(:@accessible_role_set)
+      Folder.clear_accessible_roles!
     end
   end
 
@@ -126,7 +126,7 @@ class RecordingsForParityTest < ActiveSupport::TestCase
     refute_includes listed_ids(@root), kept.id
   end
 
-  test "an unranked grant matches the blank floor and misses a ranked floor" do
+  test "a ranked custom grant matches the blank floor and a view floor" do
     Folder.accessible_roles :view, :download
     ranked = add_folder("Ranked")
     download = add_folder("Download")
@@ -136,7 +136,7 @@ class RecordingsForParityTest < ActiveSupport::TestCase
     assert_equal oracle_ids(@root), listed_ids(@root)
     assert_includes listed_ids(@root), download.id
     assert_equal oracle_ids(@root, minimum_role: :view), listed_ids(@root, minimum_role: :view)
-    refute_includes listed_ids(@root, minimum_role: :view), download.id
+    assert_includes listed_ids(@root, minimum_role: :view), download.id
   end
 
   test "a grant on a root off the parent path still includes that child" do

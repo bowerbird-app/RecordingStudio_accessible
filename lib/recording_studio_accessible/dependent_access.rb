@@ -44,7 +44,11 @@ module RecordingStudioAccessible
         next_seen = recording_id ? seen_ids.merge(recording_id => true) : seen_ids
         manager = find_recording(manager_id)
         return false unless valid_manager?(manager, relative_to: access_recording)
-        return false unless role_capped?(dependent_role: access&.role, manager: manager)
+        return false unless role_capped?(
+          dependent_role: access&.role,
+          manager: manager,
+          dependent_recording: content_recording(access_recording)
+        )
         return false unless effective?(manager, next_seen)
 
         true
@@ -63,8 +67,10 @@ module RecordingStudioAccessible
         if cyclic_dependency?(depends_on: manager, dependent_recording: dependent_recording)
           return Copy.t("errors.dependent_cycle")
         end
-        return Copy.t("errors.dependent_unranked_role") unless ranked_for_comparison?(role, manager)
-        return Copy.t("errors.dependent_role_exceeds") unless role_capped?(dependent_role: role, manager: manager)
+        return Copy.t("errors.dependent_unranked_role") unless ranked_for_comparison?(role, manager, target_recording)
+        return Copy.t("errors.dependent_role_exceeds") unless role_capped?(
+          dependent_role: role, manager: manager, dependent_recording: target_recording
+        )
 
         nil
       end
@@ -88,17 +94,28 @@ module RecordingStudioAccessible
         true
       end
 
-      def ranked_for_comparison?(role, manager)
+      def ranked_for_comparison?(role, manager, target_recording)
         manager_role = recordable_for(manager)&.role
-        RecordingStudio::AccessRoles.value_for(role) && RecordingStudio::AccessRoles.value_for(manager_role)
+        rank_on(target_recording, role) && rank_on(content_recording(manager), manager_role)
       end
 
-      def role_capped?(dependent_role:, manager:)
+      def role_capped?(dependent_role:, manager:, dependent_recording:)
         manager_role = recordable_for(manager)&.role
-        return false unless RecordingStudio::AccessRoles.value_for(manager_role)
-        return false unless RecordingStudio::AccessRoles.value_for(dependent_role)
+        manager_rank = rank_on(content_recording(manager), manager_role)
+        dependent_rank = rank_on(dependent_recording, dependent_role)
+        return false unless manager_rank && dependent_rank
 
-        RecordingStudio::AccessRoles.satisfies?(role: manager_role, minimum_role: dependent_role)
+        manager_rank >= dependent_rank
+      end
+
+      def rank_on(recording, role)
+        RecordingStudioAccessible::RoleRegistry.rank_on(recording, role)
+      end
+
+      def content_recording(access_recording)
+        return unless access_recording.respond_to?(:parent_recording)
+
+        access_recording.parent_recording
       end
 
       def cyclic_dependency?(depends_on:, dependent_recording:)

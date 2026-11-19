@@ -4,6 +4,9 @@ class HomeController < ApplicationController
     @root_recording = current_workspace_recording
     @root_access_management_enabled = access_management_enabled_for(@root_recording)
     @demo_sections = build_demo_sections
+    @press_kit = @workspace&.press_kits&.first
+    @press_kit_recording = @press_kit ? recording_for(@press_kit) : nil
+    @press_kit_access_management_enabled = access_management_enabled_for(@press_kit_recording)
     @demo_users = load_demo_users
     @access_matrix = build_access_matrix
     @workspace_access_rows = build_workspace_access_rows

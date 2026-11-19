@@ -492,6 +492,16 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.59.0
+
+No Accessible migration. `RecordingStudio::AccessRoles::ORDER` stays the built-in map. Exact-name checks (`authorized_for_role?`, `authorized_for_any_role?`, and a `granted` audience) still match the stored name.
+
+`accessible_roles` order is now the rank for that type. A custom role ranks only on a recording whose type lists it. Hosts that already declare a custom role, such as `download`, now treat that name as ranked: it can satisfy a weaker role, an editor can grant it when it ranks at or below edit, and a dependent grant no longer fails as unranked. A name stored on a type that does not list it stays unranked.
+
+`authorized?(role: :download)` is false on a workspace or admin root that does not declare `download`, even when the actor is admin there. It is true for an admin grant on a type that does declare it. Recording Studio Admin does not need a release for this. It already passes one role into `authorized?`.
+
+Types that declare no custom role keep today's checks and the three-branch rank SQL.
+
 #### Upgrading to 0.58.0
 
 No Accessible migration. Grants, roles, invitation acceptance, and access requests are unchanged.
@@ -1858,7 +1868,7 @@ Notification.where(
 )
 ```
 
-`role` defaults to `:view`. `:edit` and `:admin` keep roots at that rank or higher. A nil actor, or a role other than `view`, `edit`, or `admin`, returns `RecordingStudio::Recording.none`.
+`role` defaults to `:view`. `:edit` and `:admin` keep roots at that rank or higher. A nil actor, or a role with no rank, returns `RecordingStudio::Recording.none`. A custom role the root's type does not declare returns an empty set.
 
 A root is included only when a kept access grant for that actor sits on the root (`parent_recording_id` is the root). A grant that exists only on a child does not include the root. A dependent grant is included only when every manager hop is still a kept access recording on the same root, with a ranked role at least as strong, and the chain does not cycle. Trashed grants stay out. A trashed root stays in when `authorized?` still allows it.
 
@@ -1878,7 +1888,7 @@ RecordingStudio::Recording.where(
 ).limit(20)
 ```
 
-`role` defaults to `:view`. `:edit` and `:admin` keep recordings at that rank or higher. A nil actor, a root that is not a recording, or a role other than `view`, `edit`, or `admin`, returns `RecordingStudio::Recording.none`.
+`role` defaults to `:view`. `:edit` and `:admin` keep recordings at that rank or higher. A nil actor, a root that is not a recording, or a role with no rank returns `RecordingStudio::Recording.none`. A custom role some type declares returns recordings of types that declare it, and only where a grant on a declaring type meets that rank.
 
 A kept grant on a root, with a valid manager chain, uses `Recording.within` (`for_root`). That reads `root_recording_id` and does not walk descendants.
 
@@ -1910,7 +1920,7 @@ RecordingStudioAccessible.authorized_recordings(
 ).order(created_at: :desc, id: :desc).limit(50)
 ```
 
-`scope` defaults to `RecordingStudio::Recording.all`. Where clauses already on that scope stay. `role` defaults to `:view`. A nil actor, a root that is not a recording, a blank `recordable_type`, or a role other than `view`, `edit`, or `admin` returns `scope.none`.
+`scope` defaults to `RecordingStudio::Recording.all`. Where clauses already on that scope stay. `role` defaults to `:view`. A nil actor, a root that is not a recording, a blank `recordable_type`, or a role with no rank returns `scope.none`. A custom role some type declares returns rows of types that declare it.
 
 A kept grant on a root uses `Recording.within` (`for_root`). Pass `recordable_type`, or put that type on `scope`, so the page can use the index on `(root_recording_id, recordable_type, created_at, id)`. Without a type, order by `created_at`, `id` so the page can use `(root_recording_id, created_at, id)`.
 
@@ -1967,11 +1977,11 @@ A shared root is a valid parent. `recordings_for` lists authorized direct childr
 
 | `minimum_role` | Children that stay |
 | --- | --- |
-| `nil` or blank (`""`) | Any effective grant on the child or an ancestor, including an unranked name such as `download`. Same blank-floor rule as `root_recordings_for`. |
-| `:view`, `:edit`, or `:admin` | That rank or higher. On a kept direct child this matches `authorized?`. |
-| Present and unranked (`:download`, `"VIEW"`) | Empty relation. `recording_ids_for` returns `[]`. |
+| `nil` or blank (`""`) | Any effective grant on the child or an ancestor, including a stored name the grant's type does not rank. Same blank-floor rule as `root_recordings_for`. |
+| `:view`, `:edit`, `:admin`, or a declared custom role | That rank or higher, using the grant recording's list. A custom floor also keeps only children whose type declares that role. On a kept direct child this matches `authorized?`. |
+| A name nobody declares (`"VIEW"`) | Empty relation. `recording_ids_for` returns `[]`. |
 
-An unranked stored grant such as `download` qualifies when `minimum_role` is omitted. It does not satisfy a ranked floor.
+A stored name the grant's type does not list qualifies only when `minimum_role` is omitted. A declared custom role also satisfies a weaker floor. `minimum_role: :download` stays empty for a workspace whose type does not declare `download`.
 
 `recordable_type` accepts a class or a non-blank string. The string is the `recordable_type` column. A class is stored as its name. Omit the argument and every authorized direct child stays, including `RecordingStudio::Access` rows on that parent. A symbol, an array, or `""` returns an empty relation.
 
@@ -1987,7 +1997,7 @@ These calls return `RecordingStudio::Recording.none`, and `recording_ids_for` re
 
 - `actor` is nil
 - `parent_recording` is nil, is not a `RecordingStudio::Recording`, or has a blank id
-- `minimum_role` is present and unranked (`:download`, `"VIEW"`)
+- `minimum_role` is present and has no rank (`"VIEW"`)
 - `recordable_type` is present and is not a class or a non-blank string
 
 ### Context roles
@@ -1997,31 +2007,31 @@ A recordable with no `accessible_roles` declaration uses `view`, `edit`, and `ad
 Declare direct role names on the recordable that receives the grant.
 
 ```ruby
-class LibraryItem < ApplicationRecord
-  recording_studio_recordable label: "Library item", root: false, allowed_parent_types: ["Workspace"]
+class PressKit < ApplicationRecord
+  recording_studio_recordable label: "Press kit", root: false, allowed_parent_types: ["Workspace"]
   RecordingStudio.enable_capability(:accessible, on: self)
 
-  accessible_roles :view, :download
+  accessible_roles :view, :download, :edit, :admin
 end
 ```
 
-The declaration needs one or more unique names. Blank names are rejected. The order you write is the order manage access shows. The access row stores the chosen name, such as `"download"`. It does not store the declaration.
+The declaration needs one or more unique names. Blank names are rejected. The order you write is the rank for that type, and it is the order manage access shows. Built-in names keep their relative order: view, then edit, then admin. A custom name sits where you place it. Two types that use the same name have to agree. A reversed pair raises when the class loads. The access row stores the chosen name, such as `"download"`. It does not store the declaration.
 
-Only those names can be granted, updated, or invited on that recording. A normal workspace still accepts `view`, `edit`, and `admin`, and rejects `download`. A library item accepts `view` and `download`, and rejects `edit`.
+Only those names can be granted, updated, or invited on that recording. A workspace that keeps the defaults still accepts `view`, `edit`, and `admin`, and rejects `download`.
 
-Ancestor grants are not rewritten to the target list. A parent `edit` grant stays `edit`.
+A name is ranked on a recording only when that recording's type lists it. A `download` grant stored on a workspace stays unranked. A `download` grant on the press kit ranks between view and edit. It satisfies a view check on the kit and on a descendant. It does not satisfy edit. Ancestor grants are not rewritten. A parent `edit` grant stays `edit`.
 
-`authorized?` is the ranked check. It uses `view < edit < admin` and ignores a name outside that list.
+`authorized?` is the ranked check. For a built-in role it walks the ancestor grants and compares ranks. For a custom role it returns false unless the recording you asked about declares that role, even when the actor is admin there. An admin grant on the press kit satisfies `role: :download`. The same question on a workspace or an admin root returns false.
 
 ```ruby
 RecordingStudioAccessible.authorized?(
   actor: current_user,
-  recording: recording,
-  role: :edit
+  recording: press_kit,
+  role: :download
 )
 ```
 
-`authorized?(role: :download)` is false. `download` has no rank.
+`RecordingStudio::AccessRoles::ORDER` stays `{ "view" => 0, "edit" => 1, "admin" => 2 }`. It is the built-in map, not a host setting. When no type declares a custom role, the rank SQL stays the three built-in branches.
 
 `authorized_for_role?` asks whether that exact name is on the recording or an ancestor. It matches `download` and `edit` the same way. An inherited `edit` grant does not satisfy `role: :download`.
 
@@ -2045,9 +2055,11 @@ RecordingStudioAccessible.authorized_for_any_role?(
 
 A download check that should also allow editors passes `[:download, :edit, :admin]`. An API check that should not allow downloaders passes `[:api, :admin]`.
 
-Dependent grants still compare only `view`, `edit`, and `admin`. If the dependent role or the manager role is outside that ranking, the grant fails with "Dependent access requires a ranked role". Direct grants and the two exact-name checks still accept the declared name.
+Dependent grants compare the ranks of roles each recording declares. A `download` grant under an edit manager is allowed when `download` ranks at or below edit. A name the recording does not declare still fails with "Dependent access requires a ranked role".
 
-`roles_for(recording)` returns the declared names. `role_valid_for?(recording, role)` is the direct-grant check. Manage access renders those names, humanized. A library item shows View and Download.
+An editor can grant a declared custom role that ranks at or below edit, and cannot grant admin. `actors_with_access(minimum_role: :view)` includes a person whose grant ranks at view or above. `minimum_role: :download` includes them on a recording whose type declares `download`, and only from a grant whose type declares it. A download grant does not count as admin, so the last-admin guard is unchanged.
+
+`roles_for(recording)` returns the declared names. `role_valid_for?(recording, role)` is the direct-grant check. Manage access renders those names. English for `download` is "Download". Any other custom name is humanized.
 
 ### Authorizing named actions
 

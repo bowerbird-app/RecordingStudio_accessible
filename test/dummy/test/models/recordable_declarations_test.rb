@@ -16,6 +16,7 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
     assert RecordingStudio.root_allowed?(StaffRoot)
     assert RecordingStudio.root_allowed?(Workspace)
     refute RecordingStudio.root_allowed?(Folder)
+    refute RecordingStudio.root_allowed?(PressKit)
     refute RecordingStudio.root_allowed?(MessageGroup)
     refute RecordingStudio.root_allowed?(Page)
     refute RecordingStudio.root_allowed?(Card)
@@ -26,6 +27,7 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
 
     assert_equal [ "MessageRoot" ], RecordingStudio.allowed_parent_types_for(MessageGroup)
     assert_equal [ "Workspace" ], RecordingStudio.allowed_parent_types_for(Folder)
+    assert_equal [ "Workspace" ], RecordingStudio.allowed_parent_types_for(PressKit)
     assert_equal [ "Folder" ], RecordingStudio.allowed_parent_types_for(Page)
     assert_equal [ "Page" ], RecordingStudio.allowed_parent_types_for(Card)
   end
@@ -37,7 +39,7 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
     assert_equal [ "RecordingStudio::Access", "RecordingStudio::AccessRequest" ],
                  RecordingStudio.capability_child_recordables_for(:accessible)
     assert_equal "staff_roots", StaffRoot.table_name
-    access_parents = [ "Folder", "MessageGroup", "RecordingStudioUser::Profile", "StaffRoot", "Workspace" ]
+    access_parents = [ "Folder", "MessageGroup", "PressKit", "RecordingStudioUser::Profile", "StaffRoot", "Workspace" ]
     assert_equal access_parents, RecordingStudio.capability_allowed_parent_types_for(RecordingStudio::Access)
     assert_equal access_parents, RecordingStudio.allowed_parent_types_for(RecordingStudio::Access)
     assert_equal access_parents,
@@ -52,6 +54,8 @@ class RecordableDeclarationsTest < ActiveSupport::TestCase
     assert_equal access_children, RecordingStudio.child_recordable_types_for(Workspace)
     assert_equal [ "RecordingStudio::Access", "RecordingStudio::AccessRequest" ],
                  RecordingStudio.child_recordable_types_for(StaffRoot)
+    assert_equal [ "RecordingStudio::Access", "RecordingStudio::AccessRequest" ],
+                 RecordingStudio.child_recordable_types_for(PressKit)
     assert_equal access_children, RecordingStudio.child_recordable_types_for(Folder)
     refute_includes RecordingStudio.child_recordable_types_for(MessageRoot), "RecordingStudio::Access"
     refute_includes RecordingStudio.child_recordable_types_for(MessageRoot), "RecordingStudio::AccessRequest"

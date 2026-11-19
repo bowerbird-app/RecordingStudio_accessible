@@ -34,7 +34,7 @@ class AccessApiActionsTest < ActiveSupport::TestCase
       actor: @viewer, recording: @folder, role: :download
     )
   ensure
-    Folder.remove_instance_variable(:@accessible_role_set) if Folder.instance_variable_defined?(:@accessible_role_set)
+    Folder.clear_accessible_roles! if Folder.instance_variable_defined?(:@accessible_role_set)
   end
 
   test "admin can list grant update and revoke access" do

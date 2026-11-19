@@ -99,7 +99,7 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
   end
 
   test "nil actor, a non-recording root, and an invalid role are an empty relation" do
-    [ nil, :download, "", "VIEW" ].each do |role|
+    [ nil, :archive, "", "VIEW" ].each do |role|
       built = relation(actor: @member, root: @inherited, role: role)
       assert_equal RecordingStudio::Recording.none.to_sql, built.to_sql
       assert_empty RecordingStudio::Recording.where(id: built)
@@ -115,6 +115,10 @@ class AuthorizedRecordingIdsParityTest < ActiveSupport::TestCase
     empty = relation(actor: nil, root: @inherited, role: :view)
     assert_equal RecordingStudio::Recording.none.to_sql, empty.to_sql
     assert_empty RecordingStudio::Recording.where(id: empty)
+
+    download = relation(actor: @member, root: @inherited, role: :download)
+    assert_empty RecordingStudio::Recording.where(id: download)
+    refute RecordingStudioAccessible.authorized?(actor: @member, recording: @inherited, role: :download)
   end
 
   test "a root grant matches within when the stored root agrees with the parent chain" do

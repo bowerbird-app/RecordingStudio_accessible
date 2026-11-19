@@ -45,6 +45,7 @@ fr:
         title: "Recording Studio Accessible"
       roles:
         view: "Voir"
+        download: "Télécharger"
         edit: "Modifier"
         admin: "Admin"
       audiences:

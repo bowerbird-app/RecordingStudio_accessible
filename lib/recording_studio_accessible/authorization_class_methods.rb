@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "recording_studio_accessible/extracted/recording_studio/access_roles"
+require_relative "authorization_class_methods/ranked_grant_sql"
 require_relative "authorization_class_methods/child_list"
 require_relative "authorization_class_methods/root_ids"
 require_relative "authorized_recording_ids"
@@ -9,6 +10,8 @@ require_relative "effective_root_ids"
 
 module RecordingStudioAccessible
   module AuthorizationClassMethods
+    include RankedGrantSql
+
     def role_for(actor:, recording:)
       return nil unless actor
 
@@ -17,6 +20,7 @@ module RecordingStudioAccessible
 
     def allowed?(actor:, recording:, role:)
       return false unless actor && recording && valid_role?(role)
+      return false if closed_custom_role?(recording, role)
 
       call(actor: actor, recording: recording, role: role).value
     end
@@ -120,6 +124,9 @@ module RecordingStudioAccessible
       )
       return scope if minimum_role.blank?
 
+      return nil unless RecordingStudio::AccessRoles.value_for(minimum_role)
+      return scope.where(ranked_on_parent_sql(minimum_role)) if RecordingStudioAccessible::RoleRegistry.custom?
+
       names = RecordingStudio::AccessRoles.names_at_or_above(minimum_role)
       return nil if names.empty?
 
@@ -132,6 +139,11 @@ module RecordingStudioAccessible
 
     def valid_role?(role)
       RecordingStudio::AccessRoles.value_for(role).present?
+    end
+
+    def closed_custom_role?(recording, role)
+      RecordingStudioAccessible::RoleRegistry.custom_name?(role) &&
+        !RecordingStudioAccessible::RoleRegistry.declares?(recording, role)
     end
   end
 end

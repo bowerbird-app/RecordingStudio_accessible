@@ -32,6 +32,8 @@ module RecordingStudioAccessible
       end
 
       class AtLeast
+        attr_reader :minimum_role
+
         def initialize(minimum_role)
           @minimum_role = minimum_role
         end
@@ -41,10 +43,7 @@ module RecordingStudioAccessible
         end
 
         def keep?(resolver)
-          RecordingStudio::AccessRoles.satisfies?(
-            role: resolver.resolve_role,
-            minimum_role: @minimum_role
-          )
+          resolver.meets?(@minimum_role)
         end
       end
     end

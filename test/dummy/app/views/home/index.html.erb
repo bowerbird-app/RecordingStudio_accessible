@@ -94,6 +94,34 @@
       <% end %>
     <% end %>
 
+    <% if @press_kit %>
+      <div class="mt-6">
+        <%= render FlatPack::SectionTitle::Component.new(
+          title: "Press kit",
+          subtitle: "View, download, or edit this kit.",
+          anchor_link: true,
+          anchor_id: "press-kit"
+        ) %>
+
+        <%= render FlatPack::Card::Component.new(border: :default, class: "mt-4") do |card| %>
+          <% card.body(class: "grid gap-3 justify-items-start") do %>
+            <h3 class="text-lg font-semibold leading-tight text-slate-900"><%= @press_kit.name %></h3>
+            <%= render FlatPack::Badge::Component.new(text: "Press kit", style: :default, size: :sm) %>
+            <% if @press_kit_recording && @press_kit_access_management_enabled %>
+              <%= recording_studio_accessible_avatars(@press_kit_recording, button_style: :default, scope: :all) %>
+              <%= render FlatPack::Button::Dropdown::Component.new(
+                    text: "More",
+                    style: :default,
+                    size: :sm
+                  ) do |dropdown| %>
+                <% recording_studio_accessible_access_menu_item(@press_kit_recording, dropdown, scope: :all) %>
+              <% end %>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+
     <div class="mt-6">
       <%= render FlatPack::SectionTitle::Component.new(
         title: "Message groups",

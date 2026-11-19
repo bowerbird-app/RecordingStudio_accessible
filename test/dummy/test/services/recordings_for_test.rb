@@ -21,7 +21,7 @@ class RecordingsForTest < ActiveSupport::TestCase
 
   teardown do
     if Folder.instance_variable_defined?(:@accessible_role_set)
-      Folder.remove_instance_variable(:@accessible_role_set)
+      Folder.clear_accessible_roles!
     end
   end
 
@@ -153,16 +153,18 @@ class RecordingsForTest < ActiveSupport::TestCase
     assert_empty listed(parent: root_recording, recordable_type: "")
   end
 
-  test "a blank floor keeps an effective unranked grant" do
+  test "a blank floor keeps a ranked custom grant and a view floor includes it" do
     Folder.accessible_roles :view, :download
     grant_access(@user, :view, @folder_recording)
     download_folder = add_folder("Downloads")
     grant_access(@user, :download, download_folder)
 
-    assert_nil RecordingStudioAccessible.role_for(actor: @user, recording: download_folder)
+    assert_equal :download, RecordingStudioAccessible.role_for(actor: @user, recording: download_folder)
     assert RecordingStudioAccessible.authorized_for_role?(
       actor: @user, recording: download_folder, role: :download
     )
+    assert RecordingStudioAccessible.authorized?(actor: @user, recording: download_folder, role: :view)
+    refute RecordingStudioAccessible.authorized?(actor: @user, recording: download_folder, role: :edit)
 
     assert_includes listed_ids(parent: @root), download_folder.id
     assert_includes listed_ids(parent: @root, minimum_role: ""), download_folder.id
@@ -170,7 +172,7 @@ class RecordingsForTest < ActiveSupport::TestCase
     assert_includes RecordingStudioAccessible.recording_ids_for(actor: @user, parent_recording: @root),
                     download_folder.id
 
-    refute_includes listed_ids(parent: @root, minimum_role: :view), download_folder.id
+    assert_includes listed_ids(parent: @root, minimum_role: :view), download_folder.id
     assert_includes listed_ids(parent: @root, minimum_role: :view), @folder_recording.id
 
     assert_ranked_parity(@root, :view)

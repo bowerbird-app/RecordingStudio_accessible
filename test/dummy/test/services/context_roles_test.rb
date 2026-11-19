@@ -17,7 +17,7 @@ class ContextRolesTest < ActiveSupport::TestCase
   end
 
   teardown do
-    Folder.remove_instance_variable(:@accessible_role_set) if Folder.instance_variable_defined?(:@accessible_role_set)
+    Folder.clear_accessible_roles! if Folder.instance_variable_defined?(:@accessible_role_set)
   end
 
   test "default hierarchy still ranks view below edit below admin" do
@@ -71,7 +71,8 @@ class ContextRolesTest < ActiveSupport::TestCase
       actor: @actor, recording: @folder_recording, roles: %i[api admin]
     )
     refute RecordingStudioAccessible.authorized?(actor: @actor, recording: @folder_recording, role: :edit)
-    refute RecordingStudioAccessible.authorized?(actor: @actor, recording: @folder_recording, role: :view)
+    assert RecordingStudioAccessible.authorized?(actor: @actor, recording: @folder_recording, role: :view)
+    assert_equal :download, RecordingStudioAccessible.role_for(actor: @actor, recording: @folder_recording)
   end
 
   test "an inherited hierarchy role matches only when the caller lists it" do
@@ -173,23 +174,29 @@ class ContextRolesTest < ActiveSupport::TestCase
     assert exceeds.failure?
     assert_equal RecordingStudioAccessible::DependentAccess::ROLE_EXCEEDS_MESSAGE, exceeds.error
 
-    unranked_dependent = RecordingStudioAccessible.grant_access(
+    ranked_dependent = RecordingStudioAccessible.grant_access(
       recording: @folder_recording, actor: create_user("context-roles-capped-download@example.com"),
       role: :download, manager_actor: @admin, depends_on: editor
     )
-    assert unranked_dependent.failure?
-    assert_equal RecordingStudioAccessible::DependentAccess::UNRANKED_ROLE_MESSAGE, unranked_dependent.error
+    assert ranked_dependent.success?, ranked_dependent.error
+    assert_equal "download", ranked_dependent.value.recordable.role
 
     download_manager = RecordingStudioAccessible.grant_access(
       recording: @folder_recording, actor: create_user("context-roles-download-manager@example.com"),
       role: :download, manager_actor: @admin
     ).value
-    unranked_manager = RecordingStudioAccessible.grant_access(
+    covered_view = RecordingStudioAccessible.grant_access(
       recording: @folder_recording, actor: create_user("context-roles-view-under-download@example.com"),
       role: :view, manager_actor: @admin, depends_on: download_manager
     )
-    assert unranked_manager.failure?
-    assert_equal RecordingStudioAccessible::DependentAccess::UNRANKED_ROLE_MESSAGE, unranked_manager.error
+    assert covered_view.success?, covered_view.error
+
+    exceeds_download = RecordingStudioAccessible.grant_access(
+      recording: @folder_recording, actor: create_user("context-roles-download-under-view@example.com"),
+      role: :download, manager_actor: @admin, depends_on: viewer
+    )
+    assert exceeds_download.failure?
+    assert_equal RecordingStudioAccessible::DependentAccess::ROLE_EXCEEDS_MESSAGE, exceeds_download.error
   end
 
   test "invitations and updates use the target context roles" do

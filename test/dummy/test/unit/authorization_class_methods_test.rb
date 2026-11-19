@@ -124,7 +124,7 @@ class AuthorizationClassMethodsTest < Minitest::Test
       end
     end
 
-    assert(access_scope.wheres.any? { |where| where.key?(:role) })
+    assert(access_scope.wheres.any? { |where| role_filter?(where) })
     assert_includes root_access_scope.wheres, { recordable_type: "RecordingStudio::Access" }
     assert_includes root_access_scope.not_wheres, { root_recording_id: nil }
   end
@@ -164,6 +164,12 @@ class AuthorizationClassMethodsTest < Minitest::Test
   end
 
   private
+
+  def role_filter?(where)
+    return where.key?(:role) if where.respond_to?(:key?)
+
+    where.is_a?(String) && where.include?("EXISTS") && where.include?("'edit'")
+  end
 
   class Relation
     attr_reader :wheres, :not_wheres

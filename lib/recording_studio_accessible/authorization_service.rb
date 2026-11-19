@@ -20,14 +20,16 @@ module RecordingStudioAccessible
       return success(false) if @actor.nil? && @role
       return success(nil) if @actor.nil?
 
-      resolved = RecordingStudio::Services::AccessResolver.new(actor: @actor, recording: @recording).resolve_role
-      return success(role_satisfies_requirement?(resolved)) if @role
+      resolver = RecordingStudio::Services::AccessResolver.new(actor: @actor, recording: @recording)
+      return success(resolver.resolve_role&.to_sym) unless @role
+      return success(false) if custom_role_closed?
 
-      success(resolved&.to_sym)
+      success(resolver.meets?(@role))
     end
 
-    def role_satisfies_requirement?(resolved)
-      RecordingStudio::AccessRoles.satisfies?(role: resolved, minimum_role: @role)
+    def custom_role_closed?
+      RecordingStudioAccessible::RoleRegistry.custom_name?(@role) &&
+        !RecordingStudioAccessible::RoleRegistry.declares?(@recording, @role)
     end
   end
 end

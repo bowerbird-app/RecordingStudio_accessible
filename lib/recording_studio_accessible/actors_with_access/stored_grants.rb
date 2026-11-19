@@ -39,12 +39,41 @@ module RecordingStudioAccessible
 
     private
 
+    def role_satisfies?(role, minimum_role)
+      RecordingStudio::AccessRoles.satisfies?(role: role, minimum_role: minimum_role)
+    end
+
+    def meets_minimum?(key, minimum_role)
+      grants_for_key(key).any? do |grant|
+        node = node_for(grant)
+        node && RecordingStudioAccessible::RoleRegistry.meets?(node, grant.recordable&.role, minimum_role)
+      end
+    end
+
+    def closed_minimum?(minimum_role)
+      RecordingStudioAccessible::RoleRegistry.custom_name?(minimum_role) &&
+        !RecordingStudioAccessible::RoleRegistry.declares?(recording, minimum_role)
+    end
+
+    def grants_for_key(key)
+      grants.select { |grant| key_for_grant(grant) == key && effective_grant?(grant) }
+    end
+
+    def node_for(grant)
+      path_recordings_by_id[grant.parent_recording_id]
+    end
+
+    def path_recordings_by_id
+      @path_recordings_by_id ||= Array(@path_recordings).index_by(&:id)
+    end
+
     def clear_grant_memo!
       @grants = nil
       @effective_grants = nil
       @roles_by_key = nil
       @grants_by_parent_id = nil
       @path_recordings = nil
+      @path_recordings_by_id = nil
     end
 
     def reload_grant_memo!

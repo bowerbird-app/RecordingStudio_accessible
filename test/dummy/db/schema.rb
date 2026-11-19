@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_17_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -63,6 +63,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_200000) do
     t.datetime "updated_at", null: false
     t.index ["folder_id", "position"], name: "index_pages_on_folder_id_and_position"
     t.index ["folder_id"], name: "index_pages_on_folder_id"
+  end
+
+  create_table "press_kits", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "workspace_id", null: false
+    t.string "name", null: false
+    t.string "summary", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["workspace_id"], name: "index_press_kits_on_workspace_id"
   end
 
   create_table "recording_studio_access_constraints", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -498,6 +507,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_200000) do
   add_foreign_key "folders", "workspaces"
   add_foreign_key "message_groups", "message_roots"
   add_foreign_key "pages", "folders"
+  add_foreign_key "press_kits", "workspaces"
   add_foreign_key "recording_studio_access_invitations", "recording_studio_recordings", column: "recording_id"
   add_foreign_key "recording_studio_api_api_access_tokens", "recording_studio_api_api_credentials", column: "api_credential_id"
   add_foreign_key "recording_studio_api_api_credentials", "recording_studio_api_api_clients", column: "api_client_id"

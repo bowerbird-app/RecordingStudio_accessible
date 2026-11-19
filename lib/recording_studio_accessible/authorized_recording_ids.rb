@@ -49,7 +49,6 @@ module RecordingStudioAccessible
       @actor = actor
       @root = root
       @role = role
-      @minimum = Integer(RecordingStudio::AccessRoles.value_for(role))
       @recordable_type = recordable_type
     end
 
@@ -60,7 +59,7 @@ module RecordingStudioAccessible
     end
 
     def recordings_relation(scope)
-      scoped = typed_scope(scope)
+      scoped = declared_role_scope(typed_scope(scope))
       return scoped.within(@root) if root_grant_fast_path?
 
       case subtree_shape
@@ -79,6 +78,12 @@ module RecordingStudioAccessible
       return scope if @recordable_type.nil?
 
       scope.where(recordable_type: @recordable_type)
+    end
+
+    def declared_role_scope(scope)
+      return scope unless RecordingStudioAccessible::RoleRegistry.custom_name?(@role)
+
+      scope.where(recordable_type: RecordingStudioAccessible::RoleRegistry.types_declaring(@role))
     end
 
     # :ids is a finished subtree of at most BROAD_SUBTREE_ROWS. :broad crossed
@@ -227,12 +232,13 @@ module RecordingStudioAccessible
           SELECT 1
           FROM #{accesses} acc
           INNER JOIN #{recordings} rec ON rec.recordable_id = acc.id
+          #{grant_parent_join('rec')}
           WHERE rec.recordable_type = #{access_type_sql}
             AND #{RecordingStudio.kept_sql('rec')}
             AND acc.actor_type = #{actor_type_sql}
             AND acc.actor_id = #{actor_id_sql}
             AND acc.depends_on_recording_id IS NOT NULL
-            AND #{role_rank_sql('TRIM(acc.role)')} >= #{@minimum}
+            AND #{role_at_least_sql('TRIM(acc.role)', 'grant_parent')}
         )
       SQL
     end
@@ -273,9 +279,7 @@ module RecordingStudioAccessible
     end
 
     def within_ids
-      scope = RecordingStudio::Recording.unscoped.within(@root)
-      scope = scope.where(recordable_type: @recordable_type) if @recordable_type
-      scope.reselect(:id)
+      declared_role_scope(typed_scope(RecordingStudio::Recording.unscoped.within(@root))).reselect(:id)
     end
 
     def stored_root?
@@ -306,6 +310,7 @@ module RecordingStudioAccessible
                COALESCE(candidates.root_recording_id, candidates.id) AS node_root_id,
                candidates.depends_on_recording_id AS depends_on_recording_id,
                candidates.role AS node_role,
+               #{node_type_select('candidates.grant_type')}
                #{id_array('candidates.id')} AS seen,
                (candidates.depends_on_recording_id IS NULL) AS done
         FROM candidates
@@ -319,11 +324,13 @@ module RecordingStudioAccessible
                COALESCE(manager.root_recording_id, manager.id),
                manager_access.depends_on_recording_id,
                manager_access.role,
+               #{step_node_type_select}
                grant_walk.seen || manager.id,
                (manager_access.depends_on_recording_id IS NULL)
         FROM grant_walk
         INNER JOIN #{recordings} manager ON manager.id = grant_walk.depends_on_recording_id
         INNER JOIN #{accesses} manager_access ON manager_access.id = manager.recordable_id
+        #{manager_parent_join}
         WHERE #{step_filters_sql}
       SQL
     end
@@ -335,7 +342,7 @@ module RecordingStudioAccessible
         RecordingStudio.kept_sql("manager"),
         "NOT (manager.id = ANY(grant_walk.seen))",
         "COALESCE(manager.root_recording_id, manager.id) = grant_walk.node_root_id",
-        "#{role_rank_sql('manager_access.role')} >= #{role_rank_sql('grant_walk.node_role')}"
+        manager_covers_sql
       ].join(" AND ")
     end
 
@@ -364,9 +371,18 @@ module RecordingStudioAccessible
     end
 
     def type_filter_sql
-      return "" if @recordable_type.nil?
+      filters = []
+      filters << "chosen.recordable_type = #{connection.quote(@recordable_type)}" if @recordable_type
+      if RecordingStudioAccessible::RoleRegistry.custom_name?(@role)
+        types = RecordingStudioAccessible::RoleRegistry.types_declaring(@role)
+        return "WHERE false" if types.empty?
 
-      "WHERE chosen.recordable_type = #{connection.quote(@recordable_type)}"
+        quoted = types.map { |type_name| connection.quote(type_name) }.join(", ")
+        filters << "chosen.recordable_type IN (#{quoted})"
+      end
+      return "" if filters.empty?
+
+      "WHERE #{filters.join(' AND ')}"
     end
 
     # Kept grants for this actor at this role. The parent ascent below decides
@@ -377,14 +393,16 @@ module RecordingStudioAccessible
                rec.parent_recording_id AS parent_recording_id,
                rec.root_recording_id AS root_recording_id,
                #{depends_on_select}
+               #{grant_type_select}
                acc.role AS role
         FROM #{recordings} rec
         INNER JOIN #{accesses} acc ON acc.id = rec.recordable_id
+        #{grant_parent_join('rec')}
         WHERE rec.recordable_type = #{access_type_sql}
           AND #{RecordingStudio.kept_sql('rec')}
           AND acc.actor_type = #{actor_type_sql}
           AND acc.actor_id = #{actor_id_sql}
-          AND #{role_rank_sql('TRIM(acc.role)')} >= #{@minimum}
+          AND #{role_at_least_sql('TRIM(acc.role)', 'grant_parent')}
       SQL
     end
 
@@ -453,11 +471,62 @@ module RecordingStudioAccessible
       ids.map { |id| "#{connection.quote(id)}::#{id_sql_type}" }.join(", ")
     end
 
-    def role_rank_sql(expression)
-      branches = RecordingStudio::AccessRoles::ORDER.map do |name, rank|
-        "WHEN #{connection.quote(name)} THEN #{Integer(rank)}"
+    def role_rank_sql(expression, type_expression = nil)
+      RecordingStudioAccessible::RoleRegistry.rank_sql(connection, expression, type_expression)
+    end
+
+    def minimum_rank_sql(type_expression = nil)
+      RecordingStudioAccessible::RoleRegistry.minimum_sql(connection, @role, type_expression)
+    end
+
+    def role_at_least_sql(role_sql, parent_alias)
+      type_sql = grant_type_expression(parent_alias)
+      "#{role_rank_sql(role_sql, type_sql)} >= #{minimum_rank_sql(type_sql)}"
+    end
+
+    def grant_type_expression(parent_alias)
+      return unless RecordingStudioAccessible::RoleRegistry.custom?
+
+      "#{parent_alias}.recordable_type"
+    end
+
+    def grant_parent_join(access_recording_sql)
+      return "" unless RecordingStudioAccessible::RoleRegistry.custom?
+
+      "INNER JOIN #{recordings} grant_parent ON grant_parent.id = #{access_recording_sql}.parent_recording_id"
+    end
+
+    def grant_type_select
+      return "" unless RecordingStudioAccessible::RoleRegistry.custom?
+
+      "grant_parent.recordable_type AS grant_type,"
+    end
+
+    def node_type_select(expression)
+      return "" unless RecordingStudioAccessible::RoleRegistry.custom?
+
+      "#{expression} AS node_type,"
+    end
+
+    def step_node_type_select
+      return "" unless RecordingStudioAccessible::RoleRegistry.custom?
+
+      "manager_parent.recordable_type,"
+    end
+
+    def manager_parent_join
+      return "" unless RecordingStudioAccessible::RoleRegistry.custom?
+
+      "INNER JOIN #{recordings} manager_parent ON manager_parent.id = manager.parent_recording_id"
+    end
+
+    def manager_covers_sql
+      if RecordingStudioAccessible::RoleRegistry.custom?
+        "#{role_rank_sql('manager_access.role', 'manager_parent.recordable_type')} >= " \
+          "#{role_rank_sql('grant_walk.node_role', 'grant_walk.node_type')}"
+      else
+        "#{role_rank_sql('manager_access.role')} >= #{role_rank_sql('grant_walk.node_role')}"
       end
-      "CASE #{expression} #{branches.join(' ')} END"
     end
 
     def id_array(expression)
