@@ -227,6 +227,23 @@ config.current_actor_method = :current_user
 Accessible still owns permission checks (`authorize_recording!`, root helpers,
 `RecordingStudioAccessible.authorized?`). It does not resolve sign-in itself.
 
+## Signup source
+
+A signed-out visitor who is sent to sign in can carry a signup source into Recording Studio Users. Accessible calls `RecordingStudioUser.remember_signup_source!(request:, source:)` when that method exists. There is no gemspec dependency on Users, because Users already depends on Accessible. A host on older Users, or without Users, keeps the same redirect and stores nothing.
+
+The source is a flat hash. Accessible builds it from the saved record. A `source` parameter is ignored. A `recording_id` parameter is ignored.
+
+| Visit | `via` | `recording_id` |
+| --- | --- | --- |
+| Pending share link | `share` | The invitation's recording id |
+| Access request page or submit | `access_request` | The recording id the route loaded |
+
+An invalid token stores nothing. An expired invitation stores nothing. A revoked invitation stores nothing. A signed-in visitor stores nothing. An access request with no host sign-in path returns unauthorized and stores nothing.
+
+Users keeps the source in the session. The next registration copies it onto `registration.completed.recording_studio_user` as `source`. Read it there to choose onboarding.
+
+`recording_id` says where the visitor came from. Check access for the new account before you open that recording or start onboarding that depends on it.
+
 ## Access requests
 
 Someone without access can ask for a role. The request is a child recording
@@ -260,11 +277,13 @@ A person who already has the role gets a no-op success.
 
 Sign-in belongs to the host. A signed-out visitor who opens the request page,
 or posts the form, is redirected to the host sign-in (`new_user_session_path`
-when Devise is mounted). The return path is stored the same way Devise stores
-a location, so after sign-in they land on that same request URL. A host with
-no sign-in path gets an unauthorized response, and the form is not shown. The form,
-the gate, and submit then run for the signed-in actor. Accessible does not
-collect an email or a one-time code, and it does not create the account.
+when Devise is mounted). That redirect stores a signup source when Users
+defines `remember_signup_source!`. The keys are under Signup source. The return
+path is stored the same way Devise stores a location, so after sign-in they
+land on that same request URL. A host with no sign-in path gets an unauthorized
+response, stores nothing, and the form is not shown. The form, the gate, and
+submit then run for the signed-in actor. Accessible does not collect an email
+or a one-time code, and it does not create the account.
 
 Routes live under the mounted engine:
 
@@ -472,6 +491,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.58.0
+
+No Accessible migration. Grants, roles, invitation acceptance, and access requests are unchanged.
+
+A signed-out share link or access request stores a signup source when Users defines `remember_signup_source!` (Users 0.38.0). Check access before you act on `recording_id`. A host on older Users, or without Users, keeps the same redirect.
 
 #### Upgrading to 0.57.0
 
@@ -1567,6 +1592,8 @@ label. The group does not use `collapse: :menu`. A host layout must render
 `AccessInvitation` records pending intent for an email address. `RecordingStudio::Access` records authorization for a persisted actor. `authorized?` and `role_for` read access grants only.
 
 `invite_access` calls `grant_access` when the email already belongs to an actor. Otherwise it stores one unclosed `AccessInvitation` for that recording and email. Unclosed means not accepted and not revoked. An expired invitation stays in that slot, and a later invite refreshes the same row instead of inserting another one. After the invited person authenticates, `accept_access_invitation` calls `grant_access` and stamps the invitation accepted. `revoke_access_invitation` withdraws a pending invitation and leaves any access grant alone.
+
+A signed-out visitor who opens a pending invitation is redirected through `access_invitation_sign_in_url_for`. That redirect stores a signup source when Users defines `remember_signup_source!`. The keys are under Signup source.
 
 ### Access management over Recording Studio API
 

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.58.0] - 2026-11-19
+
+### Added
+- A signed-out visit to a pending share link stores `{ via: "share", recording_id: }` through `RecordingStudioUser.remember_signup_source!` when that method exists. The recording id is the saved invitation's `recording_id`.
+- A signed-out visit or submit on an access request stores `{ via: "access_request", recording_id: }` from the recording the route loaded. A host with no sign-in path still gets unauthorized and stores nothing.
+
+### Upgrade notes
+- No Accessible migration. No new gem dependency. Users 0.38.0 provides `remember_signup_source!`. A host on older Users, or without Users, keeps the same redirect.
+- Grants, invitation acceptance, access requests, roles, and public helpers are unchanged.
+- Read `source` on `registration.completed.recording_studio_user`. Check access for the new account before you treat `recording_id` as a recording it may use.
+
 ## [0.57.0] - 2026-11-19
 
 ### Added
@@ -1563,7 +1574,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.57.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.58.0...HEAD
+[0.58.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.57.0...v0.58.0
 [0.57.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.56.0...v0.57.0
 [0.56.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.55.0...v0.56.0
 [0.55.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.54.1...v0.55.0
