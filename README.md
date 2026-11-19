@@ -440,8 +440,8 @@ Copy lives at `recording_studio.accessible.shared_with`.
 ## Compatibility with RecordingStudio 7.0
 
 Recording Studio Accessible targets RecordingStudio `>= 7.7.0`, `< 8.0` (currently
-tested with `v7.7.1`). It does not depend on Trashable. The dummy app pins
-Trashable `v1.2.0` and loads `recording_studio_trashable/query` so a kept
+tested with `v7.8.0`). It does not depend on Trashable. The dummy app pins
+Trashable `v1.2.3` and loads `recording_studio_trashable/query` so a kept
 filter is registered there. `RecordingStudio.root_recording_for` only finds a root.
 Create one with `RecordingStudio.create_root_recording!(recordable, actor:, impersonator:, metadata:)`.
 Accessible uses Recording Studio's capability-owned child recordable
@@ -472,6 +472,22 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.57.0
+
+No Accessible migration. Grants, roles, and existing helpers are unchanged.
+
+Set `config.shared_item_resolver` or the Shared with me page stays empty. The screen does not guess a url.
+
+The route is on the engine mount. A host that draws these routes by hand adds `get "shared_with", to: "shared_with#index"`.
+
+#### Upgrading to 0.56.0
+
+No Accessible migration. The gem still requires Recording Studio `>= 7.7.0`, `< 8.0`. This repo tests Recording Studio `v7.8.0` and FlatPack `v0.2.0`. Hosts that stay on FlatPack 0.1.x still resolve.
+
+Hosts MUST run the Recording Studio 7.4, 7.5 and 7.7 migrations if they have not.
+
+flat_pack 0.2.0 is supported; hosts moving to 0.2 must remove the manual `flat_pack/heroicons` importmap pin and any `flat-pack--icon` controller registration.
 
 #### Upgrading to 0.55.0
 
@@ -2400,7 +2416,7 @@ Add [Recording Studio Internationalization](https://github.com/bowerbird-app/Rec
 
 ## Dummy app demo
 
-The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v7.7.1`, FlatPack `v0.1.378`, Trashable `v1.2.0`, Attachable `v0.32.1`, Users `v0.36.0`, Metrics `v0.9.1`, Cache `v0.7.0`, Admin `v2.19.0`, Root Switchable `v0.16.0`, Notifications `v0.19.4`, and (dummy only) Recording Studio Internationalization `v0.3.0`. Trashable is a dummy dependency. The dummy loads `recording_studio_trashable/query`, which registers the kept filter, and does not load the Trashable engine. Dummy development/test also pins Recording Studio API `v1.15.0`, Logs `v0.8.1`, Icons `v0.4.1`, and Moveable `v6.0.1` so access member actions run through the real dispatcher. Each pinned companion allows Recording Studio `7.7.1`, so dummy Bundler does not need a Gem::Specification widen shim. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+The dummy app lives in `test/dummy/` and demonstrates Recording Studio Accessible on top of RecordingStudio. It pins the companion gems this addon is tested with: RecordingStudio `v7.8.0`, FlatPack `v0.2.0`, Trashable `v1.2.3`, Attachable `v0.33.2`, Users `v0.38.0`, Metrics `v0.9.2`, Cache `v0.7.1`, Admin `v2.19.1`, Root Switchable `v0.16.1`, Notifications `v0.19.5`, and (dummy only) Recording Studio Internationalization `v0.3.1`. Trashable is a dummy dependency. The dummy loads `recording_studio_trashable/query`, which registers the kept filter, and does not load the Trashable engine. Dummy development/test also pins Recording Studio API `v1.19.0`, Logs `v0.8.2`, Icons `v0.4.2`, and Moveable `v6.0.3` so access member actions run through the real dispatcher. Each pinned companion allows Recording Studio `7.8.0`, so dummy Bundler does not need a Gem::Specification widen shim. The dummy importmap does not pin `flat_pack/heroicons`. Dummy layouts use FlatPack's rounded theme (`data-theme="rounded"`). The dummy Tailwind entry does not redeclare those color or radius tokens. Dummy offers English and French. The language selector sits in the top nav, to the left of the workspace switcher. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
 

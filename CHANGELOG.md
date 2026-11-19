@@ -4,11 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Fixed
-- `authorized?` and `role_for` load a saved recording's ancestors in one query, then reuse that parent chain for the rest of the request. Sibling checks no longer repeat the recursive walk and the per-id recording load. A write clears the chain. A cycle or a chain past the depth cap still walks `parent_recording` in memory. Roles are unchanged.
-- `access_recordings_for_actor_in` preloads the Access row with the grant recordings, so one lookup does not load each access record on its own.
-
-## [0.56.0] - 2026-11-19
+## [0.57.0] - 2026-11-19
 
 ### Added
 - `RecordingStudioAccessible.shared_with(actor:, cursor: nil)` lists items shared directly with an actor, across every workspace. Each row has the grant's role and the owning workspace. A workspace grant is left out, and so are items in that workspace. Trashed grants, revoked grants, trashed items, and items under a trashed ancestor are left out. A dependent grant is included only when it is effective.
@@ -19,6 +15,21 @@ All notable changes to this project will be documented in this file.
 - No Accessible migration. Grants, roles, and existing helpers are unchanged.
 - Set `config.shared_item_resolver` or the page stays empty. The screen does not guess a url.
 - The route is on the engine mount. A host that draws these routes by hand adds `get "shared_with", to: "shared_with#index"`.
+
+## [0.56.0] - 2026-11-19
+
+### Fixed
+- `authorized?` and `role_for` load a saved recording's ancestors in one query, then reuse that parent chain for the rest of the request. Sibling checks no longer repeat the recursive walk and the per-id recording load. A write clears the chain. A cycle or a chain past the depth cap still walks `parent_recording` in memory. Roles are unchanged.
+- `access_recordings_for_actor_in` preloads the Access row with the grant recordings, so one lookup does not load each access record on its own.
+
+### Changed
+- Development and dummy pins move to Recording Studio `v7.8.0` and FlatPack `v0.2.0`. Trashable `v1.2.3`, Metrics `v0.9.2`, Admin `v2.19.1`, API `v1.19.0`, Attachable `v0.33.2`, Cache `v0.7.1`, Icons `v0.4.2`, Logs `v0.8.2`, Moveable `v6.0.3`, Users `v0.38.0`, Notifications `v0.19.5`, Root Switchable `v0.16.1`, and Internationalization `v0.3.1` move with them.
+- The dummy drops the manual `flat_pack/heroicons` importmap pin. Role icons render as server-side SVGs.
+
+### Upgrade notes
+- Hosts MUST run the Recording Studio 7.4, 7.5 and 7.7 migrations if they have not.
+- flat_pack 0.2.0 is supported; hosts moving to 0.2 must remove the manual `flat_pack/heroicons` importmap pin and any `flat-pack--icon` controller registration.
+- No Accessible migration. The gemspec still requires Recording Studio `>= 7.7.0`, `< 8.0`, and does not require FlatPack 0.2. Hosts that stay on FlatPack 0.1.x still resolve.
 
 ## [0.55.0] - 2026-11-18
 
@@ -1552,7 +1563,9 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.55.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.57.0...HEAD
+[0.57.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.56.0...v0.57.0
+[0.56.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.55.0...v0.56.0
 [0.55.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.54.1...v0.55.0
 [0.54.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.54.0...v0.54.1
 [0.44.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.43.1...v0.44.0
