@@ -70,14 +70,87 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
     get new_request_path
     assert_response :unauthorized
+    assert_nil signup_source
 
     assert_no_difference -> { RecordingStudio::AccessRequest.count } do
       post request_path, params: { access_request: { message: "No account" } }
     end
     assert_response :unauthorized
+    assert_nil signup_source
   ensure
     controller.define_method(:local_sign_in_path, original)
     controller.send(:private, :local_sign_in_path)
+  end
+
+  test "a signed-out access request records via access_request and the recording" do
+    get new_request_path
+
+    assert_redirected_to "/users/sign_in"
+    assert_equal({ via: "access_request", recording_id: @recording.id }, signup_source)
+
+    assert_no_difference -> { RecordingStudio::AccessRequest.count } do
+      post request_path, params: { access_request: { message: "After sign up" } }
+    end
+
+    assert_redirected_to "/users/sign_in"
+    assert_equal({ via: "access_request", recording_id: @recording.id }, signup_source)
+  end
+
+  test "a source param and a tampered recording_id are ignored on an access request" do
+    decoy = create_root_recording(Workspace.create!(name: "Decoy Request Target"))
+    tampered = {
+      source: { via: "share", recording_id: decoy.id },
+      recording_id: decoy.id
+    }
+
+    get new_request_path, params: tampered
+
+    assert_redirected_to "/users/sign_in"
+    assert_equal({ via: "access_request", recording_id: @recording.id }, signup_source)
+
+    post request_path, params: tampered.merge(access_request: { message: "Tampered" })
+
+    assert_redirected_to "/users/sign_in"
+    assert_equal({ via: "access_request", recording_id: @recording.id }, signup_source)
+  end
+
+  test "a signed-in access request records no signup source and still submits" do
+    sign_in @person
+
+    get new_request_path, params: { source: { via: "share", recording_id: 0 } }
+
+    assert_response :success
+    assert_nil signup_source
+
+    assert_difference -> { RecordingStudio::AccessRequest.count }, 1 do
+      post request_path, params: { access_request: { message: "Signed in", action: "read" } }
+    end
+    assert_nil signup_source
+  end
+
+  test "a signed-out access request still redirects when Users has no signup source method" do
+    without_signup_source_method do
+      get new_request_path
+
+      assert_redirected_to "/users/sign_in"
+      assert_nil signup_source
+
+      post request_path, params: { access_request: { message: "Old Users" } }
+
+      assert_redirected_to "/users/sign_in"
+      assert_nil signup_source
+    end
+  end
+
+  test "a signed-out access request still redirects when Users is missing" do
+    session_key = RecordingStudioUser::SignupSource::SESSION_KEY
+
+    without_recording_studio_user do
+      get new_request_path
+
+      assert_redirected_to "/users/sign_in"
+      assert_nil session[session_key]
+    end
   end
 
   test "a signed-out create is sent to sign in and records nothing" do
@@ -240,6 +313,29 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
 
   def modal_headers
     { "Turbo-Frame" => "access_request" }
+  end
+
+  def signup_source
+    RecordingStudioUser::SignupSource.read(session)
+  end
+
+  def without_signup_source_method
+    singleton = RecordingStudioUser.singleton_class
+    singleton.alias_method(:__original_remember_signup_source!, :remember_signup_source!)
+    singleton.send(:undef_method, :remember_signup_source!)
+    yield
+  ensure
+    unless RecordingStudioUser.respond_to?(:remember_signup_source!)
+      singleton.alias_method(:remember_signup_source!, :__original_remember_signup_source!)
+    end
+    singleton.send(:undef_method, :__original_remember_signup_source!)
+  end
+
+  def without_recording_studio_user
+    removed = Object.send(:remove_const, :RecordingStudioUser)
+    yield
+  ensure
+    Object.const_set(:RecordingStudioUser, removed) unless defined?(::RecordingStudioUser)
   end
 
   def assert_access_request_table

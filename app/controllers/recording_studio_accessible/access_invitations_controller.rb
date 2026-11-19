@@ -5,6 +5,7 @@ require "uri"
 module RecordingStudioAccessible
   class AccessInvitationsController < ApplicationController
     include RecordingStudioAccessible::NavigationUrlSafety
+    include RecordingStudioAccessible::RememberSignupSource
 
     skip_before_action :authenticate_user!, raise: false
 
@@ -76,6 +77,8 @@ module RecordingStudioAccessible
 
       path = local_sign_in_path
       return false if path.blank?
+
+      remember_signup_source(via: "share", recording_id: @invitation.recording_id) if @invitation&.acceptable?
 
       redirect_to path
       true

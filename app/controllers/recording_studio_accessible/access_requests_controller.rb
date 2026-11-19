@@ -3,6 +3,7 @@
 module RecordingStudioAccessible
   class AccessRequestsController < ApplicationController
     include AccessRequestsHelper
+    include RecordingStudioAccessible::RememberSignupSource
 
     helper AccessRequestsHelper
     helper_method :manager?
@@ -111,6 +112,7 @@ module RecordingStudioAccessible
       end
 
       store_access_request_return
+      remember_signup_source(via: "access_request", recording_id: @recording.id)
       redirect_to path
       true
     end
