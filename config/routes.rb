@@ -10,6 +10,7 @@ RecordingStudioAccessible::Engine.routes.draw do
                                                       as: :workspace_actor_access_points
 
   get "access_requests", to: "access_request_lists#index", as: :access_requests
+  get "shared_with", to: "shared_with#index", as: :shared_with
 
   resources :recordings, only: [] do
     resources :accesses, only: %i[index new create edit update destroy], controller: "recording_accesses"

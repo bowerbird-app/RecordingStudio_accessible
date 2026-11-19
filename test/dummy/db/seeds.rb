@@ -596,7 +596,9 @@ sync_access_recordings(
   parent_recording: operations_recording,
   root_recording: root_recording,
   manager_actor: users[:admin],
-  grants: []
+  grants: [
+    { actor: users[:viewer], role: :view }
+  ]
 )
 
 sync_owned_root_access!(
@@ -626,7 +628,10 @@ sync_shared_forest_access!(
   parent_recording: client_launch_thread_recording,
   root_recording: message_root_recording,
   owner: users[:admin],
-  additional_grants: [ { actor: workspace, role: :view } ]
+  additional_grants: [
+    { actor: workspace, role: :view },
+    { actor: users[:viewer], role: :view }
+  ]
 )
 
 [ welcome_pack_recording, accessibility_checklist_recording, ops_runbook_recording ].each do |page_recording|

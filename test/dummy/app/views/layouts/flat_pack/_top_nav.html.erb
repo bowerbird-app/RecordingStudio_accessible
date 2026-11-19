@@ -26,6 +26,13 @@
 
   <% nav.right do %>
     <% if user_signed_in? %>
+      <%= render FlatPack::Button::Component.new(
+        text: "Shared with me",
+        style: :ghost,
+        size: :sm,
+        href: recording_studio_accessible.shared_with_path,
+        class: "mr-2"
+      ) %>
       <% if recording_studio_accessible_my_access_visible? %>
         <%= render FlatPack::Button::Component.new(
           text: "My access",

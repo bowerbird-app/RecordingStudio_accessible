@@ -53,6 +53,23 @@ RecordingStudioAccessible.configure do |config|
     controller.main_app.new_invitation_signup_path(token)
   end
 
+  # Titles and links for Shared with me. Nil, or a blank title or url, hides the row.
+  config.shared_item_resolver = lambda do |recording|
+    recordable = recording&.recordable
+    helpers = Rails.application.routes.url_helpers
+    case recordable
+    when Folder
+      { title: recordable.name, url: helpers.workspace_path(recordable.workspace) }
+    when Page
+      workspace = recordable.folder&.workspace
+      next unless workspace
+
+      { title: recordable.title, url: helpers.workspace_path(workspace) }
+    when MessageGroup
+      { title: recordable.name, url: helpers.message_groups_path }
+    end
+  end
+
   config.access_management_copy = lambda do |recording:, **|
     recordable = recording&.recordable
     next unless recordable.is_a?(Workspace) && recordable.name == "Teams"

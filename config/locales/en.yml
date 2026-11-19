@@ -183,6 +183,16 @@ en:
           reopened: "Request reopened."
         errors:
           gate_unavailable: "We couldn't open the next step. Try again."
+      shared_with:
+        title: "Shared with me"
+        subtitle: "Everything shared with you, one by one."
+        empty_title: "Nothing here yet"
+        empty_subtitle: "When someone shares something with you, it shows up here."
+        workspace_fallback: "Workspace"
+        columns:
+          name: "Name"
+          role: "Role"
+          workspace: "Workspace"
       mailers:
         someone: "Someone"
         hello: "Hello %{email},"
