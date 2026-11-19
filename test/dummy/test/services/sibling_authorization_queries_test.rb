@@ -63,17 +63,50 @@ class SiblingAuthorizationQueriesTest < ActiveSupport::TestCase
     assert_operator access_loads, :<=, 1, loads.grep(/recording_studio_accesses/).join("\n")
   end
 
-  test "ancestor walks are not reused outside a request" do
-    recordings = @siblings.first(2).map { |recording| RecordingStudio::Recording.find(recording.id) }
+  test "with the query cache off each recording walks again and keeps its role" do
+    edited = @siblings.first
+    plain = @siblings.second
+    create_direct_access_recording(actor: @actor, role: :edit, parent_recording: edited)
+    recordings = [edited, plain].map { |recording| RecordingStudio::Recording.find(recording.id) }
 
     recursive = nil
     ActiveRecord::Base.uncached do
       statements = []
-      query_count(statements) { recordings.each { |recording| authorize(recording, :view) } }
+      query_count(statements) do
+        assert_equal :edit, role_for(recordings.first)
+        assert_equal :view, role_for(recordings.second)
+      end
       recursive = statements.count { |sql| sql.include?("WITH RECURSIVE") }
     end
 
     assert_equal 2, recursive
+    refute authorize(recordings.second, :edit)
+  end
+
+  test "a write clears the cached ancestor chain" do
+    folder = @siblings.first
+    page_record = Page.create!(folder: folder.recordable, title: "Moved", summary: "Moved", position: 0)
+    page = create_child_recording(recordable: page_record, parent_recording: folder)
+    other_root = create_root_recording(Workspace.create!(name: "Sibling Auth Other"))
+    create_direct_access_recording(actor: @actor, role: :edit, parent_recording: other_root)
+
+    ActiveRecord::Base.cache do
+      page = RecordingStudio::Recording.find(page.id)
+      assert_equal :view, role_for(page)
+      assert_equal [page.id, folder.id, @root.id], path_ids(page)
+
+      folder.update_columns(parent_recording_id: other_root.id, root_recording_id: other_root.id, updated_at: Time.current)
+      page.update_columns(root_recording_id: other_root.id, updated_at: Time.current)
+
+      page = RecordingStudio::Recording.find(page.id)
+      statements = []
+      query_count(statements) do
+        assert_equal [page.id, folder.id, other_root.id], path_ids(page)
+        assert_equal :edit, role_for(page)
+        refute authorize(page, :admin)
+      end
+      assert_equal 1, statements.count { |sql| sql.include?("WITH RECURSIVE") }
+    end
   end
 
   test "nested, sibling, revoked, and inherited roles stay on the same recordings" do
@@ -115,6 +148,10 @@ class SiblingAuthorizationQueriesTest < ActiveSupport::TestCase
   end
 
   private
+
+  def path_ids(recording)
+    RecordingStudio::Services::AccessPath.new(recording: recording).build.path_recordings.map(&:id)
+  end
 
   def authorize(recording, role)
     RecordingStudioAccessible.authorized?(actor: @actor, recording: recording, role: role)

@@ -66,6 +66,7 @@ module RecordingStudio
         SQL
       end
 
+      # Recording ids are uuid. Core's install migration and the dummy schema both use id: :uuid.
       def seed_sql
         <<~SQL.squish
           SELECT recording.id, recording.parent_recording_id, 0 AS depth,

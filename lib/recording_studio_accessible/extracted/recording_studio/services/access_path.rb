@@ -52,12 +52,16 @@ module RecordingStudio
         parent_id = recording.parent_recording_id
         return [] if parent_id.blank?
 
-        ancestor_cache.compute_if_absent([PARENT_ANCESTOR_CACHE, parent_id]) do
+        cache = ancestor_cache
+        return AncestorRecords.load(parent_id) unless cache.respond_to?(:compute_if_absent)
+
+        cache.compute_if_absent([PARENT_ANCESTOR_CACHE, parent_id]) do
           AncestorRecords.load(parent_id)
         end
       end
 
       def ancestor_cache
+        # Store#compute_if_absent verified on Rails 8.1.4.1 (present since 8.1.0; gemspec ~> 8.1.0).
         ActiveRecord::Base.connection_pool.query_cache
       end
 
