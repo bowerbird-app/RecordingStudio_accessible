@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "effective_root_ids/grant_rank"
+
 module RecordingStudioAccessible
   # Distinct root ids for one actor's kept access grants.
   #
@@ -8,6 +10,8 @@ module RecordingStudioAccessible
   # same root, with a ranked role at least as strong, and no cycle.
   module EffectiveRootIds
     class << self
+      include GrantRank
+
       def relation_for(access_recordings)
         sql = distinct_root_ids_sql(access_recordings)
         RecordingStudio::Recording.unscoped
@@ -33,6 +37,7 @@ module RecordingStudioAccessible
           #{seed_select_sql}
           FROM (#{seed_recordings_sql(access_recordings)}) seed
           LEFT JOIN #{accesses_table} accesses ON accesses.id = seed.recordable_id
+          #{seed_parent_join}
         SQL
       end
 
@@ -42,6 +47,7 @@ module RecordingStudioAccessible
           FROM grant_walk
           INNER JOIN #{recordings_table} manager ON manager.id = grant_walk.manager_id
           INNER JOIN #{accesses_table} manager_access ON manager_access.id = manager.recordable_id
+          #{manager_parent_join}
           WHERE #{step_filters_sql}
         SQL
       end
@@ -60,6 +66,7 @@ module RecordingStudioAccessible
                  COALESCE(seed.root_recording_id, seed.id) AS node_root_id,
                  accesses.depends_on_recording_id AS manager_id,
                  accesses.role AS node_role,
+                 #{node_type_select}
                  #{id_array('seed.id')} AS seen,
                  (accesses.id IS NULL OR accesses.depends_on_recording_id IS NULL) AS done
         SQL
@@ -71,6 +78,7 @@ module RecordingStudioAccessible
                  COALESCE(manager.root_recording_id, manager.id),
                  manager_access.depends_on_recording_id,
                  manager_access.role,
+                 #{step_node_type_select}
                  grant_walk.seen || manager.id,
                  (manager_access.depends_on_recording_id IS NULL)
         SQL
@@ -83,19 +91,12 @@ module RecordingStudioAccessible
           RecordingStudio.kept_sql("manager"),
           "NOT (manager.id = ANY(grant_walk.seen))",
           "COALESCE(manager.root_recording_id, manager.id) = grant_walk.node_root_id",
-          "#{role_rank_sql('manager_access.role')} >= #{role_rank_sql('grant_walk.node_role')}"
+          manager_covers_sql
         ].join(" AND ")
       end
 
       def seed_recordings_sql(access_recordings)
         connection.unprepared_statement { access_recordings.to_sql }
-      end
-
-      def role_rank_sql(expression)
-        branches = RecordingStudio::AccessRoles::ORDER.map do |name, rank|
-          "WHEN #{connection.quote(name)} THEN #{Integer(rank)}"
-        end
-        "CASE #{expression} #{branches.join(' ')} END"
       end
 
       def id_array(expression)

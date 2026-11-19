@@ -559,6 +559,15 @@ operations_recording = ensure_child_recording(
   root_recording: root_recording
 )
 
+press_kit = workspace.press_kits.find_or_initialize_by(name: "Spring release")
+press_kit.summary = "Files people with download access can take with them."
+press_kit.save! if press_kit.changed?
+ensure_child_recording(
+  recordable: press_kit,
+  parent_recording: root_recording,
+  root_recording: root_recording
+)
+
 restricted_planning_recording = ensure_child_recording(
   recordable: restricted_planning,
   parent_recording: restricted_root_recording,

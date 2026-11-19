@@ -5,6 +5,7 @@ class Workspace < ApplicationRecord
   RecordingStudio.enable_capability(:api_access_point, on: self) if defined?(RecordingStudioApi)
 
   has_many :folders, -> { order(:position, :name) }, dependent: :destroy
+  has_many :press_kits, -> { order(:name) }, dependent: :destroy
 
   validates :name, presence: true
 end

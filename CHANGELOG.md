@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.59.0] - 2026-11-19
+
+### Added
+- A recordable can add roles to the ranking with `accessible_roles`. The order you write is the rank for that type. `accessible_roles :view, :download, :edit, :admin` places `download` between view and edit. Built-in names keep their relative order. Two types that share a name have to agree, and a reversed pair raises when the class loads.
+- A role is ranked on a recording only when that recording's type lists it. Rank SQL stays the three built-in branches until some type declares a custom role. After that, the grant's type picks the rank.
+- English copy for the `download` role: "Download". Other custom names stay humanized.
+
+### Changed
+- `authorized?` fails closed for a custom role the target type does not declare. `authorized?(role: :download)` on a workspace or an admin root is false, even for an admin there. An admin grant on a press kit that declares `download` satisfies it.
+- A kit-level `download` grant satisfies view on that kit and on descendants. It does not satisfy edit. `authorized?(role: :download)` on a descendant that does not declare `download` is false.
+- An editor can grant a declared custom role ranked at or below edit. `actors_with_access(minimum_role: :view)` includes holders of those roles. A dependent grant of a declared role no longer fails as unranked. A name stored on a type that does not list it stays unranked.
+- Exact-name checks are unchanged: `authorized_for_role?`, `authorized_for_any_role?`, and a `granted` audience still match the stored name. One grant per actor per recording stays. `RecordingStudio::AccessRoles::ORDER` stays the built-in map.
+
+### Upgrade notes
+- No Accessible migration. No new gem dependency.
+- Hosts that already declare a custom role now rank that name. Review editors who can grant it, dependent grants, and `actors_with_access` floors.
+- Recording Studio Admin does not need a change. It passes one role symbol to `authorized?` and stores `required_role` as a string. A custom role on an admin root that does not declare it returns false.
+- Types with no custom roles keep today's checks.
+
 ## [0.58.0] - 2026-11-19
 
 ### Added
@@ -1574,7 +1593,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.58.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.59.0...HEAD
+[0.59.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.58.0...v0.59.0
 [0.58.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.57.0...v0.58.0
 [0.57.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.56.0...v0.57.0
 [0.56.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.55.0...v0.56.0

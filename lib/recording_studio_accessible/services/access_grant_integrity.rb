@@ -165,8 +165,8 @@ module RecordingStudioAccessible
 
       def group_from(key, recordings)
         roles = recordings.map { |recording| recording.recordable.role }
-        strongest_role = roles.select { |role| RecordingStudio::AccessRoles.value_for(role) }
-                              .max_by { |role| RecordingStudio::AccessRoles.value_for(role) }
+        parent = RecordingStudio::Recording.unscoped.find_by(id: key[0])
+        strongest_role = RecordingStudio::AccessRoles.strongest(roles, recording: parent)
 
         {
           parent_recording_id: key[0],

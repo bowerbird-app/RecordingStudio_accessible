@@ -2,7 +2,7 @@
 
 RecordingStudio.configure do |config|
   config.recordable_types = [
-    "Workspace", "Folder", "Page", "Card", "MessageRoot", "MessageGroup", "StaffRoot",
+    "Workspace", "Folder", "Page", "Card", "PressKit", "MessageRoot", "MessageGroup", "StaffRoot",
     "RecordingStudioUser::People", "RecordingStudioUser::Profile",
     "RecordingStudioAttachable::Attachment"
   ]

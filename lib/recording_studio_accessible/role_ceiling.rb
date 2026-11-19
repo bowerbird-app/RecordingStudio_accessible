@@ -19,9 +19,13 @@ module RecordingStudioAccessible
       requested = role.to_s.strip
       return false if held.blank? || requested.blank?
       return true if held == requested
-      return true if RecordingStudio::AccessRoles.satisfies?(role: held, minimum_role: requested)
+      return false unless RecordingStudioAccessible.role_valid_for?(recording, requested)
 
-      held == "admin" && RecordingStudioAccessible.role_valid_for?(recording, requested)
+      requested_rank = RecordingStudioAccessible::RoleRegistry.rank_on(recording, requested)
+      held_rank = RecordingStudioAccessible::RoleRegistry.global_rank(held)
+      return held_rank >= requested_rank if held_rank && requested_rank
+
+      held == "admin"
     end
 
     def held_role(recording, manager)

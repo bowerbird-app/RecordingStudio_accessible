@@ -22,8 +22,9 @@ module RecordingStudioAccessible
 
     def entries(minimum_role: :view)
       return [] unless recording
+      return [] if closed_minimum?(minimum_role)
 
-      selected = roles_by_key.select { |_key, role| role_satisfies?(role, minimum_role) }
+      selected = roles_by_key.select { |key, _role| meets_minimum?(key, minimum_role) }
       selected.filter_map { |key, role| entry_for(key, role) }
               .sort_by { |entry| [ActorType.for(entry.actor), entry.actor.id.to_s] }
     end
@@ -83,27 +84,26 @@ module RecordingStudioAccessible
     def role_for_grant(grant)
       return unless effective_grant?(grant)
 
-      ranked_role(grant.recordable&.role)
+      ranked_role(grant)
     end
 
     def outranked?(current, candidate)
       current && role_rank(current) >= role_rank(candidate)
     end
 
-    def ranked_role(role)
-      name = RecordingStudio::AccessRoles.normalize(role)
+    def ranked_role(grant)
+      node = node_for(grant)
+      return unless node
+
+      name = RecordingStudio::AccessRoles.normalize(grant.recordable&.role)
       return if name.blank?
-      return unless RecordingStudio::AccessRoles.value_for(name)
+      return unless RecordingStudioAccessible::RoleRegistry.rank_on(node, name)
 
       name.to_sym
     end
 
     def role_rank(role)
-      RecordingStudio::AccessRoles.value_for(role)
-    end
-
-    def role_satisfies?(role, minimum_role)
-      RecordingStudio::AccessRoles.satisfies?(role: role, minimum_role: minimum_role)
+      RecordingStudioAccessible::RoleRegistry.global_rank(role)
     end
 
     def actors_by_key

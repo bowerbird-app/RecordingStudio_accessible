@@ -47,6 +47,9 @@ class AuthorizationServiceTest < Minitest::Test
       assert_equal :recording, recording
       Object.new.tap do |resolver|
         resolver.define_singleton_method(:resolve_role) { role }
+        resolver.define_singleton_method(:meets?) do |minimum|
+          RecordingStudio::AccessRoles.satisfies?(role: role, minimum_role: minimum)
+        end
       end
     end
   end

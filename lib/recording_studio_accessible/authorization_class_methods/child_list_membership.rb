@@ -14,25 +14,50 @@ module RecordingStudioAccessible
       # Enough of AccessResolver for ChildListFloor. Roles are already the
       # effective ones from AccessGrantLookup.
       class GrantDecision
-        def initialize(roles)
+        def initialize(recording, roles)
+          @recording = recording
           @roles = roles
         end
 
-        def resolve_role
-          RecordingStudio::AccessRoles.strongest(@roles)
+        def meets?(minimum_role)
+          return false if @recording.nil?
+          return false if closed_custom_role?(minimum_role)
+
+          @roles.any? do |role|
+            RecordingStudioAccessible::RoleRegistry.meets?(@recording, role, minimum_role)
+          end
         end
 
         def any_effective_grant?
           @roles.any?
+        end
+
+        private
+
+        def closed_custom_role?(minimum_role)
+          RecordingStudioAccessible::RoleRegistry.custom_name?(minimum_role) &&
+            !RecordingStudioAccessible::RoleRegistry.declares?(@recording, minimum_role)
         end
       end
 
       IdRef = Struct.new(:id)
 
       def ids
-        return @candidates.pluck(:id) if parent_meets_floor?
+        return parent_floor_ids if parent_meets_floor?
 
         (direct_child_ids + off_path_child_ids).uniq
+      end
+
+      def parent_floor_ids
+        scope = @candidates
+        minimum = @request.floor.minimum_role if @request.floor.respond_to?(:minimum_role)
+        if RecordingStudioAccessible::RoleRegistry.custom_name?(minimum)
+          types = RecordingStudioAccessible::RoleRegistry.types_declaring(minimum)
+          return [] if types.empty?
+
+          scope = scope.where(recordable_type: types)
+        end
+        scope.pluck(:id)
       end
 
       private
@@ -91,14 +116,22 @@ module RecordingStudioAccessible
       def ids_meeting_floor(grants)
         return [] if grants.empty?
 
-        lookup = RecordingStudio::Services::AccessGrantLookup.new(
+        parent_ids = grants.map(&:parent_recording_id).uniq
+        recordings = RecordingStudio::Recording.unscoped.where(id: parent_ids).index_by(&:id)
+        lookup = grant_lookup(grants)
+        parent_ids.select { |recording_id| floor_keeps?(recordings[recording_id], lookup, recording_id) }
+      end
+
+      def grant_lookup(grants)
+        RecordingStudio::Services::AccessGrantLookup.new(
           actor: @request.actor,
           recordings: [],
           access_recordings: grants
         )
-        grants.map(&:parent_recording_id).uniq.select do |recording_id|
-          @request.floor.keep?(GrantDecision.new(lookup.roles_for(IdRef.new(recording_id))))
-        end
+      end
+
+      def floor_keeps?(recording, lookup, recording_id)
+        @request.floor.keep?(GrantDecision.new(recording, lookup.roles_for(IdRef.new(recording_id))))
       end
     end
     private_constant :ChildListMembership

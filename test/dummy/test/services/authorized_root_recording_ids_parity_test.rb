@@ -185,7 +185,7 @@ class AuthorizedRootRecordingIdsParityTest < ActiveSupport::TestCase
   end
 
   test "nil actor and an invalid role are an empty recording relation" do
-    [ nil, :download, "", "VIEW" ].each do |role|
+    [ nil, :archive, "", "VIEW" ].each do |role|
       relation = RecordingStudioAccessible.authorized_root_recording_ids(actor: @member, role: role)
       assert_equal RecordingStudio::Recording.none.to_sql, relation.to_sql
       assert_empty RecordingStudio::Recording.where(id: relation)
@@ -197,6 +197,12 @@ class AuthorizedRootRecordingIdsParityTest < ActiveSupport::TestCase
     empty = RecordingStudioAccessible.authorized_root_recording_ids(actor: nil, role: :view)
     assert_equal RecordingStudio::Recording.none.to_sql, empty.to_sql
     assert_empty RecordingStudio::Recording.where(id: empty)
+
+    download = RecordingStudioAccessible.authorized_root_recording_ids(actor: @member, role: :download)
+    assert_empty RecordingStudio::Recording.where(id: download)
+    @catalog.each do |name, root|
+      refute RecordingStudioAccessible.authorized?(actor: @member, recording: root, role: :download), name
+    end
   end
 
   test "query count stays constant and the relation composes inside where" do

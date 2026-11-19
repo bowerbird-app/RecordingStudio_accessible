@@ -5,6 +5,7 @@ en:
         title: "Recording Studio Accessible"
       roles:
         view: "View"
+        download: "Download"
         edit: "Edit"
         admin: "Admin"
       audiences:
