@@ -250,9 +250,11 @@ class RecordingAccessesTest < ActionDispatch::IntegrationTest
     assert_includes @response.body, "max-w-xl"
     assert_select "form .pt-6 button[type=submit]", text: "Give access"
     refute_includes @response.body, "fp-card"
-    assert_includes @response.body, 'data-flat-pack--icon-name-value="eye"'
-    assert_includes @response.body, 'data-flat-pack--icon-name-value="pencil"'
-    assert_includes @response.body, 'data-flat-pack--icon-name-value="shield-check"'
+    %w[view edit admin].each do |role|
+      assert_select "input[type=radio][name='access[role]'][value=?]", role do |inputs|
+        assert_select inputs.first.parent, "svg"
+      end
+    end
     assert_includes @response.body, "User email"
     assert_includes @response.body, 'placeholder="email@example.com"'
     refute_includes @response.body, "Select an actor"
