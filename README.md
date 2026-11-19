@@ -433,7 +433,7 @@ end
 
 Return nil, or leave out the title or the url, and that row is hidden. Leave the resolver unset and every row is hidden. The screen does not guess a url with `polymorphic_url`.
 
-The mounted page is `GET /recording_studio_accessible/shared_with`. Any signed-in actor can open it. A blank actor gets 403. The host sign-in filter still runs first, so a signed-out visit follows that filter. Each row is the item name as a link, with the workspace on the line under it. The link is the resolver url. Opening the item does not grant the workspace. The list sits in a card and is the same at every width.
+The mounted page is `GET /recording_studio_accessible/shared_with`. Any signed-in actor can open it. A blank actor gets 403. The host sign-in filter still runs first, so a signed-out visit follows that filter. Each row is the item name as a link, with the workspace on the line under it. The link is the resolver url. Opening the item does not grant the workspace. The list sits in a card in the first column of a two-column grid from the medium breakpoint, and in one full-width column below that. A page holds 10 rows. The next page appends into the same list.
 
 Copy lives at `recording_studio.accessible.shared_with`.
 
@@ -2431,7 +2431,7 @@ Useful routes:
 - `/message_groups` - dummy app demo of message groups under shared `MessageRoot`, first owner via bootstrap
 - `/recording_studio_accessible` - addon status/demo page
 - `/recording_studio_accessible/recordings/:recording_id/accesses` - gem-provided page for managing direct recording access and pending invitations
-- `/recording_studio_accessible/shared_with` - items shared with the signed-in person. `viewer@admin.com` sees the Client launch thread, Press photos, and Caption notes. The Operations folder stays off that list because the same person also has the demo workspace. `outsider@admin.com` has none.
+- `/recording_studio_accessible/shared_with` - items shared with the signed-in person. `viewer@admin.com` sees twelve message groups, so the list has a second page. The Operations folder stays off that list because the same person also has the demo workspace. `outsider@admin.com` has none.
 - `/invitation_signups/:token/new` - dummy signup page that creates the invited user and accepts the invitation
 
 The demo seeds:

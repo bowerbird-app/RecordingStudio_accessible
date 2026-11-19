@@ -113,6 +113,13 @@ class SharedWithTest < ActiveSupport::TestCase
     second = RecordingStudioAccessible.shared_with(actor: @person, cursor: first.next_cursor)
     assert_equal ["Kit 10"], second.items.map(&:title)
     refute second.has_more
+    assert_empty(first.items.map(&:title) & second.items.map(&:title))
+
+    other = create_user("shared-with-other-#{SecureRandom.hex(4)}@example.com")
+    share_folder("Foreign kit", actor: other)
+    foreign_cursor = RecordingStudioAccessible.shared_with(actor: other).next_cursor
+    seen = RecordingStudioAccessible.shared_with(actor: @person, cursor: foreign_cursor)
+    refute_includes seen.items.map(&:title), "Foreign kit"
 
     assert_raises(RecordingStudioAccessible::SharedWith::InvalidCursor) do
       RecordingStudioAccessible.shared_with(actor: @person, cursor: "yesterday|not-a-uuid")

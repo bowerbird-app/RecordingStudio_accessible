@@ -34,7 +34,8 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
     assert_match "Shared with me", response.body
     assert_match "Everything shared with you, one by one.", response.body
     assert_select "table", count: 0
-    assert_select ".fp-card.border ul.flat-pack-list-divided[data-pagination-content]"
+    assert_select ".grid.grid-cols-1.md\\:grid-cols-2 > .fp-card.border", count: 1
+    assert_select ".fp-card ul.flat-pack-list-divided[data-pagination-content]"
     assert_shared_row(@folder.name, @workspace.name, main_workspace_path, hidden_role: "Edit")
 
     sign_in @outsider
@@ -45,6 +46,7 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
     assert_match "When someone shares something with you, it shows up here.", response.body
     refute_match @folder.name, response.body
     assert_select ".fp-card", count: 0
+    assert_select ".grid", count: 0
   end
 
   test "a signed-out visit redirects and a blank actor is forbidden" do
@@ -83,27 +85,49 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
     assert_response :bad_request
   end
 
-  test "another page keeps a cursor on the last row" do
+  test "the next page is the rest of the list and then it stops" do
     10.times do |index|
-      folder = Folder.create!(
-        workspace: @workspace,
-        name: "Extra kit #{index} #{SecureRandom.hex(2)}",
-        summary: "Kit",
-        position: index + 1
-      )
-      recording = create_child_recording(recordable: folder, parent_recording: @root)
-      create_direct_access_recording(actor: @person, role: :view, parent_recording: recording)
+      share_screen_folder("Extra kit #{index} #{SecureRandom.hex(2)}", index + 1)
     end
     sign_in @person
 
     get recording_studio_accessible.shared_with_path
 
     assert_response :success
-    assert_select "ul[data-pagination-content] li", count: RecordingStudioAccessible::SharedWith::PAGE_SIZE
+    first_titles = row_titles
+    assert_equal RecordingStudioAccessible::SharedWith::PAGE_SIZE, first_titles.size
+    assert_equal first_titles.uniq, first_titles
     assert_select "li:last-child [data-pagination-cursor]"
     assert_select "[data-flat-pack--pagination-infinite-loading-variant-value=?]", "inline"
-    assert_select "[data-flat-pack--pagination-infinite-cursor-selector-value=?]",
-                  "li:last-child [data-pagination-cursor]"
+    cursor = css_select("li:last-child [data-pagination-cursor]").first["data-pagination-cursor"]
+
+    get recording_studio_accessible.shared_with_path(cursor: cursor)
+
+    assert_response :success
+    second_titles = row_titles
+    assert_equal [first_titles, second_titles].flatten.uniq.size, first_titles.size + second_titles.size
+    assert_equal 1, second_titles.size
+    assert_select "ul.flat-pack-list-divided[data-pagination-content]"
+    assert_select "[data-flat-pack--pagination-infinite-loading-variant-value]", count: 0
+  end
+
+  test "another actor's cursor does not reveal their items" do
+    other = create_user("shared-screen-other-#{SecureRandom.hex(4)}@example.com")
+    foreign = share_screen_folder("Foreign kit #{SecureRandom.hex(2)}", 2, actor: other)
+    sign_in other
+    get recording_studio_accessible.shared_with_path
+    foreign_cursor = css_select("li:last-child [data-pagination-cursor]").first["data-pagination-cursor"]
+
+    sign_in @person
+    get recording_studio_accessible.shared_with_path(cursor: foreign_cursor)
+
+    assert_response :success
+    refute_includes row_titles, foreign.name
+    refute_match foreign.name, response.body
+
+    get recording_studio_accessible.shared_with_path(cursor: "tampered")
+
+    assert_response :bad_request
   end
 
   test "an unset resolver hides every row" do
@@ -126,6 +150,17 @@ class SharedWithScreenTest < ActionDispatch::IntegrationTest
 
   def main_workspace_path
     Rails.application.routes.url_helpers.workspace_path(@workspace)
+  end
+
+  def share_screen_folder(name, position, actor: @person)
+    folder = Folder.create!(workspace: @workspace, name: name, summary: "Kit", position: position)
+    recording = create_child_recording(recordable: folder, parent_recording: @root)
+    create_direct_access_recording(actor: actor, role: :view, parent_recording: recording)
+    folder
+  end
+
+  def row_titles
+    css_select("ul[data-pagination-content] li a").map { |link| link.text.squish }
   end
 
   def assert_shared_row(title, workspace, href, hidden_role:)

@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `RecordingStudioAccessible.shared_with(actor:, cursor: nil)` lists items shared directly with an actor, across every workspace. Each row has the grant's role and the owning workspace. A workspace grant is left out, and so are items in that workspace. Trashed grants, revoked grants, trashed items, and items under a trashed ancestor are left out. A dependent grant is included only when it is effective.
 - `config.shared_item_resolver` returns `{ title:, url: }` for an item, or nil to hide that row. Leave it unset and every row stays hidden.
-- Mounted page `GET /recording_studio_accessible/shared_with` for any signed-in actor. Each row is the item name as a link, with the workspace on the line under it. Copy is `recording_studio.accessible.shared_with`.
+- Mounted page `GET /recording_studio_accessible/shared_with` for any signed-in actor. Each row is the item name as a link, with the workspace on the line under it. The list is the first column of a two-column grid from the medium breakpoint, and one column below that. Copy is `recording_studio.accessible.shared_with`.
 
 ### Upgrade notes
 - No Accessible migration. Grants, roles, and existing helpers are unchanged.

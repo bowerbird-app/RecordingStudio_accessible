@@ -509,6 +509,15 @@ caption_notes = upsert_message_group(
   position: 2
 )
 
+shared_notes = 9.times.map do |index|
+  upsert_message_group(
+    message_root: message_root,
+    name: "Shared note #{index + 1}",
+    summary: "Another item shared directly with the viewer.",
+    position: index + 3
+  )
+end
+
 remove_obsolete_demo_content(
   workspace: workspace,
   allowed_pages_by_folder_name: {
@@ -598,6 +607,14 @@ caption_notes_recording = ensure_child_recording(
   root_recording: message_root_recording
 )
 
+shared_note_recordings = shared_notes.map do |note|
+  ensure_child_recording(
+    recordable: note,
+    parent_recording: message_root_recording,
+    root_recording: message_root_recording
+  )
+end
+
 sync_owned_root_access!(
   root_recording: staff_root_recording,
   owner: users[:admin]
@@ -660,7 +677,7 @@ sync_shared_forest_access!(
   ]
 )
 
-[ press_photos_recording, caption_notes_recording ].each do |recording|
+[ press_photos_recording, caption_notes_recording, *shared_note_recordings ].each do |recording|
   sync_shared_forest_access!(
     parent_recording: recording,
     root_recording: message_root_recording,
