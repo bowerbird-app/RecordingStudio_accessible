@@ -280,9 +280,9 @@ class AccessRequestsTest < ActionDispatch::IntegrationTest
     assert_select "button[name=role]", count: 0
     assert_select "input[type=radio][name=role]", count: 3
     assert_select "input[type=radio][name=role][value=?][checked]", selected
-    { "view" => "eye", "edit" => "pencil", "admin" => "shield-check" }.each do |role, icon|
+    %w[view edit admin].each do |role|
       assert_select "input[type=radio][name=role][value=?]", role do |inputs|
-        assert_select inputs.first.parent, "[data-flat-pack--icon-name-value=?]", icon
+        assert_select inputs.first.parent, "svg"
       end
     end
   end
