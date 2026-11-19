@@ -51,9 +51,9 @@ is the same as above. See [Cursor skills in Cloud Agents](../../docs/cursor-skil
 
 Shared-forest demo uses dummy class `MessageRoot` (`shared: true`). README examples may say `MessagesRoot` for the same pattern.
 
-- `Client launch thread` sits under `Messages Root`.
-- The first owner is `admin@admin.com`, granted with `bootstrap_owner_access!` on the group.
-- Later access, including the through-workspace grant, uses `grant_access`.
+- `Client launch thread`, `Press photos`, and `Caption notes` sit under `Messages Root`.
+- The first owner of each group is `admin@admin.com`, granted with `bootstrap_owner_access!`.
+- Later access uses `grant_access`. `Client launch thread` also has the through-workspace grant. The viewer has a direct view grant on all three, which is what Shared with me lists.
 
 Home and `/message_groups` both list groups the signed-in person can see.
 

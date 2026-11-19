@@ -2431,7 +2431,7 @@ Useful routes:
 - `/message_groups` - dummy app demo of message groups under shared `MessageRoot`, first owner via bootstrap
 - `/recording_studio_accessible` - addon status/demo page
 - `/recording_studio_accessible/recordings/:recording_id/accesses` - gem-provided page for managing direct recording access and pending invitations
-- `/recording_studio_accessible/shared_with` - items shared with the signed-in person. `viewer@admin.com` sees the Client launch thread. The Operations folder stays off that list because the same person also has the demo workspace. `outsider@admin.com` has none.
+- `/recording_studio_accessible/shared_with` - items shared with the signed-in person. `viewer@admin.com` sees the Client launch thread, Press photos, and Caption notes. The Operations folder stays off that list because the same person also has the demo workspace. `outsider@admin.com` has none.
 - `/invitation_signups/:token/new` - dummy signup page that creates the invited user and accepts the invitation
 
 The demo seeds:

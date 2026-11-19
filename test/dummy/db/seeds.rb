@@ -495,6 +495,20 @@ client_launch_thread = upsert_message_group(
   position: 0
 )
 
+press_photos = upsert_message_group(
+  message_root: message_root,
+  name: "Press photos",
+  summary: "A second item shared directly with the viewer.",
+  position: 1
+)
+
+caption_notes = upsert_message_group(
+  message_root: message_root,
+  name: "Caption notes",
+  summary: "A third item shared directly with the viewer.",
+  position: 2
+)
+
 remove_obsolete_demo_content(
   workspace: workspace,
   allowed_pages_by_folder_name: {
@@ -572,6 +586,18 @@ client_launch_thread_recording = ensure_child_recording(
   root_recording: message_root_recording
 )
 
+press_photos_recording = ensure_child_recording(
+  recordable: press_photos,
+  parent_recording: message_root_recording,
+  root_recording: message_root_recording
+)
+
+caption_notes_recording = ensure_child_recording(
+  recordable: caption_notes,
+  parent_recording: message_root_recording,
+  root_recording: message_root_recording
+)
+
 sync_owned_root_access!(
   root_recording: staff_root_recording,
   owner: users[:admin]
@@ -633,6 +659,17 @@ sync_shared_forest_access!(
     { actor: users[:viewer], role: :view }
   ]
 )
+
+[ press_photos_recording, caption_notes_recording ].each do |recording|
+  sync_shared_forest_access!(
+    parent_recording: recording,
+    root_recording: message_root_recording,
+    owner: users[:admin],
+    additional_grants: [
+      { actor: users[:viewer], role: :view }
+    ]
+  )
+end
 
 [ welcome_pack_recording, accessibility_checklist_recording, ops_runbook_recording ].each do |page_recording|
   sync_access_recordings(
