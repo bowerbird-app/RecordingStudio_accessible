@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.57.0] - 2026-11-19
+
+### Added
+- `RecordingStudioAccessible.shared_with(actor:, cursor: nil)` lists items shared directly with an actor, across every workspace. Each row has the grant's role and the owning workspace. A workspace grant is left out, and so are items in that workspace. Trashed grants, revoked grants, trashed items, and items under a trashed ancestor are left out. A dependent grant is included only when it is effective.
+- `config.shared_item_resolver` returns `{ title:, url: }` for an item, or nil to hide that row. Leave it unset and every row stays hidden.
+- Mounted page `GET /recording_studio_accessible/shared_with` for any signed-in actor. Each row is the item name as a link, with the workspace on the line under it. The list is the first column of a two-column grid from the medium breakpoint, and one column below that. Copy is `recording_studio.accessible.shared_with`.
+
+### Upgrade notes
+- No Accessible migration. Grants, roles, and existing helpers are unchanged.
+- Set `config.shared_item_resolver` or the page stays empty. The screen does not guess a url.
+- The route is on the engine mount. A host that draws these routes by hand adds `get "shared_with", to: "shared_with#index"`.
+
 ## [0.56.0] - 2026-11-19
 
 ### Fixed
@@ -1551,7 +1563,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.56.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.57.0...HEAD
+[0.57.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.56.0...v0.57.0
 [0.56.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.55.0...v0.56.0
 [0.55.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.54.1...v0.55.0
 [0.54.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.54.0...v0.54.1

@@ -223,6 +223,12 @@ fr:
           reopened: "Demande rouverte."
         errors:
           gate_unavailable: "Nous n’avons pas pu ouvrir l’étape suivante. Réessayez."
+      shared_with:
+        title: "Partagé avec moi"
+        subtitle: "Tout ce qu’on a partagé avec vous, un par un."
+        empty_title: "Rien pour l’instant"
+        empty_subtitle: "Quand quelqu’un partage quelque chose avec vous, ça apparaît ici."
+        workspace_fallback: "Espace"
       mailers:
         someone: "Quelqu’un"
         hello: "Bonjour %{email},"

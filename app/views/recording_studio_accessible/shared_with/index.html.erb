@@ -1,0 +1,36 @@
+<% content_for :title, accessible_t("shared_with.title") %>
+<% content_for :subtitle, accessible_t("shared_with.subtitle") %>
+
+<%= turbo_frame_tag RecordingStudioAccessible::SharedWith::FRAME_ID do %>
+  <% if @page.items.any? %>
+    <%# The class string is the same utility cols: 2 emits. The host Tailwind build only generates it from a scanned literal. %>
+    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md, align: :start, class: "md:grid-cols-2") do %>
+      <%= render FlatPack::Card::Component.new(border: :default, padding: :none, class: "min-w-0 w-full") do %>
+        <%= render FlatPack::List::Component.new(
+              layout: :items,
+              divider: true,
+              data: { pagination_content: true }
+            ) do %>
+          <% @page.items.each do |item| %>
+            <%= shared_with_item(item) %>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+
+    <% if @page.has_more %>
+      <%= render FlatPack::PaginationInfinite::Component.new(
+            url: RecordingStudioAccessible::SharedWith.next_url(@list_url, @page.next_cursor),
+            has_more: true,
+            loading_variant: :inline,
+            cursor_selector: "li:last-child [data-pagination-cursor]",
+            cursor_param: "cursor"
+          ) %>
+    <% end %>
+  <% else %>
+    <%= render FlatPack::EmptyState::Component.new(
+          title: accessible_t("shared_with.empty_title"),
+          description: accessible_t("shared_with.empty_subtitle")
+        ) %>
+  <% end %>
+<% end %>

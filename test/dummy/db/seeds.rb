@@ -495,6 +495,29 @@ client_launch_thread = upsert_message_group(
   position: 0
 )
 
+press_photos = upsert_message_group(
+  message_root: message_root,
+  name: "Press photos",
+  summary: "A second item shared directly with the viewer.",
+  position: 1
+)
+
+caption_notes = upsert_message_group(
+  message_root: message_root,
+  name: "Caption notes",
+  summary: "A third item shared directly with the viewer.",
+  position: 2
+)
+
+shared_notes = 9.times.map do |index|
+  upsert_message_group(
+    message_root: message_root,
+    name: "Shared note #{index + 1}",
+    summary: "Another item shared directly with the viewer.",
+    position: index + 3
+  )
+end
+
 remove_obsolete_demo_content(
   workspace: workspace,
   allowed_pages_by_folder_name: {
@@ -572,6 +595,26 @@ client_launch_thread_recording = ensure_child_recording(
   root_recording: message_root_recording
 )
 
+press_photos_recording = ensure_child_recording(
+  recordable: press_photos,
+  parent_recording: message_root_recording,
+  root_recording: message_root_recording
+)
+
+caption_notes_recording = ensure_child_recording(
+  recordable: caption_notes,
+  parent_recording: message_root_recording,
+  root_recording: message_root_recording
+)
+
+shared_note_recordings = shared_notes.map do |note|
+  ensure_child_recording(
+    recordable: note,
+    parent_recording: message_root_recording,
+    root_recording: message_root_recording
+  )
+end
+
 sync_owned_root_access!(
   root_recording: staff_root_recording,
   owner: users[:admin]
@@ -596,7 +639,9 @@ sync_access_recordings(
   parent_recording: operations_recording,
   root_recording: root_recording,
   manager_actor: users[:admin],
-  grants: []
+  grants: [
+    { actor: users[:viewer], role: :view }
+  ]
 )
 
 sync_owned_root_access!(
@@ -626,8 +671,22 @@ sync_shared_forest_access!(
   parent_recording: client_launch_thread_recording,
   root_recording: message_root_recording,
   owner: users[:admin],
-  additional_grants: [ { actor: workspace, role: :view } ]
+  additional_grants: [
+    { actor: workspace, role: :view },
+    { actor: users[:viewer], role: :view }
+  ]
 )
+
+[ press_photos_recording, caption_notes_recording, *shared_note_recordings ].each do |recording|
+  sync_shared_forest_access!(
+    parent_recording: recording,
+    root_recording: message_root_recording,
+    owner: users[:admin],
+    additional_grants: [
+      { actor: users[:viewer], role: :view }
+    ]
+  )
+end
 
 [ welcome_pack_recording, accessibility_checklist_recording, ops_runbook_recording ].each do |page_recording|
   sync_access_recordings(

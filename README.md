@@ -9,7 +9,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 - child-only `RecordingStudio::Access` recordables for direct grants under opted-in recordings
 - optional dependent grants: one Access recording can be capped by and die with another Access recording on the same root. Dependents void in place when the manager Access is revised weaker, trashed, destroyed, or moved — they do not follow a move
 - optional per-action audiences (`public`, `signed_in`, `granted`, plus `register_audience`) with workspace limits and per-recording rules
-- `RecordingStudioAccessible.role_for`, `access_grants_for`, `actors_with_access`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, and named-action checks
+- `RecordingStudioAccessible.role_for`, `access_grants_for`, `shared_with`, `actors_with_access`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, item shares, and named-action checks
 - `admin_root` and `admin?` for a role held on the configured admin root recording
 - a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
 - Recording Studio API member actions (`list_access`, `grant_access`,
@@ -408,6 +408,35 @@ access-granted email. Denial sends mail only when
 request emails direct admins on the target and its parents. Replace that with
 `config.access_request_submitted_notifier`.
 
+## Shared with me
+
+`RecordingStudioAccessible.shared_with(actor:, cursor: nil)` lists items shared directly with that actor, across every workspace. Each row is one kept access grant whose parent is the item. The row includes that grant's role and the workspace the item belongs to.
+
+A grant on the workspace itself is not a row. Items in that workspace are left out too, because the person already has the workspace. This list is built from the item grants. It does not call `root_recordings_for` or `root_recording_ids_for`. Those methods also return a workspace reached through an item grant, which would hide the share.
+
+A trashed grant, a revoked grant, a trashed item, and an item under a trashed ancestor are left out. A dependent grant is included only when `DependentAccess.effective?` is true, the same check `AccessGrantLookup` uses.
+
+The page is 10 rows, newest grant first. The cursor is the last grant's `created_at|id`, the same shape as the access-request index. A blank cursor is the first page. A cursor that is not a time and a uuid raises `RecordingStudioAccessible::SharedWith::InvalidCursor`.
+
+A nil actor returns an empty page. An actor that is not an Active Record model raises `ArgumentError`.
+
+The host supplies the title and the link:
+
+```ruby
+config.shared_item_resolver = lambda do |recording|
+  recordable = recording.recordable
+  next if recordable.blank?
+
+  { title: recordable.name, url: "/kits/#{recordable.id}" }
+end
+```
+
+Return nil, or leave out the title or the url, and that row is hidden. Leave the resolver unset and every row is hidden. The screen does not guess a url with `polymorphic_url`.
+
+The mounted page is `GET /recording_studio_accessible/shared_with`. Any signed-in actor can open it. A blank actor gets 403. The host sign-in filter still runs first, so a signed-out visit follows that filter. Each row is the item name as a link, with the workspace on the line under it. The link is the resolver url. Opening the item does not grant the workspace. The list sits in a card in the first column of a two-column grid from the medium breakpoint, and in one full-width column below that. A page holds 10 rows. The next page appends into the same list.
+
+Copy lives at `recording_studio.accessible.shared_with`.
+
 ## Compatibility with RecordingStudio 7.0
 
 Recording Studio Accessible targets RecordingStudio `>= 7.7.0`, `< 8.0` (currently
@@ -443,6 +472,14 @@ this addon is loaded, including compatibility mode. Host applications should use
 `RecordingStudioAccessible.grant_access` for direct access grants.
 
 ### Upgrading existing apps
+
+#### Upgrading to 0.57.0
+
+No Accessible migration. Grants, roles, and existing helpers are unchanged.
+
+Set `config.shared_item_resolver` or the Shared with me page stays empty. The screen does not guess a url.
+
+The route is on the engine mount. A host that draws these routes by hand adds `get "shared_with", to: "shared_with#index"`.
 
 #### Upgrading to 0.56.0
 
@@ -2410,6 +2447,7 @@ Useful routes:
 - `/message_groups` - dummy app demo of message groups under shared `MessageRoot`, first owner via bootstrap
 - `/recording_studio_accessible` - addon status/demo page
 - `/recording_studio_accessible/recordings/:recording_id/accesses` - gem-provided page for managing direct recording access and pending invitations
+- `/recording_studio_accessible/shared_with` - items shared with the signed-in person. `viewer@admin.com` sees twelve message groups, so the list has a second page. The Operations folder stays off that list because the same person also has the demo workspace. `outsider@admin.com` has none.
 - `/invitation_signups/:token/new` - dummy signup page that creates the invited user and accepts the invitation
 
 The demo seeds:

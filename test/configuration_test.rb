@@ -123,6 +123,24 @@ class ConfigurationTest < Minitest::Test
     refute_respond_to @configuration, :unknown_key
   end
 
+  def test_shared_item_resolver_defaults_to_nil
+    assert_nil @configuration.shared_item_resolver
+  end
+
+  def test_merge_updates_callable_shared_item_resolver
+    resolver = ->(recording) { { title: recording.to_s, url: "/items" } }
+
+    @configuration.merge!(shared_item_resolver: resolver)
+
+    assert_equal resolver, @configuration.shared_item_resolver
+  end
+
+  def test_merge_ignores_non_callable_shared_item_resolver
+    @configuration.merge!(shared_item_resolver: "ignored")
+
+    assert_nil @configuration.shared_item_resolver
+  end
+
   def test_to_h_reports_registered_hook_counts
     @configuration.hooks.before_initialize { nil }
     @configuration.hooks.after_service { nil }

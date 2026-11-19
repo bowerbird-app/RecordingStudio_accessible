@@ -21,6 +21,7 @@ require "recording_studio_accessible/access_request_recording_creation_guard"
 require "recording_studio_accessible/access_request_query"
 require "recording_studio_accessible/administered_recordings"
 require "recording_studio_accessible/access_request_index"
+require "recording_studio_accessible/shared_with"
 require "recording_studio_accessible/access_request_reviewers"
 require "recording_studio_accessible/access_recording_dependent_lifecycle"
 require "recording_studio_accessible/dependent_access"
@@ -237,4 +238,9 @@ module RecordingStudioAccessible
 
     def access_grants_for(actor:, role: nil) = Authorization.access_grants_for(actor:, role:)
   end
+
+  module SharedWithApi
+    def shared_with(actor:, cursor: nil) = SharedWith.page(actor:, cursor:)
+  end
+  extend SharedWithApi
 end

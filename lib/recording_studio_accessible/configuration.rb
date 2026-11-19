@@ -92,6 +92,7 @@ module RecordingStudioAccessible
       @before_access_grant = nil
       @hooks = Hooks.new
       @action_audiences = ActionAudiences.new
+      @shared_item_resolver = nil
     end
 
     def install_action_audience_change_hook
@@ -114,6 +115,7 @@ module RecordingStudioAccessible
     def apply_merge_value(name, setter, value)
       public_send(setter, cast_boolean(value)) if name == "warn_on_core_conflict"
       public_send(setter, value) if name == "avatar_resolver" && value.respond_to?(:call)
+      public_send(setter, value) if name == "shared_item_resolver" && value.respond_to?(:call)
       public_send(setter, value) if name == "action_audiences"
     end
   end

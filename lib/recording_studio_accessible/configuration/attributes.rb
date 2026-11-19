@@ -31,6 +31,7 @@ module RecordingStudioAccessible
         access_request_index_recordings
         mounted_page_authorizer
         authorize_actor_through
+        shared_item_resolver
       ].freeze
       READERS = %i[hooks access_actor_types action_audiences access_request_gates layout].freeze
 
