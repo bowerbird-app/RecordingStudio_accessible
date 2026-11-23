@@ -164,7 +164,21 @@ class AudienceRulesTest < ActiveSupport::TestCase
         actor: @admin
       )
     end
-    assert_equal RecordingStudioAccessible::Copy.t("errors.audience_not_allowed"), error.message
+    assert_equal "That choice is not available here. Choose granted.", error.message
+  end
+
+  test "set_audience says when no audiences are available" do
+    error = assert_raises(RecordingStudioAccessible::AudienceNotAllowed) do
+      RecordingStudioAccessible::AudienceResolver.stub(:allowed_audiences_for, []) do
+        RecordingStudioAccessible.set_audience!(
+          recording: @folder_recording,
+          action: KIT,
+          audience: :public,
+          actor: @admin
+        )
+      end
+    end
+    assert_equal "That choice is not available here. No audiences are available.", error.message
   end
 
   test "constraint cannot widen past host allowed" do
@@ -353,7 +367,7 @@ class AudienceRulesTest < ActiveSupport::TestCase
         )
       end
     end
-    assert_equal RecordingStudioAccessible::Copy.t("errors.audience_not_allowed"), error.message
+    assert_equal "That choice is not available here. Choose granted.", error.message
 
     assert_operator calls, :>=, 2
     assert_predicate locked_payloads, :any?

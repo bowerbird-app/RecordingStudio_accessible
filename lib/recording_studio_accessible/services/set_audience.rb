@@ -42,9 +42,10 @@ module RecordingStudioAccessible
       end
 
       def ensure_audience_currently_allowed!
-        return if current_allowed_audiences.include?(normalized_audience)
+        allowed = current_allowed_audiences
+        return if allowed.include?(normalized_audience)
 
-        raise RecordingStudioAccessible::AudienceNotAllowed, copy("errors.audience_not_allowed")
+        raise RecordingStudioAccessible::AudienceNotAllowed, audience_not_allowed_message(allowed)
       end
 
       def lock_root_then_recording!
@@ -70,6 +71,12 @@ module RecordingStudioAccessible
 
       def current_allowed_audiences
         AudienceResolver.allowed_audiences_for(recording: @recording, action: @action)
+      end
+
+      def audience_not_allowed_message(allowed)
+        return copy("errors.audience_not_allowed_none") if allowed.empty?
+
+        copy("errors.audience_not_allowed", audiences: allowed.map(&:to_s).to_sentence)
       end
 
       def audience_parent_allowed?
