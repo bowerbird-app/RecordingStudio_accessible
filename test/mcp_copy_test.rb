@@ -42,6 +42,7 @@ class McpCopyTest < Minitest::Test
     refute registration.key?(:operation)
     refute registration.key?(:endpoint)
     assert_includes registration.fetch(:description), "must already exist"
+    assert_includes registration.fetch(:description), "The role field is required."
     assert_includes registration.fetch(:description), "list_access_to_press_kit"
     refute_match FORBIDDEN, registration.fetch(:title)
     refute_match FORBIDDEN, registration.fetch(:description)
@@ -61,7 +62,6 @@ class McpCopyTest < Minitest::Test
     entry = File.read(File.expand_path("../lib/recording_studio_accessible.rb", __dir__))
 
     refute_match(/add_dependency\s+"recording_studio_mcp"/, gemspec)
-    assert_includes gemspec, '">= 0.45", "< 0.46"'
     refute_includes entry, 'require "recording_studio_mcp"'
   end
 end

@@ -66,6 +66,7 @@ class AccessNamedMcpToolsTest < ActionDispatch::IntegrationTest
 
     grant = listed.dig("result", "tools").find { |tool| tool.fetch("name") == "grant_access_to_press_kit" }
     assert_includes grant.fetch("description"), "must already exist"
+    assert_includes grant.fetch("description"), "The role field is required."
     refute_match(/\b(?:view|edit|admin)\b/i, grant.fetch("description"))
     tags = RecordingStudioMcp::ToolDocs.action_tags(
       "PressKit",
@@ -74,6 +75,20 @@ class AccessNamedMcpToolsTest < ActionDispatch::IntegrationTest
     )
     assert_equal [ "PressKit" ], tags
     refute_includes tags, "Access"
+  end
+
+  test "list_access on a press kit allows an admin and denies a lower role and a stranger" do
+    kit = PressKit.create!(workspace: @workspace, name: "Kit #{SecureRandom.hex(3)}", summary: "Kit")
+    recording = create_child_recording(recordable: kit, parent_recording: @root)
+
+    allowed = call_named_tool(@admin_token, "list_access_to_press_kit", recording)
+    refute allowed.dig("result", "isError"), allowed.to_json
+
+    editor = call_named_tool(@editor_token, "list_access_to_press_kit", recording)
+    assert editor.dig("result", "isError"), editor.to_json
+
+    stranger = call_named_tool(@stranger_token, "list_access_to_press_kit", recording)
+    assert stranger.dig("result", "isError"), stranger.to_json
   end
 
   test "list_access allows an admin and denies a lower role and a stranger" do
@@ -130,6 +145,10 @@ class AccessNamedMcpToolsTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  def call_named_tool(token, name, recording, arguments = {})
+    rpc(token, "tools/call", name: name, arguments: arguments.merge(id: recording.id.to_s))
+  end
 
   def call_tool(token, action, arguments = {})
     rpc(

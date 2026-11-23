@@ -17,16 +17,17 @@ module RecordingStudioAccessible
         "Pass actor_id from %<list_tool>s or the host's people lookup, or pass email to invite. Do not pass both.",
         "If that email already belongs to an account, the grant is written now.",
         "Otherwise an invitation is stored and sent.",
+        "The role field is required.",
         "A second call for the same person revises the existing direct grant. It does not change an inherited grant.",
-        "A name this %<name>s does not accept is rejected. Returns the grant, or the pending invitation."
+        "A role value this %<name>s does not accept is rejected. Returns the grant, or the pending invitation."
       ].freeze
       UPDATE = [
-        "Changes the stored name on a direct grant.",
+        "Changes the role field on a direct grant.",
         "The %<name>s must already exist, and direct grants must be enabled.",
-        "Pass actor_id from %<list_tool>s and the new role.",
+        "Pass actor_id from %<list_tool>s and the role field.",
         "It does not change an inherited grant or a pending invitation.",
         "Changing the last person who can manage grants on this %<name>s is rejected.",
-        "If the grant already has that name, the call succeeds and nothing changes. Returns the updated grant."
+        "If the stored role already matches, the call succeeds and nothing changes. Returns the updated grant."
       ].freeze
       REVOKE = [
         "Removes a direct grant so that person no longer has it on this %<name>s.",

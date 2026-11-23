@@ -9,7 +9,6 @@ RecordingStudioMcp.configure do |config|
 end
 
 Rails.application.config.to_prepare do
-  RecordingStudioAccessible::McpCopy.register!
   RecordingStudioMcp.register_server(:public, api: :public) do
     include_tools(*RecordingStudioAccessible::McpCopy.tool_names)
   end
