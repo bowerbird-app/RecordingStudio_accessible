@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.60.1] - 2026-11-23
+
+### Changed
+- Access tool names use `RecordingStudioMcp::ToolName.type_singular_snake` and `RecordingStudioMcp::ToolName.type_public_token`. A registered API public name wins over the class name. `FeaturedIn::PressKit` stays `grant_access_to_press_kit`.
+
+### Upgrade notes
+- No Accessible migration.
+- Hosts that mount MCP need `recording_studio_mcp` `>= 0.46`, `< 0.47`. This gem still does not depend on it. Registration stays a no-op when MCP is not loaded.
+
 ## [0.60.0] - 2026-11-23
 
 ### Changed

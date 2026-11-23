@@ -492,6 +492,12 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.60.1
+
+No Accessible migration.
+
+Hosts that mount MCP pin `recording_studio_mcp` `>= 0.46`, `< 0.47`. Tool names come from `RecordingStudioMcp::ToolName`. A registered API public name wins over the class name. This gem does not depend on MCP. Registration does nothing when MCP is not loaded.
+
 #### Upgrading to 0.60.0
 
 No Accessible migration. Grant checks and the HTTP actions are unchanged.
@@ -1705,10 +1711,12 @@ them callable over HTTP.
 
 ### Named MCP tools
 
-When Recording Studio MCP 0.45 or newer is loaded, Accessible registers tools
+When Recording Studio MCP 0.46 or newer is loaded, Accessible registers tools
 for each API type that enables `:accessible`. The gem does not depend on MCP.
-Hosts that mount it pin `>= 0.45`, `< 0.46`. If MCP is absent, registration
+Hosts that mount it pin `>= 0.46`, `< 0.47`. If MCP is absent, registration
 does nothing. A type that does not enable `:accessible` gets no access tools.
+Tool names come from `RecordingStudioMcp::ToolName`. A registered API public
+name wins over the class name.
 
 For a press kit whose public name is `PressKit`, the tools are:
 

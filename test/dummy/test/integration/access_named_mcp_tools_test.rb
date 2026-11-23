@@ -21,10 +21,14 @@ class AccessNamedMcpToolsTest < ActionDispatch::IntegrationTest
     update_access
     revoke_access
     capability_action
+    Workspace--list_access
     Workspace--grant_access
+    Workspace--update_access
+    Workspace--revoke_access
     grant_access_to_page
     list_access_to_page
   ].freeze
+  FORBIDDEN = /\b(?:view|edit|admin|accessible|permission)\b/i
 
   setup do
     skip "Recording Studio MCP is not loaded" unless defined?(RecordingStudioMcp)
@@ -75,6 +79,38 @@ class AccessNamedMcpToolsTest < ActionDispatch::IntegrationTest
     )
     assert_equal [ "PressKit" ], tags
     refute_includes tags, "Access"
+  end
+
+  test "a registered API public name is the tool name" do
+    namespaced = RecordingStudioAccessible::McpCopy.tool_name(:grant_access, "FeaturedIn::PressKit")
+    assert_equal "grant_access_to_press_kit", namespaced
+    refute_includes namespaced, "FeaturedIn"
+    refute_includes namespaced, "::"
+    LEGACY_TOOL_NAMES.each { |legacy| refute_equal legacy, namespaced }
+
+    %i[list_access update_access revoke_access].each do |action|
+      name = RecordingStudioAccessible::McpCopy.tool_name(action, "FeaturedIn::PressKit")
+      assert_equal "#{action}_to_press_kit", name
+      LEGACY_TOOL_NAMES.each { |legacy| refute_equal legacy, name }
+    end
+
+    registration = RecordingStudioAccessible::McpCopy.tool_registration(:grant_access, "PressKit")
+    assert_equal "grant_access_to_press_kit", registration.fetch(:name)
+    assert_equal "PressKit", registration.fetch(:type)
+    refute registration.key?(:public_name)
+    refute registration.key?(:operation)
+    refute registration.key?(:endpoint)
+    assert_includes registration.fetch(:description), "must already exist"
+    assert_includes registration.fetch(:description), "The role field is required."
+    assert_includes registration.fetch(:description), "list_access_to_press_kit"
+    refute_match FORBIDDEN, registration.fetch(:title)
+    refute_match FORBIDDEN, registration.fetch(:description)
+    refute_match(/\bAccess\b/, registration.fetch(:title))
+    refute_match(/\bAccess\b/, registration.fetch(:description))
+
+    named = RecordingStudioAccessible::McpCopy.tool_name(:grant_access, "NamedMcpProbe::Kit")
+    assert_equal "grant_access_to_album", named
+    refute_includes RecordingStudioAccessible::McpCopy.accessible_types, "NamedMcpProbe::Kit"
   end
 
   test "list_access on a press kit allows an admin and denies a lower role and a stranger" do

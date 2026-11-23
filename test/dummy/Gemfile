@@ -106,10 +106,10 @@ group :development, :test do
   gem "recording_studio_api", "~> 1.21",
       github: "bowerbird-app/RecordingStudio_api",
       tag: "v1.21.3"
-  # Optional at runtime. The floor is >= 0.45 and the ceiling is < 0.46.
-  gem "recording_studio_mcp", ">= 0.45", "< 0.46",
+  # Optional at runtime. The floor is >= 0.46 and the ceiling is < 0.47.
+  gem "recording_studio_mcp", ">= 0.46", "< 0.47",
       github: "bowerbird-app/RecordingStudio_MCP",
-      tag: "v0.45.2"
+      tag: "v0.46.0"
   gem "recording_studio_oauth", "~> 0.26",
       github: "bowerbird-app/RecordingStudio_Oauth",
       tag: "v0.26.0"

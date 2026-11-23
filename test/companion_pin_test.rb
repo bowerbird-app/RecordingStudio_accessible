@@ -20,7 +20,7 @@ class CompanionPinTest < Minitest::Test
 
   DUMMY_ONLY_PINS = {
     "recording_studio_api" => "1.21.3",
-    "recording_studio_mcp" => "0.45.2",
+    "recording_studio_mcp" => "0.46.0",
     "recording_studio_oauth" => "0.26.0",
     "recording_studio_site_settings" => "0.6.0",
     "recording_studio_root_switchable" => "0.16.1",
