@@ -510,7 +510,7 @@ end
 
 The caller passes the recording id. The tool already names the type. Users, presskits, presscenters, featured_in, and any other host that exposed these actions on an MCP server need that include. They do not need a new Accessible migration. The type still has to be on the API before a tool is published.
 
-`override_openapi` still sets a per-type title, description, and `tag_suffix` for the HTTP docs and for the MCP group suffix.
+`override_openapi` still sets a per-type title, description, and `tag_suffix` for the HTTP docs and for the MCP group suffix. The HTTP docs describe the endpoint. MCP tool text stays in `McpCopy`.
 
 #### Upgrading to 0.59.2
 
@@ -1643,7 +1643,7 @@ add a runtime gemspec dependency on `recording_studio_api`.
 | Action | Inputs | Result |
 | --- | --- | --- |
 | `list_access` | none | `{ grants: [...] }` with `status` (`granted`, `pending`, or `expired`). Granted rows include actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role`. Pending invitation rows include `email`, `role`, and `source_recording`. |
-| `grant_access` | `email` plus `role`, or `actor_id` plus `role` (`actor_type` defaults to User when User is allowed). `role` describes `RoleSet::DEFAULT_NAMES`; types may declare others | granted row, or `{ invited: true, email, role, notice }` |
+| `grant_access` | `email` plus `role`, or `actor_id` plus `role` (`actor_type` defaults to User when User is allowed). `role` is a name the type accepts. The docs do not list the built-in names | granted row, or `{ invited: true, email, role, notice }` |
 | `update_access` | `actor_id`, `role`, optional `actor_type`. Same `role` description as `grant_access` | updated direct grant |
 | `revoke_access` | `actor_id`, optional `actor_type` | `{ revoked: true, actor }` |
 
@@ -1672,7 +1672,7 @@ RecordingStudioAccessible::Api.override_openapi(
 )
 ```
 
-The generic copy stays on `ACTION_DEFINITIONS`. Each action has a short summary and a description. The description names prerequisites, where ids come from, rejections, repeat-call behavior, and the return shape. Field descriptions say what the value is and where it comes from.
+The generic copy stays on `ACTION_DEFINITIONS`. Each action has an HTTP title, a short summary, and a description of the member POST: what it does, what has to be true, the JSON body, and the JSON response. That prose does not name the built-in roles and does not use MCP wording. MCP titles and descriptions live only in `McpCopy`.
 
 `openapi_for(:grant_access, type: "PressCenter")` applies the override, including `tag_suffix`. Accessible registers that lookup as `openapi_for:` on each capability action. Recording Studio API and the MCP catalog read the hash. MCP uses `tag_suffix` as the group suffix. `PressCenter` with `tag_suffix: "Access"` is the Press Center Access group.
 

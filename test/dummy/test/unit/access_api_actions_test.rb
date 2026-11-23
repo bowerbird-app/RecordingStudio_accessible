@@ -382,7 +382,7 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     end
   end
 
-  test "registered access actions expose MCP copy without caller-permission wording" do
+  test "registered access actions expose HTTP copy without role names or MCP wording" do
     skip "Recording Studio API is not loaded" unless defined?(RecordingStudioApi)
     skip unless RecordingStudioApi.respond_to?(:capability_action)
 
@@ -410,6 +410,8 @@ class AccessApiActionsTest < ActiveSupport::TestCase
 
       refute_match(/requires .* role/i, blob)
       refute_match(/\badmin only\b/i, blob)
+      refute_match(/\b(?:view|edit|admin)\b/i, blob)
+      refute_match(/\b(?:mcp|tool|agent)\b/i, blob)
       refute_includes blob, ":edit"
       refute_includes blob, "Access:"
       refute_includes blob, "You cannot grant a role higher"
@@ -437,7 +439,7 @@ class AccessApiActionsTest < ActiveSupport::TestCase
     assert_equal "Folder - Grant Access", folder.fetch(:title)
     assert_equal "Folder-only grant copy.", folder.fetch(:description)
     assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, workspace.fetch(:description)
-    refute workspace.key?(:title)
+    assert_equal RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_TITLE, workspace.fetch(:title)
   ensure
     RecordingStudioAccessible::Api::OpenapiOverrides.reset!
   end

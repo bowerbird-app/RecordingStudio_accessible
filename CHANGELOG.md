@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Hosts that called these actions through MCP `capability_action`, a typeless `grant_access`, or a `Type--action` name switch to the per-type names. Include `RecordingStudioAccessible::McpCopy.tool_names` on the MCP server. The caller passes the recording id. The tool already names the type.
 - Users, presskits, presscenters, featured_in, and any other host MCP server that exposed these actions need that include. They do not need an Accessible schema change. Do not add Users as a dependency of this gem. A type still has to be on the API before MCP can publish a tool for it.
 - `override_openapi` still sets per-type title, description, and `tag_suffix` for the HTTP docs and for the MCP group suffix. Keys you leave out stay on the generic copy.
+- OpenAPI titles, summaries, descriptions, and field text now describe the HTTP endpoint, its body, and its JSON response. MCP wording stays in `McpCopy` and is not copied into those docs. The docs do not name the built-in roles.
 
 ## [0.59.2] - 2026-11-23
 

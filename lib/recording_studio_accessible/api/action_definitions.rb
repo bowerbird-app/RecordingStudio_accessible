@@ -16,11 +16,12 @@ RecordingStudioAccessible::Api.const_set(
       handler: RecordingStudioAccessible::Api::ListAccess,
       fields: {},
       openapi: {
+        title: RecordingStudioAccessible::Api::OpenapiCopy::LIST_ACCESS_TITLE,
         summary: RecordingStudioAccessible::Api::OpenapiCopy::LIST_ACCESS_SUMMARY,
         description: RecordingStudioAccessible::Api::LIST_ACCESS_DESCRIPTION,
         responses: {
           "200" => {
-            description: "Grants and pending invitations on this recording.",
+            description: RecordingStudioAccessible::Api::OpenapiCopy::LIST_OK,
             content: {
               "application/json" => {
                 schema: {
@@ -41,8 +42,8 @@ RecordingStudioAccessible::Api.const_set(
               }
             }
           },
-          "403" => { description: "Not allowed to manage access." },
-          "404" => { description: "Direct access is not enabled for this recording." }
+          "403" => { description: RecordingStudioAccessible::Api::OpenapiCopy::FORBIDDEN },
+          "404" => { description: RecordingStudioAccessible::Api::OpenapiCopy::MISSING }
         }
       }
     },
@@ -52,47 +53,32 @@ RecordingStudioAccessible::Api.const_set(
         actor_id: {
           type: :string,
           allow_blank: false,
-          description:
-            "The id of an existing person to grant. Take it from list_access results or the host's people " \
-            "lookup. Required together with actor_type when you are not inviting by email. Do not pass this " \
-            "with email."
+          description: RecordingStudioAccessible::Api::OpenapiCopy::ACTOR_ID_GRANT
         },
         actor_type: {
           type: :string,
           allow_blank: false,
-          description:
-            "The type of that person, for example User. When granting by actor_id, leave it out to default " \
-            "to User when User is allowed, matching update_access and revoke_access. An unknown or " \
-            "disallowed type is rejected."
+          description: RecordingStudioAccessible::Api::OpenapiCopy::ACTOR_TYPE
         },
         email: {
           type: :string,
           allow_blank: false,
-          description:
-            "The email to invite when you are not naming an existing person by actor_id. Take the address " \
-            "from the person you want to invite. Do not pass this with actor_id. The address is stored in " \
-            "lowercase. If the host can resolve it to an existing account, the grant is written immediately. " \
-            "Otherwise an invitation is stored and sent. A second invite to the same open address updates " \
-            "the role and resends."
+          description: RecordingStudioAccessible::Api::OpenapiCopy::EMAIL
         },
         role: {
           type: :string,
           required: true,
           allow_blank: false,
-          description:
-            "The role to give this person. #{RecordingStudioAccessible::Api::OpenapiCopy::DEFAULT_ROLE} " \
-            "An unrecognized role is rejected. If this person already has a direct grant on this recording, " \
-            "this call revises that grant to the new role. A role above what the caller may assign is rejected."
+          description: RecordingStudioAccessible::Api::OpenapiCopy::ROLE_GRANT
         }
       },
       openapi: {
+        title: RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_TITLE,
         summary: RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_SUMMARY,
         description: RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION,
         responses: {
           "200" => {
-            description:
-              "Access granted or invitation stored. A second grant revises the existing direct grant. " \
-              "A known email is granted immediately.",
+            description: RecordingStudioAccessible::Api::OpenapiCopy::GRANT_OK,
             content: {
               "application/json" => {
                 schema: {
@@ -104,9 +90,9 @@ RecordingStudioAccessible::Api.const_set(
               }
             }
           },
-          "403" => { description: "Not allowed to manage access." },
-          "404" => { description: "Direct access is not enabled for this recording." },
-          "422" => { description: "Grant request is invalid." }
+          "403" => { description: RecordingStudioAccessible::Api::OpenapiCopy::FORBIDDEN },
+          "404" => { description: RecordingStudioAccessible::Api::OpenapiCopy::MISSING },
+          "422" => { description: RecordingStudioAccessible::Api::OpenapiCopy::GRANT_INVALID }
         }
       }
     },
@@ -117,42 +103,36 @@ RecordingStudioAccessible::Api.const_set(
           type: :string,
           required: true,
           allow_blank: false,
-          description:
-            "The id of the person whose direct grant to change. Take it from list_access results or the " \
-            "host's people lookup."
+          description: RecordingStudioAccessible::Api::OpenapiCopy::ACTOR_ID_UPDATE
         },
         actor_type: {
           type: :string,
           allow_blank: false,
-          description:
-            "The type of that person, for example User. Leave it out to default to User when User is " \
-            "allowed, matching revoke_access and grant_access. An unknown or disallowed type is rejected."
+          description: RecordingStudioAccessible::Api::OpenapiCopy::ACTOR_TYPE
         },
         role: {
           type: :string,
           required: true,
           allow_blank: false,
-          description:
-            "The new role for this direct grant. " \
-            "#{RecordingStudioAccessible::Api::OpenapiCopy::DEFAULT_ROLE} An unrecognized role is rejected. " \
-            "A role above what the caller may assign is rejected."
+          description: RecordingStudioAccessible::Api::OpenapiCopy::ROLE_UPDATE
         }
       },
       openapi: {
+        title: RecordingStudioAccessible::Api::OpenapiCopy::UPDATE_ACCESS_TITLE,
         summary: RecordingStudioAccessible::Api::OpenapiCopy::UPDATE_ACCESS_SUMMARY,
         description: RecordingStudioAccessible::Api::UPDATE_ACCESS_DESCRIPTION,
         responses: {
           "200" => {
-            description: "Direct grant updated.",
+            description: RecordingStudioAccessible::Api::OpenapiCopy::UPDATE_OK,
             content: {
               "application/json" => {
                 schema: RecordingStudioAccessible::Api::OpenapiSchemas::UPDATE_ACCESS
               }
             }
           },
-          "403" => { description: "Not allowed to manage access." },
-          "404" => { description: "Direct access is not enabled for this recording." },
-          "422" => { description: "Update request is invalid." }
+          "403" => { description: RecordingStudioAccessible::Api::OpenapiCopy::FORBIDDEN },
+          "404" => { description: RecordingStudioAccessible::Api::OpenapiCopy::MISSING },
+          "422" => { description: RecordingStudioAccessible::Api::OpenapiCopy::UPDATE_INVALID }
         }
       }
     },
@@ -163,33 +143,30 @@ RecordingStudioAccessible::Api.const_set(
           type: :string,
           required: true,
           allow_blank: false,
-          description:
-            "The id of the person whose direct grant to remove. Take it from list_access results or the " \
-            "host's people lookup."
+          description: RecordingStudioAccessible::Api::OpenapiCopy::ACTOR_ID_REVOKE
         },
         actor_type: {
           type: :string,
           allow_blank: false,
-          description:
-            "The type of that person, for example User. Leave it out to default to User when User is " \
-            "allowed, matching update_access and grant_access. An unknown or disallowed type is rejected."
+          description: RecordingStudioAccessible::Api::OpenapiCopy::ACTOR_TYPE
         }
       },
       openapi: {
+        title: RecordingStudioAccessible::Api::OpenapiCopy::REVOKE_ACCESS_TITLE,
         summary: RecordingStudioAccessible::Api::OpenapiCopy::REVOKE_ACCESS_SUMMARY,
         description: RecordingStudioAccessible::Api::REVOKE_ACCESS_DESCRIPTION,
         responses: {
           "200" => {
-            description: "Direct grant removed.",
+            description: RecordingStudioAccessible::Api::OpenapiCopy::REVOKE_OK,
             content: {
               "application/json" => {
                 schema: RecordingStudioAccessible::Api::OpenapiSchemas::REVOKE_ACCESS
               }
             }
           },
-          "403" => { description: "Not allowed to manage access." },
-          "404" => { description: "Direct access is not enabled for this recording." },
-          "422" => { description: "Revoke request is invalid." }
+          "403" => { description: RecordingStudioAccessible::Api::OpenapiCopy::FORBIDDEN },
+          "404" => { description: RecordingStudioAccessible::Api::OpenapiCopy::MISSING },
+          "422" => { description: RecordingStudioAccessible::Api::OpenapiCopy::REVOKE_INVALID }
         }
       }
     }
