@@ -492,6 +492,10 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.59.1
+
+No Accessible migration. No public API change. `errors.audience_unauthorized` now says you need a higher role, such as admin, to change who can do this.
+
 #### Upgrading to 0.59.0
 
 No Accessible migration. `RecordingStudio::AccessRoles::ORDER` stays the built-in map. Exact-name checks (`authorized_for_role?`, `authorized_for_any_role?`, and a `granted` audience) still match the stored name.
