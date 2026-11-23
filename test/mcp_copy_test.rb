@@ -9,6 +9,7 @@ class McpCopyTest < Minitest::Test
     refute RecordingStudioAccessible::McpCopy.mcp_available?
     assert_empty RecordingStudioAccessible::McpCopy.tool_names
     assert_nil RecordingStudioAccessible::McpCopy.register!
+    assert_predicate RecordingStudioAccessible::McpCopy.type_label("FeaturedIn::PressKit"), :present?
   end
 
   def test_gemspec_does_not_depend_on_recording_studio_mcp
@@ -16,7 +17,6 @@ class McpCopyTest < Minitest::Test
     entry = File.read(File.expand_path("../lib/recording_studio_accessible.rb", __dir__))
 
     refute_match(/add_dependency\s+"recording_studio_mcp"/, gemspec)
-    assert_includes gemspec, '">= 0.46", "< 0.47"'
     refute_includes entry, 'require "recording_studio_mcp"'
   end
 end

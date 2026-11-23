@@ -28,6 +28,8 @@ module RecordingStudioAccessible
     end
 
     def tool_names
+      return [] unless mcp_available?
+
       accessible_types.flat_map do |type|
         ACTIONS.filter_map { |action| tool_name(action, type) if action_enabled?(type, action) }
       end
@@ -76,8 +78,11 @@ module RecordingStudioAccessible
     end
 
     def type_label(type)
-      RecordingStudio.recordable_type_label(type).presence ||
-        ::RecordingStudioMcp::ToolName.type_public_token(type).underscore.humanize
+      label = RecordingStudio.recordable_type_label(type).presence
+      return label if label
+      return type.to_s.demodulize.underscore.humanize unless mcp_available?
+
+      ::RecordingStudioMcp::ToolName.type_public_token(type).underscore.humanize
     end
 
     def api_type_names

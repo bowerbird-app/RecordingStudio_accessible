@@ -41,3 +41,22 @@ RecordingStudioApi.register_recordable_type_api(
   },
   output_keys: %i[name]
 )
+
+# Not an accessible recordable. The public name is Album, so an access tool
+# would be grant_access_to_album rather than grant_access_to_kit.
+module NamedMcpProbe
+  class Kit
+  end
+end
+
+RecordingStudioApi.register_recordable_type_api(
+  "NamedMcpProbe::Kit",
+  public_name: "Album",
+  operations: %i[index show],
+  capability_actions: [],
+  auto_capability_actions: false,
+  serializer: lambda { |recordable, **|
+    { name: recordable.try(:name) }
+  },
+  output_keys: %i[name]
+)
