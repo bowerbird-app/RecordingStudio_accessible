@@ -492,6 +492,10 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.59.2
+
+No Accessible migration. No public API change. `errors.audience_not_allowed` now includes `%{audiences}`, the audiences allowed for that recording. An empty set uses `errors.audience_not_allowed_none`.
+
 #### Upgrading to 0.59.1
 
 No Accessible migration. No public API change. `errors.audience_unauthorized` now says you need a higher role, such as admin, to change who can do this.
@@ -2292,9 +2296,12 @@ RecordingStudioAccessible.set_audience_constraint!(
 )
 ```
 
-`set_audience!` requires `manage_role` on the recording. `set_audience_constraint!`
-requires `:admin` on the root. Narrowing a workspace rewrites descendant rules
-whose audience is no longer allowed to `granted` (revision plus an
+`set_audience!` requires `manage_role` on the recording. An audience outside
+the set allowed for that recording raises `AudienceNotAllowed`. The message
+lists that set, which can include `granted`. When the set is empty, the
+message says no audiences are available. `set_audience_constraint!` requires
+`:admin` on the root. Narrowing a workspace rewrites descendant rules whose
+audience is no longer allowed to `granted` (revision plus an
 `audience_fallback` event). Relaxing the limit later does not restore the old
 audience; someone with `manage_role` must pick it again.
 

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.59.2] - 2026-11-23
+
+### Changed
+- `AudienceNotAllowed` from `set_audience!` names the audiences allowed for that recording and action. The list is the set for that call, and it can include `granted`. An empty set uses `errors.audience_not_allowed_none`.
+
+### Upgrade notes
+- No Accessible migration. No public API change. Hosts that copy `errors.audience_not_allowed` should add `%{audiences}` and `errors.audience_not_allowed_none`.
+
 ## [0.59.1] - 2026-11-23
 
 ### Changed
@@ -1601,7 +1609,8 @@ tracked. A warm snapshot skips provision and still fetches skills.
 - Replace any `parent_recording.record(RecordingStudio::Access, ...)` usage with `RecordingStudioAccessible.grant_access`
 - The supported service path centralizes placement checks, authorization, role validation, and duplicate direct-grant cleanup
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.59.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.59.2...HEAD
+[0.59.2]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.59.1...v0.59.2
 [0.59.1]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.59.0...v0.59.1
 [0.59.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.58.0...v0.59.0
 [0.58.0]: https://github.com/bowerbird-app/RecordingStudio_accessible/compare/v0.57.0...v0.58.0
