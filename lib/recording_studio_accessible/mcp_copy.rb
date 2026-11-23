@@ -34,7 +34,7 @@ module RecordingStudioAccessible
     end
 
     def tool_name(action, type)
-      "#{action}_to_#{type_token(type)}"
+      "#{action}_to_#{::RecordingStudioMcp::ToolName.type_singular_snake(type)}"
     end
 
     def tool_registration(action, type)
@@ -75,19 +75,9 @@ module RecordingStudioAccessible
       names.include?(action.to_sym)
     end
 
-    def type_token(type)
-      public_name_for(type).demodulize.underscore
-    end
-
-    def public_name_for(type)
-      return type.to_s unless api_available?
-
-      registration = RecordingStudioApi.recordable_registration_for(type, api: :public)
-      registration&.public_name.presence || type.to_s
-    end
-
     def type_label(type)
-      RecordingStudio.recordable_type_label(type).presence || public_name_for(type).demodulize.underscore.humanize
+      RecordingStudio.recordable_type_label(type).presence ||
+        ::RecordingStudioMcp::ToolName.type_public_token(type).underscore.humanize
     end
 
     def api_type_names

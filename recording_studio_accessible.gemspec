@@ -23,6 +23,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "rails", "~> 8.1.0"
   spec.add_dependency "recording_studio", ">= 7.7.0", "< 8.0"
-  # recording_studio_mcp stays optional. Hosts that mount it pin ">= 0.45", "< 0.46".
+  # recording_studio_mcp stays optional. Hosts that mount it pin ">= 0.46", "< 0.47".
   # MCP depends on Oauth, and Oauth depends on Site Settings. This gem does not.
 end

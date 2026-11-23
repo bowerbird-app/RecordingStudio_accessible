@@ -77,6 +77,41 @@ class AccessNamedMcpToolsTest < ActionDispatch::IntegrationTest
     refute_includes tags, "Access"
   end
 
+  test "a registered API public name is the tool name" do
+    namespaced = RecordingStudioAccessible::McpCopy.tool_name(:grant_access, "FeaturedIn::PressKit")
+    assert_equal "grant_access_to_press_kit", namespaced
+    refute_includes namespaced, "FeaturedIn"
+    refute_includes namespaced, "::"
+
+    registration = RecordingStudioAccessible::McpCopy.tool_registration(:grant_access, "PressKit")
+    assert_equal "grant_access_to_press_kit", registration.fetch(:name)
+    assert_equal "PressKit", registration.fetch(:type)
+    refute registration.key?(:public_name)
+    refute registration.key?(:operation)
+    refute registration.key?(:endpoint)
+    assert_includes registration.fetch(:description), "list_access_to_press_kit"
+    refute_match(/\b(?:view|edit|admin|accessible|permission)\b/i, registration.fetch(:title))
+    refute_match(/\bAccess\b/, registration.fetch(:title))
+    refute_match(/\bAccess\b/, registration.fetch(:description))
+
+    type_name = "NamedMcpProbe::Kit"
+    registry = RecordingStudioApi.configuration.fetch_api(:public).recordable_registry
+    registrations = registry.instance_variable_get(:@registrations)
+    previous = registrations.dup
+    RecordingStudioApi.register_recordable_type_api(
+      type_name,
+      public_name: "Album",
+      operations: [],
+      capability_actions: []
+    )
+
+    named = RecordingStudioAccessible::McpCopy.tool_name(:grant_access, type_name)
+    assert_equal "grant_access_to_album", named
+    refute_equal "grant_access_to_kit", named
+  ensure
+    registrations.replace(previous) if registrations && previous
+  end
+
   test "list_access on a press kit allows an admin and denies a lower role and a stranger" do
     kit = PressKit.create!(workspace: @workspace, name: "Kit #{SecureRandom.hex(3)}", summary: "Kit")
     recording = create_child_recording(recordable: kit, parent_recording: @root)
