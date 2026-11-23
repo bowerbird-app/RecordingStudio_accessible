@@ -3,13 +3,27 @@
 require "test_helper"
 
 class AccessNamedMcpToolsTest < ActionDispatch::IntegrationTest
-  TOOL_NAMES = %w[list_access grant_access update_access revoke_access].freeze
+  WORKSPACE_TOOLS = %w[
+    list_access_to_workspace
+    grant_access_to_workspace
+    update_access_to_workspace
+    revoke_access_to_workspace
+  ].freeze
+  PRESS_KIT_TOOLS = %w[
+    list_access_to_press_kit
+    grant_access_to_press_kit
+    update_access_to_press_kit
+    revoke_access_to_press_kit
+  ].freeze
   LEGACY_TOOL_NAMES = %w[
+    grant_access
+    list_access
+    update_access
+    revoke_access
     capability_action
-    Workspace--list_access
     Workspace--grant_access
-    Workspace--update_access
-    Workspace--revoke_access
+    grant_access_to_page
+    list_access_to_page
   ].freeze
 
   setup do
@@ -38,12 +52,28 @@ class AccessNamedMcpToolsTest < ActionDispatch::IntegrationTest
     listed = rpc(@admin_token, "tools/list")
     names = listed.dig("result", "tools").map { |tool| tool.fetch("name") }
 
-    TOOL_NAMES.each { |name| assert_includes names, name }
+    WORKSPACE_TOOLS.each { |name| assert_includes names, name }
+    PRESS_KIT_TOOLS.each { |name| assert_includes names, name }
+    %w[grant_access_to_folder grant_access_to_message_group].each { |name| assert_includes names, name }
     LEGACY_TOOL_NAMES.each { |name| refute_includes names, name }
+    refute_includes names, "grant_access_to_staff_root"
+    refute_includes RecordingStudioAccessible::McpCopy.accessible_types, "Page"
+    refute_includes RecordingStudioAccessible::McpCopy.accessible_types, "StaffRoot"
 
-    grant = listed.dig("result", "tools").find { |tool| tool.fetch("name") == "grant_access" }
+    press_kit = RecordingStudioMcp.configuration.tool("grant_access_to_press_kit")
+    assert_equal "PressKit", press_kit.type
+    assert_nil RecordingStudioMcp.configuration.tool("grant_access")
+
+    grant = listed.dig("result", "tools").find { |tool| tool.fetch("name") == "grant_access_to_press_kit" }
     assert_includes grant.fetch("description"), "must already exist"
     refute_match(/\b(?:view|edit|admin)\b/i, grant.fetch("description"))
+    tags = RecordingStudioMcp::ToolDocs.action_tags(
+      "PressKit",
+      api: :public,
+      tag_suffix: RecordingStudioMcp::Documentation::Openapi::ActionDocs.tag_suffix(:grant_access, :public, "PressKit")
+    )
+    assert_equal [ "PressKit" ], tags
+    refute_includes tags, "Access"
   end
 
   test "list_access allows an admin and denies a lower role and a stranger" do
@@ -101,12 +131,12 @@ class AccessNamedMcpToolsTest < ActionDispatch::IntegrationTest
 
   private
 
-  def call_tool(token, name, arguments = {})
+  def call_tool(token, action, arguments = {})
     rpc(
       token,
       "tools/call",
-      name: name,
-      arguments: arguments.merge(type: "Workspace", id: @root.id.to_s)
+      name: "#{action}_to_workspace",
+      arguments: arguments.merge(id: @root.id.to_s)
     )
   end
 

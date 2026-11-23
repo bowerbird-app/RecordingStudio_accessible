@@ -19,7 +19,7 @@ end
 
 ACCESS_MANAGEMENT_ACTIONS = %i[list_access grant_access update_access revoke_access].freeze
 
-%w[Workspace Folder MessageGroup].each do |recordable_type|
+%w[Workspace Folder MessageGroup PressKit].each do |recordable_type|
   RecordingStudioApi.register_recordable_type_api(
     recordable_type,
     operations: %i[index show],
@@ -30,3 +30,14 @@ ACCESS_MANAGEMENT_ACTIONS = %i[list_access grant_access update_access revoke_acc
     output_keys: %i[name]
   )
 end
+
+# Page is on the API and does not enable :accessible, so it gets no access tools.
+RecordingStudioApi.register_recordable_type_api(
+  "Page",
+  operations: %i[index show],
+  capability_actions: [],
+  serializer: lambda { |recordable, **|
+    { name: recordable.try(:title) }
+  },
+  output_keys: %i[name]
+)
