@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "recording_studio_accessible/mcp_copy"
 require "recording_studio_accessible/api/support"
 require "recording_studio_accessible/api/actions"
 require "recording_studio_accessible/api/openapi_copy"

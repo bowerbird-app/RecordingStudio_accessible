@@ -29,6 +29,7 @@ module RecordingStudioAccessible
       RecordingStudioAccessible::Compatibility.ensure_creation_guards!
       RecordingStudioAccessible.install_action_audience_policies!
       RecordingStudioAccessible::RoleRegistry.rescan!
+      RecordingStudioAccessible::McpCopy.register! if defined?(RecordingStudioAccessible::McpCopy)
     end
 
     initializer "recording_studio_accessible.register_shipped_english",

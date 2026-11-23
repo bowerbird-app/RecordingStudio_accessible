@@ -1,11 +1,15 @@
 # frozen_string_literal: true
 
 RecordingStudio.configure do |config|
-  config.recordable_types = [
+  recordable_types = [
     "Workspace", "Folder", "Page", "Card", "PressKit", "MessageRoot", "MessageGroup", "StaffRoot",
     "RecordingStudioUser::People", "RecordingStudioUser::Profile",
     "RecordingStudioAttachable::Attachment"
   ]
+  if defined?(RecordingStudioSiteSettings)
+    recordable_types << "RecordingStudioSiteSettings::SiteSetting"
+  end
+  config.recordable_types = recordable_types
   config.actor = -> { Current.actor }
   config.impersonator = -> { Current.method_defined?(:impersonator) ? Current.impersonator : nil }
   # Recording Studio 7 denies record! and create_root_recording! unless an

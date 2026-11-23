@@ -98,9 +98,19 @@ gem "thruster", require: false
 gem "image_processing", "~> 1.2"
 
 group :development, :test do
-  gem "recording_studio_api", "~> 1.19",
+  gem "recording_studio_api", "~> 1.21",
       github: "bowerbird-app/RecordingStudio_api",
-      tag: "v1.19.0"
+      tag: "v1.21.3"
+  # Optional at runtime. The floor is >= 0.45 and the ceiling is < 0.46.
+  gem "recording_studio_mcp", ">= 0.45", "< 0.46",
+      github: "bowerbird-app/RecordingStudio_MCP",
+      tag: "v0.45.2"
+  gem "recording_studio_oauth", "~> 0.26",
+      github: "bowerbird-app/RecordingStudio_Oauth",
+      tag: "v0.26.0"
+  gem "recording_studio_site_settings", "~> 0.6",
+      github: "bowerbird-app/RecordingStudio_site_settings",
+      tag: "v0.6.0"
   gem "recording_studio_icons", "~> 0.4",
       github: "bowerbird-app/RecordingStudio_icons",
       tag: "v0.4.2"

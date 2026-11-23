@@ -15,6 +15,7 @@ Rails.application.routes.draw do
 
   mount RecordingStudioAccessible::Engine, at: "/recording_studio_accessible"
   mount RecordingStudioApi::Engine, at: "/recording_studio_api" if defined?(RecordingStudioApi)
+  mount RecordingStudioMcp::Engine, at: "/recording_studio_mcp" if defined?(RecordingStudioMcp::Engine)
 
   get "plans", to: "plans#show", as: :plans
   get "tree", to: "home#tree"

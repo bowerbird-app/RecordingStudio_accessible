@@ -13,6 +13,8 @@ module RecordingStudioAccessible
         else
           register_actions_for(nil)
         end
+
+        McpCopy.register!
       end
 
       private

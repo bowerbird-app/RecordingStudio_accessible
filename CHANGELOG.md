@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.60.0] - 2026-11-23
+
+### Changed
+- `list_access`, `grant_access`, `update_access`, and `revoke_access` register as named Recording Studio MCP tools when that gem is loaded. Call those names. `capability_action` and `Workspace--grant_access` style names are not how these tools are published.
+- The tools stay typeless. The caller still passes the host type and the recording id. Accessible does not register a recordable type for them.
+- Registration is a no-op when Recording Studio MCP is not loaded. The gemspec does not depend on it. Hosts that mount MCP pin `>= 0.45`, `< 0.46`.
+
+### Upgrade notes
+- No Accessible migration. Grant checks, required roles, and the HTTP actions are unchanged.
+- Hosts that call these four actions through MCP `capability_action`, or through a `Type--action` name, switch to `list_access`, `grant_access`, `update_access`, and `revoke_access`. Include `RecordingStudioAccessible::McpCopy.tool_names` on the MCP server. The server also needs `list`, `show`, or another tool that names the recordable. MCP builds the allowed type list from those tools.
+- Users, presskits, presscenters, featured_in, and any other host MCP server that exposed these actions need that include. They do not need an Accessible schema change. Do not add Users as a dependency of this gem.
+- `override_openapi` still sets per-type title, description, and `tag_suffix` for the HTTP docs. Keys you leave out stay on the generic copy.
+
 ## [0.59.2] - 2026-11-23
 
 ### Changed
