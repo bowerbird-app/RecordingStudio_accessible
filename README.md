@@ -492,6 +492,26 @@ this addon is loaded, including compatibility mode. Host applications should use
 
 ### Upgrading existing apps
 
+#### Upgrading to 0.60.0
+
+No Accessible migration. Grant checks and the HTTP actions are unchanged.
+
+Recording Studio MCP `0.45` or newer registers one tool per access action for each API type that enables `:accessible`. This gem does not depend on MCP. Pin `>= 0.45`, `< 0.46` in the host Gemfile when you mount it.
+
+A press kit is `list_access_to_press_kit`, `grant_access_to_press_kit`, `update_access_to_press_kit`, and `revoke_access_to_press_kit`. The token comes from the type's public name, so a namespaced class does not show up in the tool name. There is no shared `grant_access` tool. Tools are grouped under the type, not under an Access group. A type that does not enable `:accessible` gets none of these tools.
+
+Include the names on the server:
+
+```ruby
+RecordingStudioMcp.register_server(:public, api: :public) do
+  include_tools(*RecordingStudioAccessible::McpCopy.tool_names)
+end
+```
+
+The caller passes the recording id. The tool already names the type. Users, presskits, presscenters, featured_in, and any other host that exposed these actions on an MCP server need that include. They do not need a new Accessible migration. The type still has to be on the API before a tool is published.
+
+`override_openapi` still sets a per-type title, description, and `tag_suffix` for the HTTP docs and for the MCP group suffix. The HTTP docs describe the endpoint. MCP tool text stays in `McpCopy`.
+
 #### Upgrading to 0.59.2
 
 No Accessible migration. No public API change. `errors.audience_not_allowed` now includes `%{audiences}`, the audiences allowed for that recording. An empty set uses `errors.audience_not_allowed_none`.
@@ -1623,7 +1643,7 @@ add a runtime gemspec dependency on `recording_studio_api`.
 | Action | Inputs | Result |
 | --- | --- | --- |
 | `list_access` | none | `{ grants: [...] }` with `status` (`granted`, `pending`, or `expired`). Granted rows include actor (`id`, `type`, `label`), `role`, `source_recording` (`id`, `type`, `label`), `inherited`, and `effective_role`. Pending invitation rows include `email`, `role`, and `source_recording`. |
-| `grant_access` | `email` plus `role`, or `actor_id` plus `role` (`actor_type` defaults to User when User is allowed). `role` describes `RoleSet::DEFAULT_NAMES`; types may declare others | granted row, or `{ invited: true, email, role, notice }` |
+| `grant_access` | `email` plus `role`, or `actor_id` plus `role` (`actor_type` defaults to User when User is allowed). `role` is a name the type accepts. The docs do not list the built-in names | granted row, or `{ invited: true, email, role, notice }` |
 | `update_access` | `actor_id`, `role`, optional `actor_type`. Same `role` description as `grant_access` | updated direct grant |
 | `revoke_access` | `actor_id`, optional `actor_type` | `{ revoked: true, actor }` |
 
@@ -1652,7 +1672,7 @@ RecordingStudioAccessible::Api.override_openapi(
 )
 ```
 
-The generic copy stays on `ACTION_DEFINITIONS`. Each action has a short summary and a description. The description names prerequisites, where ids come from, rejections, repeat-call behavior, and the return shape. Field descriptions say what the value is and where it comes from.
+The generic copy stays on `ACTION_DEFINITIONS`. Each action has an HTTP title, a short summary, and a description of the member POST: what it does, what has to be true, the JSON body, and the JSON response. That prose does not name the built-in roles and does not use MCP wording. MCP titles and descriptions live only in `McpCopy`.
 
 `openapi_for(:grant_access, type: "PressCenter")` applies the override, including `tag_suffix`. Accessible registers that lookup as `openapi_for:` on each capability action. Recording Studio API and the MCP catalog read the hash. MCP uses `tag_suffix` as the group suffix. `PressCenter` with `tag_suffix: "Access"` is the Press Center Access group.
 
@@ -1681,7 +1701,40 @@ RecordingStudioApi.register_recordable_type_api(
 
 A later RS_API release may enable these actions for types that already declare
 `:accessible`. Until then, the type's `capability_actions` list is what makes
-them callable and visible to MCP's generic `capability_action` tool.
+them callable over HTTP.
+
+### Named MCP tools
+
+When Recording Studio MCP 0.45 or newer is loaded, Accessible registers tools
+for each API type that enables `:accessible`. The gem does not depend on MCP.
+Hosts that mount it pin `>= 0.45`, `< 0.46`. If MCP is absent, registration
+does nothing. A type that does not enable `:accessible` gets no access tools.
+
+For a press kit whose public name is `PressKit`, the tools are:
+
+| Tool | What it does |
+| --- | --- |
+| `list_access_to_press_kit` | Lists who can use this press kit, including pending invitations. |
+| `grant_access_to_press_kit` | Writes a direct grant, or stores an invitation. The press kit must already exist. |
+| `update_access_to_press_kit` | Changes a direct grant. The press kit must already exist. |
+| `revoke_access_to_press_kit` | Removes a direct grant. The press kit must already exist. |
+
+The tools are grouped under that type. There is no shared `grant_access` tool
+and no Access group. Pass `id` as the recording id. The tool name already
+says the type. Do not send a Ruby class name.
+
+Include them on the host server:
+
+```ruby
+RecordingStudioMcp.register_server(:public, api: :public) do
+  include_tools(*RecordingStudioAccessible::McpCopy.tool_names)
+end
+```
+
+`override_openapi(type:, action:, title:, description:, tag_suffix:)` still
+sets the HTTP docs for one recordable type, and `tag_suffix` still suffixes
+the MCP group. Pass at least one of `title`, `description`, or `tag_suffix`.
+Keys you leave out stay on the generic copy.
 
 Do not register `RecordingStudio::Access` as an API resource. Callers address
 people through `actor_id` / `email` on the workspace, folder, press kit, or

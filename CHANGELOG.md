@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.60.0] - 2026-11-23
+
+### Changed
+- Recording Studio MCP tools are registered per recordable type that enables `:accessible` and exposes the access actions on the API. A press kit gets `list_access_to_press_kit`, `grant_access_to_press_kit`, `update_access_to_press_kit`, and `revoke_access_to_press_kit`. The names come from the type's public name. There is no shared `grant_access` tool and no Access group.
+- A type that does not enable `:accessible` gets none of these tools. Registration is a no-op when Recording Studio MCP is not loaded. The gemspec does not depend on it. Hosts that mount MCP pin `>= 0.45`, `< 0.46`.
+
+### Upgrade notes
+- No Accessible migration. Grant checks, required roles, and the HTTP actions are unchanged.
+- Hosts that called these actions through MCP `capability_action`, a typeless `grant_access`, or a `Type--action` name switch to the per-type names. Include `RecordingStudioAccessible::McpCopy.tool_names` on the MCP server. The caller passes the recording id. The tool already names the type.
+- Users, presskits, presscenters, featured_in, and any other host MCP server that exposed these actions need that include. They do not need an Accessible schema change. Do not add Users as a dependency of this gem. A type still has to be on the API before MCP can publish a tool for it.
+- `override_openapi` still sets per-type title, description, and `tag_suffix` for the HTTP docs and for the MCP group suffix. Keys you leave out stay on the generic copy.
+- OpenAPI titles, summaries, descriptions, and field text now describe the HTTP endpoint, its body, and its JSON response. MCP wording stays in `McpCopy` and is not copied into those docs. The docs do not name the built-in roles.
+- MCP tools register from the engine `to_prepare` hook. Grant and update tool descriptions name the `role` field and do not name built-in roles.
+
 ## [0.59.2] - 2026-11-23
 
 ### Changed

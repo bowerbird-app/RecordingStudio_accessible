@@ -64,17 +64,16 @@ class ApiTest < Minitest::Test
     end
   end
 
-  def test_grant_and_update_access_role_fields_describe_defaults_without_enum
-    expected = "Default roles: #{RecordingStudioAccessible::RoleSet::DEFAULT_NAMES.join(', ')}. " \
-               "Types may declare others."
-
+  def test_grant_and_update_access_role_fields_omit_built_in_names_and_enum
     %i[grant_access update_access].each do |action|
       role_field = RecordingStudioAccessible::Api::ACTION_DEFINITIONS
                    .fetch(action)
                    .fetch(:fields)
                    .fetch(:role)
+      description = role_field.fetch(:description)
 
-      assert_includes role_field.fetch(:description), expected
+      assert_includes description, "A type may declare names of its own."
+      refute_match(/\b(?:view|edit|admin)\b/i, description)
       refute role_field.key?(:enum)
     end
   end
@@ -113,15 +112,19 @@ class ApiTest < Minitest::Test
   def test_generic_access_descriptions_are_the_approved_defaults
     copy = RecordingStudioAccessible::Api::OpenapiCopy
 
+    assert_equal copy::GRANT_ACCESS_TITLE, openapi_for(:grant_access).fetch(:title)
     assert_equal copy::GRANT_ACCESS_SUMMARY, openapi_for(:grant_access).fetch(:summary)
     assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION,
                  openapi_for(:grant_access).fetch(:description)
+    assert_equal copy::LIST_ACCESS_TITLE, openapi_for(:list_access).fetch(:title)
     assert_equal copy::LIST_ACCESS_SUMMARY, openapi_for(:list_access).fetch(:summary)
     assert_equal RecordingStudioAccessible::Api::LIST_ACCESS_DESCRIPTION,
                  openapi_for(:list_access).fetch(:description)
+    assert_equal copy::REVOKE_ACCESS_TITLE, openapi_for(:revoke_access).fetch(:title)
     assert_equal copy::REVOKE_ACCESS_SUMMARY, openapi_for(:revoke_access).fetch(:summary)
     assert_equal RecordingStudioAccessible::Api::REVOKE_ACCESS_DESCRIPTION,
                  openapi_for(:revoke_access).fetch(:description)
+    assert_equal copy::UPDATE_ACCESS_TITLE, openapi_for(:update_access).fetch(:title)
     assert_equal copy::UPDATE_ACCESS_SUMMARY, openapi_for(:update_access).fetch(:summary)
     assert_equal RecordingStudioAccessible::Api::UPDATE_ACCESS_DESCRIPTION,
                  openapi_for(:update_access).fetch(:description)
@@ -130,21 +133,30 @@ class ApiTest < Minitest::Test
   def test_access_action_copy_omits_caller_permission_wording
     RecordingStudioAccessible::Api::ACTION_NAMES.each do |name|
       definition = RecordingStudioAccessible::Api::ACTION_DEFINITIONS.fetch(name)
-      blob = [
-        definition.fetch(:openapi).fetch(:summary),
-        definition.fetch(:openapi).fetch(:description),
-        definition.fetch(:fields).values.filter_map { |field| field[:description] }
-      ].flatten.join(" ")
+      blob = http_prose(definition)
 
       refute_match(/requires .* role/i, blob)
       refute_match(/\badmin only\b/i, blob)
+      refute_match(/\b(?:view|edit|admin)\b/i, blob)
+      refute_match(/\b(?:mcp|tool|agent)\b/i, blob)
       refute_includes blob, ":edit"
       refute_includes blob, "Access:"
       refute_includes blob, "You cannot grant a role higher"
       refute_includes blob, "unless you are an admin"
       refute_includes blob, "Press Kit"
       refute_includes blob, "Press Center"
+      refute_includes blob, "list_access results"
     end
+  end
+
+  def test_http_copy_does_not_repeat_mcp_sentences
+    http = RecordingStudioAccessible::Api::ACTION_NAMES.map do |name|
+      http_prose(RecordingStudioAccessible::Api::ACTION_DEFINITIONS.fetch(name))
+    end.join(" ")
+    mcp = mcp_prose
+
+    long_sentences(http).each { |sentence| refute_includes mcp, sentence }
+    long_sentences(mcp).each { |sentence| refute_includes http, sentence }
   end
 
   def test_openapi_override_is_per_type
@@ -164,10 +176,10 @@ class ApiTest < Minitest::Test
     refute folder.key?(:tag_suffix)
     refute folder.equal?(RecordingStudioAccessible::Api::ACTION_DEFINITIONS.fetch(:grant_access).fetch(:openapi))
     assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, workspace.fetch(:description)
-    refute workspace.key?(:title)
+    assert_equal RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_TITLE, workspace.fetch(:title)
     refute workspace.key?(:tag_suffix)
     assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, generic.fetch(:description)
-    refute generic.key?(:title)
+    assert_equal RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_TITLE, generic.fetch(:title)
     refute generic.key?(:tag_suffix)
   ensure
     RecordingStudioAccessible::Api::OpenapiOverrides.reset!
@@ -187,7 +199,8 @@ class ApiTest < Minitest::Test
 
       assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION,
                    grant.fetch(:openapi).fetch(:description)
-      refute grant.fetch(:openapi).key?(:title)
+      assert_equal RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_TITLE,
+                   grant.fetch(:openapi).fetch(:title)
       refute grant.fetch(:openapi).key?(:tag_suffix)
     end
   ensure
@@ -209,7 +222,7 @@ class ApiTest < Minitest::Test
 
     assert_equal "Access", press_center.fetch(:tag_suffix)
     assert_equal "Grant a role on this press center.", press_center.fetch(:description)
-    refute press_center.key?(:title)
+    assert_equal RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_TITLE, press_center.fetch(:title)
     assert_equal RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_SUMMARY, press_center.fetch(:summary)
     refute folder.key?(:tag_suffix)
     assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, folder.fetch(:description)
@@ -231,7 +244,7 @@ class ApiTest < Minitest::Test
 
     assert_equal "Access", press_center.fetch(:tag_suffix)
     assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, press_center.fetch(:description)
-    refute press_center.key?(:title)
+    assert_equal RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_TITLE, press_center.fetch(:title)
     refute RecordingStudioAccessible::Api.openapi_for(:grant_access).key?(:tag_suffix)
   ensure
     RecordingStudioAccessible::Api::OpenapiOverrides.reset!
@@ -254,7 +267,7 @@ class ApiTest < Minitest::Test
 
       assert_equal "Access", press_center.fetch(:tag_suffix)
       assert_equal RecordingStudioAccessible::Api::GRANT_ACCESS_DESCRIPTION, press_center.fetch(:description)
-      refute press_center.key?(:title)
+      assert_equal RecordingStudioAccessible::Api::OpenapiCopy::GRANT_ACCESS_TITLE, press_center.fetch(:title)
       refute workspace.key?(:tag_suffix)
       refute grant.fetch(:openapi).key?(:tag_suffix)
     end
@@ -274,7 +287,8 @@ class ApiTest < Minitest::Test
     assert_equal "Folder - Update Access", folder.fetch(:title)
     assert_equal RecordingStudioAccessible::Api::UPDATE_ACCESS_DESCRIPTION, folder.fetch(:description)
     refute folder.key?(:tag_suffix)
-    refute RecordingStudioAccessible::Api.openapi_for(:update_access).key?(:title)
+    assert_equal RecordingStudioAccessible::Api::OpenapiCopy::UPDATE_ACCESS_TITLE,
+                 RecordingStudioAccessible::Api.openapi_for(:update_access).fetch(:title)
   ensure
     RecordingStudioAccessible::Api::OpenapiOverrides.reset!
   end
@@ -422,6 +436,37 @@ class ApiTest < Minitest::Test
       Array(node[:oneOf] || node["oneOf"]).each { |child| names.concat(schema_property_names(child)) }
     end
     names.uniq
+  end
+
+  def http_prose(definition)
+    strings_in(definition).join(" ")
+  end
+
+  def strings_in(value)
+    case value
+    when Hash then value.values.flat_map { |item| strings_in(item) }
+    when Array then value.flat_map { |item| strings_in(item) }
+    when String then [value]
+    else []
+    end
+  end
+
+  def mcp_prose
+    copy = RecordingStudioAccessible::McpCopy::Copy
+    pieces = RecordingStudioAccessible::Api::ACTION_NAMES.flat_map do |action|
+      [
+        copy.title(action, "Press kit"),
+        copy.description(action, "Press kit", list_tool: "list_access_to_press_kit"),
+        copy.output(action)
+      ]
+    end
+    pieces << copy.type_description("Press kit")
+    pieces << format(copy::ID_DESCRIPTION, label: "Press kit")
+    pieces.join(" ")
+  end
+
+  def long_sentences(text)
+    text.split(". ").map(&:strip).reject { |sentence| sentence.split.size < 6 }
   end
 
   def fake_api_configuration(api_names)

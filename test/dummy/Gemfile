@@ -36,7 +36,8 @@ gem "propshaft"
 # Use postgresql as the database for Active Record
 gem "pg", "~> 1.1"
 # Use the Puma web server [https://github.com/puma/puma]
-gem "puma", "~> 7.2.1"
+# 7.2.3 is the lowest release that closes the SSL memory advisory.
+gem "puma", "7.2.3"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
@@ -87,9 +88,13 @@ gem "solid_cable"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
+# 1.8.7 is the lowest release that closes the msgpack header-count advisory.
+gem "msgpack", "1.8.7"
 
 # Deploy this application anywhere as a Docker container [https://kamal-deploy.org]
 gem "kamal", require: false
+# 7.3.10 is the lowest 7.3 release that closes both net-ssh advisories.
+gem "net-ssh", "7.3.10"
 
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", require: false
@@ -98,9 +103,19 @@ gem "thruster", require: false
 gem "image_processing", "~> 1.2"
 
 group :development, :test do
-  gem "recording_studio_api", "~> 1.19",
+  gem "recording_studio_api", "~> 1.21",
       github: "bowerbird-app/RecordingStudio_api",
-      tag: "v1.19.0"
+      tag: "v1.21.3"
+  # Optional at runtime. The floor is >= 0.45 and the ceiling is < 0.46.
+  gem "recording_studio_mcp", ">= 0.45", "< 0.46",
+      github: "bowerbird-app/RecordingStudio_MCP",
+      tag: "v0.45.2"
+  gem "recording_studio_oauth", "~> 0.26",
+      github: "bowerbird-app/RecordingStudio_Oauth",
+      tag: "v0.26.0"
+  gem "recording_studio_site_settings", "~> 0.6",
+      github: "bowerbird-app/RecordingStudio_site_settings",
+      tag: "v0.6.0"
   gem "recording_studio_icons", "~> 0.4",
       github: "bowerbird-app/RecordingStudio_icons",
       tag: "v0.4.2"
