@@ -700,6 +700,30 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal editor_grant.id, second.value.recordable.depends_on_recording_id
   end
 
+  test "self-delegated reconnects refuse a role above the member after a downgrade" do
+    editor = create_user("self-delegate-reconnect-downgrade@example.com")
+    target = create_user("self-delegate-reconnect-downgrade-target@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+
+    first = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :edit, manager_actor: editor, depends_on: editor_grant
+    )
+    downgrade = RecordingStudioAccessible::Services::UpdateRecordingAccess.call(
+      recording: @recording,
+      access_recording: editor_grant,
+      role: :view,
+      manager_actor: @manager_actor
+    )
+    reconnect = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :edit, manager_actor: editor, depends_on: editor_grant
+    )
+
+    assert first.success?
+    assert downgrade.success?
+    refute reconnect.success?
+    assert_equal "You can only grant a role you already hold.", reconnect.error
+  end
+
   test "self-delegated reconnects refuse a different role or depends_on" do
     editor = create_user("self-delegate-reconnect-mismatch@example.com")
     other = create_user("self-delegate-reconnect-other@example.com")

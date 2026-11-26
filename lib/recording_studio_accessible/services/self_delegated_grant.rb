@@ -23,7 +23,8 @@ module RecordingStudioAccessible
       def reuse_or_refuse_existing_self_delegated_grant
         existing = existing_access_recordings.first
         return true unless existing
-        return success(existing) if same_self_delegated_grant?(existing)
+        # Reconnects stay idempotent only while still within the member's own role.
+        return success(existing) if same_self_delegated_grant?(existing) && role_within_manager?
 
         existing_role = existing.recordable.role
         unless RoleCeiling.allowed?(recording: @recording, manager: manager_actor, role: existing_role)

@@ -1340,8 +1340,10 @@ A member with no role is refused (`errors.self_delegated_not_a_member`). A
 role above their own is refused (`errors.role_exceeds_manager`). A missing
 `depends_on` is `errors.dependent_missing_manager`. Someone else's Access
 recording is `errors.self_delegated_depends_on_invalid`. An existing grant
-on the target with the same role and `depends_on` is returned as-is. Any
-other existing grant is refused, so a viewer cannot rewrite an admin.
+on the target with the same role and `depends_on` is returned as-is only
+while that role is still within the member's own role. After a downgrade,
+reconnecting at the old role is `errors.role_exceeds_manager`. Any other
+existing grant is refused, so a viewer cannot rewrite an admin.
 Members who only inherit access cannot self-delegate on child recordings.
 That path fails closed. The write path and `before_access_grant` hook are
 the same as `grant_access`. The hook still sees `source: :grant`.

@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ## [0.61.0] - 2026-11-26
 
 ### Added
-- `RecordingStudioAccessible.grant_self_delegated_access` writes a grant through the same path as `grant_access`, but skips the manage-access admin check. The manager must already hold a role on that recording. The granted role cannot be higher than that role. `depends_on` is required and must be the manager's own Access recording on that root, so the grant ends when the member loses access. An existing grant with the same role and `depends_on` is returned as-is. Any other existing grant on the target is refused.
+- `RecordingStudioAccessible.grant_self_delegated_access` writes a grant through the same path as `grant_access`, but skips the manage-access admin check. The manager must already hold a role on that recording. The granted role cannot be higher than that role. `depends_on` is required and must be the manager's own Access recording on that root, so the grant ends when the member loses access. An existing grant with the same role and `depends_on` is returned as-is only while that role is still within the member's own role. Any other existing grant on the target is refused.
 
 ### Upgrade notes
 - No Accessible migration. `grant_access` still requires manage-access (`:admin` by default).
