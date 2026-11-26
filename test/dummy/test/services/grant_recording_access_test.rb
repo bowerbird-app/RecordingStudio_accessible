@@ -671,11 +671,59 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     )
 
     refute missing.success?
-    assert_equal "Pass your own access here so the grant ends when you lose it.", missing.error
+    assert_equal "Manager access grant is missing or inactive", missing.error
     refute foreign.success?
     assert_equal "The grant has to depend on your own access here.", foreign.error
     assert own.success?
     assert_equal editor_grant.id, own.value.recordable.depends_on_recording_id
+  end
+
+  test "self-delegated reconnects with the same grant are idempotent" do
+    editor = create_user("self-delegate-reconnect@example.com")
+    target = create_user("self-delegate-reconnect-target@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+
+    first = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
+    )
+    second = nil
+    assert_no_difference -> { RecordingStudio::Access.count } do
+      second = RecordingStudioAccessible.grant_self_delegated_access(
+        recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
+      )
+    end
+
+    assert first.success?
+    assert second.success?
+    assert_equal first.value.id, second.value.id
+    assert_equal "view", second.value.recordable.role
+    assert_equal editor_grant.id, second.value.recordable.depends_on_recording_id
+  end
+
+  test "self-delegated reconnects refuse a different role or depends_on" do
+    editor = create_user("self-delegate-reconnect-mismatch@example.com")
+    other = create_user("self-delegate-reconnect-other@example.com")
+    target = create_user("self-delegate-reconnect-mismatch-target@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+    other_grant = create_legacy_direct_access_recording(other, :edit, @recording)
+
+    first = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
+    )
+    different_role = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :edit, manager_actor: editor, depends_on: editor_grant
+    )
+    different_depends_on = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: other_grant
+    )
+
+    assert first.success?
+    refute different_role.success?
+    assert_equal "This already has access here.", different_role.error
+    refute different_depends_on.success?
+    assert_equal "The grant has to depend on your own access here.", different_depends_on.error
+    assert_equal "view", first.value.reload.recordable.role
+    assert_equal editor_grant.id, first.value.recordable.depends_on_recording_id
   end
 
   private

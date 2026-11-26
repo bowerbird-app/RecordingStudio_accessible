@@ -131,7 +131,7 @@ module RecordingStudioAccessible
                 authorization: :self_delegated
               )
               service.stub(:existing_access_recordings, []) do
-                assert_equal "Pass your own access here so the grant ends when you lose it.",
+                assert_equal "Manager access grant is missing or inactive",
                              service.send(:perform).error
               end
             end
