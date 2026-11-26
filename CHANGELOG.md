@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.61.1] - 2026-11-26
+
+### Changed
+- `grant_self_delegated_access` updates an existing grant in place when the actor, recording, and `depends_on` match and the requested role is different. That includes a grant an admin made with `grant_access` that already depends on the member's own access. The grant id stays the same. The write uses `upsert_access_recording!` with `:role_change`. Same role and `depends_on` is still a no-op. The new role still cannot exceed the member's live role. An existing grant that does not depend on the member's access is still refused.
+
+### Upgrade notes
+- No Accessible migration. No public API change.
+- Hosts that reconnect a Connect client at a new role no longer need to trash the grant first. A grant that already depends on the member's access can change role in place, even if an admin created it. A grant that does not depend on the member's access still raises `errors.self_delegated_existing_grant`.
+
 ## [0.61.0] - 2026-11-26
 
 ### Added
