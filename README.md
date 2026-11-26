@@ -1271,11 +1271,17 @@ RecordingStudioAccessible.grant_access(
   manager_actor: current_actor
 )
 
+manager_grant = RecordingStudioAccessible.access_recordings_for_actor(
+  recording: recording,
+  actor: current_actor
+).first
+
 RecordingStudioAccessible.grant_self_delegated_access(
   recording: recording,
   actor: target_actor,
   role: :view,
-  manager_actor: current_actor
+  manager_actor: current_actor,
+  depends_on: manager_grant
 )
 
 RecordingStudioAccessible.update_access(
@@ -1319,18 +1325,25 @@ manage-access (the default authorizer is `:admin`).
 Use `grant_self_delegated_access` when a member who is not an admin needs
 to grant a target actor a role no higher than their own on that recording.
 The Connect flow for an OAuth client is this case: the signed-in user is
-`manager_actor`, and the client is `actor`. Prerequisites:
+`manager_actor`, and the client is `actor`. Pass `depends_on:` as that
+member's own Access recording on the same root. Prerequisites:
 
-- `manager_actor` already holds a role on that recording (`role_for` is present)
+- `manager_actor` already holds a role on that recording
+- `depends_on` is that member's own active Access recording on that root
 - the requested role is at or below that role (`RoleCeiling.allowed?`)
-- the same target rules as `grant_access` (allowlisted actor type, valid
-  role, `:accessible` on the recordable, not a shared root, dependent-grant
-  rules, `before_access_grant`)
+- the target does not already have a grant there
+- the same remaining target rules as `grant_access` (allowlisted actor type,
+  valid role, `:accessible` on the recordable, not a shared root,
+  `before_access_grant`)
 
 A member with no role is refused (`errors.self_delegated_not_a_member`). A
-role above their own is refused (`errors.self_delegated_role_not_allowed`).
-The write path, hooks, and dependency rules are the same as `grant_access`.
-Do not pass a bypass flag to `grant_access`.
+role above their own is refused (`errors.role_exceeds_manager`). A missing
+`depends_on` is `errors.self_delegated_depends_on_required`. Someone else's
+Access recording is `errors.self_delegated_depends_on_invalid`. An existing
+grant on the target is refused, so a viewer cannot rewrite an admin. The
+write path and `before_access_grant` hook are the same as `grant_access`.
+The hook still sees `source: :grant`. `granted_by` is the member. Do not
+pass a bypass flag to `grant_access`.
 
 A grant may also depend on another Access recording on the same root. The
 dependent role cannot exceed that manager grant's role, and

@@ -53,7 +53,7 @@ module RecordingStudioAccessible
         return access_validation unless access_validation == true
         return failure(copy("errors.actor_type_not_allowed")) unless allowed_access_actor_type?
         return failure(copy("errors.role_invalid")) unless RecordingStudioAccessible.role_valid_for?(@recording, @role)
-        return failure(copy("errors.role_exceeds_manager")) unless self_delegated? || role_within_manager?
+        return failure(copy("errors.role_exceeds_manager")) unless role_within_manager?
 
         dependency_result = validate_dependent_grant
         return dependency_result unless dependency_result == true

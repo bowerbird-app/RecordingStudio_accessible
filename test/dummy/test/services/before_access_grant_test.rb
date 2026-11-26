@@ -261,11 +261,11 @@ class BeforeAccessGrantTest < ActiveSupport::TestCase
 
   test "self-delegated grants run the same before_access_grant hook" do
     editor = create_user("grant-hook-editor@example.com")
-    create_direct_access_recording(actor: editor, role: :edit, parent_recording: @recording)
+    editor_grant = create_direct_access_recording(actor: editor, role: :edit, parent_recording: @recording)
     allow_hook
 
     result = RecordingStudioAccessible.grant_self_delegated_access(
-      recording: @recording, actor: @person, role: :view, manager_actor: editor
+      recording: @recording, actor: @person, role: :view, manager_actor: editor, depends_on: editor_grant
     )
 
     assert result.success?
