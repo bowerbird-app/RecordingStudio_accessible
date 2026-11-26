@@ -659,6 +659,25 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal "view", admin_made.value.recordable.role
   end
 
+  test "self-delegated grants update an admin-made grant that depends on the member" do
+    editor = create_user("self-delegate-admin-made-depends-on@example.com")
+    target = create_user("self-delegate-admin-made-depends-on-target@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+    admin_made = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: target, role: :edit, manager_actor: @manager_actor, depends_on: editor_grant
+    )
+
+    result = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
+    )
+
+    assert admin_made.success?
+    assert result.success?
+    assert_equal admin_made.value.id, result.value.id
+    assert_equal "view", result.value.recordable.role
+    assert_equal editor_grant.id, result.value.recordable.depends_on_recording_id
+  end
+
   test "a viewer cannot self-delegate view onto an existing admin grant" do
     viewer = create_user("self-delegate-cannot-demote@example.com")
     viewer_grant = create_legacy_direct_access_recording(viewer, :view, @recording)
