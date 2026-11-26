@@ -5,8 +5,10 @@ module RecordingStudioAccessible
     class GrantRecordingAccess < BaseService
       include AccessRecordLifecycle
       include AccessGrantWriter
+      include SelfDelegatedGrant
 
-      def initialize(recording:, actor:, role:, manager_actor: nil, controller: nil, depends_on: nil, source: :grant)
+      def initialize(recording:, actor:, role:, manager_actor: nil, controller: nil, depends_on: nil, source: :grant,
+                     authorization: :manage)
         @recording = recording
         @actor = actor
         @role = role.to_s.strip
@@ -14,6 +16,7 @@ module RecordingStudioAccessible
         @controller = controller
         @depends_on = depends_on
         @grant_source = source.to_s.to_sym
+        @authorization = authorization.to_s.to_sym
       end
 
       private
@@ -38,11 +41,15 @@ module RecordingStudioAccessible
         return failure(copy("errors.recording_required")) unless @recording
         return failure(copy("errors.actor_required")) unless @actor
 
-        access_validation = validate_access_management_target!(
-          @recording,
-          manager_actor: manager_actor,
-          controller: @controller
-        )
+        access_validation = if self_delegated?
+                              validate_self_delegated_target!
+                            else
+                              validate_access_management_target!(
+                                @recording,
+                                manager_actor: manager_actor,
+                                controller: @controller
+                              )
+                            end
         return access_validation unless access_validation == true
         return failure(copy("errors.actor_type_not_allowed")) unless allowed_access_actor_type?
         return failure(copy("errors.role_invalid")) unless RecordingStudioAccessible.role_valid_for?(@recording, @role)
@@ -52,6 +59,10 @@ module RecordingStudioAccessible
         return dependency_result unless dependency_result == true
 
         true
+      end
+
+      def self_delegated?
+        @authorization == :self_delegated
       end
 
       def validate_dependent_grant

@@ -259,6 +259,23 @@ class BeforeAccessGrantTest < ActiveSupport::TestCase
     assert RecordingStudioAccessible.authorized?(actor: @person, recording: @recording, role: :view)
   end
 
+  test "self-delegated grants run the same before_access_grant hook" do
+    editor = create_user("grant-hook-editor@example.com")
+    editor_grant = create_direct_access_recording(actor: editor, role: :edit, parent_recording: @recording)
+    allow_hook
+
+    result = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: @person, role: :view, manager_actor: editor, depends_on: editor_grant
+    )
+
+    assert result.success?
+    context = @seen.last
+    assert_equal @person, context.actor
+    assert_equal "view", context.role
+    assert_equal :grant, context.source
+    assert_equal editor, context.granted_by
+  end
+
   test "other errors still become unexpected failure copy" do
     RecordingStudioAccessible.configuration.before_access_grant = ->(_context) { raise "boom" }
 

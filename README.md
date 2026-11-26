@@ -10,6 +10,7 @@ It extracts the access-specific pieces that currently live in RecordingStudio co
 - optional dependent grants: one Access recording can be capped by and die with another Access recording on the same root. Dependents void in place when the manager Access is revised weaker, trashed, destroyed, or moved — they do not follow a move
 - optional per-action audiences (`public`, `signed_in`, `granted`, plus `register_audience`) with workspace limits and per-recording rules
 - `RecordingStudioAccessible.role_for`, `access_grants_for`, `shared_with`, `actors_with_access`, `role_through`, `authorized?`, `authorized_through?`, and `authorized_action?` for role lookup, grants, item shares, and named-action checks
+- `grant_access` for admin-managed membership, and `grant_self_delegated_access` when a member grants a target a role no higher than their own
 - `admin_root` and `admin?` for a role held on the configured admin root recording
 - a mounted engine for adding, updating, and removing direct access on a recording, plus workspace-scoped actor access-point pages
 - Recording Studio API member actions (`list_access`, `grant_access`,
@@ -1270,6 +1271,19 @@ RecordingStudioAccessible.grant_access(
   manager_actor: current_actor
 )
 
+manager_grant = RecordingStudioAccessible.access_recordings_for_actor(
+  recording: recording,
+  actor: current_actor
+).first
+
+RecordingStudioAccessible.grant_self_delegated_access(
+  recording: recording,
+  actor: target_actor,
+  role: :view,
+  manager_actor: current_actor,
+  depends_on: manager_grant
+)
+
 RecordingStudioAccessible.update_access(
   recording: recording,
   access_recording: access_recording,
@@ -1303,7 +1317,37 @@ Teardown and staff scripts can pass `allow_last_admin_removal: true` on
 
 `actor` is the polymorphic object receiving access. It can be a user,
 workspace, company, team, system actor, or another configured access actor.
-`manager_actor` remains the actor performing the access-management action.
+`manager_actor` remains the actor performing the grant.
+
+Use `grant_access` when an admin is managing membership. It still requires
+manage-access (the default authorizer is `:admin`).
+
+Use `grant_self_delegated_access` when a member who is not an admin needs
+to grant a target actor a role no higher than their own on that recording.
+The Connect flow for an OAuth client is this case: the signed-in user is
+`manager_actor`, and the client is `actor`. Pass `depends_on:` as that
+member's own Access recording on the same root. Prerequisites:
+
+- `manager_actor` already holds a role on that recording
+- `depends_on` is that member's own active Access recording on that root
+- the requested role is at or below that role (`RoleCeiling.allowed?`)
+- the target does not already have a different grant there
+- the same remaining target rules as `grant_access` (allowlisted actor type,
+  valid role, `:accessible` on the recordable, not a shared root,
+  dependent-grant rules, `before_access_grant`)
+
+A member with no role is refused (`errors.self_delegated_not_a_member`). A
+role above their own is refused (`errors.role_exceeds_manager`). A missing
+`depends_on` is `errors.dependent_missing_manager`. Someone else's Access
+recording is `errors.self_delegated_depends_on_invalid`. An existing grant
+on the target with the same role and `depends_on` is returned as-is only
+while that role is still within the member's own role. After a downgrade,
+reconnecting at the old role is `errors.role_exceeds_manager`. Any other
+existing grant is refused, so a viewer cannot rewrite an admin.
+Members who only inherit access cannot self-delegate on child recordings.
+That path fails closed. The write path and `before_access_grant` hook are
+the same as `grant_access`. The hook still sees `source: :grant`.
+`granted_by` is the member. Do not pass a bypass flag to `grant_access`.
 
 A grant may also depend on another Access recording on the same root. The
 dependent role cannot exceed that manager grant's role, and
@@ -1452,6 +1496,7 @@ raise result.error if result.failure?
 | Empty owned root, first admin | `bootstrap_owner_access!` |
 | Empty accessible child under a shared root, first admin | `bootstrap_owner_access!` |
 | Invites, membership, role changes after that | `grant_access` / mounted access UI / Users membership |
+| A view or edit member granting a target a role at or below their own | `grant_self_delegated_access` |
 
 Bootstrap succeeds when the recording is persisted, `:accessible` is enabled on
 its recordable type, the actor type is allowlisted, and there are zero active

@@ -60,6 +60,95 @@ module RecordingStudioAccessible
         end
       end
 
+      def test_self_delegated_skips_manage_access_and_refuses_without_a_held_role
+        recording = Recording.new(id: 1)
+        actor = Actor.new(1)
+        manager = Actor.new(2)
+
+        RecordingStudioAccessible::AccessManagementPolicy.stub(:allowed?, false) do
+          RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+            RecordingStudioAccessible::RoleCeiling.stub(:held_role, "") do
+              result = GrantRecordingAccess.call(
+                recording: recording,
+                actor: actor,
+                role: :view,
+                manager_actor: manager,
+                authorization: :self_delegated
+              )
+
+              assert_equal "You need access here before you can share it.", result.error
+            end
+          end
+        end
+      end
+
+      def test_self_delegated_refuses_a_role_above_the_held_role
+        recording = Recording.new(id: 1)
+        actor = Actor.new(1)
+        manager = Actor.new(2)
+        depends_on = Recording.new(id: 9)
+        own_grants = Object.new
+        own_grants.define_singleton_method(:exists?) { |**| true }
+
+        RecordingStudioAccessible::AccessManagementPolicy.stub(:allowed?, false) do
+          RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+            RecordingStudioAccessible::RoleCeiling.stub(:held_role, "view") do
+              RecordingStudioAccessible::RoleCeiling.stub(:allowed?, false) do
+                RecordingStudioAccessible::DirectAccessQuery.stub(:access_recordings_for_actor, own_grants) do
+                  service = GrantRecordingAccess.new(
+                    recording: recording,
+                    actor: actor,
+                    role: :edit,
+                    manager_actor: manager,
+                    depends_on: depends_on,
+                    authorization: :self_delegated
+                  )
+                  service.stub(:existing_access_recordings, []) do
+                    result = service.send(:perform)
+
+                    assert_equal "You can only grant a role you already hold.", result.error
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+
+      def test_self_delegated_requires_the_managers_own_depends_on
+        recording = Recording.new(id: 1)
+        actor = Actor.new(1)
+        manager = Actor.new(2)
+
+        RecordingStudioAccessible::AccessManagementPolicy.stub(:allowed?, false) do
+          RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+            RecordingStudioAccessible::RoleCeiling.stub(:held_role, "edit") do
+              service = GrantRecordingAccess.new(
+                recording: recording,
+                actor: actor,
+                role: :view,
+                manager_actor: manager,
+                authorization: :self_delegated
+              )
+              service.stub(:existing_access_recordings, []) do
+                assert_equal "Manager access grant is missing or inactive",
+                             service.send(:perform).error
+              end
+            end
+          end
+        end
+      end
+
+      def test_grant_access_does_not_accept_a_self_delegated_bypass
+        recording = Recording.new(id: 1)
+        actor = Actor.new(1)
+
+        RecordingStudioAccessible::AccessManagementPolicy.stub(:allowed?, false) do
+          assert_equal "Not authorized to manage access",
+                       GrantRecordingAccess.call(recording: recording, actor: actor, role: :view).error
+        end
+      end
+
       def test_grant_access_creates_new_access_recording
         recording = Recording.new(id: 1)
         actor = Actor.new(1)

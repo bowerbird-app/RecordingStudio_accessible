@@ -109,6 +109,10 @@ module RecordingStudioAccessible
         )
         return authorization_result unless authorization_result == true
 
+        validate_grant_target!(recording)
+      end
+
+      def validate_grant_target!(recording)
         shared_root_result = reject_shared_root_target!(recording)
         return shared_root_result unless shared_root_result == true
         return failure(Copy.t("errors.direct_access_not_enabled")) unless access_management_allowed?(recording)

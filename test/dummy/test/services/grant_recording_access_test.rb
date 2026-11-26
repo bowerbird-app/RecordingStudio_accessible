@@ -549,6 +549,207 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_nil RecordingStudio::Recording.unscoped.find_by(id: access_recording.id)
   end
 
+  test "a viewer can self-delegate view and is refused for edit" do
+    viewer = create_user("self-delegate-viewer@example.com")
+    view_target = create_user("self-delegate-viewer-target@example.com")
+    edit_target = create_user("self-delegate-viewer-edit-target@example.com")
+    viewer_grant = create_legacy_direct_access_recording(viewer, :view, @recording)
+
+    equal = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: view_target, role: :view, manager_actor: viewer, depends_on: viewer_grant
+    )
+    above = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: edit_target, role: :edit, manager_actor: viewer, depends_on: viewer_grant
+    )
+
+    assert equal.success?
+    assert_equal "view", equal.value.recordable.role
+    assert_equal view_target, equal.value.recordable.actor
+    refute above.success?
+    assert_equal "You can only grant a role you already hold.", above.error
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: view_target, recording: @recording)
+  end
+
+  test "an editor can self-delegate edit and view and is refused for admin" do
+    editor = create_user("self-delegate-editor@example.com")
+    view_target = create_user("self-delegate-editor-view@example.com")
+    edit_target = create_user("self-delegate-editor-edit@example.com")
+    admin_target = create_user("self-delegate-editor-admin@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+
+    lower = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: view_target, role: :view, manager_actor: editor, depends_on: editor_grant
+    )
+    equal = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: edit_target, role: :edit, manager_actor: editor, depends_on: editor_grant
+    )
+    above = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: admin_target, role: :admin, manager_actor: editor, depends_on: editor_grant
+    )
+
+    assert lower.success?
+    assert_equal "view", lower.value.recordable.role
+    assert equal.success?
+    assert_equal "edit", equal.value.recordable.role
+    refute above.success?
+    assert_equal "You can only grant a role you already hold.", above.error
+    refute RecordingStudioAccessible.authorized?(actor: admin_target, recording: @recording, role: :admin)
+  end
+
+  test "a non-member cannot self-delegate" do
+    stranger = create_user("self-delegate-stranger@example.com")
+    target = create_user("self-delegate-stranger-target@example.com")
+
+    result = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: stranger
+    )
+
+    refute result.success?
+    assert_equal "You need access here before you can share it.", result.error
+    refute RecordingStudioAccessible.authorized?(actor: target, recording: @recording, role: :view)
+  end
+
+  test "self-delegated grants still reject an unallowed actor type" do
+    editor = create_user("self-delegate-actor-type@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+    RecordingStudioAccessible.configuration.access_actor_types = ["User"]
+
+    result = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: @workspace, role: :view, manager_actor: editor, depends_on: editor_grant
+    )
+
+    refute result.success?
+    assert_equal "Actor type is not allowed for access", result.error
+  end
+
+  test "grant_access still requires admin when self-delegated grants succeed" do
+    editor = create_user("self-delegate-grant-access-still-admin@example.com")
+    target = create_user("self-delegate-grant-access-target@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+
+    managed = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor
+    )
+    delegated = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
+    )
+
+    refute managed.success?
+    assert_equal "Not authorized to manage access", managed.error
+    assert delegated.success?
+    assert_equal "view", delegated.value.recordable.role
+  end
+
+  test "a viewer cannot self-delegate view onto an existing admin grant" do
+    viewer = create_user("self-delegate-cannot-demote@example.com")
+    viewer_grant = create_legacy_direct_access_recording(viewer, :view, @recording)
+
+    result = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: @manager_actor, role: :view, manager_actor: viewer, depends_on: viewer_grant
+    )
+
+    refute result.success?
+    assert_equal :admin, RecordingStudioAccessible.role_for(actor: @manager_actor, recording: @recording)
+    assert RecordingStudioAccessible.authorized?(actor: @manager_actor, recording: @recording, role: :admin)
+  end
+
+  test "self-delegated grants require the manager's own access as depends_on" do
+    editor = create_user("self-delegate-depends-on@example.com")
+    other = create_user("self-delegate-depends-on-other@example.com")
+    target = create_user("self-delegate-depends-on-target@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+    other_grant = create_legacy_direct_access_recording(other, :edit, @recording)
+
+    missing = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor
+    )
+    foreign = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: other_grant
+    )
+    own = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
+    )
+
+    refute missing.success?
+    assert_equal "Manager access grant is missing or inactive", missing.error
+    refute foreign.success?
+    assert_equal "The grant has to depend on your own access here.", foreign.error
+    assert own.success?
+    assert_equal editor_grant.id, own.value.recordable.depends_on_recording_id
+  end
+
+  test "self-delegated reconnects with the same grant are idempotent" do
+    editor = create_user("self-delegate-reconnect@example.com")
+    target = create_user("self-delegate-reconnect-target@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+
+    first = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
+    )
+    second = nil
+    assert_no_difference -> { RecordingStudio::Access.count } do
+      second = RecordingStudioAccessible.grant_self_delegated_access(
+        recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
+      )
+    end
+
+    assert first.success?
+    assert second.success?
+    assert_equal first.value.id, second.value.id
+    assert_equal "view", second.value.recordable.role
+    assert_equal editor_grant.id, second.value.recordable.depends_on_recording_id
+  end
+
+  test "self-delegated reconnects refuse a role above the member after a downgrade" do
+    editor = create_user("self-delegate-reconnect-downgrade@example.com")
+    target = create_user("self-delegate-reconnect-downgrade-target@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+
+    first = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :edit, manager_actor: editor, depends_on: editor_grant
+    )
+    downgrade = RecordingStudioAccessible::Services::UpdateRecordingAccess.call(
+      recording: @recording,
+      access_recording: editor_grant,
+      role: :view,
+      manager_actor: @manager_actor
+    )
+    reconnect = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :edit, manager_actor: editor, depends_on: editor_grant
+    )
+
+    assert first.success?
+    assert downgrade.success?
+    refute reconnect.success?
+    assert_equal "You can only grant a role you already hold.", reconnect.error
+  end
+
+  test "self-delegated reconnects refuse a different role or depends_on" do
+    editor = create_user("self-delegate-reconnect-mismatch@example.com")
+    other = create_user("self-delegate-reconnect-other@example.com")
+    target = create_user("self-delegate-reconnect-mismatch-target@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+    other_grant = create_legacy_direct_access_recording(other, :edit, @recording)
+
+    first = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
+    )
+    different_role = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :edit, manager_actor: editor, depends_on: editor_grant
+    )
+    different_depends_on = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: other_grant
+    )
+
+    assert first.success?
+    refute different_role.success?
+    assert_equal "This already has access here.", different_role.error
+    refute different_depends_on.success?
+    assert_equal "The grant has to depend on your own access here.", different_depends_on.error
+    assert_equal "view", first.value.reload.recordable.role
+    assert_equal editor_grant.id, first.value.recordable.depends_on_recording_id
+  end
+
   private
 
   def create_user(email)
