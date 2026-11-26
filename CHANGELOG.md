@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.61.0] - 2026-11-26
+
+### Added
+- `RecordingStudioAccessible.grant_self_delegated_access` writes a grant through the same path as `grant_access`, but skips the manage-access admin check. The manager must already hold a role on that recording, and the granted role cannot be higher than that role.
+
+### Upgrade notes
+- No Accessible migration. `grant_access` still requires manage-access (`:admin` by default).
+- Call `grant_self_delegated_access` when a view or edit member needs to grant a target actor a role at or below their own, such as connecting an OAuth client to their account. Hosts that copy locale files should add `errors.self_delegated_not_a_member` and `errors.self_delegated_role_not_allowed`.
+
 ## [0.60.1] - 2026-11-23
 
 ### Changed

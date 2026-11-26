@@ -2,6 +2,19 @@
 
 module RecordingStudioAccessible
   module AccessWriters
+    # Grant a role no higher than manager_actor's own. Skips manage-access.
+    def grant_self_delegated_access(recording:, actor:, role:, manager_actor: nil, depends_on: nil, source: :grant)
+      Services::GrantRecordingAccess.call(
+        recording: recording,
+        actor: actor,
+        role: role,
+        manager_actor: manager_actor,
+        depends_on: depends_on,
+        source: source,
+        authorization: :self_delegated
+      )
+    end
+
     def update_access(recording:, access_recording:, role:, manager_actor: nil, controller: nil,
                       allow_last_admin_removal: false)
       Services::UpdateRecordingAccess.call(

@@ -60,6 +60,62 @@ module RecordingStudioAccessible
         end
       end
 
+      def test_self_delegated_skips_manage_access_and_refuses_without_a_held_role
+        recording = Recording.new(id: 1)
+        actor = Actor.new(1)
+        manager = Actor.new(2)
+
+        RecordingStudioAccessible::AccessManagementPolicy.stub(:allowed?, false) do
+          RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+            RecordingStudioAccessible.stub(:role_for, nil) do
+              result = GrantRecordingAccess.call(
+                recording: recording,
+                actor: actor,
+                role: :view,
+                manager_actor: manager,
+                authorization: :self_delegated
+              )
+
+              assert_equal "You need access here before you can share it.", result.error
+            end
+          end
+        end
+      end
+
+      def test_self_delegated_refuses_a_role_above_the_held_role
+        recording = Recording.new(id: 1)
+        actor = Actor.new(1)
+        manager = Actor.new(2)
+
+        RecordingStudioAccessible::AccessManagementPolicy.stub(:allowed?, false) do
+          RecordingStudioAccessible::Compatibility.stub(:access_management_allowed?, true) do
+            RecordingStudioAccessible.stub(:role_for, :view) do
+              RecordingStudioAccessible::RoleCeiling.stub(:allowed?, false) do
+                result = GrantRecordingAccess.call(
+                  recording: recording,
+                  actor: actor,
+                  role: :edit,
+                  manager_actor: manager,
+                  authorization: :self_delegated
+                )
+
+                assert_equal "You are not allowed to grant a role above the one you hold.", result.error
+              end
+            end
+          end
+        end
+      end
+
+      def test_grant_access_does_not_accept_a_self_delegated_bypass
+        recording = Recording.new(id: 1)
+        actor = Actor.new(1)
+
+        RecordingStudioAccessible::AccessManagementPolicy.stub(:allowed?, false) do
+          assert_equal "Not authorized to manage access",
+                       GrantRecordingAccess.call(recording: recording, actor: actor, role: :view).error
+        end
+      end
+
       def test_grant_access_creates_new_access_recording
         recording = Recording.new(id: 1)
         actor = Actor.new(1)

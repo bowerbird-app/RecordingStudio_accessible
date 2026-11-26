@@ -31,6 +31,18 @@ module RecordingStudioAccessible
         assert_equal "Not authorized to manage access", result.error
       end
 
+      def test_grant_access_facade_still_requires_manage_access
+        result = RecordingStudioAccessible.grant_access(
+          recording: RecordingStub.new("recording-1"),
+          actor: Object.new,
+          role: "view",
+          manager_actor: nil
+        )
+
+        refute result.success?
+        assert_equal "Not authorized to manage access", result.error
+      end
+
       def test_update_recording_access_requires_authorized_manager_actor
         result = UpdateRecordingAccess.call(
           recording: RecordingStub.new("recording-1"),

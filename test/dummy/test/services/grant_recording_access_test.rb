@@ -549,6 +549,95 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_nil RecordingStudio::Recording.unscoped.find_by(id: access_recording.id)
   end
 
+  test "a viewer can self-delegate view and is refused for edit" do
+    viewer = create_user("self-delegate-viewer@example.com")
+    target = create_user("self-delegate-viewer-target@example.com")
+    create_legacy_direct_access_recording(viewer, :view, @recording)
+
+    equal = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: viewer
+    )
+    above = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :edit, manager_actor: viewer
+    )
+
+    assert equal.success?
+    assert_equal "view", equal.value.recordable.role
+    assert_equal target, equal.value.recordable.actor
+    refute above.success?
+    assert_equal "You are not allowed to grant a role above the one you hold.", above.error
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: target, recording: @recording)
+  end
+
+  test "an editor can self-delegate edit and view and is refused for admin" do
+    editor = create_user("self-delegate-editor@example.com")
+    view_target = create_user("self-delegate-editor-view@example.com")
+    edit_target = create_user("self-delegate-editor-edit@example.com")
+    create_legacy_direct_access_recording(editor, :edit, @recording)
+
+    lower = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: view_target, role: :view, manager_actor: editor
+    )
+    equal = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: edit_target, role: :edit, manager_actor: editor
+    )
+    above = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: view_target, role: :admin, manager_actor: editor
+    )
+
+    assert lower.success?
+    assert_equal "view", lower.value.recordable.role
+    assert equal.success?
+    assert_equal "edit", equal.value.recordable.role
+    refute above.success?
+    assert_equal "You are not allowed to grant a role above the one you hold.", above.error
+    refute RecordingStudioAccessible.authorized?(actor: view_target, recording: @recording, role: :admin)
+  end
+
+  test "a non-member cannot self-delegate" do
+    stranger = create_user("self-delegate-stranger@example.com")
+    target = create_user("self-delegate-stranger-target@example.com")
+
+    result = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: stranger
+    )
+
+    refute result.success?
+    assert_equal "You need access here before you can share it.", result.error
+    refute RecordingStudioAccessible.authorized?(actor: target, recording: @recording, role: :view)
+  end
+
+  test "self-delegated grants still reject an unallowed actor type" do
+    editor = create_user("self-delegate-actor-type@example.com")
+    create_legacy_direct_access_recording(editor, :edit, @recording)
+    RecordingStudioAccessible.configuration.access_actor_types = ["User"]
+
+    result = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: @workspace, role: :view, manager_actor: editor
+    )
+
+    refute result.success?
+    assert_equal "Actor type is not allowed for access", result.error
+  end
+
+  test "grant_access still requires admin when self-delegated grants succeed" do
+    editor = create_user("self-delegate-grant-access-still-admin@example.com")
+    target = create_user("self-delegate-grant-access-target@example.com")
+    create_legacy_direct_access_recording(editor, :edit, @recording)
+
+    managed = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor
+    )
+    delegated = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor
+    )
+
+    refute managed.success?
+    assert_equal "Not authorized to manage access", managed.error
+    assert delegated.success?
+    assert_equal "view", delegated.value.recordable.role
+  end
+
   private
 
   def create_user(email)
