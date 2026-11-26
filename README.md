@@ -1331,7 +1331,8 @@ member's own Access recording on the same root. Prerequisites:
 - `manager_actor` already holds a role on that recording
 - `depends_on` is that member's own active Access recording on that root
 - the requested role is at or below that role (`RoleCeiling.allowed?`)
-- the target does not already have a different grant there
+- the target does not already have a different grant there (a matching
+  self-delegated grant may change role in place)
 - the same remaining target rules as `grant_access` (allowlisted actor type,
   valid role, `:accessible` on the recordable, not a shared root,
   dependent-grant rules, `before_access_grant`)
@@ -1342,11 +1343,13 @@ role above their own is refused (`errors.role_exceeds_manager`). A missing
 recording is `errors.self_delegated_depends_on_invalid`. An existing grant
 on the target with the same role and `depends_on` is returned as-is only
 while that role is still within the member's own role. After a downgrade,
-reconnecting at the old role is `errors.role_exceeds_manager`. Any other
-existing grant is refused, so a viewer cannot rewrite an admin.
+reconnecting at the old role is `errors.role_exceeds_manager`. The same
+grant with a different requested role is updated in place; the grant id
+stays the same, and `before_access_grant` sees `source: :role_change`. Any
+other existing grant is refused, so a viewer cannot rewrite an admin.
 Members who only inherit access cannot self-delegate on child recordings.
-That path fails closed. The write path and `before_access_grant` hook are
-the same as `grant_access`. The hook still sees `source: :grant`.
+That path fails closed. A first write and `before_access_grant` are the
+same as `grant_access`. A first grant still sees `source: :grant`.
 `granted_by` is the member. Do not pass a bypass flag to `grant_access`.
 
 A grant may also depend on another Access recording on the same root. The

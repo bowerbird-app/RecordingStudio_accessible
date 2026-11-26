@@ -25,6 +25,8 @@ module RecordingStudioAccessible
         return true unless existing
         # Reconnects stay idempotent only while still within the member's own role.
         return success(existing) if same_self_delegated_grant?(existing) && role_within_manager?
+        # Same depends_on with a different role updates in place via upsert_access_recording!.
+        return true if same_self_delegated_depends_on?(existing)
 
         existing_role = existing.recordable.role
         unless RoleCeiling.allowed?(recording: @recording, manager: manager_actor, role: existing_role)
@@ -35,9 +37,14 @@ module RecordingStudioAccessible
       end
 
       def same_self_delegated_grant?(existing)
+        return false unless same_self_delegated_depends_on?(existing)
+
+        existing.recordable.role.to_s == @role.to_s
+      end
+
+      def same_self_delegated_depends_on?(existing)
         access = existing.recordable
         return false unless access
-        return false unless access.role.to_s == @role.to_s
         return false unless @depends_on.respond_to?(:id)
 
         access.depends_on_recording_id == @depends_on.id

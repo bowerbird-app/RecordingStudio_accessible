@@ -640,6 +640,25 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal "view", delegated.value.recordable.role
   end
 
+  test "self-delegated grants refuse an existing admin-made grant" do
+    editor = create_user("self-delegate-refuse-admin-made@example.com")
+    target = create_user("self-delegate-refuse-admin-made-target@example.com")
+    editor_grant = create_legacy_direct_access_recording(editor, :edit, @recording)
+    admin_made = RecordingStudioAccessible.grant_access(
+      recording: @recording, actor: target, role: :view, manager_actor: @manager_actor
+    )
+
+    result = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :edit, manager_actor: editor, depends_on: editor_grant
+    )
+
+    assert admin_made.success?
+    refute result.success?
+    assert_equal "This already has access here.", result.error
+    assert_equal admin_made.value.id, admin_made.value.reload.id
+    assert_equal "view", admin_made.value.recordable.role
+  end
+
   test "a viewer cannot self-delegate view onto an existing admin grant" do
     viewer = create_user("self-delegate-cannot-demote@example.com")
     viewer_grant = create_legacy_direct_access_recording(viewer, :view, @recording)
@@ -676,6 +695,25 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal "The grant has to depend on your own access here.", foreign.error
     assert own.success?
     assert_equal editor_grant.id, own.value.recordable.depends_on_recording_id
+  end
+
+  test "a viewer cannot upgrade an existing self-delegated grant above view" do
+    viewer = create_user("self-delegate-upgrade-cap@example.com")
+    target = create_user("self-delegate-upgrade-cap-target@example.com")
+    viewer_grant = create_legacy_direct_access_recording(viewer, :view, @recording)
+
+    first = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: viewer, depends_on: viewer_grant
+    )
+    above = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :edit, manager_actor: viewer, depends_on: viewer_grant
+    )
+
+    assert first.success?
+    refute above.success?
+    assert_equal "You can only grant a role you already hold.", above.error
+    assert_equal first.value.id, first.value.reload.id
+    assert_equal "view", first.value.recordable.role
   end
 
   test "self-delegated reconnects with the same grant are idempotent" do
@@ -724,7 +762,7 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     assert_equal "You can only grant a role you already hold.", reconnect.error
   end
 
-  test "self-delegated reconnects refuse a different role or depends_on" do
+  test "self-delegated reconnects update a different role in place" do
     editor = create_user("self-delegate-reconnect-mismatch@example.com")
     other = create_user("self-delegate-reconnect-other@example.com")
     target = create_user("self-delegate-reconnect-mismatch-target@example.com")
@@ -734,18 +772,30 @@ class GrantRecordingAccessTest < ActiveSupport::TestCase
     first = RecordingStudioAccessible.grant_self_delegated_access(
       recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
     )
-    different_role = RecordingStudioAccessible.grant_self_delegated_access(
+    upgraded = RecordingStudioAccessible.grant_self_delegated_access(
       recording: @recording, actor: target, role: :edit, manager_actor: editor, depends_on: editor_grant
+    )
+    downgraded = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: editor_grant
     )
     different_depends_on = RecordingStudioAccessible.grant_self_delegated_access(
       recording: @recording, actor: target, role: :view, manager_actor: editor, depends_on: other_grant
     )
+    above = RecordingStudioAccessible.grant_self_delegated_access(
+      recording: @recording, actor: target, role: :admin, manager_actor: editor, depends_on: editor_grant
+    )
 
     assert first.success?
-    refute different_role.success?
-    assert_equal "This already has access here.", different_role.error
+    assert upgraded.success?
+    assert_equal first.value.id, upgraded.value.id
+    assert_equal "edit", upgraded.value.recordable.role
+    assert downgraded.success?
+    assert_equal first.value.id, downgraded.value.id
+    assert_equal "view", downgraded.value.recordable.role
     refute different_depends_on.success?
     assert_equal "The grant has to depend on your own access here.", different_depends_on.error
+    refute above.success?
+    assert_equal "You can only grant a role you already hold.", above.error
     assert_equal "view", first.value.reload.recordable.role
     assert_equal editor_grant.id, first.value.recordable.depends_on_recording_id
   end
